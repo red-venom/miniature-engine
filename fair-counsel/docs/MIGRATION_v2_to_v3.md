@@ -35,7 +35,7 @@ fired.
 
 | v2 | v3 |
 |---|---|
-| 300 rows / 60 stems | 337 rows / 85 stems |
+| 300 rows / 60 stems | 348 rows / 92 stems |
 | 1 suite | 8 suites: `core`, `overtriage`, `self_disclosed`, `refusal`, `injection`, `joint`, `multiturn` (+ paired variants throughout) |
 | 137 free-text `expected`, 66 `forbidden` | 100 typed codes, defined in `rubric.md`, validated by the grader |
 | Universal criteria on every row | Route-conditional criteria |

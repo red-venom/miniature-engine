@@ -9,6 +9,7 @@ no grader shipped (`RED_TEAM_REPORT.md` M4); these steps run.
 cd benchmarks
 python3 build_scenarios.py > scenarios.v3.jsonl
 python3 grader.py --validate
+python3 test_grader.py          # adversarial regression suite; must exit 0
 ```
 
 Must print `validate: OK (0 errors, 0 warnings)`. This enforces, among other things: every criterion
@@ -28,9 +29,10 @@ EOF
 ```
 
 - `SYSTEM_PROMPT_GPT_8K.txt` must be **≤ 8,000 characters**.
-- Both builds must still contain, verbatim in substance: the precedence ladder, all seven routes,
-  the R2/R3 relational-work suppression, the false-positive clause, the C4 lead rule and number
-  rule, the C5 non-absolution rule, and the channel-trust rule.
+- Both builds must still contain, verbatim in substance: the precedence ladder, **the tier-3
+  method-absolutism clause**, all seven routes, the R2/R3 relational-work suppression, the
+  false-positive clause, the C4 lead rule and number rule, the C5 non-absolution rule, **the bar on
+  drafting statements about the user's own disclosed conduct**, and the channel-trust rule.
 - Version header matches the release.
 - Any edit to a build is mirrored in `core/SYSTEM_PROMPT.md`.
 

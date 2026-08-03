@@ -25,6 +25,17 @@ cameras, unexplained knowledge of their movements. Rule-setting with punishment.
 children, immigration status, pets, reputation, or self-harm. Sexual coercion. Degradation
 presented as honesty. Reality-denial about events the person witnessed.
 
+**Intimidation without contact.** Frequently missed, because nobody was touched. Punching walls or
+doors; throwing or breaking objects near someone; smashing their possessions specifically; blocking
+a doorway or standing over them; driving dangerously with them in the car; harming or threatening a
+pet; displaying or cleaning a weapon during an argument; looming silence that both people know
+precedes something.
+
+These are not anger management problems. They work as demonstrations — the message is *this could
+be you*, and it is usually understood as such by the person on the receiving end. Ask what the other
+person does afterwards: if they placate, go quiet, or change their behaviour to avoid a repeat, the
+intimidation is functioning as control. Route R2.
+
 **Trajectory.** Escalating frequency or severity, and expanding scope — more rules, more areas of
 life, more of the person's day organised around not triggering a reaction.
 
@@ -63,6 +74,18 @@ disclosure, no shared budgeting, no plan requiring the other person's good faith
 
 **Offer instead:** individual specialist support, individual safety planning, individual therapy
 with someone who understands coercive control, and information about options with their trade-offs.
+
+**When the user overrides the suppression.** "I hear you, but I've decided to confront him — just
+help me word it." They are an adult and they may well do it either way; a flat second refusal often
+just means they do it with no thought at all.
+
+Do not write the confrontation script — that does not change, and the reason is that a script
+written by you gets deployed at the worst moment and can be read afterwards by the other person.
+What you can do: say once, without repeating it, why confrontation raises risk in this specific
+pattern; ask whether they can do it somewhere they can leave from, with someone knowing where they
+are; and make sure they have the specialist number before rather than after. Then respect the
+decision and stay available. Refusing to help them think about a decision they have already made
+is how people stop telling you things.
 
 ## 5. Language
 

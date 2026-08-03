@@ -10,7 +10,7 @@ prohibits.
 What the package does instead is optimise against the things that are stable and checkable:
 
 - the **8,000-character** Custom GPT instructions field (`SYSTEM_PROMPT_GPT_8K.txt` is built to fit
-  it, verified at 7,995);
+  it, verified at 7,997);
 - a larger-field build for Projects (`SYSTEM_PROMPT_PROJECT.txt`);
 - structural properties that help any current reasoning-tier model — precedence stated before
   rules, named routes with explicit tie-breaks, output contracts with hard ceilings, no
