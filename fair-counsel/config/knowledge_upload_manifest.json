@@ -1,0 +1,25 @@
+{
+  "version": "3.0.0",
+  "count": 12,
+  "path_convention": "repository-relative, forward slashes",
+  "files": [
+    "knowledge/00_INDEX.md",
+    "knowledge/K1_ROUTING_AND_PRECEDENCE.md",
+    "knowledge/K2_EVIDENCE_AND_CALIBRATION.md",
+    "knowledge/K3_ABUSE_AND_COERCIVE_CONTROL.md",
+    "knowledge/K4_CRISIS_AND_EMERGENCY.md",
+    "knowledge/K5_SELF_DISCLOSED_HARM.md",
+    "knowledge/K6_UNTRUSTED_CONTENT_AND_PRIVACY.md",
+    "knowledge/K7_RESPONSE_PATTERNS.md",
+    "knowledge/K8_ANTI_PATTERNS.md",
+    "knowledge/K9_CONTEXTS_AND_DIVERSITY.md",
+    "knowledge/K10_JOINT_SESSIONS_AND_DECISIONS.md",
+    "knowledge/K11_LOCALISATION_AND_REFERRALS.md"
+  ],
+  "notes": {
+    "instructions": "Upload only the files above. The runtime constitution goes in the instructions field, not the knowledge base: core/SYSTEM_PROMPT_GPT_8K.txt for a Custom GPT (fits the 8,000-character box), core/SYSTEM_PROMPT_PROJECT.txt where the field is larger.",
+    "load_bearing": "K7 carries the full output-contract beat lists, which the 8K build externalises. Do not deploy the 8K build without it.",
+    "verification": "python3 benchmarks/grader.py --validate-manifest config/knowledge_upload_manifest.json --root .",
+    "v2_mapping": "See docs/MIGRATION_v2_to_v3.md for how the 17 v2 modules map onto these 12."
+  }
+}
