@@ -386,9 +386,9 @@ Public Function EditTest(ByVal yearName As String, ByVal oldName As String, ByVa
         Exit Function
     End If
 
-    before = RegisterInputs(lr)
     state = PauseApp()
     On Error GoTo Fail
+    before = RegisterInputs(lr)
     If StrComp(newName, oldName, vbBinaryCompare) <> 0 Then
         ' Excel rewrites every formula that refers to a renamed table column.
         renamed = True
@@ -496,20 +496,22 @@ End Function
 Public Function ChangeProblem(ByVal lo As ListObject, ByVal hit As Range) As String
     ' Why a change to a year table's cells must be undone, or "" when it is fine.
     Dim lc As ListColumn, part As Range, cell As Range, maxMark As Variant, names As Range
-    Dim yearName As String, testName As String, suffix As String
+    Dim yearName As String, testName As String, suffix As String, pasted As Boolean, area As Range
 
-    If WasPaste() And HiddenRowIn(hit) Then
+    pasted = WasPaste()
+    If pasted And HiddenRowIn(hit) Then
         ChangeProblem = "The pasted cells reached rows that a filter (such as the Class slicer) was " & _
                         "hiding, so they went into other students' rows." & vbCrLf & vbCrLf & _
-                        "Paste one class at a time, in the same order as the sheet (surname, then " & _
-                        "first name), or type the marks."
+                        "Paste one class at a time, in the same order as the sheet, or type the marks. " & _
+                        "If the table has been sorted another way, sort it by Class, then surname " & _
+                        "(Data > Sort), so that each class is one block again."
         Exit Function
     End If
     For Each lc In lo.ListColumns
         If IsFormulaColumn(lc.Name) Then
             Set part = Application.Intersect(hit, lc.DataBodyRange)
             If Not part Is Nothing Then
-                If Not (part.HasFormula = True) Then
+                If Not FormulasIntact(lc, part) Then
                     ChangeProblem = "The grey columns, such as """ & Replace(lc.Name, vbLf, " ") & _
                                     """, work themselves out, so they cannot be typed over, pasted " & _
                                     "over or cleared." & vbCrLf & vbCrLf & _
@@ -520,6 +522,13 @@ Public Function ChangeProblem(ByVal lo As ListObject, ByVal hit As Range) As Str
             End If
         End If
     Next lc
+    ' A sort, or a row inserted or deleted, changes the whole width of the table. Its marks
+    ' were checked when they went in, so an old problem elsewhere must not undo the sort.
+    If Not pasted Then
+        For Each area In hit.Areas
+            If area.Columns.Count = lo.ListColumns.Count Then Exit Function
+        Next area
+    End If
     yearName = YearOfSheet(lo.Parent)
     suffix = vbLf & RAW_SUFFIX
     Set names = lo.ListColumns("Preferred Last name").DataBodyRange
@@ -530,26 +539,67 @@ Public Function ChangeProblem(ByVal lo As ListObject, ByVal hit As Range) As Str
                 testName = Left$(lc.Name, Len(lc.Name) - Len(suffix))
                 maxMark = MaxMarkOf(yearName, testName)
                 For Each cell In part.Cells
-                    If Not IsEmpty(cell.Value) And _
-                       Len(Trim$(CStr(names.Cells(cell.Row - names.Row + 1, 1).Value))) = 0 Then
-                        ChangeProblem = "A mark went into a row with no student in it (row " & cell.Row & _
-                                        "). This happens when pasted marks run past the end of the table." & _
-                                        vbCrLf & vbCrLf & "Type the student's name first, or paste a " & _
-                                        "list that matches the students on the sheet."
-                        Exit Function
+                    If Not IsEmpty(cell.Value) Then
+                        If Not HasName(names.Cells(cell.Row - names.Row + 1, 1)) Then
+                            ChangeProblem = "A mark went into a row with no student in it (row " & cell.Row & _
+                                            "). This happens when pasted marks run past the end of " & _
+                                            "the table." & vbCrLf & vbCrLf & "Type the student's name " & _
+                                            "first, or paste a list that matches the students on the sheet."
+                            Exit Function
+                        End If
                     End If
                     If Not MarkIsValid(cell.Value, maxMark) Then
                         ChangeProblem = ShownValue(cell.Value) & " in " & cell.Address(False, False) & _
-                                        " (" & testName & ") is not a mark from 0 to " & CStr(maxMark) & _
-                                        ", or A for absent." & vbCrLf & vbCrLf & _
-                                        "If you pasted marks, check that they are numbers (not text or " & _
-                                        "dates) and that they are in the right column."
+                                        " (" & testName & ") is not " & MarkRule(maxMark) & "." & _
+                                        vbCrLf & vbCrLf & "If you pasted marks, check that they are " & _
+                                        "numbers (not text or dates) and that they are in the right column."
                         Exit Function
                     End If
                 Next cell
             End If
         End If
     Next lc
+End Function
+
+Private Function FormulasIntact(ByVal lc As ListColumn, ByVal part As Range) As Boolean
+    ' True when every changed cell still holds the column's own formula. A calculated column
+    ' has the same R1C1 formula in every row, so an untouched row shows what it should be.
+    ' (HasFormula alone would pass a mixed range, which gives Null, and any other formula.)
+    Dim cell As Range, ref As String, hf As Variant
+    If part.Cells.Count < lc.DataBodyRange.Cells.Count Then
+        For Each cell In lc.DataBodyRange.Cells
+            If Application.Intersect(cell, part) Is Nothing Then
+                If cell.HasFormula Then ref = cell.FormulaR1C1
+                Exit For
+            End If
+        Next cell
+    End If
+    If Len(ref) = 0 Then                 ' every row changed (a sort): formulas at least
+        hf = part.HasFormula
+        If IsNull(hf) Then hf = False
+        FormulasIntact = hf
+        Exit Function
+    End If
+    For Each cell In part.Cells
+        If cell.FormulaR1C1 <> ref Then Exit Function
+    Next cell
+    FormulasIntact = True
+End Function
+
+Private Function HasName(ByVal cell As Range) As Boolean
+    If IsError(cell.Value) Then
+        HasName = True                   ' something is there; the mark is not the problem
+    Else
+        HasName = (Len(Trim$(CStr(cell.Value))) > 0)
+    End If
+End Function
+
+Private Function MarkRule(ByVal maxMark As Variant) As String
+    If IsNumeric(maxMark) Then
+        MarkRule = "a mark from 0 to " & CStr(maxMark) & ", or A for absent"
+    Else
+        MarkRule = "a mark of 0 or more, or A for absent"
+    End If
 End Function
 
 Public Function MarkIsValid(ByVal v As Variant, ByVal maxMark As Variant) As Boolean
@@ -623,18 +673,25 @@ Private Function HiddenRowIn(ByVal rng As Range) As Boolean
 End Function
 
 Private Function WasPaste() As Boolean
-    ' A paste from Excel leaves the copy marquee on; a paste from another program shows
-    ' as "Paste" in the Undo list (English Excel). Sorting and clearing are not pastes:
-    ' Excel applies those to the rows left visible by a filter.
-    Dim last As String
-    If Application.CutCopyMode <> False Then
-        WasPaste = True
-        Exit Function
-    End If
+    ' Excel's Undo list names the last action ("Paste", "Paste Special"), which tells a paste
+    ' from a sort or a clear (Excel applies those to the visible rows only). Where the list
+    ' cannot be read (Excel for Mac), a copy border still showing is the best sign of a paste.
+    Dim last As String, known As Boolean
     On Error Resume Next
-    last = Application.CommandBars("Standard").Controls("&Undo").List(1)
+    last = Application.CommandBars.FindControl(ID:=128).List(1)
+    known = (Err.Number = 0 And Len(last) > 0)
     On Error GoTo 0
-    WasPaste = (LCase$(Left$(last, 5)) = "paste")
+    If known Then
+        WasPaste = (LCase$(Left$(last, 5)) = "paste")
+    Else
+        WasPaste = (Application.CutCopyMode <> False)
+    End If
+End Function
+
+Public Function ChangeCameFromUndo() As Boolean
+    ' After Ctrl+Z the Redo list holds the action just undone; a new action empties it.
+    On Error Resume Next
+    ChangeCameFromUndo = (Application.CommandBars.FindControl(ID:=129).ListCount > 0)
 End Function
 
 '==============================================================================

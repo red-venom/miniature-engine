@@ -27,7 +27,8 @@ score in it is made up, so you can try every button safely.
 2. Type each mark in the test's *Raw Score* column. Type **A** for absent. Leave the cell empty if the
    student has not sat the test yet. Out-of-range marks are refused.
 3. To paste marks, paste one class at a time, in the same order as the sheet. Excel also pastes into
-   rows that a filter hides, so a longer list would change the next class's marks.
+   rows that a filter hides, so a longer list would change the next class's marks. Excel sorts
+   *O'Brien* as *OBrien* and *Smith-Jones* as *SmithJones*, so check such names after pasting.
 4. The *Stanine* column, the register and every dashboard update by themselves.
 
 Score entry works in Excel for the web too; only the buttons need desktop Excel.
@@ -36,8 +37,9 @@ Score entry works in Excel for the web too; only the buttons need desktop Excel.
 filter, typing over or clearing the grey columns, marks that the score check would refuse but that
 arrive by paste or fill (text such as `12/35`, dates, numbers above the maximum), and marks pasted past
 the end of the table into rows with no student. Each is undone at
-once with an explanation. In Excel for the web, where macros do not run, the register's **Check**
-column counts any invalid marks for each test instead.
+once with an explanation. Two limits: a paste from another program (not Excel) is recognised only in
+English Excel for Windows, and your own Ctrl+Z is always left alone. In Excel for the web, where macros
+do not run, the register's **Check** column counts any invalid marks for each test instead.
 
 **Data lead**
 

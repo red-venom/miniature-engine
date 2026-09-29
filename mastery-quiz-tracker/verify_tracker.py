@@ -636,7 +636,8 @@ def check_vba_in_libreoffice(path):
 
 
 HELPERS = {"modTracker.bas": ["CleanText", "TestNameFrom", "RawHeader", "StanineHeader", "StanineFormulaFor",
-                              "ParseMaxMark", "ParseUkDate", "MarkIsValid", "ShownValue", "IsFormulaColumn"],
+                              "ParseMaxMark", "ParseUkDate", "MarkIsValid", "ShownValue", "IsFormulaColumn",
+                              "MarkRule"],
            "modImport.bas": ["TextOf", "YearFromText", "NumOrEmpty", "AvgKS2", "PPFlag", "FileNameOf"]}
 
 
@@ -718,6 +719,8 @@ def check_vba_helpers(tmp):
         ("IsFormulaColumn", ("Mean Stanine",), True), ("IsFormulaColumn", ("vs expected",), True),
         ("IsFormulaColumn", ("T1 - Cells\nStanine",), True), ("IsFormulaColumn", ("T1 - Cells\nRaw Score",), False),
         ("IsFormulaColumn", ("Class",), False),
+        ("MarkRule", (35,), "a mark from 0 to 35, or A for absent"),
+        ("MarkRule", ("any",), "a mark of 0 or more, or A for absent"),
         ("FileNameOf", ("C:\\Data\\All Students.xlsx",), "All Students.xlsx"),
         ("FileNameOf", ("https://school.sharepoint.com/sites/Science/Shared Documents/export.xlsx",), "export.xlsx"),
         ("FileNameOf", ("/Users/staff/Downloads/export.csv",), "export.csv"),

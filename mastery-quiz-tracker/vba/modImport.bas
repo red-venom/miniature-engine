@@ -309,19 +309,26 @@ End Function
 ' Plan: work out every change before touching the workbook
 '==============================================================================
 Private Function BuildPlan(ByVal plan As Collection) As String
-    ' plan items: "U|year|row|pupil" (update) or "N|year|0|pupil" (new) or "M|year|row|0" (missing)
+    ' plan items: "U|year|row|pupil|how" (update; how = UPN or name), "N|year|0|pupil" (new),
+    ' "M|year|row|0" (not in the export) or "C|year|row|pupil" (check: see below)
     Dim y As Variant, lo As ListObject, rowCount As Long, r As Long, i As Long
-    Dim byUPN As Collection, byName As Collection, seen As Collection, matched() As Boolean
-    Dim upn As String, hit As Long, nNew As Long, nMoved As Long, nMissing As Long, nSame As Long
+    Dim byUPN As Collection, byName As Collection, byNameUPN As Collection, seen As Collection
+    Dim matched() As Boolean, upn As String, hit As Long, how As String, key As String
+    Dim nNew As Long, nMoved As Long, nMissing As Long, nSame As Long, nCheck As Long
     Dim summaryLine As String, dup As Boolean
 
     mDuplicates = 0
     Set seen = New Collection
     For Each y In YearNames()
         Set lo = YearTable(CStr(y))
+        If lo Is Nothing Then
+            BuildPlan = BuildPlan & y & ": its table was not found, so it is left as it is" & vbCrLf
+            GoTo NextYear
+        End If
         rowCount = lo.ListRows.Count
         Set byUPN = New Collection
         Set byName = New Collection
+        Set byNameUPN = New Collection
         If rowCount > 0 Then ReDim matched(1 To rowCount) Else ReDim matched(0 To 0)
         For r = 1 To rowCount
             upn = UCase$(TextOf(TableValue(lo, r, "UPN")))
@@ -330,6 +337,8 @@ Private Function BuildPlan(ByVal plan As Collection) As String
                 matched(r) = True                ' an empty row, not a student
             ElseIf Len(upn) > 0 Then
                 KeepFirst byUPN, "U" & upn, r
+                AddNameRow byNameUPN, NameKey(TextOf(TableValue(lo, r, "Preferred Last name")), _
+                                              TextOf(TableValue(lo, r, "Preferred First name"))), r
             Else
                 ' Only rows without a UPN are matched by name: a row with a different UPN is a
                 ' different student, however alike the names.
@@ -342,6 +351,7 @@ Private Function BuildPlan(ByVal plan As Collection) As String
         nMoved = 0
         nMissing = 0
         nSame = 0
+        nCheck = 0
         For i = 1 To mCount
             dup = False
             If Len(mPupils(i).UPN) > 0 Then
@@ -351,12 +361,28 @@ Private Function BuildPlan(ByVal plan As Collection) As String
                 If dup And mPupils(i).YearName = CStr(y) Then mDuplicates = mDuplicates + 1
             End If
             If mPupils(i).YearName = CStr(y) And Not dup Then
+                key = NameKey(mPupils(i).LastName, mPupils(i).FirstName)
                 hit = 0
+                how = "UPN"
                 If Len(mPupils(i).UPN) > 0 Then hit = FindKey(byUPN, "U" & UCase$(mPupils(i).UPN))
-                If hit = 0 Then hit = FindNameRow(byName, NameKey(mPupils(i).LastName, mPupils(i).FirstName), matched)
+                If hit = 0 Then
+                    hit = FindNameRow(byName, key, matched)
+                    how = "name"
+                End If
+                If hit = 0 And Len(mPupils(i).UPN) = 0 Then
+                    ' No UPN in the export, but a student with this name and a UPN is already
+                    ' here: probably the same child, possibly not. Report it; change nothing.
+                    r = FindNameRow(byNameUPN, key, matched)
+                    If r > 0 Then
+                        matched(r) = True
+                        plan.Add "C|" & y & "|" & r & "|" & i
+                        nCheck = nCheck + 1
+                        GoTo NextPupil
+                    End If
+                End If
                 If hit > 0 Then
                     matched(hit) = True
-                    plan.Add "U|" & y & "|" & hit & "|" & i
+                    plan.Add "U|" & y & "|" & hit & "|" & i & "|" & how
                     If StrComp(TextOf(TableValue(lo, hit, "Class")), mPupils(i).ClassName, vbTextCompare) <> 0 Then
                         nMoved = nMoved + 1
                     Else
@@ -367,6 +393,7 @@ Private Function BuildPlan(ByVal plan As Collection) As String
                     nNew = nNew + 1
                 End If
             End If
+NextPupil:
         Next i
         For r = 1 To rowCount
             If Not matched(r) Then
@@ -375,7 +402,9 @@ Private Function BuildPlan(ByVal plan As Collection) As String
             End If
         Next r
         summaryLine = y & ": " & nNew & " new, " & nMoved & " class changes, " & nMissing & " not in the export"
+        If nCheck > 0 Then summaryLine = summaryLine & ", " & nCheck & " to check"
         BuildPlan = BuildPlan & summaryLine & vbCrLf
+NextYear:
     Next y
     If mDuplicates > 0 Then
         BuildPlan = BuildPlan & mDuplicates & " rows in the export repeat a UPN and are ignored." & vbCrLf
@@ -435,10 +464,13 @@ Private Function ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String)
     Dim item As Variant, parts() As String, lo As ListObject, lr As ListRow
     Dim calc As Long, events As Boolean, y As Variant
     Dim moves As Collection, added As Collection, gone As Collection, p As Pupil, oldClass As String
+    Dim byName As Collection, checks As Collection
 
     Set moves = New Collection
     Set added = New Collection
     Set gone = New Collection
+    Set byName = New Collection
+    Set checks = New Collection
     calc = Application.Calculation
     events = Application.EnableEvents
     Application.ScreenUpdating = False
@@ -462,6 +494,15 @@ Private Function ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String)
                     moves.Add Array(parts(1), p.LastName & ", " & p.FirstName, p.UPN, oldClass, p.ClassName)
                 End If
                 WritePupil lr, p
+                If UBound(parts) >= 4 Then
+                    If parts(4) = "name" Then byName.Add Array(parts(1), p.LastName & ", " & p.FirstName, _
+                                                               p.UPN, p.ClassName, "")
+                End If
+            Case "C"
+                Set lr = lo.ListRows(CLng(parts(2)))
+                p = mPupils(CLng(parts(3)))
+                checks.Add Array(parts(1), p.LastName & ", " & p.FirstName, TextOf(FieldOf(lr, "UPN")), _
+                                 p.ClassName, "")
             Case "M"
                 Set lr = lo.ListRows(CLng(parts(2)))
                 gone.Add Array(parts(1), TextOf(FieldOf(lr, "Preferred Last name")) & ", " & _
@@ -483,7 +524,7 @@ Private Function ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String)
     For Each y In YearNames()
         SortByClass YearTable(CStr(y))
     Next y
-    WriteReport sourcePath, moves, added, gone
+    WriteReport sourcePath, moves, added, gone, byName, checks
 
     Application.Calculation = calc
     Application.EnableEvents = events
@@ -531,6 +572,7 @@ End Sub
 Private Sub SortByClass(ByVal lo As ListObject)
     ' Class by class, then by name: a Class filter then shows one unbroken block in the
     ' same order as a teacher's class list, so pasted marks land on the right students.
+    If lo Is Nothing Then Exit Sub
     If lo.DataBodyRange Is Nothing Then Exit Sub
     With lo.Sort
         .SortFields.Clear
@@ -556,8 +598,8 @@ Private Function BackupPath() As String
                  Format$(Now, "yyyy-mm-dd hhmm") & ").xlsm"
 End Function
 
-Private Sub WriteReport(ByVal sourcePath As String, ByVal moves As Collection, _
-                        ByVal added As Collection, ByVal gone As Collection)
+Private Sub WriteReport(ByVal sourcePath As String, ByVal moves As Collection, ByVal added As Collection, _
+                        ByVal gone As Collection, ByVal byName As Collection, ByVal checks As Collection)
     Dim ws As Worksheet, r As Long
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets(REPORT_SHEET)
@@ -576,6 +618,11 @@ Private Sub WriteReport(ByVal sourcePath As String, ByVal moves As Collection, _
     r = ReportSection(ws, r, "New students added", Array("Year group", "Student", "UPN", "Class", ""), added)
     r = ReportSection(ws, r, "Not in the export (kept - delete the row yourself if the student has left)", _
                       Array("Year group", "Student", "UPN", "Class", ""), gone)
+    r = ReportSection(ws, r, "Matched by name, because the tracker had no UPN for them (check these are " & _
+                      "the same students)", Array("Year group", "Student", "UPN", "Class", ""), byName)
+    r = ReportSection(ws, r, "Not changed: the export has no UPN for these students, but the tracker has a " & _
+                      "student with the same name and a UPN (check the MIS)", _
+                      Array("Year group", "Student", "UPN in the tracker", "Class in the export", ""), checks)
     ws.Columns("A:E").AutoFit
 End Sub
 

@@ -379,6 +379,12 @@ def avg_class(rng, x, vals):                             # AVERAGEIFS(vals, rng,
     return f"SUMPRODUCT({mask},{vals})/SUMPRODUCT({mask})"
 
 
+def xl_key(text):
+    """Sort key close to Excel's own: case ignored, and apostrophes and hyphens skipped
+    (Excel sorts O'Brien as OBrien), so Update students keeps the generator's order."""
+    return text.upper().replace("'", "").replace("-", ""), text.upper()
+
+
 def keep_text(cell):
     """Store a data string as text. openpyxl would otherwise write a name or class that
     starts with "=" as a live formula (the spreadsheet form of an injection attack)."""
@@ -620,7 +626,7 @@ class Builder:
         # Class by class (as Update students sorts), so a Class filter shows one unbroken block
         # in the same order as a teacher's class list; students with no class go last.
         self.students = {y: sorted((s for s in data.students if s.year == y),
-                                   key=lambda s: (not s.cls, s.cls.upper(), s.last.upper(), s.first.upper()))
+                                   key=lambda s: (not s.cls, xl_key(s.cls), xl_key(s.last), xl_key(s.first)))
                          for y in YEARS}
         self.tests = {y: [t for t in data.tests if t.year == y] for y in YEARS}
         for y, tests in self.tests.items():
@@ -1618,7 +1624,8 @@ class Builder:
                 "Type each student's mark in the test's Raw Score column. Type A for absent; leave the cell "
                 "empty if they have not sat it yet.",
                 "To paste marks, paste one class at a time, in the same order as the sheet. Excel also pastes "
-                "into rows that a filter hides, so a longer list would change another class's marks.",
+                "into rows that a filter hides, so a longer list would change another class's marks. Excel "
+                "sorts O'Brien as OBrien and Smith-Jones as SmithJones: check such names after pasting.",
                 "The Stanine column fills itself in. Do not type in the grey columns.",
                 "This works in Excel on the web too. Only the buttons need the desktop app.",
             ]),
