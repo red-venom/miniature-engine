@@ -97,8 +97,22 @@ def stanines(values):
     return out
 
 
+def fit_line(pairs):
+    """Least-squares line through (KS2 band, mean stanine), slope kept in 0..1; None if too few."""
+    n = len(pairs)
+    if n < gt.FIT_MIN_STUDENTS:
+        return None, None
+    sx, sy = sum(x for x, _ in pairs), sum(y for _, y in pairs)
+    sxx, sxy = sum(x * x for x, _ in pairs), sum(x * y for x, y in pairs)
+    den = n * sxx - sx * sx
+    if den == 0:
+        return None, None
+    slope = max(0.0, min(1.0, (n * sxy - sx * sy) / den))
+    return slope, (sy - slope * sx) / n
+
+
 def is_absent(v):
-    return isinstance(v, str) and v.strip().upper() == "A"
+    return isinstance(v, str) and v.upper() == "A"          # COUNTIF(range,"A"): any case, no trimming
 
 
 # ------------------------------------------------------------- read inputs
@@ -118,7 +132,10 @@ class YearModel:
         n = len(self.rows)
         self.sat = [sum(1 for t in tests if num(self.raw[t][i])) for i in range(n)]
         self.mean = [mean([self.stn[t][i] for t in tests]) for i in range(n)]
-        self.vs = [self.mean[i] - self.band[i] if self.mean[i] is not None and self.band[i] is not None
+        self.slope, self.intercept = fit_line([(self.band[i], self.mean[i]) for i in range(n)
+                                               if self.band[i] is not None and self.mean[i] is not None])
+        self.vs = [self.mean[i] - (self.intercept + self.slope * self.band[i])
+                   if self.slope is not None and self.mean[i] is not None and self.band[i] is not None
                    else None for i in range(n)]
         first = {}
         for c in self.cls:                      # Excel matches class names in any case
@@ -197,7 +214,7 @@ def check_year_sheets(inp, values):
         for i in range(len(m.rows)):
             r = i + 2
             exp = {"Avg KS2 Band": m.band[i], "Tests Sat": m.sat[i], "Mean Stanine": m.mean[i],
-                   "vs KS2 Band": m.vs[i]}
+                   "vs Expected": m.vs[i]}
             for h, e in exp.items():
                 if not same(e, v.get(f"{col[h]}{r}")):
                     bad.append((h, r, e, v.get(f"{col[h]}{r}")))
@@ -205,8 +222,23 @@ def check_year_sheets(inp, values):
                 c = get_column_letter(gt.FIRST_TEST_COL + 2 * k + 1)
                 if not same(m.stn[t][i], v.get(f"{c}{r}")):
                     bad.append((t, r, m.stn[t][i], v.get(f"{c}{r}")))
-        check(f"{gt.YEAR_NAME[y]}: KS2 bands, stanines, tests sat, mean stanine and vs KS2 "
-              f"({len(m.rows)} students, {len(m.tests)} tests)", not bad, str(bad[:5]))
+        check(f"{gt.YEAR_NAME[y]}: KS2 bands, stanines, tests sat, mean stanine and vs expected "
+              f"({len(m.rows)} students, {len(m.tests)} test{'' if len(m.tests) == 1 else 's'})",
+              not bad, str(bad[:5]))
+
+
+def check_settings(inp, values):
+    """The KS2 link shown for each year group is the slope of the fitted line (blank below 10 students)."""
+    v = values["Settings"]
+    bad = []
+    for i, y in enumerate(gt.YEARS):
+        m, got = inp.years[y], v.get(f"E{15 + i}")
+        want = m.slope if m.slope is not None else "too few results"
+        if not same(want, got):
+            bad.append((gt.YEAR_NAME[y], want, got))
+    fitted = sum(1 for y in gt.YEARS if inp.years[y].slope is not None)
+    check(f"Settings: KS2 link for each year group ({fitted} fitted, {5 - fitted} with too few results)",
+          not bad, str(bad))
 
 
 def check_register(inp, values):
@@ -225,10 +257,14 @@ def check_register(inp, values):
         absent = sum(1 for x in raw if is_absent(x))
         n = len(m.rows)
         nums = [x for x in raw if num(x)]
+        mx = rec["Max Marks"]
+        invalid = sum(1 for x in raw if x not in (None, "") and not (num(x) and 0 <= x <= mx)
+                      and not (isinstance(x, str) and x.upper() == "A"))
         exp = {"Students": n, "Sat": sat, "Absent": absent, "Not Entered": n - sat - absent,
                "Completion": (sat + absent) / n if n else None,
-               "Year Mean": mean(nums), "Year Mean %": mean(nums) / rec["Max Marks"] if nums else None,
-               "Year SD": statistics.pstdev(nums) if nums else None, "Check": "OK"}
+               "Year Mean": mean(nums), "Year Mean %": mean(nums) / mx if nums else None,
+               "Year SD": statistics.pstdev(nums) if nums else None, "Invalid": invalid,
+               "Check": "OK" if invalid == 0 else f"{invalid} mark(s) not valid: text, below 0 or above the maximum"}
         for h, e in exp.items():
             if not same(e, v.get(f"{cols[h]}{r}")):
                 bad.append((rec["Test Name"], h, e, v.get(f"{cols[h]}{r}")))
@@ -396,6 +432,12 @@ def check_dashboard(inp, values, sel, label):
         for c, e in exp.items():
             if not same(e, v.get(f"{c}{r}")):
                 bad.append(("grid", name, c, e, v.get(f"{c}{r}")))
+        for j, cls in enumerate(m.classes[:gt.CLASS_SLOTS]):      # completion that greys out grid cells
+            ids = m.idx(cls)
+            want = sum(1 for i in ids if num(rr[i]) or is_absent(rr[i])) / len(ids)
+            got = values["Calc"].get(f"{get_column_letter(75 + j)}{3 + k}")
+            if not same(want, got):
+                bad.append(("class completion", name, cls, want, got))
     if v.get(f"B{trow + 1 + len(inp.tests_of(y))}") not in (None, ""):
         bad.append(("grid has extra rows",))
     check(f"Dashboard [{label}]: tiles, class table, stanine spread, groups and "
@@ -410,7 +452,7 @@ def check_watch(inp, values, year_name):
     for i in range(len(m.rows)):
         reason = None
         if m.vs[i] is not None and m.sat[i] >= inp.wl_min and m.vs[i] <= -inp.wl_gap:
-            reason, key = "Below KS2 starting point", m.vs[i]
+            reason, key = gt.BELOW_EXPECTED, m.vs[i]
         elif m.band[i] is None and m.mean[i] is not None and m.sat[i] >= inp.wl_min and m.mean[i] <= inp.wl_low:
             reason, key = "Low results, no KS2 data", 100 + m.mean[i]
         if reason:
@@ -594,7 +636,7 @@ def check_vba_in_libreoffice(path):
 
 
 HELPERS = {"modTracker.bas": ["CleanText", "TestNameFrom", "RawHeader", "StanineHeader", "StanineFormulaFor",
-                              "ParseMaxMark", "ParseUkDate"],
+                              "ParseMaxMark", "ParseUkDate", "MarkIsValid", "ShownValue", "IsFormulaColumn"],
            "modImport.bas": ["TextOf", "YearFromText", "NumOrEmpty", "AvgKS2", "PPFlag", "FileNameOf"]}
 
 
@@ -603,7 +645,8 @@ def helper_module_source():
     out = []
     for fname, names in HELPERS.items():
         src = (HERE / "vba" / fname).read_text()
-        out += re.findall(r'^Public Const (?:RAW_SUFFIX|STANINE_SUFFIX|STANINE_FORMULA) .*$', src, re.M)
+        out += re.findall(r'^Public Const (?:RAW_SUFFIX|STANINE_SUFFIX|STANINE_FORMULA|FORMULA_COLUMNS) .*$',
+                          src, re.M)
         for name in names:
             m = re.search(rf"^(?:Public|Private) Function {name}\(.*?^End Function$", src, re.M | re.S)
             out.append(re.sub(r"^Private ", "Public ", m.group(0)))
@@ -651,6 +694,7 @@ def check_vba_helpers(tmp):
         ("TestNameFrom", ("4C09", ""), "4C09"),
         ("CleanText", ('  a [b] #c\n d|e\'s "x" ',), "a b c des x"),
         ("CleanText", ("Forces ~ *all* types?",), "Forces all types"),
+        ("CleanText", ("=+ -Cells - 2",), "Cells - 2"), ("CleanText", ("- ",), ""),
         ("RawHeader", ("T1 - Cells",), "T1 - Cells\nRaw Score"),
         ("StanineHeader", ("T1 - Cells",), "T1 - Cells\nStanine"),
         ("StanineFormulaFor", ("tblY7", "T1\nRaw Score"),
@@ -666,6 +710,14 @@ def check_vba_helpers(tmp):
         ("YearFromText", ("Y10",), "Year 10"), ("YearFromText", ("13",), ""), ("YearFromText", ("",), ""),
         ("AvgKS2", (104, "N"), 104), ("AvgKS2", (None, None), "No Data"), ("AvgKS2", (100, 109), 104.5),
         ("AvgKS2", ("", 98), 98), ("PPFlag", ("Yes",), "Y"), ("PPFlag", ("no",), "N"), ("PPFlag", ("",), ""),
+        ("MarkIsValid", (12, 35), True), ("MarkIsValid", (35, 35), True), ("MarkIsValid", (35.5, 35), False),
+        ("MarkIsValid", (-1, 35), False), ("MarkIsValid", ("A", 35), True), ("MarkIsValid", ("a", 35), True),
+        ("MarkIsValid", (" A", 35), False), ("MarkIsValid", ("12", 35), False), ("MarkIsValid", (None, 35), True),
+        ("MarkIsValid", (500, "any"), True), ("MarkIsValid", (-2, "any"), False),
+        ("ShownValue", ("12",), '"12" (text)'), ("ShownValue", (36,), "36"),
+        ("IsFormulaColumn", ("Mean Stanine",), True), ("IsFormulaColumn", ("vs expected",), True),
+        ("IsFormulaColumn", ("T1 - Cells\nStanine",), True), ("IsFormulaColumn", ("T1 - Cells\nRaw Score",), False),
+        ("IsFormulaColumn", ("Class",), False),
         ("FileNameOf", ("C:\\Data\\All Students.xlsx",), "All Students.xlsx"),
         ("FileNameOf", ("https://school.sharepoint.com/sites/Science/Shared Documents/export.xlsx",), "export.xlsx"),
         ("FileNameOf", ("/Users/staff/Downloads/export.csv",), "export.csv"),
@@ -720,6 +772,7 @@ def run_value_checks(path, variants, tmp):
         if n == 0:
             check_no_errors(values)
             check_year_sheets(inp, values)
+            check_settings(inp, values)
             check_register(inp, values)
             check_start(inp, values)
             check_overview(inp, values)
@@ -755,6 +808,14 @@ def edge_case_workbook(out):
         S("E005", "Eve", "Eli", 7, "F", "N", "N", 100.0, "No Data", "7B/Sc1"),
         S("E006", "Fox", "Fay", 7, "M", "N", "N", 97.0, 101.0, "7a/sc1"),
         S("", "Gray", "Gus", 7, "M", "N", "Y", 99.0, 96.0, "7B/Sc1"),
+        S("E007", "Irwin", "Ivy", 7, "F", "N", "N", 96.0, 92.0, "7A/Sc1"),
+        S("E008", "Joyce", "Jay", 7, "M", "N", "Y", 94.0, 95.0, "7B/Sc1"),
+        S("E009", "Knox", "Kai", 7, "M", "N", "N", 98.0, 98.0, "7A/Sc1"),
+        S("E010", "Lowe", "Lia", 7, "F", "K", "N", 92.0, 102.0, "7B/Sc1"),
+        S("E011", "Moss", "Max", 7, "M", "N", "N", 97.0, 104.0, "7A/Sc1"),
+        S("E012", "Nash", "Nia", 7, "F", "N", "Y", 95.0, 107.0, "7B/Sc1"),
+        S("E013", "Owen", "Oli", 7, "M", "N", "N", 99.0, 109.0, "7A/Sc1"),
+        S("E014", "Pike", "Pia", 7, "F", "N", "N", 93.0, 111.0, "7B/Sc1"),
         S("E101", "Hale", "Hana", 8, "F", "N", "N", 96.0, 104.0, "8A/Sc1"),
         S("E102", "Iqbal", "Isa", 8, "M", "K", "Y", 91.0, 98.0, "8A/Sc2"),
         S("E201", "Jones", "Jo", 9, "F", "", "N", 94.0, 102.0, "9A/Sc1"),
@@ -763,12 +824,16 @@ def edge_case_workbook(out):
     T = gt.Test
     tests = [
         T(7, "E01", "Mixed", 20, dt.date(2026, 9, 20),
-          {"E001": 12, "E002": "a", "E003": 15, "E004": 5, "E005": 4, "E006": 9, "GRAY|GUS": 0}),
+          {"E001": 12, "E002": "a", "E003": 15, "E004": 5, "E005": 4, "E006": 9, "GRAY|GUS": 0,
+           "E007": 6, "E008": 8, "E009": 10, "E010": 11, "E011": 13, "E012": 14, "E013": 16, "E014": 18}),
         T(7, "E02", "One score", 10, None, {"E001": 7}),
         T(7, "E04", "Second", 30, dt.date(2026, 10, 4),
-          {"E001": 20, "E003": 25, "E004": 3, "E005": 2, "E006": 18, "GRAY|GUS": 14}),
+          {"E001": 20, "E003": 25, "E004": 3, "E005": 2, "E006": 18, "GRAY|GUS": 14,
+           "E007": 9, "E008": "A", "E009": 15, "E010": 17, "E011": 19, "E012": 22, "E013": 24, "E014": 27}),
         T(7, "", "Just Added", 25, None, {}),
         T(8, "E81", "Two classes", 30, dt.date(2026, 10, 1), {"E101": 21, "E102": 30}),
+        T(9, "E91", "Typed as text", 20, None, {"E201": "15"}),
+        T(11, "E11", "Out of range", 10, None, {"E301": 12}),
     ]
     data = gt.Dataset(students, tests, "2026-27", "Test school", demo=True, dashboard_year=7, watch_year=7,
                       dashboard_test="Just Added")
@@ -810,7 +875,7 @@ def main():
         reasons = {m7.rows[i]["Preferred Last name"] for i in range(len(m7.rows))
                    if (m7.vs[i] is not None and m7.sat[i] >= 2 and m7.vs[i] <= -1.5)
                    or (m7.band[i] is None and m7.mean[i] is not None and m7.sat[i] >= 2 and m7.mean[i] <= 3)}
-        check("edge: both watch-list rules are exercised (Dean: below KS2; Eve: no KS2, low results)",
+        check("edge: both watch-list rules are exercised (Dean: below expected; Eve: no KS2, low results)",
               {"Dean", "Eve"} <= reasons, str(reasons))
     print(f"\nAll {PASSED['n']} checks passed.")
 

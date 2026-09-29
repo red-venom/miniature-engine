@@ -367,7 +367,13 @@ def _add_slicers(pkg, sheet_name, sheet_part, specs, table_ids, counter):
     for spec in specs:
         counter[0] += 1
         n = counter[0]
-        table_id = table_ids[spec.table][0]
+        table_id, table_part = table_ids[spec.table]
+        # x15:tableSlicerCache/@column is the table column's id, not its position.
+        ids = {tc.get("name"): tc.get("id") for tc in pkg.xml(table_part).iter(f"{{{NS['main']}}}tableColumn")}
+        if spec.column_name:
+            if spec.column_name not in ids:
+                raise ValueError(f"slicer {spec.name}: no column {spec.column_name!r} in {spec.table}")
+            spec.column_id = int(ids[spec.column_name])
         cache_xml = (
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
             f'<slicerCacheDefinition xmlns="{NS["x14"]}" xmlns:mc="{NS["mc"]}" mc:Ignorable="x xr10" '
@@ -434,7 +440,7 @@ def vba_modules(sheet_codenames):
         return (VBA_DIR / name).read_text(encoding="utf-8")
 
     sheet_code = {"shDashboard": src("shDashboard.vba")}
-    mods = [vba_project.Module("ThisWorkbook", "document", "", base=vba_project.WORKBOOK_BASE)]
+    mods = [vba_project.Module("ThisWorkbook", "document", src("ThisWorkbook.vba"), base=vba_project.WORKBOOK_BASE)]
     for code in sheet_codenames:
         mods.append(vba_project.Module(code, "document", sheet_code.get(code, ""),
                                        base=vba_project.WORKSHEET_BASE))

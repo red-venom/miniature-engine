@@ -26,6 +26,7 @@ Public Const TEST_FILL_EVEN As Long = &HD9E0E1
 Public Const HEADER_INK As Long = &H0B0B0B
 Public Const STANINE_FILL As Long = &HF5F5F4
 Public Const TEST_COL_WIDTH As Double = 6.7
+Public Const FORMULA_COLUMNS As String = "Avg KS2 Band|Tests Sat|Mean Stanine|vs Expected"
 '------------------------------------------------------------------------------
 
 Public gStartYear As String          ' year group the form opens on
@@ -132,7 +133,11 @@ Public Function CleanText(ByVal s As String) As String
     Do While InStr(s, "  ") > 0
         s = Replace(s, "  ", " ")
     Loop
-    CleanText = Trim$(s)
+    s = Trim$(s)
+    Do While Len(s) > 0 And InStr("=+- ", Left$(s, 1)) > 0     ' would make a heading a formula
+        s = Mid$(s, 2)
+    Loop
+    CleanText = s
 End Function
 
 Public Function TestNameFrom(ByVal code As String, ByVal title As String) As String
@@ -483,6 +488,153 @@ Public Function ScoreCounts(ByVal yearName As String, ByVal testName As String, 
         End If
     Next cell
     ScoreCounts = True
+End Function
+
+'==============================================================================
+' Guarding the year sheets (called by Workbook_SheetChange in ThisWorkbook)
+'==============================================================================
+Public Function ChangeProblem(ByVal lo As ListObject, ByVal hit As Range) As String
+    ' Why a change to a year table's cells must be undone, or "" when it is fine.
+    Dim lc As ListColumn, part As Range, cell As Range, maxMark As Variant, names As Range
+    Dim yearName As String, testName As String, suffix As String
+
+    If WasPaste() And HiddenRowIn(hit) Then
+        ChangeProblem = "The pasted cells reached rows that a filter (such as the Class slicer) was " & _
+                        "hiding, so they went into other students' rows." & vbCrLf & vbCrLf & _
+                        "Paste one class at a time, in the same order as the sheet (surname, then " & _
+                        "first name), or type the marks."
+        Exit Function
+    End If
+    For Each lc In lo.ListColumns
+        If IsFormulaColumn(lc.Name) Then
+            Set part = Application.Intersect(hit, lc.DataBodyRange)
+            If Not part Is Nothing Then
+                If Not (part.HasFormula = True) Then
+                    ChangeProblem = "The grey columns, such as """ & Replace(lc.Name, vbLf, " ") & _
+                                    """, work themselves out, so they cannot be typed over, pasted " & _
+                                    "over or cleared." & vbCrLf & vbCrLf & _
+                                    "To remove a student who has left, right-click their row and " & _
+                                    "choose Delete > Table Rows."
+                    Exit Function
+                End If
+            End If
+        End If
+    Next lc
+    yearName = YearOfSheet(lo.Parent)
+    suffix = vbLf & RAW_SUFFIX
+    Set names = lo.ListColumns("Preferred Last name").DataBodyRange
+    For Each lc In lo.ListColumns
+        If Right$(lc.Name, Len(suffix)) = suffix Then
+            Set part = Application.Intersect(hit, lc.DataBodyRange)
+            If Not part Is Nothing Then
+                testName = Left$(lc.Name, Len(lc.Name) - Len(suffix))
+                maxMark = MaxMarkOf(yearName, testName)
+                For Each cell In part.Cells
+                    If Not IsEmpty(cell.Value) And _
+                       Len(Trim$(CStr(names.Cells(cell.Row - names.Row + 1, 1).Value))) = 0 Then
+                        ChangeProblem = "A mark went into a row with no student in it (row " & cell.Row & _
+                                        "). This happens when pasted marks run past the end of the table." & _
+                                        vbCrLf & vbCrLf & "Type the student's name first, or paste a " & _
+                                        "list that matches the students on the sheet."
+                        Exit Function
+                    End If
+                    If Not MarkIsValid(cell.Value, maxMark) Then
+                        ChangeProblem = ShownValue(cell.Value) & " in " & cell.Address(False, False) & _
+                                        " (" & testName & ") is not a mark from 0 to " & CStr(maxMark) & _
+                                        ", or A for absent." & vbCrLf & vbCrLf & _
+                                        "If you pasted marks, check that they are numbers (not text or " & _
+                                        "dates) and that they are in the right column."
+                        Exit Function
+                    End If
+                Next cell
+            End If
+        End If
+    Next lc
+End Function
+
+Public Function MarkIsValid(ByVal v As Variant, ByVal maxMark As Variant) As Boolean
+    ' The same rule as the cells' score check: blank, A or a (absent), or a number from 0
+    ' to the maximum mark. Text that looks like a number, dates and errors are refused,
+    ' because the stanine formulas would skip them.
+    Select Case VarType(v)
+        Case vbEmpty
+            MarkIsValid = True
+        Case vbString
+            MarkIsValid = (UCase$(v) = "A")
+        Case vbDouble, vbInteger, vbLong, vbSingle, vbCurrency, vbDecimal
+            MarkIsValid = (v >= 0)
+            If MarkIsValid And IsNumeric(maxMark) Then MarkIsValid = (v <= CDbl(maxMark))
+    End Select
+End Function
+
+Public Function ShownValue(ByVal v As Variant) As String
+    ' A cell value as the user would recognise it in a message.
+    Select Case VarType(v)
+        Case vbError
+            ShownValue = "An error value"
+        Case vbString
+            ShownValue = """" & v & """ (text)"
+        Case vbDate
+            ShownValue = "The date " & Format$(v, "dd/mm/yyyy")
+        Case vbBoolean
+            ShownValue = UCase$(CStr(v))
+        Case Else
+            ShownValue = CStr(v)
+    End Select
+End Function
+
+Public Function IsFormulaColumn(ByVal header As String) As Boolean
+    Dim f As Variant
+    If Right$(header, Len(STANINE_SUFFIX) + 1) = vbLf & STANINE_SUFFIX Then
+        IsFormulaColumn = True
+        Exit Function
+    End If
+    For Each f In Split(FORMULA_COLUMNS, "|")
+        If StrComp(header, CStr(f), vbTextCompare) = 0 Then
+            IsFormulaColumn = True
+            Exit Function
+        End If
+    Next f
+End Function
+
+Private Function MaxMarkOf(ByVal yearName As String, ByVal testName As String) As Variant
+    ' The register's maximum mark, or "any" when the test has no register row.
+    Dim lr As ListRow
+    MaxMarkOf = "any"
+    Set lr = FindRegisterRow(yearName, testName)
+    If lr Is Nothing Then Exit Function
+    If IsNumeric(FieldOf(lr, "Max Marks")) And Not IsEmpty(FieldOf(lr, "Max Marks")) Then
+        MaxMarkOf = CDbl(FieldOf(lr, "Max Marks"))
+    End If
+End Function
+
+Private Function HiddenRowIn(ByVal rng As Range) As Boolean
+    Dim area As Range, r As Range
+    For Each area In rng.Areas
+        If area.Rows.Count > 1 Then
+            For Each r In area.Rows
+                If r.EntireRow.Hidden Then
+                    HiddenRowIn = True
+                    Exit Function
+                End If
+            Next r
+        End If
+    Next area
+End Function
+
+Private Function WasPaste() As Boolean
+    ' A paste from Excel leaves the copy marquee on; a paste from another program shows
+    ' as "Paste" in the Undo list (English Excel). Sorting and clearing are not pastes:
+    ' Excel applies those to the rows left visible by a filter.
+    Dim last As String
+    If Application.CutCopyMode <> False Then
+        WasPaste = True
+        Exit Function
+    End If
+    On Error Resume Next
+    last = Application.CommandBars("Standard").Controls("&Undo").List(1)
+    On Error GoTo 0
+    WasPaste = (LCase$(Left$(last, 5)) = "paste")
 End Function
 
 '==============================================================================

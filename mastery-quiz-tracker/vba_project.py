@@ -482,6 +482,10 @@ def _project_stream(project_name, modules, seed):
     for m in modules:
         if m.kind == "standard":
             lines.append(f"Module={m.name}")
+    if any(m.kind == "form" for m in modules):
+        # [MS-OVBA] 2.3.1.8: the Microsoft Forms designer package, which Excel writes before
+        # the first BaseClass line of a project that has a UserForm.
+        lines.append("Package={AC9F2F90-E877-11CE-9F68-00AA00574A4F}")
     for m in modules:
         if m.kind == "form":
             lines.append(f"BaseClass={m.name}")

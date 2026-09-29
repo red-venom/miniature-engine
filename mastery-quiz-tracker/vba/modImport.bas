@@ -157,6 +157,7 @@ Private Function ReadPupils(ByRef data As Variant) As String
     Dim cUPN As Long, cLast As Long, cFirst As Long, cYear As Long, cAtt As Long
     Dim cPP As Long, cSEN As Long, cClass As Long, cSex As Long, cMaths As Long, cRead As Long
     Dim p As Pupil, blank As Pupil, missing As String, mathsVal As Variant, readVal As Variant
+    Dim withUPN As Long
 
     mCount = 0
     Erase mPupils
@@ -222,10 +223,17 @@ Private Function ReadPupils(ByRef data As Variant) As String
                 If cRead > 0 Then readVal = data(r, cRead)
                 p.KS2 = AvgKS2(mathsVal, readVal)
             End If
+            If Len(p.UPN) > 0 Then withUPN = withUPN + 1
             mCount = mCount + 1
             mPupils(mCount) = p
         End If
     Next r
+    If mCount > 0 And withUPN = 0 Then
+        ' Without UPNs every student would look new and be added a second time.
+        ReadPupils = "The UPN column in that export is empty. Export the students again with their " & _
+                     "UPNs: the tracker uses them to recognise each student."
+        mCount = 0
+    End If
 End Function
 
 Private Function HeaderCol(ByRef data As Variant, ByVal r As Long, ByVal patterns As String) As Long
@@ -320,9 +328,12 @@ Private Function BuildPlan(ByVal plan As Collection) As String
             If Len(upn) = 0 And Len(TextOf(TableValue(lo, r, "Preferred Last name"))) = 0 And _
                Len(TextOf(TableValue(lo, r, "Preferred First name"))) = 0 Then
                 matched(r) = True                ' an empty row, not a student
+            ElseIf Len(upn) > 0 Then
+                KeepFirst byUPN, "U" & upn, r
             Else
-                If Len(upn) > 0 Then KeepFirst byUPN, "U" & upn, r
-                KeepFirst byName, NameKey(TextOf(TableValue(lo, r, "Preferred Last name")), _
+                ' Only rows without a UPN are matched by name: a row with a different UPN is a
+                ' different student, however alike the names.
+                AddNameRow byName, NameKey(TextOf(TableValue(lo, r, "Preferred Last name")), _
                                            TextOf(TableValue(lo, r, "Preferred First name"))), r
             End If
         Next r
@@ -342,17 +353,7 @@ Private Function BuildPlan(ByVal plan As Collection) As String
             If mPupils(i).YearName = CStr(y) And Not dup Then
                 hit = 0
                 If Len(mPupils(i).UPN) > 0 Then hit = FindKey(byUPN, "U" & UCase$(mPupils(i).UPN))
-                If hit = 0 Then
-                    hit = FindKey(byName, NameKey(mPupils(i).LastName, mPupils(i).FirstName))
-                    If hit > 0 Then
-                        upn = TextOf(TableValue(lo, hit, "UPN"))
-                        If Len(upn) > 0 And Len(mPupils(i).UPN) > 0 And _
-                           StrComp(upn, mPupils(i).UPN, vbTextCompare) <> 0 Then hit = 0
-                    End If
-                End If
-                If hit > 0 Then
-                    If matched(hit) Then hit = 0
-                End If
+                If hit = 0 Then hit = FindNameRow(byName, NameKey(mPupils(i).LastName, mPupils(i).FirstName), matched)
                 If hit > 0 Then
                     matched(hit) = True
                     plan.Add "U|" & y & "|" & hit & "|" & i
@@ -379,6 +380,31 @@ Private Function BuildPlan(ByVal plan As Collection) As String
     If mDuplicates > 0 Then
         BuildPlan = BuildPlan & mDuplicates & " rows in the export repeat a UPN and are ignored." & vbCrLf
     End If
+End Function
+
+Private Sub AddNameRow(ByVal col As Collection, ByVal key As String, ByVal r As Long)
+    ' Two students can share a name, so each name keeps a numbered list of rows.
+    Dim k As Long
+    k = 1
+    Do While FindKey(col, key & "#" & k) > 0
+        k = k + 1
+    Loop
+    col.Add r, key & "#" & k
+End Sub
+
+Private Function FindNameRow(ByVal col As Collection, ByVal key As String, ByRef matched() As Boolean) As Long
+    ' The first row with this name that no other student in the export has claimed.
+    Dim k As Long, r As Long
+    k = 1
+    Do
+        r = FindKey(col, key & "#" & k)
+        If r = 0 Then Exit Function
+        If Not matched(r) Then
+            FindNameRow = r
+            Exit Function
+        End If
+        k = k + 1
+    Loop
 End Function
 
 Private Sub KeepFirst(ByVal col As Collection, ByVal key As String, ByVal value As Long)
@@ -455,7 +481,7 @@ Private Function ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String)
         End If
     Next item
     For Each y In YearNames()
-        SortByName YearTable(CStr(y))
+        SortByClass YearTable(CStr(y))
     Next y
     WriteReport sourcePath, moves, added, gone
 
@@ -502,10 +528,14 @@ Private Sub SetCell(ByVal lr As ListRow, ByVal colName As String, ByVal v As Var
     PutValue lr.Range.Cells(1, lr.Parent.ListColumns(colName).Index), v   ' "" clears the cell
 End Sub
 
-Private Sub SortByName(ByVal lo As ListObject)
+Private Sub SortByClass(ByVal lo As ListObject)
+    ' Class by class, then by name: a Class filter then shows one unbroken block in the
+    ' same order as a teacher's class list, so pasted marks land on the right students.
     If lo.DataBodyRange Is Nothing Then Exit Sub
     With lo.Sort
         .SortFields.Clear
+        .SortFields.Add Key:=lo.ListColumns("Class").DataBodyRange, _
+                        SortOn:=xlSortOnValues, Order:=xlAscending
         .SortFields.Add Key:=lo.ListColumns("Preferred Last name").DataBodyRange, _
                         SortOn:=xlSortOnValues, Order:=xlAscending
         .SortFields.Add Key:=lo.ListColumns("Preferred First name").DataBodyRange, _

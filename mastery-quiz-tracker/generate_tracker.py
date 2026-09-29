@@ -9,7 +9,7 @@ One workbook holds every year group:
 * Overview           - how every class in every year group is doing.
 * Dashboard          - one year group: each test for the year and each class,
                        a test drill-down, stanine spread, group gaps and a trend.
-* Watch List         - students working well below their KS2 starting point.
+* Watch List         - students working well below what their KS2 results predict.
 * Start / Settings   - instructions, the stanine key, class teachers, rules.
 
 The Manage tests form (add / edit / remove), the student update from a new
@@ -105,9 +105,10 @@ FIXED = [  # (header, width, number format)
     ("Class", 15.5, "General"),
     ("Tests Sat", 5.8, "0"),
     ("Mean Stanine", 6.8, "0.0"),
-    ("vs KS2 Band", 6.8, "+0.0;-0.0;0.0"),
+    ("vs Expected", 6.8, "+0.0;-0.0;0.0"),
 ]
-FORMULA_COLS = {"Avg KS2 Band", "Tests Sat", "Mean Stanine", "vs KS2 Band"}
+FORMULA_COLS = {"Avg KS2 Band", "Tests Sat", "Mean Stanine", "vs Expected"}
+assert FORMULA_COLS == set(VBA["FORMULA_COLUMNS"].split("|")), "keep FORMULA_COLUMNS in modTracker.bas in step"
 assert len(FIXED) + 1 == FIRST_TEST_COL, "fixed columns must end just before FIRST_TEST_COL"
 FIRST_TEST = get_column_letter(FIRST_TEST_COL)          # N
 LAST_TEST = "ZZ"                                        # room for 344 tests per year
@@ -116,6 +117,8 @@ MAX_STUDENTS = 600       # helper rows per year on the Calc sheet
 MAX_TESTS = 60           # tests per year shown on the Dashboard
 CLASS_SLOTS = 8          # classes per year shown on the dashboards
 WATCH_ROWS = 50
+FIT_MIN_STUDENTS = 10    # students with a KS2 band and a mean stanine before 'vs Expected' shows
+BELOW_EXPECTED = "Below expected for KS2"
 
 STANINE_Z = [-99, -1.75, -1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75]
 EXPECTED_PCT = [4, 7, 12, 17, 20, 17, 12, 7, 4]
@@ -281,9 +284,21 @@ def mean_stanine_formula(row):
             f'${FIRST_TEST}{row}:${LAST_TEST}{row}),"")')
 
 
-def vs_ks2_formula(t):
-    return (f'IF(AND(ISNUMBER({tr(t, "Mean Stanine")}),ISNUMBER({tr(t, "Avg KS2 Band")})),'
-            f'{tr(t, "Mean Stanine")}-{tr(t, "Avg KS2 Band")},"")')
+def fit_names(t):
+    """Names of the year group's fitted line: expected mean stanine = intercept + slope x KS2 band."""
+    return f"Slope{t[3:]}", f"Intercept{t[3:]}"                 # tblY7 -> SlopeY7, InterceptY7
+
+
+def vs_expected_formula(t):
+    """Mean stanine minus the mean stanine of students with the same KS2 band in this year group.
+
+    A plain 'mean stanine - KS2 band' is biased by regression to the mean: high KS2 bands
+    look like under-performance and bands 1-2 can never fall 1.5 below. The fitted line
+    (build_fit) removes that bias; it is blank until ten students have both numbers.
+    """
+    slope, icpt = fit_names(t)
+    ms, kb = tr(t, "Mean Stanine"), tr(t, "Avg KS2 Band")
+    return f'IF(AND(ISNUMBER({ms}),ISNUMBER({kb}),ISNUMBER({slope})),{ms}-({icpt}+{slope}*{kb}),"")'
 
 
 # --------------------------------------------------------------------- data
@@ -335,11 +350,20 @@ class Dataset:
     dashboard_measure: str = "Mean %"
 
 
+def keep_text(cell):
+    """Store a data string as text. openpyxl would otherwise write a name or class that
+    starts with "=" as a live formula (the spreadsheet form of an injection attack)."""
+    if isinstance(cell.value, str):
+        cell.data_type = "s"
+    return cell
+
+
 def clean_text(s):
     """Same rule as CleanText in vba/modTracker.bas: no characters that break table formulas."""
     s = re.sub(r"[\r\n\t]", " ", str(s or ""))
     s = re.sub(r"[\[\]#'@\"|~*?]", "", s)
-    return re.sub(r" {2,}", " ", s).strip()
+    s = re.sub(r" {2,}", " ", s).strip()
+    return re.sub(r"^[=+\- ]+", "", s)          # a leading = + or - would make a heading a formula
 
 
 def ks2_average(maths, reading):
@@ -501,7 +525,9 @@ def demo_teachers(seed=7):
     return {(y, c): rnd.choice(DEMO_TEACHERS) for y in YEARS for c in DEMO_CLASSES[y]}
 
 
-def demo_data(academic_year, seed=2026):
+def demo_data(academic_year, seed=2031):
+    # The seed is one whose made-up students share no full name with the pupils in the
+    # school's real export, so the public demo cannot be mistaken for a real child's record.
     rnd = random.Random(seed)
     students, tests = [], []
     start = int(academic_year[:4])
@@ -560,8 +586,11 @@ class Builder:
         props.creator = props.lastModifiedBy = "Mastery Quiz Tracker generator"
         props.keywords = "stanine; mastery quiz; KS3; KS4; science"
         self.extras = xlsm_package.Extras()
+        # Class by class (as Update students sorts), so a Class filter shows one unbroken block
+        # in the same order as a teacher's class list; students with no class go last.
         self.students = {y: sorted((s for s in data.students if s.year == y),
-                                   key=lambda s: (s.last.upper(), s.first.upper())) for y in YEARS}
+                                   key=lambda s: (not s.cls, s.cls.upper(), s.last.upper(), s.first.upper()))
+                         for y in YEARS}
         self.tests = {y: [t for t in data.tests if t.year == y] for y in YEARS}
         for y, tests in self.tests.items():
             names = [t.name.upper() for t in tests]
@@ -611,6 +640,7 @@ class Builder:
             ws.sheet_properties.tabColor = colour
 
         self.build_calc_lists()
+        self.build_fit()
         for y in YEARS:
             self.build_year(y)
         self.build_register()
@@ -646,14 +676,14 @@ class Builder:
 
         ws.row_dimensions[1].height = 168
         for c, h in enumerate(headers, start=1):
-            cell = ws.cell(1, c, h)
+            cell = keep_text(ws.cell(1, c, h))
             cell.border = BOX
             if c <= 3:
                 cell.font = font(9, True, WHITE)
                 cell.fill = fill(NAVY)
                 cell.alignment = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
             elif c <= len(FIXED):
-                summary = h in ("Tests Sat", "Mean Stanine", "vs KS2 Band")
+                summary = h in ("Tests Sat", "Mean Stanine", "vs Expected")
                 cell.font = font(9, True, WHITE)
                 cell.fill = fill(BLUE_500 if summary else NAVY)
                 cell.alignment = Alignment(horizontal="center", vertical="bottom",
@@ -678,9 +708,11 @@ class Builder:
             r = i + 2
             values = [s.upn or None, s.last or None, s.first or None, s.sex or None, s.sen or None,
                       s.pp or None, s.att, s.ks2 if s.last else None, "=" + ks2_band_formula(t), s.cls or None,
-                      "=" + tests_sat_formula(t, r), "=" + mean_stanine_formula(r), "=" + vs_ks2_formula(t)]
+                      "=" + tests_sat_formula(t, r), "=" + mean_stanine_formula(r), "=" + vs_expected_formula(t)]
             for c, v in enumerate(values, start=1):
                 cell = ws.cell(r, c, v)
+                if FIXED[c - 1][0] not in FORMULA_COLS:
+                    keep_text(cell)
                 cell.font = body_font
                 cell.number_format = FIXED[c - 1][2]
                 if c >= 4:
@@ -690,7 +722,7 @@ class Builder:
             for k, test in enumerate(tests):
                 rc = FIRST_TEST_COL + 2 * k
                 v = test.scores.get(s.key)
-                raw = ws.cell(r, rc, v)
+                raw = keep_text(ws.cell(r, rc, v))
                 raw.font = body_font
                 raw.alignment = CENTER
                 st = ws.cell(r, rc + 1, "=" + stanine_formula(t, raw_header(test.name)))
@@ -710,8 +742,8 @@ class Builder:
                 tc.calculatedColumnFormula = TableFormula(attr_text=tests_sat_formula(t, 2))
             elif h == "Mean Stanine":
                 tc.calculatedColumnFormula = TableFormula(attr_text=mean_stanine_formula(2))
-            elif h == "vs KS2 Band":
-                tc.calculatedColumnFormula = TableFormula(attr_text=vs_ks2_formula(t))
+            elif h == "vs Expected":
+                tc.calculatedColumnFormula = TableFormula(attr_text=vs_expected_formula(t))
             elif h.endswith("\n" + STANINE_SUFFIX):
                 raw_name = h[: -len(STANINE_SUFFIX)] + RAW_SUFFIX
                 tc.calculatedColumnFormula = TableFormula(attr_text=stanine_formula(t, raw_name))
@@ -729,7 +761,7 @@ class Builder:
         for h, (lo_, hi_) in icon_col.items():
             col = get_column_letter(headers.index(h) + 1)
             ws.conditional_formatting.add(f"{col}2:{col}{last_row}", traffic_lights(lo_, hi_))
-        col = get_column_letter(headers.index("vs KS2 Band") + 1)
+        col = get_column_letter(headers.index("vs Expected") + 1)
         ws.conditional_formatting.add(f"{col}2:{col}{last_row}", arrows())
         for k, test in enumerate(tests):
             raw_col = get_column_letter(FIRST_TEST_COL + 2 * k)
@@ -752,8 +784,8 @@ class Builder:
     # -- register --------------------------------------------------------------
     REG_COLS = ["Year Group", "Code", "Title", "Test Name", "Max Marks", "Date", "Students", "Sat",
                 "Absent", "Not Entered", "Completion", "Year Mean", "Year Mean %", "Year SD", "Check",
-                "Year Index", "Raw Col", "Seq Key", "Name Key"]
-    REG_HIDDEN = ["Year Index", "Raw Col", "Seq Key", "Name Key"]
+                "Year Index", "Raw Col", "Seq Key", "Name Key", "Invalid"]
+    REG_HIDDEN = ["Year Index", "Raw Col", "Seq Key", "Name Key", "Invalid"]
 
     def reg_formulas(self):
         T = REG
@@ -769,7 +801,12 @@ class Builder:
             "Year Mean %": f'IF(OR({tr(T, "Year Mean")}="",N({tr(T, "Max Marks")})=0),"",{tr(T, "Year Mean")}/{tr(T, "Max Marks")})',
             "Year SD": f'IF(N({tr(T, "Sat")})=0,"",_xlfn.STDEV.P({data}))',
             "Check": (f'IF({tr(T, "Test Name")}="","",IF({yi}=0,"Unknown year group",'
-                      f'IF({rc}=0,"Columns not found on the year sheet","OK")))'),
+                      f'IF({rc}=0,"Columns not found on the year sheet",IF(N({tr(T, "Invalid")})>0,'
+                      f'{tr(T, "Invalid")}&" mark(s) not valid: text, below 0 or above the maximum","OK"))))'),
+            # Marks that got past the score check (pasted, filled, or typed in Excel on the web):
+            # non-numbers other than A, and numbers outside 0..Max Marks.
+            "Invalid": (f'IF({rc}=0,"",COUNTA({data})-COUNT({data})-COUNTIF({data},"A")+COUNTIF({data},"<0")'
+                        f'+IF(N({tr(T, "Max Marks")})>0,COUNTIF({data},">"&{tr(T, "Max Marks")}),0))'),
             "Year Index": f'IFERROR(MATCH({tr(T, "Year Group")},YearNames,0),0)',
             "Raw Col": (f'IF({yi}=0,0,IFERROR(MATCH({tr(T, "Test Name")}&{LF}&"{RAW_SUFFIX}",'
                         f'{choose(yi, "#Headers")},0),0))'),
@@ -804,6 +841,7 @@ class Builder:
                     cell.value = {"Year Group": YEAR_NAME[test.year], "Code": test.code or None,
                                   "Title": test.title, "Test Name": test.name,
                                   "Max Marks": test.max_marks, "Date": test.date}[h]
+                    keep_text(cell)
                 cell.alignment = LEFT if h in ("Title", "Test Name", "Check") else CENTER
                 cell.number_format = {"Date": "dd/mm/yyyy", "Completion": "0%", "Year Mean": "0.0",
                                       "Year Mean %": "0%", "Year SD": "0.0", "Max Marks": "0"}.get(h, "General")
@@ -857,7 +895,7 @@ class Builder:
     def build_settings(self):
         ws = self.ws_set
         title_block(ws, "Settings", "Yellow cells are yours to change. Everything else updates itself.", 8)
-        widths(ws, {"A": 2, "B": 58, "C": 16, "D": 22, "E": 14, "F": 2, "G": 2, "H": 2})
+        widths(ws, {"A": 2, "B": 58, "C": 16, "D": 22, "E": 16, "F": 2, "G": 2, "H": 2})
         section(ws, "B4", "Workbook")
         put(ws, "B5", "Academic year")
         selector(ws, "C5", self.d.academic_year)
@@ -867,7 +905,7 @@ class Builder:
         self.name("SchoolName", "Settings!$C$6")
 
         section(ws, "B8", "Watch list rules")
-        put(ws, "B9", "Flag a student whose mean stanine is at least this far below their KS2 band")
+        put(ws, "B9", "Flag a student whose mean stanine is at least this far below expected for their KS2 band")
         selector(ws, "C9", 1.5).number_format = "0.0"
         put(ws, "B10", "... once they have sat at least this many tests")
         selector(ws, "C10", 2)
@@ -878,13 +916,20 @@ class Builder:
         self.name("WlLowMean", "Settings!$C$11")
 
         section(ws, "B13", "Year groups")
-        header_cells(ws, 14, 2, ["Year group", "Leaves in", "Sheet"])
+        header_cells(ws, 14, 2, ["Year group", "Leaves in", "Sheet", "KS2 link"])
         start = int(self.d.academic_year[:4])
         for i, y in enumerate(YEARS):
             r = 15 + i
             put(ws, f"B{r}", YEAR_NAME[y], border=BOX)
             put(ws, f"C{r}", start + 1 + (11 - y), al=CENTER, border=BOX, fmt="0")
             put(ws, f"D{r}", YEAR_NAME[y], border=BOX)
+            slope = fit_names(TABLE[y])[0]
+            put(ws, f"E{r}", f'=IF(ISNUMBER({slope}),{slope},"too few results")', al=CENTER, border=BOX,
+                fmt="0.00", f=font(10, color=INK2))
+        put(ws, "B20", "KS2 link (worked out, 0 to 1): how many stanines higher, on average, students score for "
+                       "each KS2 band higher. The watch list compares each student with this line.",
+            f=font(9, color=INK2), al=WRAP)
+        ws.row_dimensions[20].height = 26
 
         section(ws, "B21", "Class teachers (optional)")
         put(ws, "B22", "Type a teacher's name or initials next to each class. The dashboards show them. "
@@ -898,8 +943,8 @@ class Builder:
         for i, (y, c) in enumerate(pairs):
             r = top + 1 + i
             put(ws, f"B{r}", YEAR_NAME[y], border=BOX)
-            put(ws, f"C{r}", c or None, border=BOX)
-            cell = put(ws, f"D{r}", self.d.teachers.get((y, c)), fl=INPUT_FILL, border=BOX)
+            keep_text(put(ws, f"C{r}", c or None, border=BOX))
+            cell = keep_text(put(ws, f"D{r}", self.d.teachers.get((y, c)), fl=INPUT_FILL, border=BOX))
             cell.protection = UNLOCKED
             put(ws, f"E{r}", f'={tr(TEACHERS, "Year Group")}&"|"&{tr(TEACHERS, "Class")}',
                 f=font(9, color=MUTED), border=BOX)
@@ -929,6 +974,34 @@ class Builder:
             put(ws, f"E{3 + i}", m)
         self.name("MeasureList", "Calc!$E$3:$E$5")
 
+    def build_fit(self):
+        """Least-squares line of mean stanine on KS2 band, per year group (Calc!BN2:BU7).
+
+        SUMPRODUCT treats the "" of students without a number as 0 in Excel and LibreOffice
+        alike, and the ISNUMBER mask keeps only students with both numbers. The slope is kept
+        between 0 (KS2 predicts nothing) and 1 (one stanine per KS2 band).
+        """
+        ws = self.ws_calc
+        for c, h in zip("BN BO BP BQ BR BS BT BU".split(),
+                        ["Expected stanine fit", "n", "Sx", "Sy", "Sxx", "Sxy", "Slope", "Intercept"]):
+            put(ws, f"{c}2", h, f=font(9, True))
+        for i, y in enumerate(YEARS):
+            r, t = 3 + i, TABLE[y]
+            x, yv = f"{t}[[Avg KS2 Band]]", f"{t}[[Mean Stanine]]"
+            mask = f"ISNUMBER({x})*ISNUMBER({yv})"
+            put(ws, f"BN{r}", YEAR_NAME[y])
+            ws[f"BO{r}"] = f"=SUMPRODUCT({mask})"
+            ws[f"BP{r}"] = f"=SUMPRODUCT({mask},{x})"
+            ws[f"BQ{r}"] = f"=SUMPRODUCT({mask},{yv})"
+            ws[f"BR{r}"] = f"=SUMPRODUCT({mask},{x},{x})"
+            ws[f"BS{r}"] = f"=SUMPRODUCT({mask},{x},{yv})"
+            ws[f"BT{r}"] = (f'=IF(BO{r}<{FIT_MIN_STUDENTS},"",IFERROR(MAX(0,MIN(1,(BO{r}*BS{r}-BP{r}*BQ{r})/'
+                            f'(BO{r}*BR{r}-BP{r}^2))),""))')
+            ws[f"BU{r}"] = f'=IF(BT{r}="","",(BQ{r}-BT{r}*BP{r})/BO{r})'
+            slope, icpt = fit_names(t)
+            self.name(slope, f"Calc!$BT${r}")
+            self.name(icpt, f"Calc!$BU${r}")
+
     def build_calc_helpers(self):
         ws = self.ws_calc
         first, last = 10, 10 + MAX_STUDENTS - 1
@@ -956,7 +1029,7 @@ class Builder:
         self.name("SelClass", "Dashboard!$C$7")
         self.name("dYear", "MATCH(SelYear,YearNames,0)")
         cols = {"dData": "#Data", "dHdr": "#Headers", "dClass": "Class", "dLast": "Preferred Last name",
-                "dFirst": "Preferred First name", "dMean": "Mean Stanine", "dVs": "vs KS2 Band",
+                "dFirst": "Preferred First name", "dMean": "Mean Stanine", "dVs": "vs Expected",
                 "dKsBand": "Avg KS2 Band", "dPP": "PP Deprivation", "dSEN": "SEN Status Code",
                 "dSex": "Sex Code", "dTests": "Tests Sat"}
         for nm, part in cols.items():
@@ -988,6 +1061,18 @@ class Builder:
         self.name("dTestCount", "Calc!$AA$64")
         self.name("DashTests", "OFFSET(Calc!$AA$3,0,0,MAX(1,MIN(60,Calc!$AA$64)),1)")
         self.name("DashClasses", "OFFSET(Calc!$Y$3,0,0,MAX(1,Calc!$Y$12),1)")
+
+        # Share of each class with a mark or an A, per test of the selected year group
+        # (BW3:CD62, same rows as AA and same class order as Y): greys out early results.
+        put(ws, "BW2", "Class completion", f=font(9, True))
+        for j in range(MAX_TESTS):
+            r = 3 + j
+            raw = f'INDEX(dData,0,MATCH($AA{r}&{LF}&"{RAW_SUFFIX}",dHdr,0))'
+            for k in range(CLASS_SLOTS):
+                cls = f"$Y${3 + k}"
+                ws[f"{get_column_letter(75 + k)}{r}"] = (
+                    f'=IF(OR($AA{r}="",{cls}=""),"",IFERROR((COUNTIFS(dClass,{cls},{raw},">=0")'
+                    f'+COUNTIFS(dClass,{cls},{raw},"A"))/COUNTIF(dClass,{cls}),""))')
 
         # Latest test per year group (Overview, Watch List, Start).
         put(ws, "AF2", "Latest test", f=font(9, True))
@@ -1040,16 +1125,16 @@ class Builder:
             ws[f"AS{r}"] = f'=IFERROR(COUNTIF(dStn,AR{r})/COUNT(dStn),0)'
             ws[f"AT{r}"] = EXPECTED_PCT[k] / 100
 
-        # Watch list: mirror the chosen year group, flag, then sort by how far below KS2.
+        # Watch list: mirror the chosen year group, flag, then sort by how far below expected.
         self.name("WlYear", "'Watch List'!$C$4")
         self.name("wYear", "MATCH(WlYear,YearNames,0)")
         wcols = {"wData": "#Data", "wHdr": "#Headers", "wLast": "Preferred Last name",
                  "wFirst": "Preferred First name", "wClass": "Class", "wKsBand": "Avg KS2 Band",
-                 "wTests": "Tests Sat", "wMean": "Mean Stanine", "wVs": "vs KS2 Band"}
+                 "wTests": "Tests Sat", "wMean": "Mean Stanine", "wVs": "vs Expected"}
         for nm, part in wcols.items():
             self.name(nm, choose("wYear", part))
         self.name("wLatest", "INDEX(Calc!$AF$3:$AF$7,wYear)")
-        heads = ["Last", "First", "Class", "KS2 band", "Tests", "Mean", "vs KS2", "Latest", "Reason", "Key"]
+        heads = ["Last", "First", "Class", "KS2 band", "Tests", "Mean", "vs expected", "Latest", "Reason", "Key"]
         for c, h in enumerate(heads):
             put(ws, f"{get_column_letter(53 + c)}69", h, f=font(9, True))            # BA ...
         wfirst, wlast = 70, 70 + MAX_STUDENTS - 1
@@ -1065,9 +1150,9 @@ class Builder:
             ws[f"BH{r}"] = (f'=IF(OR(BA{r}="",wLatest=""),"",IFERROR(INDEX(wData,{i},MATCH(wLatest&{LF}&'
                             f'"{STANINE_SUFFIX}",wHdr,0))+0,""))')
             ws[f"BI{r}"] = (f'=IF(BA{r}="","",IF(AND(ISNUMBER(BG{r}),N(BE{r})>=WlMinTests,BG{r}<=-WlGap),'
-                            f'"Below KS2 starting point",IF(AND(NOT(ISNUMBER(BD{r})),ISNUMBER(BF{r}),'
+                            f'"{BELOW_EXPECTED}",IF(AND(NOT(ISNUMBER(BD{r})),ISNUMBER(BF{r}),'
                             f'N(BE{r})>=WlMinTests,BF{r}<=WlLowMean),"Low results, no KS2 data","")))')
-            ws[f"BJ{r}"] = (f'=IF(BI{r}="","",IF(BI{r}="Below KS2 starting point",BG{r},100+BF{r})'
+            ws[f"BJ{r}"] = (f'=IF(BI{r}="","",IF(BI{r}="{BELOW_EXPECTED}",BG{r},100+BF{r})'
                             f'+ROW()/1000000)')
         ws["BA67"] = f'=COUNT(BJ{wfirst}:BJ{wlast})'
         self.name("wlCount", "Calc!$BA$67")
@@ -1095,7 +1180,7 @@ class Builder:
         stat_tiles(ws, 4, ["B", "D", "G", "J"], ["C", "F", "I", "M"], tiles)
 
         heads = ["Class", "Teacher", "Students", "KS2 band\n(mean)", "Tests sat\n(mean)", "Mean\nstanine",
-                 "vs KS2\nband", "Results at\nstanine 7-9", "Results at\nstanine 1-3",
+                 "vs\nexpected", "Results at\nstanine 7-9", "Results at\nstanine 1-3",
                  "Latest test\nmean %", "Latest test\nmean stanine", "Latest test\ncompletion"]
         row = 9
         for i, y in enumerate(YEARS):
@@ -1107,8 +1192,11 @@ class Builder:
             for col in range(2, 14):
                 ws.cell(band, col).fill = fill(BLUE_100)
             put(ws, f"B{band}", yname, f=font(12, True, NAVY), fl=BLUE_100)
+            slots = f"Calc!${get_column_letter(19 + i)}$12"
             put(ws, f"C{band}", f'="Leaves "&Settings!$C${15 + i}&"   ·   "&COUNTA({t}[Preferred Last name])'
-                                f'&" students   ·   "&Calc!$AI${3 + i}&" tests"',
+                                f'&" students   ·   "&Calc!$AI${3 + i}&" tests"'
+                                f'&IF({slots}>{CLASS_SLOTS},"   ·   only the first {CLASS_SLOTS} of "&{slots}'
+                                f'&" classes fit here","")',
                 f=font(9, False, INK2), fl=BLUE_100)
             put(ws, f"H{band}", f'=IF({latest}="","No tests yet","Latest test: "&{latest}'
                                 f'&IF(ISNUMBER(Calc!$AH${3 + i}),"  ("&TEXT(Calc!$AH${3 + i},"dd/mm/yyyy")&")",""))',
@@ -1140,7 +1228,7 @@ class Builder:
                     "E": f"{avg}({t}[Avg KS2 Band]{crit})",
                     "F": f"{avg}({t}[Tests Sat]{crit})",
                     "G": f"{avg}({t}[Mean Stanine]{crit})",
-                    "H": f"{avg}({t}[vs KS2 Band]{crit})",
+                    "H": f"{avg}({t}[vs Expected]{crit})",
                     "I": share(">=7"),
                     "J": share("<=3"),
                     "K": f'IF({latest}="","",{avg}({raw_col}{crit})/{latest_max})',
@@ -1171,9 +1259,10 @@ class Builder:
                 ws.conditional_formatting.add(f"M{year_row}:M{last_class_row}", rule)
             row = last_class_row + 2
         put(ws, f"B{row}", "How to read this: 'Mean stanine' compares a class with its whole year group "
-                           "(5 = the year average). 'vs KS2 band' compares the class's stanines with the "
-                           "same students' KS2 bands, so it shows progress from their starting point. "
-                           "Results at 7-9 and 1-3 count every test result, not students.",
+                           "(5 = the year average). 'vs expected' compares the class's stanines with what "
+                           "students with the same KS2 bands average across the year group, so a set with "
+                           "high (or low) KS2 results is judged fairly. Results at 7-9 and 1-3 count every "
+                           "test result, not students.",
             f=font(9, color=INK2), al=WRAP)
         ws.merge_cells(f"B{row}:M{row + 3}")
         ws.freeze_panes = "A8"
@@ -1217,7 +1306,9 @@ class Builder:
 
         # 1. Selected test by class ------------------------------------------------------
         section(ws, "B9", "1.  How each class did on the selected test")
-        put(ws, "B10", '=IF(SelTest="","Choose a test above.",SelTest&IFERROR("   ·   out of "&dMax,""))',
+        put(ws, "B10", '=IF(SelTest="","Choose a test above.",SelTest&IFERROR("   ·   out of "&dMax,""))'
+                       f'&IF(Calc!$Y$12>{CLASS_SLOTS},"   ·   only the first {CLASS_SLOTS} of "&Calc!$Y$12'
+                       f'&" classes fit on the dashboards","")',
             f=font(10, False, INK2, italic=True))
         heads = ["Class", "Teacher", "Students", "Sat", "Absent", "Not\nentered", "Mean\nmark", "Mean %",
                  "Mean\nstanine", "Stanine\n1-3", "Stanine\n4-6", "Stanine\n7-9", "vs year\n(% points)"]
@@ -1286,7 +1377,7 @@ class Builder:
 
         section(ws, "B30", "3.  Groups: the selected test and all tests so far")
         gheads = ["Group", "Students", "Sat this\ntest", "Mean %\n(this test)", "Mean stanine\n(this test)",
-                  "Mean stanine\n(all tests)", "vs KS2 band\n(all tests)"]
+                  "Mean stanine\n(all tests)", "vs expected\n(all tests)"]
         header_cells(ws, 31, 2, gheads, height=30)
         groups = [  # (label, range, codes, everyone except those codes?)
             ("Disadvantaged (PP)", "dPP", ["Y"], False), ("Not disadvantaged", "dPP", ["Y"], True), None,
@@ -1334,7 +1425,7 @@ class Builder:
                 "G": (f'{total("SUMIFS(dMean,{rng},{v})", "SUM(dMean)")}/'
                       f'{total("COUNTIFS({rng},{v},dMean," + Q(">=1") + ")", "COUNT(dMean)")}'),
                 "H": (f'{total("SUMIFS(dVs,{rng},{v})", "SUM(dVs)")}/'
-                      f'{total("COUNTIFS({rng},{v},dVs," + Q(">=-9") + ")", "COUNT(dVs)")}'),
+                      f'{total("COUNTIFS({rng},{v},dVs," + Q(">=-99") + ")", "COUNT(dVs)")}'),
             }
             fmts = {"C": "0", "D": "0", "E": "0%", "F": "0.0", "G": "0.0", "H": "+0.0;-0.0;0.0"}
             for col, fml in cells.items():
@@ -1343,7 +1434,8 @@ class Builder:
         # 4. Every test: grid ------------------------------------------------------------
         section(ws, "B43", '4.  Every test for the year group')
         put(ws, "B44", '="Showing "&LOWER(SelMeasure)&". Class cells: blue = above the whole year group, '
-                       'red = below. Completion: amber = partly entered, red = nothing entered yet."',
+                       'red = below, grey = under half the class has a mark yet. Completion: amber = partly '
+                       'entered, red = nothing entered yet."',
             f=font(9, False, INK2, italic=True))
         gheads = ["Test", "Date", "Max", "Sat", "Completion", "Whole year"]
         header_cells(ws, 45, 2, gheads, height=36)
@@ -1377,6 +1469,12 @@ class Builder:
         # The stanine number format comes first: Excel applies every true rule, but
         # LibreOffice (used only for checking) applies just the first.
         add_number_format_rule(ws, grid, 'SelMeasure="Mean stanine"', "0.0")
+        # A class with under half its marks entered is shown in grey, not blue or red: a mean
+        # of a few early scripts says little. (Class completion per test: Calc!BW3:CD62.)
+        ws.conditional_formatting.add(f"H46:O{45 + MAX_TESTS}", Rule(
+            type="expression", formula=['AND(SelMeasure<>"Completion %",H46<>"",N(Calc!BW3)<0.5)'],
+            dxf=DifferentialStyle(font=Font(name=FONT, color=MUTED, italic=True),
+                                  fill=PatternFill(bgColor=WHITE, fill_type="solid"))))
         ws.conditional_formatting.add("H45:O45", Rule(type="expression", formula=['H45=""'],
                                                       dxf=DifferentialStyle(fill=PatternFill(bgColor=WHITE, fill_type="solid"))))
         add_grid_rules(ws, f"H46:O{45 + MAX_TESTS}", "H46", "$G46")
@@ -1396,19 +1494,19 @@ class Builder:
     def build_watch(self):
         ws = self.ws_watch
         title_block(ws, "Students to check",
-                    "Students whose results so far are well below their KS2 starting point. "
-                    "Change the rules on the Settings sheet.", 11)
+                    "Students whose results so far are well below what students with the same KS2 "
+                    "results achieve in their year group. Change the rules on the Settings sheet.", 11)
         widths(ws, {"A": 2, "B": 28, "C": 16, "D": 10, "E": 9, "F": 10, "G": 10, "H": 12, "I": 30, "J": 2})
         put(ws, "B4", "Year group", f=font(10, True))
         selector(ws, "C4", YEAR_NAME[self.d.watch_year], "D4")
         dv_list(ws, "C4", "YearNames")
-        put(ws, "B5", '="Rule: mean stanine at least "&TEXT(WlGap,"0.0")&" below the KS2 band after "&WlMinTests'
+        put(ws, "B5", '="Rule: mean stanine at least "&TEXT(WlGap,"0.0")&" below expected for the KS2 band after "&WlMinTests'
                       '&" or more tests; or, with no KS2 data, a mean stanine of "&TEXT(WlLowMean,"0.0")&" or lower."',
             f=font(9, False, INK2, italic=True))
         put(ws, "B6", '=IF(wlCount=0,"Nobody is flagged in "&WlYear&" at the moment.",wlCount&" student"'
                       '&IF(wlCount=1,"","s")&" flagged in "&WlYear&IF(wlCount>50,", showing the first 50.","."))',
             f=font(11, True, NAVY))
-        heads = ["Student", "Class", "KS2 band", "Tests sat", "Mean\nstanine", "vs KS2\nband",
+        heads = ["Student", "Class", "KS2 band", "Tests sat", "Mean\nstanine", "vs\nexpected",
                  "Latest test\nstanine", "Reason"]
         header_cells(ws, 8, 2, heads, height=30)
         cols = {"C": "BC", "D": "BD", "E": "BE", "F": "BF", "G": "BG", "H": "BH", "I": "BI"}
@@ -1468,9 +1566,12 @@ class Builder:
 
         guide = [
             ("For class teachers", [
-                "Open your year group's sheet and click your class in the Class slicer (top left).",
+                "Open your year group's sheet and click your class in the Class slicer (top left). Your class "
+                "is one unbroken block, in surname order.",
                 "Type each student's mark in the test's Raw Score column. Type A for absent; leave the cell "
                 "empty if they have not sat it yet.",
+                "To paste marks, paste one class at a time, in the same order as the sheet. Excel also pastes "
+                "into rows that a filter hides, so a longer list would change another class's marks.",
                 "The Stanine column fills itself in. Do not type in the grey columns.",
                 "This works in Excel on the web too. Only the buttons need the desktop app.",
             ]),
@@ -1482,6 +1583,8 @@ class Builder:
                 "not deleted.",
                 "Class overview, Dashboard and Watch list update by themselves as marks go in.",
                 "Type teachers' names on the Settings sheet to show them on the dashboards.",
+                "If the buttons do nothing, Excel is blocking macros. Marks, stanines and dashboards still work. "
+                "Ask IT to allow macros for this file, or add a test by hand (see the end of this sheet).",
             ]),
         ]
         row = 16
@@ -1510,20 +1613,43 @@ class Builder:
         ws.conditional_formatting.add(f"G{key_top}:G{key_top + 8}", traffic_lights(4, 7))
         row = key_top + 10
         notes = [
-            "A stanine compares a student with their whole year group on that test: 5 is average, 1-3 below, "
-            "7-9 above. Stanines from different tests, classes and year groups can be compared directly.",
+            "A stanine shows where a student stands in their own year group on that test: 5 is average, "
+            "1-3 below, 7-9 above. So a 7 means 'well above the year average' on any test, in any year group. "
+            "It does not show that one year group or one test is harder than another.",
             "Stanines settle once every class has entered its marks for a test; until then they are relative "
             "to the students entered so far.",
             "A whole year group always averages about stanine 5, so compare year groups using mean %. "
             "Compare classes using both.",
-            "Avg KS2 is the mean of each student's KS2 maths and reading scaled scores (or the one that exists). "
-            "Its band is a stanine within the year group, so 'vs KS2 band' shows progress from the starting point.",
-            "This workbook holds personal data about children. Keep it in a staff-only location.",
+            "Avg KS2 is the mean of each student's KS2 maths and reading scaled scores (or the one that exists), "
+            "and its band is a stanine within the year group. 'vs expected' is the mean stanine minus the "
+            "average for students with the same KS2 band in the year group, so it measures progress fairly "
+            "for high and low starting points alike.",
+            "This workbook holds personal data about children. Keep it in a staff-only location. Each "
+            "Update students run saves a backup copy next to the file: delete old copies you no longer need.",
         ]
         section(ws, f"B{row}", "Good to know")
         row += 1
         for text in notes:
             paragraph(ws, row, f"•   {text}")
+            row += 1
+        row += 1
+        manual = [
+            "Only needed when the buttons do nothing (macros blocked).",
+            "On the year sheet, type the new test's Raw Score heading in the first empty cell to the right of "
+            "the table's heading row, as 'Code - Title', then Alt+Enter, then 'Raw Score'. The table grows by "
+            "one column. Do the same in the next cell with 'Stanine' instead of 'Raw Score'.",
+            "Copy the previous test's Stanine cells into the new Stanine column. With the new column still "
+            "selected, use Find and Replace (Ctrl+H, 'Look in: Formulas') to change the old test's name to the "
+            "new one.",
+            "On Assessment Info, add a row: year group, code, title, the test name exactly as in the heading "
+            "(without 'Raw Score'), maximum mark and date. The register's Check column says OK when it matches.",
+            "Optional: select the new Raw Score cells, then Data > Data Validation > Custom, and copy the rule "
+            "from the previous Raw Score column, changing its maximum mark.",
+        ]
+        section(ws, f"B{row}", "Adding a test without the buttons")
+        row += 1
+        for n, text in enumerate(manual):
+            paragraph(ws, row, text if n == 0 else f"{n}.   {text}")
             row += 1
         protect(ws)
 
