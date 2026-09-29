@@ -84,6 +84,7 @@ class SlicerSpec:
     table: str
     column_id: int
     columns: int            # buttons per row
+    column_name: str = ""   # the table column it filters (Excel's sourceName)
 
 
 @dataclass
@@ -123,8 +124,10 @@ class Extras:
         top = pad + 24 + 8
         height = int(row_height * 96 / 72) - top - 40          # leave room for the header text
         half = (corner_w - 2 * pad - 6) // 2
-        specs = [SlicerSpec(f"Class {suffix}", f"Slicer_Class_{suffix}", "Class", table, class_col_id, 2),
-                 SlicerSpec(f"KS2 band {suffix}", f"Slicer_KS2_Band_{suffix}", "KS2 band", table, band_col_id, 3)]
+        specs = [SlicerSpec(f"Class {suffix}", f"Slicer_Class_{suffix}", "Class", table, class_col_id, 2,
+                            "Class"),
+                 SlicerSpec(f"KS2 band {suffix}", f"Slicer_KS2_Band_{suffix}", "KS2 band", table, band_col_id, 3,
+                            "Avg KS2 Band")]
         for i, spec in enumerate(specs):
             sx.slicers.append(spec)
             sx.shapes.append(Shape("slicer", spec.name, pad + i * (half + 6), top, half, height))
@@ -369,7 +372,8 @@ def _add_slicers(pkg, sheet_name, sheet_part, specs, table_ids, counter):
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
             f'<slicerCacheDefinition xmlns="{NS["x14"]}" xmlns:mc="{NS["mc"]}" mc:Ignorable="x xr10" '
             f'xmlns:x="{NS["main"]}" xmlns:xr10="http://schemas.microsoft.com/office/spreadsheetml/2016/revision10" '
-            f'name="{spec.cache}" xr10:uid="{_stable_guid("cache", spec.cache)}" sourceName="{spec.caption}">'
+            f'name="{spec.cache}" xr10:uid="{_stable_guid("cache", spec.cache)}" '
+            f'sourceName="{spec.column_name or spec.caption}">'
             f'<extLst><x:ext uri="{{2F2917AC-EB37-4324-AD4E-5DD8C200BD13}}" xmlns:x15="{NS["x15"]}">'
             f'<x15:tableSlicerCache tableId="{table_id}" column="{spec.column_id}"/></x:ext></extLst>'
             '</slicerCacheDefinition>')

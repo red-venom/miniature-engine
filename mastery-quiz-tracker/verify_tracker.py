@@ -92,7 +92,7 @@ def stanines(values):
         elif sd == 0:
             out.append(5)
         else:
-            z = (v - mu) / sd
+            z = round((v - mu) / sd, 9)            # the workbook rounds to 9 places too
             out.append(1 + sum(z >= t for t in THRESHOLDS))
     return out
 
@@ -490,9 +490,9 @@ def check_package(path):
         tsc = root.find(".//{%s}tableSlicerCache" % xlsm_package.NS["x15"])
         name, cols = tables[int(tsc.get("tableId"))]
         target = cols[tsc.get("column")]
-        want = {"Class": "Class", "KS2 band": "Avg KS2 Band"}[root.get("sourceName")]
-        check(f"slicer {root.get('name')} filters {name}[{target}]", target == want and name.startswith("tblY"),
-              quiet=True)
+        want = {"Slicer_Class": "Class", "Slicer_KS2_Band": "Avg KS2 Band"}[root.get("name").rsplit("_", 1)[0]]
+        check(f"slicer {root.get('name')} filters {name}[{target}]",
+              target == want == root.get("sourceName") and name.startswith("tblY"), quiet=True)
 
     vba_src = "".join((HERE / "vba" / f).read_text() for f in ("modTracker.bas", "modImport.bas"))
     public = set(re.findall(r"^Public Sub (\w+)\(", vba_src, re.M))
@@ -505,6 +505,20 @@ def check_package(path):
 
     wbx = z.read("xl/workbook.xml").decode()
     check("workbook code name is ThisWorkbook", 'codeName="ThisWorkbook"' in wbx)
+    bad_names = []
+    for nm in re.findall(r'<definedName [^>]*name="([^"]+)"', wbx):
+        try:
+            gt.check_name(nm)
+        except ValueError as e:
+            bad_names.append(str(e))
+    check("no defined name is also a cell reference", not bad_names, str(bad_names))
+    lists = []
+    for n in parts:
+        if n.startswith("xl/worksheets/sheet"):
+            lists += re.findall(r'<dataValidation [^>]*type="list"[^>]*>\s*<formula1>([^<]*)</formula1>',
+                                z.read(n).decode())
+    check(f"list validations are stored without a leading = ({len(lists)} lists)",
+          lists and not any(f.startswith("=") for f in lists), str(lists))
     codenames = []
     for n in sorted(parts):
         if n.startswith("xl/worksheets/sheet"):
@@ -581,7 +595,7 @@ def check_vba_in_libreoffice(path):
 
 HELPERS = {"modTracker.bas": ["CleanText", "TestNameFrom", "RawHeader", "StanineHeader", "StanineFormulaFor",
                               "ParseMaxMark", "ParseUkDate"],
-           "modImport.bas": ["TextOf", "YearFromText", "NumOrEmpty", "AvgKS2", "PPFlag"]}
+           "modImport.bas": ["TextOf", "YearFromText", "NumOrEmpty", "AvgKS2", "PPFlag", "FileNameOf"]}
 
 
 def helper_module_source():
@@ -636,6 +650,7 @@ def check_vba_helpers(tmp):
         ("TestNameFrom", ("", " Cells  [draft] "), "Cells draft"),
         ("TestNameFrom", ("4C09", ""), "4C09"),
         ("CleanText", ('  a [b] #c\n d|e\'s "x" ',), "a b c des x"),
+        ("CleanText", ("Forces ~ *all* types?",), "Forces all types"),
         ("RawHeader", ("T1 - Cells",), "T1 - Cells\nRaw Score"),
         ("StanineHeader", ("T1 - Cells",), "T1 - Cells\nStanine"),
         ("StanineFormulaFor", ("tblY7", "T1\nRaw Score"),
@@ -651,6 +666,9 @@ def check_vba_helpers(tmp):
         ("YearFromText", ("Y10",), "Year 10"), ("YearFromText", ("13",), ""), ("YearFromText", ("",), ""),
         ("AvgKS2", (104, "N"), 104), ("AvgKS2", (None, None), "No Data"), ("AvgKS2", (100, 109), 104.5),
         ("AvgKS2", ("", 98), 98), ("PPFlag", ("Yes",), "Y"), ("PPFlag", ("no",), "N"), ("PPFlag", ("",), ""),
+        ("FileNameOf", ("C:\\Data\\All Students.xlsx",), "All Students.xlsx"),
+        ("FileNameOf", ("https://school.sharepoint.com/sites/Science/Shared Documents/export.xlsx",), "export.xlsx"),
+        ("FileNameOf", ("/Users/staff/Downloads/export.csv",), "export.csv"),
     ]
     failures = []
     with xlsm_package.libreoffice() as desktop:

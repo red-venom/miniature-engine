@@ -214,6 +214,18 @@ def selector(ws, ref, value, merge_to=None):
 
 # ----------------------------------------------------------------- formulas
 
+def check_name(name):
+    """Excel rejects a defined name that is also a cell reference (dKS2 is column DKS, row 2)."""
+    m = re.fullmatch(r"([A-Za-z]{1,3})(\d+)", name)
+    if m:
+        col = 0
+        for ch in m.group(1).upper():
+            col = col * 26 + ord(ch) - 64
+        if col <= 16384 and 1 <= int(m.group(2)) <= 1048576:
+            raise ValueError(f"defined name {name!r} is also a cell reference")
+    if re.fullmatch(r"(?i)(r\d*c\d*|r\d*|c\d*)", name):
+        raise ValueError(f"defined name {name!r} looks like an R1C1 reference")
+
 def tr(table, col):
     """A this-row structured reference, as Excel stores it in the file."""
     return f"{table}[[#This Row],[{col}]]"
@@ -255,8 +267,8 @@ def Q(text):
 
 
 def ks2_band_formula(t):
-    return (f'IF(ISNUMBER({tr(t, "Avg KS2")}),IFERROR(VLOOKUP(STANDARDIZE({tr(t, "Avg KS2")},'
-            f'AVERAGE({t}[[Avg KS2]]),_xlfn.STDEV.P({t}[[Avg KS2]])),_Stanine,2),5),"")')
+    return (f'IF(ISNUMBER({tr(t, "Avg KS2")}),IFERROR(VLOOKUP(ROUND(STANDARDIZE({tr(t, "Avg KS2")},'
+            f'AVERAGE({t}[[Avg KS2]]),_xlfn.STDEV.P({t}[[Avg KS2]])),9),_Stanine,2),5),"")')
 
 
 def tests_sat_formula(t, row):
@@ -321,6 +333,13 @@ class Dataset:
     dashboard_test: object = None                      # default: the year's latest test
     dashboard_class: object = None                     # default: the year's first class
     dashboard_measure: str = "Mean %"
+
+
+def clean_text(s):
+    """Same rule as CleanText in vba/modTracker.bas: no characters that break table formulas."""
+    s = re.sub(r"[\r\n\t]", " ", str(s or ""))
+    s = re.sub(r"[\[\]#'@\"|~*?]", "", s)
+    return re.sub(r" {2,}", " ", s).strip()
 
 
 def ks2_average(maths, reading):
@@ -407,7 +426,7 @@ def load_carry_over(path, students):
     tests = []
     raw_cols = [i for i, h in enumerate(headers) if h.endswith("\n" + RAW_SUFFIX)]
     for n, ci in enumerate(raw_cols):
-        name = headers[ci][: -len(RAW_SUFFIX) - 1].strip()
+        name = clean_text(headers[ci][: -len(RAW_SUFFIX) - 1])
         code, _, title = name.partition(" - ")
         if not title:
             code, title = "", name
@@ -427,7 +446,13 @@ def load_carry_over(path, students):
         year = max(set(years), key=years.count)
         best = max(v for v in scores.values() if isinstance(v, (int, float)))
         mm = max_marks[n] if n < len(max_marks) else max(best, 1)
-        tests.append(Test(year, code.strip(), title.strip(), mm, None, scores))
+        test = Test(year, code.strip(), title.strip(), mm, None, scores)
+        taken = {t.name.upper() for t in tests if t.year == year}
+        n = 2
+        while test.name.upper() in taken:
+            test.title = f"{title.strip()} ({n})"
+            n += 1
+        tests.append(test)
     return tests
 
 
@@ -538,6 +563,10 @@ class Builder:
         self.students = {y: sorted((s for s in data.students if s.year == y),
                                    key=lambda s: (s.last.upper(), s.first.upper())) for y in YEARS}
         self.tests = {y: [t for t in data.tests if t.year == y] for y in YEARS}
+        for y, tests in self.tests.items():
+            names = [t.name.upper() for t in tests]
+            if len(names) != len(set(names)) or any(clean_text(t.name) != t.name or not t.name for t in tests):
+                raise ValueError(f"Year {y} test names must be unique, non-empty and clean: {names}")
         self.classes = {y: sorted({s.cls for s in self.students[y] if s.cls}, key=str.upper) for y in YEARS}
 
     # -- helpers -------------------------------------------------------------
@@ -552,6 +581,7 @@ class Builder:
                                 height_px=24)
 
     def name(self, name, text, sheet=None):
+        check_name(name)
         dn = DefinedName(name, attr_text=text)
         if sheet is None:
             self.wb.defined_names[name] = dn
@@ -927,7 +957,7 @@ class Builder:
         self.name("dYear", "MATCH(SelYear,YearNames,0)")
         cols = {"dData": "#Data", "dHdr": "#Headers", "dClass": "Class", "dLast": "Preferred Last name",
                 "dFirst": "Preferred First name", "dMean": "Mean Stanine", "dVs": "vs KS2 Band",
-                "dKS2": "Avg KS2 Band", "dPP": "PP Deprivation", "dSEN": "SEN Status Code",
+                "dKsBand": "Avg KS2 Band", "dPP": "PP Deprivation", "dSEN": "SEN Status Code",
                 "dSex": "Sex Code", "dTests": "Tests Sat"}
         for nm, part in cols.items():
             self.name(nm, choose("dYear", part))
@@ -1014,7 +1044,7 @@ class Builder:
         self.name("WlYear", "'Watch List'!$C$4")
         self.name("wYear", "MATCH(WlYear,YearNames,0)")
         wcols = {"wData": "#Data", "wHdr": "#Headers", "wLast": "Preferred Last name",
-                 "wFirst": "Preferred First name", "wClass": "Class", "wKS2": "Avg KS2 Band",
+                 "wFirst": "Preferred First name", "wClass": "Class", "wKsBand": "Avg KS2 Band",
                  "wTests": "Tests Sat", "wMean": "Mean Stanine", "wVs": "vs KS2 Band"}
         for nm, part in wcols.items():
             self.name(nm, choose("wYear", part))
@@ -1028,7 +1058,7 @@ class Builder:
             ws[f"BA{r}"] = f'=IFERROR(INDEX(wLast,{i})&"","")'
             ws[f"BB{r}"] = f'=IF(BA{r}="","",IFERROR(INDEX(wFirst,{i})&"",""))'
             ws[f"BC{r}"] = f'=IF(BA{r}="","",IFERROR(INDEX(wClass,{i})&"",""))'
-            ws[f"BD{r}"] = f'=IF(BA{r}="","",IFERROR(INDEX(wKS2,{i})+0,""))'
+            ws[f"BD{r}"] = f'=IF(BA{r}="","",IFERROR(INDEX(wKsBand,{i})+0,""))'
             ws[f"BE{r}"] = f'=IF(BA{r}="","",IFERROR(INDEX(wTests,{i})+0,0))'
             ws[f"BF{r}"] = f'=IF(BA{r}="","",IFERROR(INDEX(wMean,{i})+0,""))'
             ws[f"BG{r}"] = f'=IF(BA{r}="","",IFERROR(INDEX(wVs,{i})+0,""))'
@@ -1174,10 +1204,10 @@ class Builder:
         put(ws, "B7", "Focus class (trend chart)", f=font(10, True))
         class0 = self.d.dashboard_class if self.d.dashboard_class is not None else (classes0[0] if classes0 else "")
         selector(ws, "C7", class0, "E7")
-        dv_list(ws, "C4", "=YearNames")
-        dv_list(ws, "C5", "=MeasureList")
-        dv_list(ws, "C6", "=DashTests")
-        dv_list(ws, "C7", "=DashClasses")
+        dv_list(ws, "C4", "YearNames")
+        dv_list(ws, "C5", "MeasureList")
+        dv_list(ws, "C6", "DashTests")
+        dv_list(ws, "C7", "DashClasses")
 
         tiles = [("Students", "=IFERROR(COUNTA(dLast),0)", "0"),
                  ("Tests set", "=IFERROR(dTestCount,0)", "0"),
@@ -1344,12 +1374,14 @@ class Builder:
                        f'/COUNTIF(dClass,{h})),""))')
                 put(ws, f"{col}{r}", fml, al=CENTER, fmt="0%")
         grid = f"G46:O{45 + MAX_TESTS}"
-        ws.conditional_formatting.add("H45:O45", Rule(type="expression", formula=['H45=""'], stopIfTrue=True,
+        # The stanine number format comes first: Excel applies every true rule, but
+        # LibreOffice (used only for checking) applies just the first.
+        add_number_format_rule(ws, grid, 'SelMeasure="Mean stanine"', "0.0")
+        ws.conditional_formatting.add("H45:O45", Rule(type="expression", formula=['H45=""'],
                                                       dxf=DifferentialStyle(fill=PatternFill(bgColor=WHITE, fill_type="solid"))))
         add_grid_rules(ws, f"H46:O{45 + MAX_TESTS}", "H46", "$G46")
         for rule in completion_rules("F46"):
             ws.conditional_formatting.add(f"F46:F{45 + MAX_TESTS}", rule)
-        add_number_format_rule(ws, grid, 'SelMeasure="Mean stanine"', "0.0")
         ws.conditional_formatting.add(f"B46:O{45 + MAX_TESTS}", row_rule("$B46"))
         ws.freeze_panes = "A8"
 
@@ -1369,7 +1401,7 @@ class Builder:
         widths(ws, {"A": 2, "B": 28, "C": 16, "D": 10, "E": 9, "F": 10, "G": 10, "H": 12, "I": 30, "J": 2})
         put(ws, "B4", "Year group", f=font(10, True))
         selector(ws, "C4", YEAR_NAME[self.d.watch_year], "D4")
-        dv_list(ws, "C4", "=YearNames")
+        dv_list(ws, "C4", "YearNames")
         put(ws, "B5", '="Rule: mean stanine at least "&TEXT(WlGap,"0.0")&" below the KS2 band after "&WlMinTests'
                       '&" or more tests; or, with no KS2 data, a mean stanine of "&TEXT(WlLowMean,"0.0")&" or lower."',
             f=font(9, False, INK2, italic=True))
@@ -1529,7 +1561,7 @@ def add_diverging(ws, rng, first, mid, small, large):
              (f"{c}-{mid}<=-{large}", RED_200), (f"{c}-{mid}<=-{small}", RED_100)]
     for cond, colour in steps:
         ws.conditional_formatting.add(rng, Rule(
-            type="expression", dxf=dxf_fill(colour), stopIfTrue=True,
+            type="expression", dxf=dxf_fill(colour),
             formula=[f"AND(ISNUMBER({c}),ISNUMBER({mid}),{cond})"]))
 
 
@@ -1542,11 +1574,11 @@ def add_grid_rules(ws, rng, first, year_cell):
     for measure, steps in (("Mean %", mean_pct), ("Mean stanine", mean_stn)):
         for cond, colour in steps:
             ws.conditional_formatting.add(rng, Rule(
-                type="expression", dxf=dxf_fill(colour), stopIfTrue=True,
+                type="expression", dxf=dxf_fill(colour),
                 formula=[f'AND(SelMeasure="{measure}",ISNUMBER({c}),ISNUMBER({year_cell}),{cond})']))
     for cond, colour in ((f"{c}=0", RED_200), (f"{c}<1", AMBER_100)):
         ws.conditional_formatting.add(rng, Rule(
-            type="expression", dxf=dxf_fill(colour), stopIfTrue=True,
+            type="expression", dxf=dxf_fill(colour),
             formula=[f'AND(SelMeasure="Completion %",ISNUMBER({c}),{cond})']))
 
 
@@ -1563,15 +1595,15 @@ def row_rule(key_cell):
 
 
 def completion_rules(first):
-    return [Rule(type="expression", dxf=dxf_fill(RED_200), stopIfTrue=True,
+    return [Rule(type="expression", dxf=dxf_fill(RED_200),
                  formula=[f"AND(ISNUMBER({first}),{first}=0)"]),
-            Rule(type="expression", dxf=dxf_fill(AMBER_100), stopIfTrue=True,
+            Rule(type="expression", dxf=dxf_fill(AMBER_100),
                  formula=[f"AND(ISNUMBER({first}),{first}<1)"])]
 
 
 def completion_rules_counts(first):
     """'Not entered' counts: amber when some marks are missing for a class."""
-    return [Rule(type="expression", dxf=dxf_fill(AMBER_100), stopIfTrue=True,
+    return [Rule(type="expression", dxf=dxf_fill(AMBER_100),
                  formula=[f"AND(ISNUMBER({first}),{first}>0)"])]
 
 
@@ -1756,7 +1788,7 @@ def main():
     xlsm_package.save(wb, builder.extras, out, fill_cache=not args.no_cache)
     counts = {y: len(builder.students[y]) for y in YEARS}
     print(f"Wrote {out}  ({sum(counts.values())} students: "
-          + ", ".join(f"Y{y} {n}" for y, n in counts.items()) + f"; {len(tests)} tests)")
+          + ", ".join(f"Y{y} {n}" for y, n in counts.items()) + f"; {len(tests)} test{'' if len(tests) == 1 else 's'})")
 
 
 if __name__ == "__main__":

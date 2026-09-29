@@ -208,6 +208,11 @@ Private Sub SetDefaultButtons()
     End If
 End Sub
 
+Private Function ComboText(ByVal cb As MSForms.ComboBox) As String
+    ' An empty list leaves Value as Null, which CStr cannot convert.
+    ComboText = "" & cb.Value
+End Function
+
 Private Sub ShowMessage(ByVal lbl As MSForms.Label, ByVal msg As String, Optional ByVal good As Boolean = False)
     If good Then lbl.ForeColor = INK_OK Else lbl.ForeColor = INK_ERROR
     lbl.Caption = msg
@@ -242,7 +247,7 @@ Private Sub UpdatePreview()
     Else
         lblPreview.Caption = """" & nm & " / " & RAW_SUFFIX & """ and """ & nm & " / " & _
                              STANINE_SUFFIX & """ at the right-hand end of the " & _
-                             CStr(cboAddYear.Value) & " table."
+                             ComboText(cboAddYear) & " table."
     End If
     lblAddMsg.Caption = ""
 End Sub
@@ -250,7 +255,7 @@ End Sub
 Private Sub btnAdd_Click()
     Dim yr As String, nm As String, maxMark As Double, testDate As Variant, msg As String
 
-    yr = CStr(cboAddYear.Value)
+    yr = ComboText(cboAddYear)
     nm = TestNameFrom(txtAddCode.Text, txtAddTitle.Text)
     If Len(yr) = 0 Then
         ShowMessage lblAddMsg, "Choose a year group."
@@ -305,14 +310,14 @@ Private Sub FillTests(ByVal selectName As String)
 
     mReady = False
     cboEditTest.Clear
-    Set tests = TestsForYear(CStr(cboEditYear.Value))
+    Set tests = TestsForYear(ComboText(cboEditYear))
     For Each t In tests
         cboEditTest.AddItem CStr(t)
     Next t
     mReady = True
     If tests.Count = 0 Then
         ClearEditFields
-        lblEditInfo.Caption = "There are no tests for " & CStr(cboEditYear.Value) & " yet."
+        lblEditInfo.Caption = "There are no tests for " & ComboText(cboEditYear) & " yet."
         Exit Sub
     End If
     For i = 0 To cboEditTest.ListCount - 1
@@ -336,8 +341,8 @@ Private Sub LoadTest()
     Dim lr As ListRow, d As Variant, entered As Long, absent As Long
     Dim yr As String, nm As String
 
-    yr = CStr(cboEditYear.Value)
-    nm = CStr(cboEditTest.Value)
+    yr = ComboText(cboEditYear)
+    nm = ComboText(cboEditTest)
     lblEditMsg.Caption = ""
     Set lr = FindRegisterRow(yr, nm)
     If lr Is Nothing Then
@@ -365,8 +370,8 @@ Private Sub btnSave_Click()
     Dim yr As String, oldName As String, newName As String
     Dim maxMark As Double, testDate As Variant, msg As String
 
-    yr = CStr(cboEditYear.Value)
-    oldName = CStr(cboEditTest.Value)
+    yr = ComboText(cboEditYear)
+    oldName = ComboText(cboEditTest)
     If Len(oldName) = 0 Then
         ShowMessage lblEditMsg, "Choose the test to change."
         Exit Sub
@@ -396,8 +401,8 @@ End Sub
 Private Sub btnRemove_Click()
     Dim yr As String, nm As String, entered As Long, absent As Long, msg As String
 
-    yr = CStr(cboEditYear.Value)
-    nm = CStr(cboEditTest.Value)
+    yr = ComboText(cboEditYear)
+    nm = ComboText(cboEditTest)
     If Len(nm) = 0 Then
         ShowMessage lblEditMsg, "Choose the test to remove."
         Exit Sub

@@ -42,7 +42,9 @@ Score entry works in Excel for the web too; only the buttons need desktop Excel.
   (by name when a UPN is missing); details and classes are updated, new students are added to their
   year group, and anyone missing from the export is listed — never deleted. **Marks are never
   touched.** A summary appears before anything changes, a backup copy is saved next to the file when
-  it lives on your computer, and every change is listed on an *Update Report* sheet.
+  it lives on your computer, and every change is listed on an *Update Report* sheet. The macros store
+  codes, titles and class names as text, so `4.10` stays `4.10`. Use the `.xlsx` export rather than a
+  `.csv`: Excel turns a class such as `7-1` into a date when it opens a CSV file.
 - Type teachers' names next to their classes on **Settings** to show them on the dashboards.
 
 ## How the stanines work
@@ -98,11 +100,15 @@ The macros are plain text in [`vba/`](vba). To put them back by hand (desktop Ex
 | --- | --- | --- | --- |
 | Excel for Microsoft 365 / 2021 / 2019 / 2016 (Windows) | ✓ | ✓ | ✓ |
 | Excel 2013 (Windows) | ✓ | ✓ | ✓ |
-| Excel for Mac 2016 or later | ✓ | ✓ | expected to work, not tested |
+| Excel for Mac 2016 or later | ✓ | ✓ | expected to work, not tested ¹ |
 | Excel for the web, Teams | ✓ | ✓ | ✗ (macros do not run in the browser) |
 | LibreOffice Calc | ✓ | ✗ | ✗ |
 
 No dynamic-array functions are used, so older versions of Excel calculate everything.
+
+¹ On a Mac, two things are untested: the form creates its tabs and boxes in code when it opens,
+and **Update students** may need permission to save its backup copy in the tracker's folder. If
+the backup cannot be saved, Excel asks before it changes anything.
 
 ## Privacy
 

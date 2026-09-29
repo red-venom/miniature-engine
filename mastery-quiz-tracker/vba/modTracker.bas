@@ -19,7 +19,7 @@ Public Const YEAR_LIST As String = "Year 7|Year 8|Year 9|Year 10|Year 11"
 Public Const RAW_SUFFIX As String = "Raw Score"
 Public Const STANINE_SUFFIX As String = "Stanine"
 Public Const FIRST_TEST_COL As Long = 14
-Public Const STANINE_FORMULA As String = "=IF(ISNUMBER({T}[[#This Row],[{R}]]),IFERROR(VLOOKUP(STANDARDIZE({T}[[#This Row],[{R}]],AVERAGE({T}[[{R}]]),STDEV.P({T}[[{R}]])),_Stanine,2),5),"""")"
+Public Const STANINE_FORMULA As String = "=IF(ISNUMBER({T}[[#This Row],[{R}]]),IFERROR(VLOOKUP(ROUND(STANDARDIZE({T}[[#This Row],[{R}]],AVERAGE({T}[[{R}]]),STDEV.P({T}[[{R}]])),9),_Stanine,2),5),"""")"
 Public Const RAW_RULE As String = "=OR(UPPER({C})=""A"",AND(ISNUMBER({C}),{C}>=0,{C}<={M}))"
 Public Const TEST_FILL_ODD As Long = &HFBE2CD
 Public Const TEST_FILL_EVEN As Long = &HD9E0E1
@@ -29,6 +29,8 @@ Public Const TEST_COL_WIDTH As Double = 6.7
 '------------------------------------------------------------------------------
 
 Public gStartYear As String          ' year group the form opens on
+
+Private Const REGISTER_INPUTS As String = "Year Group|Code|Title|Test Name|Max Marks|Date"
 
 Private Type AppState
     Calc As Long
@@ -120,10 +122,11 @@ Public Function Register() As ListObject
 End Function
 
 Public Function CleanText(ByVal s As String) As String
-    ' Characters that would break table formulas or the lookup keys are removed.
+    ' Characters that would break table formulas or the lookup keys are removed
+    ' (~ * ? act as wildcards in MATCH).
     Dim bad As Variant
     s = Replace(Replace(Replace(s, vbCr, " "), vbLf, " "), vbTab, " ")
-    For Each bad In Array("[", "]", "#", "'", "@", """", "|")
+    For Each bad In Array("[", "]", "#", "'", "@", """", "|", "~", "*", "?")
         s = Replace(s, CStr(bad), "")
     Next bad
     Do While InStr(s, "  ") > 0
@@ -177,7 +180,23 @@ Public Function FieldOf(ByVal lr As ListRow, ByVal colName As String) As Variant
 End Function
 
 Private Sub SetFieldOf(ByVal lr As ListRow, ByVal colName As String, ByVal v As Variant)
-    lr.Range.Cells(1, lr.Parent.ListColumns(colName).Index).Value = v
+    PutValue lr.Range.Cells(1, lr.Parent.ListColumns(colName).Index), v
+End Sub
+
+Public Sub PutValue(ByVal cell As Range, ByVal v As Variant)
+    ' Text is stored as text. Without the apostrophe, Excel would store the code
+    ' "4.10" as 4.1 and the class "7-1" as a date. An empty string clears the cell.
+    If VarType(v) = vbString Then
+        If Len(v) = 0 Then
+            cell.Value = Empty
+        ElseIf cell.NumberFormat = "@" Then
+            cell.Value = v
+        Else
+            cell.Value = "'" & v
+        End If
+    Else
+        cell.Value = v
+    End If
 End Sub
 
 Public Function FindRegisterRow(ByVal yearName As String, ByVal testName As String) As ListRow
@@ -271,7 +290,7 @@ End Function
 Public Function AddTest(ByVal yearName As String, ByVal code As String, ByVal title As String, _
                         ByVal maxMark As Double, ByVal testDate As Variant) As String
     Dim lo As ListObject, testName As String, msg As String, state As AppState
-    Dim lcRaw As ListColumn, lcStn As ListColumn, lr As ListRow, testIndex As Long
+    Dim lcRaw As ListColumn, lcStn As ListColumn, lr As ListRow, testIndex As Long, reused As Boolean
 
     Set lo = YearTable(yearName)
     If lo Is Nothing Then
@@ -298,7 +317,7 @@ Public Function AddTest(ByVal yearName As String, ByVal code As String, ByVal ti
     lcStn.Name = StanineHeader(testName)
     lcStn.DataBodyRange.Formula = StanineFormulaFor(lo.Name, lcRaw.Name)
     FormatTestColumns lcRaw, lcStn, testIndex
-    Set lr = NewRegisterRow()
+    Set lr = NewRegisterRow(reused)
     SetFieldOf lr, "Year Group", yearName
     SetFieldOf lr, "Code", CleanText(code)
     SetFieldOf lr, "Title", CleanText(title)
@@ -306,19 +325,42 @@ Public Function AddTest(ByVal yearName As String, ByVal code As String, ByVal ti
     SetFieldOf lr, "Max Marks", maxMark
     If Not IsEmpty(testDate) Then SetFieldOf lr, "Date", testDate
     ResumeApp state
+    On Error GoTo Warn                   ' the test exists from here on
     ApplyRawRule lcRaw, maxMark          ' also leaves the first score cell selected
     PointDashboardAt yearName, testName
     Exit Function
+Warn:
+    MsgBox "The test was added, but Excel could not set its score check (0 to " & CStr(maxMark) & _
+           ", or A): " & Err.Description, vbExclamation, "Add a test"
+    Exit Function
 Fail:
     msg = Err.Description
+    UndoAdd lcRaw, lcStn, lr, reused
     ResumeApp state
     AddTest = "Excel could not add the test: " & msg
 End Function
 
+Private Sub UndoAdd(ByVal lcRaw As ListColumn, ByVal lcStn As ListColumn, ByVal lr As ListRow, _
+                    ByVal reused As Boolean)
+    ' Takes a half-added test out again, so that a second try can use the same name.
+    Dim f As Variant
+    On Error Resume Next
+    If Not lcStn Is Nothing Then lcStn.Delete
+    If Not lcRaw Is Nothing Then lcRaw.Delete
+    If lr Is Nothing Then Exit Sub
+    If reused Then
+        For Each f In Split(REGISTER_INPUTS, "|")
+            SetFieldOf lr, CStr(f), Empty
+        Next f
+    Else
+        lr.Delete
+    End If
+End Sub
+
 Public Function EditTest(ByVal yearName As String, ByVal oldName As String, ByVal code As String, _
                          ByVal title As String, ByVal maxMark As Double, ByVal testDate As Variant) As String
     Dim lo As ListObject, lr As ListRow, lcRaw As ListColumn, lcStn As ListColumn
-    Dim newName As String, msg As String, state As AppState
+    Dim newName As String, msg As String, state As AppState, renamed As Boolean, before As Variant
 
     Set lo = YearTable(yearName)
     Set lr = FindRegisterRow(yearName, oldName)
@@ -339,10 +381,12 @@ Public Function EditTest(ByVal yearName As String, ByVal oldName As String, ByVa
         Exit Function
     End If
 
+    before = RegisterInputs(lr)
     state = PauseApp()
     On Error GoTo Fail
     If StrComp(newName, oldName, vbBinaryCompare) <> 0 Then
         ' Excel rewrites every formula that refers to a renamed table column.
+        renamed = True
         lcRaw.Name = RawHeader(newName)
         lcStn.Name = StanineHeader(newName)
     End If
@@ -350,20 +394,48 @@ Public Function EditTest(ByVal yearName As String, ByVal oldName As String, ByVa
     SetFieldOf lr, "Title", CleanText(title)
     SetFieldOf lr, "Test Name", newName
     SetFieldOf lr, "Max Marks", maxMark
-    If IsEmpty(testDate) Then
-        SetFieldOf lr, "Date", Empty
-    Else
-        SetFieldOf lr, "Date", testDate
-    End If
+    SetFieldOf lr, "Date", testDate
     ResumeApp state
+    On Error GoTo Warn                   ' the change is complete from here on
     ApplyRawRule lcRaw, maxMark
     RenameOnDashboard yearName, oldName, newName
     Exit Function
+Warn:
+    MsgBox "The test was changed, but Excel could not update its score check (0 to " & CStr(maxMark) & _
+           ", or A): " & Err.Description, vbExclamation, "Edit a test"
+    Exit Function
 Fail:
     msg = Err.Description
+    UndoEdit lcRaw, lcStn, oldName, renamed, lr, before
     ResumeApp state
     EditTest = "Excel could not change the test: " & msg
 End Function
+
+Private Function RegisterInputs(ByVal lr As ListRow) As Variant
+    ' The typed-in fields of a register row, in the order of REGISTER_INPUTS.
+    Dim f As Variant, values() As Variant, i As Long
+    ReDim values(0 To UBound(Split(REGISTER_INPUTS, "|")))
+    For Each f In Split(REGISTER_INPUTS, "|")
+        values(i) = FieldOf(lr, CStr(f))
+        i = i + 1
+    Next f
+    RegisterInputs = values
+End Function
+
+Private Sub UndoEdit(ByVal lcRaw As ListColumn, ByVal lcStn As ListColumn, ByVal oldName As String, _
+                     ByVal renamed As Boolean, ByVal lr As ListRow, ByVal before As Variant)
+    ' Puts the old column names and register fields back after a failed change.
+    Dim f As Variant, i As Long
+    On Error Resume Next
+    If renamed Then
+        lcRaw.Name = RawHeader(oldName)
+        lcStn.Name = StanineHeader(oldName)
+    End If
+    For Each f In Split(REGISTER_INPUTS, "|")
+        SetFieldOf lr, CStr(f), before(i)
+        i = i + 1
+    Next f
+End Sub
 
 Public Function RemoveTest(ByVal yearName As String, ByVal testName As String) As String
     Dim lo As ListObject, lr As ListRow, lcRaw As ListColumn, lcStn As ListColumn
@@ -435,7 +507,11 @@ Private Sub FormatTestColumns(ByVal lcRaw As ListColumn, ByVal lcStn As ListColu
             .Font.Color = HEADER_INK
         End With
     Next lc
-    lcRaw.DataBodyRange.NumberFormat = "General"
+    With lcRaw.DataBodyRange             ' a new column copies the format of the column to its left
+        .NumberFormat = "General"
+        .Interior.Pattern = xlNone
+        .FormatConditions.Delete
+    End With
     With lcStn.DataBodyRange
         .NumberFormat = "0"
         .Interior.Color = STANINE_FILL
@@ -466,8 +542,9 @@ Private Sub ApplyRawRule(ByVal lcRaw As ListColumn, ByVal maxMark As Double)
     Set first = lcRaw.DataBodyRange.Cells(1, 1)
     lcRaw.Parent.Parent.Activate
     first.Select
-    rule = Replace(Replace(RAW_RULE, "{C}", first.Address(False, False)), "{M}", _
-                   Replace(CStr(maxMark), ",", "."))
+    rule = Replace(Replace(RAW_RULE, "{C}", _
+                           first.Address(False, False, Application.ReferenceStyle, False, first)), _
+                   "{M}", Replace(CStr(maxMark), ",", "."))
     With lcRaw.DataBodyRange.Validation
         .Delete
         .Add Type:=xlValidateCustom, AlertStyle:=xlValidAlertStop, Formula1:=rule
@@ -480,12 +557,14 @@ Private Sub ApplyRawRule(ByVal lcRaw As ListColumn, ByVal maxMark As Double)
     End With
 End Sub
 
-Private Function NewRegisterRow() As ListRow
+Private Function NewRegisterRow(ByRef reused As Boolean) As ListRow
     ' Re-uses the empty row that a table with no tests keeps.
     Dim reg As ListObject
     Set reg = Register()
+    reused = False
     If reg.ListRows.Count = 1 Then
         If Len(CStr(FieldOf(reg.ListRows(1), "Test Name"))) = 0 Then
+            reused = True
             Set NewRegisterRow = reg.ListRows(1)
             Exit Function
         End If
@@ -513,20 +592,26 @@ Public Sub SyncDashboard(Optional ByVal preferTest As String = "")
     t = preferTest
     If Len(t) = 0 Then t = CStr(shDashboard.Range("SelTest").Value)
     If FindRegisterRow(yr, t) Is Nothing Then t = LatestTest(yr)
-    shDashboard.Range("SelTest").Value = t
+    PutValue shDashboard.Range("SelTest"), t
     cls = CStr(shDashboard.Range("SelClass").Value)
-    If Not ClassInYear(yr, cls) Then shDashboard.Range("SelClass").Value = FirstClass(yr)
+    If Not ClassInYear(yr, cls) Then PutValue shDashboard.Range("SelClass"), FirstClass(yr)
 Done:
     Application.EnableEvents = True
 End Sub
 
 Public Function ClassInYear(ByVal yearName As String, ByVal cls As String) As Boolean
-    Dim lo As ListObject
+    ' A plain comparison: COUNTIF would read "7-1" as a date and * ? ~ as wildcards.
+    Dim lo As ListObject, cell As Range
     If Len(cls) = 0 Then Exit Function
     Set lo = YearTable(yearName)
     If lo Is Nothing Then Exit Function
     If lo.DataBodyRange Is Nothing Then Exit Function
-    ClassInYear = Application.WorksheetFunction.CountIf(lo.ListColumns("Class").DataBodyRange, cls) > 0
+    For Each cell In lo.ListColumns("Class").DataBodyRange.Cells
+        If StrComp(Trim$(CStr(cell.Value)), cls, vbTextCompare) = 0 Then
+            ClassInYear = True
+            Exit Function
+        End If
+    Next cell
 End Function
 
 Public Function FirstClass(ByVal yearName As String) As String
@@ -546,7 +631,7 @@ End Function
 Private Sub PointDashboardAt(ByVal yearName As String, ByVal testName As String)
     On Error Resume Next
     Application.EnableEvents = False
-    shDashboard.Range("SelYear").Value = yearName
+    PutValue shDashboard.Range("SelYear"), yearName
     Application.EnableEvents = True
     SyncDashboard testName
 End Sub

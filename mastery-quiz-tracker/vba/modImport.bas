@@ -11,6 +11,7 @@ Attribute VB_Name = "modImport"
 Option Explicit
 
 Private Const REPORT_SHEET As String = "Update Report"
+Private Const FORCE_DISABLE_MACROS As Long = 3   ' msoAutomationSecurityForceDisable
 
 Private Type Pupil
     UPN As String
@@ -32,30 +33,33 @@ Private mHaveKS2 As Boolean
 Private mHaveSex As Boolean
 Private mHaveSEN As Boolean
 Private mHavePP As Boolean
+Private mDuplicates As Long
 
 '==============================================================================
 ' Entry point (button on the Start sheet)
 '==============================================================================
 Public Sub UpdateStudentsFromExport()
-    Dim path As Variant, src As Workbook, data As Variant, msg As String
+    Dim path As Variant, data As Variant, msg As String
     Dim plan As Collection, summary As String, backup As String
 
+#If Mac Then
+    path = Application.GetOpenFilename()
+#Else
     path = Application.GetOpenFilename( _
         "Excel or CSV files (*.xlsx;*.xlsm;*.xls;*.csv),*.xlsx;*.xlsm;*.xls;*.csv", , _
         "Choose the All Students export from the MIS")
+#End If
     If VarType(path) = vbBoolean Then Exit Sub
     If StrComp(CStr(path), ThisWorkbook.FullName, vbTextCompare) = 0 Then
         MsgBox "Choose the student export, not this tracker.", vbExclamation, "Update students"
         Exit Sub
     End If
 
-    Application.ScreenUpdating = False
-    On Error GoTo OpenFail
-    Set src = Workbooks.Open(Filename:=CStr(path), ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
-    data = src.Worksheets(1).UsedRange.Value
-    src.Close SaveChanges:=False
-    On Error GoTo 0
-    Application.ScreenUpdating = True
+    msg = ReadExport(CStr(path), data)
+    If Len(msg) > 0 Then
+        MsgBox "Excel could not open that file: " & msg, vbExclamation, "Update students"
+        Exit Sub
+    End If
 
     msg = ReadPupils(data)
     If Len(msg) > 0 Then
@@ -70,7 +74,7 @@ Public Sub UpdateStudentsFromExport()
     Set plan = New Collection
     summary = BuildPlan(plan)
     backup = BackupPath()
-    msg = "Update students from " & Dir$(CStr(path)) & "?" & vbCrLf & vbCrLf & summary & vbCrLf & _
+    msg = "Update students from " & FileNameOf(CStr(path)) & "?" & vbCrLf & vbCrLf & summary & vbCrLf & _
           "Scores are never changed. Students who are not in the export stay in the tracker " & _
           "and are listed on the Update Report sheet." & vbCrLf & vbCrLf
     If Len(backup) > 0 Then
@@ -83,16 +87,67 @@ Public Sub UpdateStudentsFromExport()
     If Len(backup) > 0 Then
         On Error Resume Next
         ThisWorkbook.SaveCopyAs backup
+        If Err.Number <> 0 Then
+            msg = Err.Description
+            On Error GoTo 0
+            If MsgBox("The backup copy could not be saved (" & msg & ")." & vbCrLf & vbCrLf & _
+                      "Update the students anyway?", vbExclamation + vbYesNo + vbDefaultButton2, _
+                      "Update students") <> vbYes Then Exit Sub
+        End If
         On Error GoTo 0
     End If
-    ApplyPlan plan, CStr(path)
-    MsgBox "Students updated. The Update Report sheet lists every change.", vbInformation, "Update students"
-    Exit Sub
-
-OpenFail:
-    Application.ScreenUpdating = True
-    MsgBox "Excel could not open that file: " & Err.Description, vbExclamation, "Update students"
+    If ApplyPlan(plan, CStr(path)) Then
+        SyncDashboard
+        MsgBox "Students updated. The Update Report sheet lists every change.", vbInformation, "Update students"
+    End If
 End Sub
+
+Private Function ReadExport(ByVal path As String, ByRef data As Variant) As String
+    ' Reads the first sheet of the export into data; returns "" or the reason it failed.
+    ' An export that is already open is read as it is and left open. Any other file
+    ' is opened read-only with its macros and events switched off, then closed.
+    Dim wb As Workbook, src As Workbook, security As Long, events As Boolean, opened As Boolean
+
+    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, path, vbTextCompare) = 0 Then
+            Set src = wb
+            Exit For
+        End If
+    Next wb
+    events = Application.EnableEvents
+    Application.ScreenUpdating = False
+    On Error GoTo Fail
+    If src Is Nothing Then
+        Application.EnableEvents = False
+        security = SwapMacroSecurity(FORCE_DISABLE_MACROS)
+        Set src = Workbooks.Open(Filename:=path, ReadOnly:=True, UpdateLinks:=0, AddToMru:=False)
+        opened = True
+    End If
+    data = src.Worksheets(1).UsedRange.Value
+Done:
+    On Error Resume Next
+    If opened Then src.Close SaveChanges:=False
+    SwapMacroSecurity security
+    Application.EnableEvents = events
+    Application.ScreenUpdating = True
+    Exit Function
+Fail:
+    ReadExport = Err.Description
+    Resume Done
+End Function
+
+Private Function SwapMacroSecurity(ByVal level As Long) As Long
+    ' Sets the security level for files opened by code and returns the old one
+    ' (0 = leave it as it is, or this version of Excel has no such setting).
+    On Error Resume Next
+    SwapMacroSecurity = Application.AutomationSecurity
+    If level <> 0 Then Application.AutomationSecurity = level
+End Function
+
+Public Function FileNameOf(ByVal path As String) As String
+    ' The last part of a path or a web address (Dir$ fails on web addresses).
+    FileNameOf = Mid$(path, InStrRev(Replace(path, "\", "/"), "/") + 1)
+End Function
 
 '==============================================================================
 ' Read the export
@@ -248,10 +303,12 @@ End Function
 Private Function BuildPlan(ByVal plan As Collection) As String
     ' plan items: "U|year|row|pupil" (update) or "N|year|0|pupil" (new) or "M|year|row|0" (missing)
     Dim y As Variant, lo As ListObject, rowCount As Long, r As Long, i As Long
-    Dim byUPN As Collection, byName As Collection, matched() As Boolean
+    Dim byUPN As Collection, byName As Collection, seen As Collection, matched() As Boolean
     Dim upn As String, hit As Long, nNew As Long, nMoved As Long, nMissing As Long, nSame As Long
-    Dim summaryLine As String
+    Dim summaryLine As String, dup As Boolean
 
+    mDuplicates = 0
+    Set seen = New Collection
     For Each y In YearNames()
         Set lo = YearTable(CStr(y))
         rowCount = lo.ListRows.Count
@@ -260,9 +317,14 @@ Private Function BuildPlan(ByVal plan As Collection) As String
         If rowCount > 0 Then ReDim matched(1 To rowCount) Else ReDim matched(0 To 0)
         For r = 1 To rowCount
             upn = UCase$(TextOf(TableValue(lo, r, "UPN")))
-            If Len(upn) > 0 Then KeepFirst byUPN, "U" & upn, r
-            KeepFirst byName, NameKey(TextOf(TableValue(lo, r, "Preferred Last name")), _
-                                       TextOf(TableValue(lo, r, "Preferred First name"))), r
+            If Len(upn) = 0 And Len(TextOf(TableValue(lo, r, "Preferred Last name"))) = 0 And _
+               Len(TextOf(TableValue(lo, r, "Preferred First name"))) = 0 Then
+                matched(r) = True                ' an empty row, not a student
+            Else
+                If Len(upn) > 0 Then KeepFirst byUPN, "U" & upn, r
+                KeepFirst byName, NameKey(TextOf(TableValue(lo, r, "Preferred Last name")), _
+                                           TextOf(TableValue(lo, r, "Preferred First name"))), r
+            End If
         Next r
 
         nNew = 0
@@ -270,7 +332,14 @@ Private Function BuildPlan(ByVal plan As Collection) As String
         nMissing = 0
         nSame = 0
         For i = 1 To mCount
-            If mPupils(i).YearName = CStr(y) Then
+            dup = False
+            If Len(mPupils(i).UPN) > 0 Then
+                ' A UPN belongs to one student: a second row with it in the export is ignored.
+                dup = (FindKey(seen, "U" & UCase$(mPupils(i).UPN)) > 0)
+                If Not dup And mPupils(i).YearName = CStr(y) Then KeepFirst seen, "U" & UCase$(mPupils(i).UPN), i
+                If dup And mPupils(i).YearName = CStr(y) Then mDuplicates = mDuplicates + 1
+            End If
+            If mPupils(i).YearName = CStr(y) And Not dup Then
                 hit = 0
                 If Len(mPupils(i).UPN) > 0 Then hit = FindKey(byUPN, "U" & UCase$(mPupils(i).UPN))
                 If hit = 0 Then
@@ -307,6 +376,9 @@ Private Function BuildPlan(ByVal plan As Collection) As String
         summaryLine = y & ": " & nNew & " new, " & nMoved & " class changes, " & nMissing & " not in the export"
         BuildPlan = BuildPlan & summaryLine & vbCrLf
     Next y
+    If mDuplicates > 0 Then
+        BuildPlan = BuildPlan & mDuplicates & " rows in the export repeat a UPN and are ignored." & vbCrLf
+    End If
 End Function
 
 Private Sub KeepFirst(ByVal col As Collection, ByVal key As String, ByVal value As Long)
@@ -333,7 +405,7 @@ End Function
 '==============================================================================
 ' Apply the plan and write the report
 '==============================================================================
-Private Sub ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String)
+Private Function ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String) As Boolean
     Dim item As Variant, parts() As String, lo As ListObject, lr As ListRow
     Dim calc As Long, events As Boolean, y As Variant
     Dim moves As Collection, added As Collection, gone As Collection, p As Pupil, oldClass As String
@@ -376,7 +448,8 @@ Private Sub ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String)
         If parts(0) = "N" Then
             Set lo = YearTable(parts(1))
             p = mPupils(CLng(parts(3)))
-            Set lr = lo.ListRows.Add
+            Set lr = BlankRow(lo)                ' the empty row of a year with no students yet
+            If lr Is Nothing Then Set lr = lo.ListRows.Add
             WritePupil lr, p
             added.Add Array(parts(1), p.LastName & ", " & p.FirstName, p.UPN, p.ClassName, "")
         End If
@@ -389,33 +462,44 @@ Private Sub ApplyPlan(ByVal plan As Collection, ByVal sourcePath As String)
     Application.Calculation = calc
     Application.EnableEvents = events
     Application.ScreenUpdating = True
-    Exit Sub
+    ApplyPlan = True
+    Exit Function
 Fail:
     Application.Calculation = calc
     Application.EnableEvents = events
     Application.ScreenUpdating = True
     MsgBox "The update stopped part-way: " & Err.Description & vbCrLf & _
            "Check the year sheets, or go back to the backup / version history.", vbCritical, "Update students"
-End Sub
+End Function
+
+Private Function BlankRow(ByVal lo As ListObject) As ListRow
+    ' First row with no UPN, no name and no numbers in it.
+    Dim lr As ListRow
+    For Each lr In lo.ListRows
+        If Len(TextOf(FieldOf(lr, "UPN"))) = 0 And Len(TextOf(FieldOf(lr, "Preferred Last name"))) = 0 And _
+           Len(TextOf(FieldOf(lr, "Preferred First name"))) = 0 Then
+            If Application.WorksheetFunction.Count(lr.Range) = 0 Then
+                Set BlankRow = lr
+                Exit Function
+            End If
+        End If
+    Next lr
+End Function
 
 Private Sub WritePupil(ByVal lr As ListRow, ByRef p As Pupil)
     If Len(p.UPN) > 0 Then SetCell lr, "UPN", p.UPN
     SetCell lr, "Preferred Last name", p.LastName
     SetCell lr, "Preferred First name", p.FirstName
-    If mHaveSex Then SetCell lr, "Sex Code", EmptyIfBlank(p.Sex)
-    If mHaveSEN Then SetCell lr, "SEN Status Code", EmptyIfBlank(p.SEN)
-    If mHavePP Then SetCell lr, "PP Deprivation", EmptyIfBlank(p.PP)
+    If mHaveSex Then SetCell lr, "Sex Code", p.Sex
+    If mHaveSEN Then SetCell lr, "SEN Status Code", p.SEN
+    If mHavePP Then SetCell lr, "PP Deprivation", p.PP
     If mHaveAtt Then SetCell lr, "Att%", p.Att
     If mHaveKS2 Then SetCell lr, "Avg KS2", p.KS2
-    SetCell lr, "Class", EmptyIfBlank(p.ClassName)
+    SetCell lr, "Class", p.ClassName
 End Sub
 
-Private Function EmptyIfBlank(ByVal s As String) As Variant
-    If Len(s) = 0 Then EmptyIfBlank = Empty Else EmptyIfBlank = s
-End Function
-
 Private Sub SetCell(ByVal lr As ListRow, ByVal colName As String, ByVal v As Variant)
-    lr.Range.Cells(1, lr.Parent.ListColumns(colName).Index).Value = v
+    PutValue lr.Range.Cells(1, lr.Parent.ListColumns(colName).Index), v   ' "" clears the cell
 End Sub
 
 Private Sub SortByName(ByVal lo As ListObject)
@@ -456,7 +540,7 @@ Private Sub WriteReport(ByVal sourcePath As String, ByVal moves As Collection, _
     ws.Range("A1").Value = "Student update report"
     ws.Range("A1").Font.Size = 14
     ws.Range("A1").Font.Bold = True
-    ws.Range("A2").Value = "From " & Dir$(sourcePath) & " on " & Format$(Now, "dd/mm/yyyy hh:mm")
+    ws.Range("A2").Value = "From " & FileNameOf(sourcePath) & " on " & Format$(Now, "dd/mm/yyyy hh:mm")
     r = 4
     r = ReportSection(ws, r, "Class changes", Array("Year group", "Student", "UPN", "From", "To"), moves)
     r = ReportSection(ws, r, "New students added", Array("Year group", "Student", "UPN", "Class", ""), added)
