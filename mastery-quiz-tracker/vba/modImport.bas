@@ -2,11 +2,12 @@ Attribute VB_Name = "modImport"
 '==============================================================================
 ' Update students from a new "All Students" export from the MIS
 '
-' Students are matched by UPN (or by name when a UPN is missing). Their
-' details and class are updated, new students are added to their year group,
-' and anyone no longer in the export is listed - never deleted. Scores are
-' never touched. A summary is shown before anything changes, and the details
-' go to the "Update Report" sheet.
+' Only the students of this workbook's year group are used, so every year
+' group's file reads the same whole-school export. Students are matched by UPN
+' (or by name when a UPN is missing). Their details and class are updated, new
+' students are added, and anyone no longer in the export is listed - never
+' deleted. Scores are never touched. A summary is shown before anything
+' changes, and the details go to the "Update Report" sheet.
 '==============================================================================
 Option Explicit
 
@@ -66,8 +67,9 @@ Public Sub UpdateStudentsFromExport()
         MsgBox msg, vbExclamation, "Update students"
         Exit Sub
     End If
-    If mCount = 0 Then
-        MsgBox "The export has no students in Years 7 to 11.", vbExclamation, "Update students"
+    If PupilsForThisFile() = 0 Then
+        MsgBox "The export has no students in " & Join(YearNames(), " or ") & ".", vbExclamation, _
+               "Update students"
         Exit Sub
     End If
 
@@ -101,6 +103,17 @@ Public Sub UpdateStudentsFromExport()
         MsgBox "Students updated. The Update Report sheet lists every change.", vbInformation, "Update students"
     End If
 End Sub
+
+Private Function PupilsForThisFile() As Long
+    ' Students in the export who belong to this workbook's year group(s).
+    Dim i As Long, y As Variant, names As Variant
+    names = YearNames()
+    For i = 1 To mCount
+        For Each y In names
+            If mPupils(i).YearName = CStr(y) Then PupilsForThisFile = PupilsForThisFile + 1
+        Next y
+    Next i
+End Function
 
 Private Function ReadExport(ByVal path As String, ByRef data As Variant) As String
     ' Reads the first sheet of the export into data; returns "" or the reason it failed.

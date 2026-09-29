@@ -156,6 +156,8 @@ class Inputs:
         wb = load_workbook(path)
         self.years = {}
         for y in gt.YEARS:
+            if gt.YEAR_NAME[y] not in wb.sheetnames:
+                continue
             ws = wb[gt.YEAR_NAME[y]]
             tab = ws.tables[gt.TABLE[y]]
             c1, r1, c2, r2 = range_boundaries(tab.ref)
@@ -231,13 +233,14 @@ def check_settings(inp, values):
     """The KS2 link shown for each year group is the slope of the fitted line (blank below 10 students)."""
     v = values["Settings"]
     bad = []
-    for i, y in enumerate(gt.YEARS):
+    for i, y in enumerate(inp.years):
         m, got = inp.years[y], v.get(f"E{15 + i}")
         want = m.slope if m.slope is not None else "too few results"
         if not same(want, got):
             bad.append((gt.YEAR_NAME[y], want, got))
-    fitted = sum(1 for y in gt.YEARS if inp.years[y].slope is not None)
-    check(f"Settings: KS2 link for each year group ({fitted} fitted, {5 - fitted} with too few results)",
+    fitted = sum(1 for y in inp.years if inp.years[y].slope is not None)
+    check(f"Settings: KS2 link for each year group ({fitted} fitted, {len(inp.years) - fitted} with too few "
+          f"results)",
           not bad, str(bad))
 
 
@@ -322,7 +325,8 @@ def check_overview(inp, values):
             for c, e in exp.items():
                 if not same(e, v.get(f"{c}{r}")):
                     bad.append((y, cls, c, e, v.get(f"{c}{r}")))
-    check("Overview: every class and whole-year figure in all five year groups", not bad, str(bad[:5]))
+    check(f"Overview: every class and whole-year figure ({', '.join(gt.YEAR_NAME[y] for y in inp.years)})",
+          not bad, str(bad[:5]))
 
 
 def dashboard_expectations(inp, sel):
@@ -526,7 +530,9 @@ def check_package(path):
             cols = {c.get("id"): c.get("name") for c in root.iter("{%s}tableColumn" % xlsm_package.NS["main"])}
             tables[int(root.get("id"))] = (root.get("displayName"), cols)
     caches = [n for n in parts if n.startswith("xl/slicerCaches/")]
-    check("ten slicer caches (Class and KS2 band for five year groups)", len(caches) == 10, str(len(caches)))
+    year_tables = sorted(name for name, _ in tables.values() if name.startswith("tblY"))
+    check(f"{2 * len(year_tables)} slicer caches (Class and KS2 band for {', '.join(year_tables)})",
+          len(caches) == 2 * len(year_tables) > 0, str(len(caches)))
     for n in caches:
         root = etree.fromstring(z.read(n))
         tsc = root.find(".//{%s}tableSlicerCache" % xlsm_package.NS["x15"])
@@ -588,6 +594,8 @@ def check_package(path):
     check("table headers match column names; formulas and validation rules within Excel's limits",
           not bad, str(bad[:5]))
     for y in gt.YEARS:
+        if gt.YEAR_NAME[y] not in wb.sheetnames:
+            continue
         ws = wb[gt.YEAR_NAME[y]]
         tab = ws.tables[gt.TABLE[y]]
         for col in tab.tableColumns:
@@ -788,20 +796,22 @@ def run_value_checks(path, variants, tmp):
 
 
 def standard_variants(inp):
-    """One dashboard selection per year group, cycling through the three measures."""
-    out = []
-    for k, y in enumerate(gt.YEARS):
-        tests = inp.tests_of(y)
-        m = inp.years[y]
+    """Dashboard selections cycling through the three measures, the tests and the classes
+    (and the year groups, when a workbook holds more than one)."""
+    out, years = [], list(inp.years)
+    for k in range(max(3, len(years))):
+        y = years[k % len(years)]
+        tests, m = inp.tests_of(y), inp.years[y]
         out.append({"year": gt.YEAR_NAME[y], "measure": gt.MEASURES[k % 3],
-                    "test": tests[k % len(tests)]["Test Name"] if tests else "",
-                    "class": m.classes[-1] if m.classes else "", "watch": gt.YEAR_NAME[y]})
+                    "test": tests[(2 * k + 1) % len(tests)]["Test Name"] if tests else "",
+                    "class": m.classes[-1 - k % len(m.classes)] if m.classes else "",
+                    "watch": gt.YEAR_NAME[y]})
     return out
 
 
 # -------------------------------------------------------------- edge cases
 
-def edge_case_workbook(out):
+def edge_case_workbook(out, year):
     S = gt.Student
     students = [
         S("E001", "Able", "Amy", 7, "F", "N", "Y", 95.0, 105.0, "7A/Sc1"),
@@ -844,51 +854,84 @@ def edge_case_workbook(out):
         T(9, "E92", "Number-like classes", 20, None, {"E201": 11, "E202": 14, "E203": 9, "E204": "A", "E205": 16}),
         T(11, "E11", "Out of range", 10, None, {"E301": 12}),
     ]
-    data = gt.Dataset(students, tests, "2026-27", "Test school", demo=True, dashboard_year=7, watch_year=7,
-                      dashboard_test="Just Added")
+    data = gt.Dataset(students, tests, "2026-27", "Test school", demo=True, years=(year,), dashboard_year=year,
+                      watch_year=year, dashboard_test="Just Added" if year == 7 else None)
     b = gt.Builder(data)
     xlsm_package.save(b.build(), b.extras, out, fill_cache=False)
 
 
 # --------------------------------------------------------------------- main
 
+EDGE_VARIANTS = {   # extra Dashboard selections for each year group's edge-case workbook
+    7: [{"test": "E01 - Mixed", "measure": "Mean stanine", "class": "7B/Sc1"},
+        {"test": "E02 - One score", "measure": "Completion %"}],
+    8: [{"test": "E81 - Two classes", "class": "8A/Sc2"}],
+    9: [{"test": "E92 - Number-like classes", "class": "9.10"},
+        {"test": "E91 - Typed as text", "measure": "Completion %"}],
+    10: [],                                     # a year group with no students and no tests
+    11: [{"test": "E11 - Out of range", "measure": "Mean stanine"}],
+}
+
+
+def year_key(path):
+    m = re.search(r"Year (\d+)", Path(path).name)
+    return (int(m.group(1)) if m else 99, Path(path).name)
+
+
+def verify_workbook(path, tmp):
+    print(f"\n=== {path.name}")
+    section("1. Package")
+    check_package(path)
+    section("2. Macros")
+    check_vba(path)
+    check_vba_in_libreoffice(path)
+    section("3. Values")
+    inp = Inputs(path)
+    tmp.mkdir()
+    run_value_checks(path, standard_variants(inp), tmp)
+
+
+def verify_edge_cases(tmp):
+    section("4. Edge cases (one workbook per year group)")
+    einp = {}
+    for y in gt.YEARS:
+        edge = tmp / f"edge{y}.xlsm"
+        edge_case_workbook(edge, y)
+        check_package(edge)
+        einp[y] = Inputs(edge)
+        (tmp / f"edge{y}").mkdir()
+        run_value_checks(edge, EDGE_VARIANTS[y], tmp / f"edge{y}")
+    check("edge: number-like class names stay separate (9.1, 9.10, 10)",
+          einp[9].years[9].classes == ["10", "9.1", "9.10", "9A/Sc1"], str(einp[9].years[9].classes))
+    check("edge: a class typed in a different case joins its class (7a/sc1 = 7A/Sc1)",
+          einp[7].years[7].classes == ["7A/Sc1", "7B/Sc1"], str(einp[7].years[7].classes))
+    check("edge: a year group with no students yet", not einp[10].years[10].rows)
+    m7 = einp[7].years[7]
+    reasons = {m7.rows[i]["Preferred Last name"] for i in range(len(m7.rows))
+               if (m7.vs[i] is not None and m7.sat[i] >= 2 and m7.vs[i] <= -1.5)
+               or (m7.band[i] is None and m7.mean[i] is not None and m7.sat[i] >= 2 and m7.mean[i] <= 3)}
+    check("edge: both watch-list rules are exercised (Dean: below expected; Eve: no KS2, low results)",
+          {"Dean", "Eve"} <= reasons, str(reasons))
+
+
 def main():
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "Mastery-Quiz-Tracker-demo.xlsm"
-    print(f"Verifying {path.name}")
+    """verify_tracker.py [--no-edge] [workbook.xlsm | folder ...]   (default: the demo folder)"""
+    args = [a for a in sys.argv[1:] if a != "--no-edge"]
+    paths = []
+    for a in args or [str(HERE / "demo")]:
+        p = Path(a)
+        paths += sorted(p.glob("*.xlsm"), key=year_key) if p.is_dir() else [p]
+    if not paths:
+        sys.exit("No workbooks to verify.")
+    print("Verifying " + ", ".join(p.name for p in paths))
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        section("1. Package")
-        check_package(path)
-        section("2. Macros")
-        check_vba(path)
-        check_vba_in_libreoffice(path)
+        section("Macros' helper functions")
         check_vba_helpers(tmp)
-        section("3. Values")
-        inp = Inputs(path)
-        run_value_checks(path, standard_variants(inp), tmp)
-        section("4. Edge cases")
-        edge = tmp / "edge.xlsm"
-        edge_case_workbook(edge)
-        check_package(edge)
-        einp = Inputs(edge)
-        (tmp / "edge").mkdir()
-        run_value_checks(edge, [
-            {"test": "E01 - Mixed", "measure": "Mean stanine", "class": "7B/Sc1"},
-            {"test": "E02 - One score", "measure": "Completion %"},
-            {"year": "Year 10", "test": "", "class": "", "watch": "Year 10"},
-            {"year": "Year 8", "test": "E81 - Two classes", "class": "8A/Sc2", "watch": "Year 8"},
-            {"year": "Year 9", "test": "E92 - Number-like classes", "class": "9.10", "watch": "Year 9"},
-        ], (tmp / "edge"))
-        check("edge: number-like class names stay separate (9.1, 9.10, 10)",
-              einp.years[9].classes == ["10", "9.1", "9.10", "9A/Sc1"], str(einp.years[9].classes))
-        check("edge: a class typed in a different case joins its class (7a/sc1 = 7A/Sc1)",
-              einp.years[7].classes == ["7A/Sc1", "7B/Sc1"], str(einp.years[7].classes))
-        m7 = einp.years[7]
-        reasons = {m7.rows[i]["Preferred Last name"] for i in range(len(m7.rows))
-                   if (m7.vs[i] is not None and m7.sat[i] >= 2 and m7.vs[i] <= -1.5)
-                   or (m7.band[i] is None and m7.mean[i] is not None and m7.sat[i] >= 2 and m7.mean[i] <= 3)}
-        check("edge: both watch-list rules are exercised (Dean: below expected; Eve: no KS2, low results)",
-              {"Dean", "Eve"} <= reasons, str(reasons))
+        for n, path in enumerate(paths):
+            verify_workbook(path, tmp / f"w{n}")
+        if "--no-edge" not in sys.argv:
+            verify_edge_cases(tmp)
     print(f"\nAll {PASSED['n']} checks passed.")
 
 

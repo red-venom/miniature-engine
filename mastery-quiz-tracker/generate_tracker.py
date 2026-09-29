@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Generate the Science Mastery Quiz Tracker (Years 7-11) as a macro-enabled workbook.
+"""Generate the Science Mastery Quiz Tracker as one macro-enabled workbook per year group.
 
-One workbook holds every year group:
+Each workbook (for example "Year 9 Leave 2029 - Mastery Quiz Tracker.xlsm") holds:
 
-* Year 7 ... Year 11 - one Excel table per year group. Each test adds exactly two
-  columns (Raw Score and Stanine); there are no empty placeholder columns.
+* Year N             - one Excel table for the year group. Each test adds exactly two
+                       columns (Raw Score and Stanine); there are no empty placeholder columns.
 * Assessment Info    - the register of tests and the stanine lookup.
-* Overview           - how every class in every year group is doing.
-* Dashboard          - one year group: each test for the year and each class,
-                       a test drill-down, stanine spread, group gaps and a trend.
+* Overview           - how every class in the year group is doing.
+* Dashboard          - each test for the year group and each class, a test drill-down,
+                       stanine spread, group gaps and a trend.
 * Watch List         - students working well below what their KS2 results predict.
 * Start / Settings   - instructions, the stanine key, class teachers, rules.
 
@@ -18,9 +18,10 @@ that source into the workbook's vbaProject.bin, and xlsm_package.py adds the
 parts openpyxl cannot write (slicers, buttons, the VBA project).
 
 Usage:
-  python3 generate_tracker.py                       # demo with fictional students
+  python3 generate_tracker.py                       # five demo workbooks in ./demo
   python3 generate_tracker.py --students private/All_Students.xlsx \\
-      --carry-over "Year 11 tracker.xlsx" --out "Science Mastery Quiz Tracker 2026-27.xlsm"
+      --carry-over "private/Year 11 tracker.xlsx" --out-dir private
+  python3 generate_tracker.py --year 9 ...          # one year group only (repeatable)
 
 Real student data never belongs in this (public) repository: write real
 workbooks outside it, or into the git-ignored private/ folder.
@@ -239,9 +240,19 @@ def tr(table, col):
     return f"{table}[[#This Row],[{col}]]"
 
 
-def choose(index_expr, part):
+def leave_year(y, academic_year):
+    """The summer a year group finishes Year 11: Year 11 in 2026-27 leaves in 2027."""
+    return int(academic_year[:4]) + 1 + (11 - y)
+
+
+def workbook_name(y, academic_year, demo=False):
+    """Named like the school's own trackers, e.g. 'Year 11 Leave 2027 - Mastery Quiz Tracker'."""
+    return f"Year {y} Leave {leave_year(y, academic_year)} - Mastery Quiz Tracker{' (demo)' if demo else ''}.xlsm"
+
+
+def choose(index_expr, part, years):
     """CHOOSE(i, tblY7[part], ..., tblY11[part]) - pick a year group's table."""
-    return f"CHOOSE({index_expr}," + ",".join(f"{TABLE[y]}[{part}]" for y in YEARS) + ")"
+    return f"CHOOSE({index_expr}," + ",".join(f"{TABLE[y]}[{part}]" for y in years) + ")"
 
 
 def to_file_formula(ui_formula):
@@ -353,6 +364,7 @@ class Dataset:
     dashboard_test: object = None                      # default: the year's latest test
     dashboard_class: object = None                     # default: the year's first class
     dashboard_measure: str = "Mean %"
+    years: tuple = tuple(YEARS)                        # the year groups this workbook holds
 
 
 # Class-name criteria. COUNTIF/AVERAGEIFS read a criterion that looks like a number or a
@@ -612,6 +624,7 @@ def demo_data(academic_year, seed=2031):
 class Builder:
     def __init__(self, data: Dataset):
         self.d = data
+        self.years = [y for y in YEARS if y in data.years]
         self.wb = Workbook()
         base = Font(name=FONT, sz=10, family=2)
         self.wb._fonts = IndexedList([base])
@@ -619,7 +632,7 @@ class Builder:
         self.wb.code_name = "ThisWorkbook"
         props = self.wb.properties
         props.title = "Science Mastery Quiz Tracker"
-        props.subject = f"Mastery quizzes, Years 7 to 11, {data.academic_year}"
+        props.subject = f"Mastery quizzes, {self.years_label()}, {data.academic_year}"
         props.creator = props.lastModifiedBy = "Mastery Quiz Tracker generator"
         props.keywords = "stanine; mastery quiz; KS3; KS4; science"
         self.extras = xlsm_package.Extras()
@@ -627,17 +640,24 @@ class Builder:
         # in the same order as a teacher's class list; students with no class go last.
         self.students = {y: sorted((s for s in data.students if s.year == y),
                                    key=lambda s: (not s.cls, xl_key(s.cls), xl_key(s.last), xl_key(s.first)))
-                         for y in YEARS}
-        self.tests = {y: [t for t in data.tests if t.year == y] for y in YEARS}
+                         for y in self.years}
+        self.tests = {y: [t for t in data.tests if t.year == y] for y in self.years}
         for y, tests in self.tests.items():
             names = [t.name.upper() for t in tests]
             if len(names) != len(set(names)) or any(clean_text(t.name) != t.name or not t.name
                                                     or len(t.name) > MAX_NAME for t in tests):
                 raise ValueError(f"Year {y} test names must be unique, non-empty, clean and at most "
                                  f"{MAX_NAME} characters: {names}")
-        self.classes = {y: sorted({s.cls for s in self.students[y] if s.cls}, key=str.upper) for y in YEARS}
+        self.classes = {y: sorted({s.cls for s in self.students[y] if s.cls}, key=str.upper) for y in self.years}
 
     # -- helpers -------------------------------------------------------------
+    def years_label(self):
+        """'Year 9   ·   leaves 2029' for a one-year workbook, 'Years 7 to 11' otherwise."""
+        if len(self.years) == 1:
+            y = self.years[0]
+            return f"Year {y}   ·   leaves {leave_year(y, self.d.academic_year)}"
+        return f"Years {self.years[0]} to {self.years[-1]}"
+
     def band_buttons(self, ws, last_col, buttons, width=100):
         """Buttons right-aligned inside the navy title band (row 1, columns A..last_col)."""
         right = 0
@@ -663,14 +683,14 @@ class Builder:
         self.ws_over = wb.create_sheet("Overview")
         self.ws_dash = wb.create_sheet("Dashboard")
         self.ws_watch = wb.create_sheet("Watch List")
-        self.ws_year = {y: wb.create_sheet(YEAR_NAME[y]) for y in YEARS}
+        self.ws_year = {y: wb.create_sheet(YEAR_NAME[y]) for y in self.years}
         self.ws_info = wb.create_sheet("Assessment Info")
         self.ws_set = wb.create_sheet("Settings")
         self.ws_calc = wb.create_sheet("Calc")
         codes = {self.ws_start: "shStart", self.ws_over: "shOverview", self.ws_dash: "shDashboard",
                  self.ws_watch: "shWatch", self.ws_info: "shInfo", self.ws_set: "shSettings",
                  self.ws_calc: "shCalc"}
-        codes.update({self.ws_year[y]: CODENAME[y] for y in YEARS})
+        codes.update({self.ws_year[y]: CODENAME[y] for y in self.years})
         for ws, code in codes.items():
             ws.sheet_properties.codeName = code
         tabs = {self.ws_start: NAVY, self.ws_over: BLUE, self.ws_dash: BLUE, self.ws_watch: BLUE,
@@ -680,7 +700,7 @@ class Builder:
 
         self.build_calc_lists()
         self.build_fit()
-        for y in YEARS:
+        for y in self.years:
             self.build_year(y)
         self.build_register()
         self.build_settings()
@@ -692,7 +712,7 @@ class Builder:
         self.ws_calc.sheet_state = "hidden"
         for ws in (self.ws_start, self.ws_over, self.ws_dash, self.ws_watch, self.ws_info, self.ws_set):
             print_setup(ws, fit_width=True)
-        for y in YEARS:
+        for y in self.years:
             print_setup(self.ws_year[y], fit_width=False)
             self.ws_year[y].print_title_rows = "1:1"
             self.ws_year[y].print_title_cols = "A:C"
@@ -829,9 +849,9 @@ class Builder:
     def reg_formulas(self):
         T = REG
         yi, rc = tr(T, "Year Index"), tr(T, "Raw Col")
-        data = f"INDEX({choose(yi, '#Data')},0,{rc})"
+        data = f"INDEX({choose(yi, '#Data', self.years)},0,{rc})"
         return {
-            "Students": f'IF({yi}=0,"",COUNTA({choose(yi, "Preferred Last name")}))',
+            "Students": f'IF({yi}=0,"",COUNTA({choose(yi, "Preferred Last name", self.years)}))',
             "Sat": f'IF({rc}=0,"",COUNT({data}))',
             "Absent": f'IF({rc}=0,"",COUNTIF({data},"A"))',
             "Not Entered": f'IF({rc}=0,"",{tr(T, "Students")}-{tr(T, "Sat")}-{tr(T, "Absent")})',
@@ -848,7 +868,7 @@ class Builder:
                         f'+IF(N({tr(T, "Max Marks")})>0,COUNTIF({data},">"&{tr(T, "Max Marks")}),0))'),
             "Year Index": f'IFERROR(MATCH({tr(T, "Year Group")},YearNames,0),0)',
             "Raw Col": (f'IF({yi}=0,0,IFERROR(MATCH({tr(T, "Test Name")}&{LF}&"{RAW_SUFFIX}",'
-                        f'{choose(yi, "#Headers")},0),0))'),
+                        f'{choose(yi, "#Headers", self.years)},0),0))'),
             "Seq Key": (f'{tr(T, "Year Group")}&"|"&COUNTIF(INDEX({T}[Year Group],1):'
                         f'{tr(T, "Year Group")},{tr(T, "Year Group")})'),
             "Name Key": f'{tr(T, "Year Group")}&"|"&{tr(T, "Test Name")}',
@@ -865,7 +885,7 @@ class Builder:
         top = 4
         header_cells(ws, top, 1, cols, height=32)
         formulas = self.reg_formulas()
-        tests = [t for y in YEARS for t in self.tests[y]]
+        tests = [t for y in self.years for t in self.tests[y]]
         rows = tests or [None]
         for i, test in enumerate(rows):
             r = top + 1 + i
@@ -957,7 +977,7 @@ class Builder:
         section(ws, "B13", "Year groups")
         header_cells(ws, 14, 2, ["Year group", "Leaves in", "Sheet", "KS2 link"])
         start = int(self.d.academic_year[:4])
-        for i, y in enumerate(YEARS):
+        for i, y in enumerate(self.years):
             r = 15 + i
             put(ws, f"B{r}", YEAR_NAME[y], border=BOX)
             put(ws, f"C{r}", start + 1 + (11 - y), al=CENTER, border=BOX, fmt="0")
@@ -978,7 +998,7 @@ class Builder:
         top = 24
         cols = ["Year Group", "Class", "Teacher", "Key"]
         header_cells(ws, top, 2, cols)
-        pairs = [(y, c) for y in YEARS for c in self.classes[y]] or [(7, "")]
+        pairs = [(y, c) for y in self.years for c in self.classes[y]] or [(self.years[0], "")]
         for i, (y, c) in enumerate(pairs):
             r = top + 1 + i
             put(ws, f"B{r}", YEAR_NAME[y], border=BOX)
@@ -1005,10 +1025,10 @@ class Builder:
         ws = self.ws_calc
         put(ws, "A1", "Helper calculations for the dashboards and drop-down lists. Please do not edit.",
             f=font(10, True, "B42318"))
-        for i, y in enumerate(YEARS):
+        for i, y in enumerate(self.years):
             put(ws, f"B{3 + i}", YEAR_NAME[y])
             put(ws, f"C{3 + i}", TABLE[y])
-        self.name("YearNames", "Calc!$B$3:$B$7")
+        self.name("YearNames", f"Calc!$B$3:$B${2 + len(self.years)}")
         for i, m in enumerate(MEASURES):
             put(ws, f"E{3 + i}", m)
         self.name("MeasureList", "Calc!$E$3:$E$5")
@@ -1024,7 +1044,7 @@ class Builder:
         for c, h in zip("BN BO BP BQ BR BS BT BU".split(),
                         ["Expected stanine fit", "n", "Sx", "Sy", "Sxx", "Sxy", "Slope", "Intercept"]):
             put(ws, f"{c}2", h, f=font(9, True))
-        for i, y in enumerate(YEARS):
+        for i, y in enumerate(self.years):
             r, t = 3 + i, TABLE[y]
             x, yv = f"{t}[[Avg KS2 Band]]", f"{t}[[Mean Stanine]]"
             mask = f"ISNUMBER({x})*ISNUMBER({yv})"
@@ -1046,7 +1066,7 @@ class Builder:
         first, last = 10, 10 + MAX_STUDENTS - 1
         # Distinct, sorted class names per year: mirror the Class column, give each
         # first occurrence its alphabetical rank, then list by rank.
-        for i, y in enumerate(YEARS):
+        for i, y in enumerate(self.years):
             m, k = get_column_letter(8 + 2 * i), get_column_letter(9 + 2 * i)      # H/I ... P/Q
             put(ws, f"{m}{first - 1}", f"{YEAR_NAME[y]} class", f=font(9, True))
             for r in range(first, last + 1):
@@ -1072,7 +1092,7 @@ class Builder:
                 "dKsBand": "Avg KS2 Band", "dPP": "PP Deprivation", "dSEN": "SEN Status Code",
                 "dSex": "Sex Code", "dTests": "Tests Sat"}
         for nm, part in cols.items():
-            self.name(nm, choose("dYear", part))
+            self.name(nm, choose("dYear", part, self.years))
         self.name("dCount", "IF(ISNUMBER(dYear),COUNTA(dLast),0)")     # COUNTA would count an #N/A as 1
         self.name("dRaw", f'INDEX(dData,0,MATCH(SelTest&{LF}&"{RAW_SUFFIX}",dHdr,0))')
         self.name("dStn", f'INDEX(dData,0,MATCH(SelTest&{LF}&"{STANINE_SUFFIX}",dHdr,0))')
@@ -1080,10 +1100,11 @@ class Builder:
         self.name("dMax", f'INDEX({REG}[Max Marks],MATCH(SelYear&"|"&SelTest,{REG}[Name Key],0))')
 
         # Class slots for the selected year group (Y3:Y10) and its test list (AA3:AC62).
+        last_slot = get_column_letter(18 + len(self.years))                       # S ... W
         put(ws, "Y2", "Selected year classes", f=font(9, True))
         for j in range(CLASS_SLOTS):
-            ws[f"Y{3 + j}"] = f'=IFERROR(INDEX($S{3 + j}:$W{3 + j},dYear),"")'
-        ws["Y12"] = '=IFERROR(INDEX($S$12:$W$12,dYear),0)'
+            ws[f"Y{3 + j}"] = f'=IFERROR(INDEX($S{3 + j}:${last_slot}{3 + j},dYear),"")'
+        ws["Y12"] = f'=IFERROR(INDEX($S$12:${last_slot}$12,dYear),0)'
         put(ws, "AA2", "Selected year tests", f=font(9, True))
         put(ws, "AB2", "Max", f=font(9, True))
         put(ws, "AC2", "Date", f=font(9, True))
@@ -1116,7 +1137,7 @@ class Builder:
 
         # Latest test per year group (Overview, Watch List, Start).
         put(ws, "AF2", "Latest test", f=font(9, True))
-        for i, y in enumerate(YEARS):
+        for i, y in enumerate(self.years):
             r = 3 + i
             cnt = f'COUNTIF({REG}[Year Group],"{YEAR_NAME[y]}")'
             key = f'MATCH("{YEAR_NAME[y]}|"&{cnt},{REG}[Seq Key],0)'
@@ -1172,8 +1193,8 @@ class Builder:
                  "wFirst": "Preferred First name", "wClass": "Class", "wKsBand": "Avg KS2 Band",
                  "wTests": "Tests Sat", "wMean": "Mean Stanine", "wVs": "vs Expected"}
         for nm, part in wcols.items():
-            self.name(nm, choose("wYear", part))
-        self.name("wLatest", "INDEX(Calc!$AF$3:$AF$7,wYear)")
+            self.name(nm, choose("wYear", part, self.years))
+        self.name("wLatest", f"INDEX(Calc!$AF$3:$AF${2 + len(self.years)},wYear)")
         heads = ["Last", "First", "Class", "KS2 band", "Tests", "Mean", "vs expected", "Latest", "Reason", "Key"]
         for c, h in enumerate(heads):
             put(ws, f"{get_column_letter(53 + c)}69", h, f=font(9, True))            # BA ...
@@ -1209,11 +1230,11 @@ class Builder:
     def build_overview(self):
         ws = self.ws_over
         title_block(ws, "Class overview",
-                    "How every class in every year group is doing, from all the tests entered so far. "
+                    "How every class is doing, from all the tests entered so far. "
                     "Blue = above the year group, red = below.", 14)
         widths(ws, {"A": 2, "B": 20, "C": 14, "D": 9, "E": 9, "F": 9, "G": 9, "H": 9, "I": 10,
                     "J": 10, "K": 10, "L": 10, "M": 11, "N": 2})
-        tiles = [("Students", "=" + "+".join(f"COUNTA({TABLE[y]}[Preferred Last name])" for y in YEARS), "0"),
+        tiles = [("Students", "=" + "+".join(f"COUNTA({TABLE[y]}[Preferred Last name])" for y in self.years), "0"),
                  ("Tests set", f"=COUNTA({REG}[Test Name])", "0"),
                  ("Scores entered", f"=SUM({REG}[Sat])", "#,##0"),
                  ("Tests still being marked", f'=COUNTIFS({REG}[Completion],"<1",{REG}[Test Name],"<>")', "0")]
@@ -1223,7 +1244,7 @@ class Builder:
                  "vs\nexpected", "Results at\nstanine 7-9", "Results at\nstanine 1-3",
                  "Latest test\nmean %", "Latest test\nmean stanine", "Latest test\ncompletion"]
         row = 9
-        for i, y in enumerate(YEARS):
+        for i, y in enumerate(self.years):
             t = TABLE[y]
             yname = YEAR_NAME[y]
             latest, latest_max = f"Calc!$AF${3 + i}", f"Calc!$AG${3 + i}"
@@ -1317,7 +1338,8 @@ class Builder:
     def build_dashboard(self):
         ws = self.ws_dash
         title_block(ws, "Assessment dashboard",
-                    "Choose a year group and a test. Colours compare each class with the whole year group: "
+                    ("Choose a test. " if len(self.years) == 1 else "Choose a year group and a test. ") +
+                    "Colours compare each class with the whole year group: "
                     "blue = above, red = below.", 26)
         widths(ws, {"A": 2, "B": 30, "C": 11, "D": 9, "E": 9, "F": 10, "G": 10, "H": 10, "I": 10,
                     "J": 10, "K": 10, "L": 10, "M": 10, "N": 10, "O": 10, "P": 2})
@@ -1583,7 +1605,7 @@ class Builder:
     def build_start(self):
         ws = self.ws_start
         title_block(ws, "Science Mastery Quiz Tracker", "", 12)
-        put(ws, "B2", '=IF(SchoolName="","",SchoolName&"   ·   ")&"Years 7 to 11   ·   "&AcademicYear',
+        put(ws, "B2", f'=IF(SchoolName="","",SchoolName&"   ·   ")&"{self.years_label()}   ·   "&AcademicYear',
             f=font(11, False, INK2))
         widths(ws, {"A": 2, "B": 22, "C": 12, "D": 12, "E": 12, "F": 14, "G": 34, "H": 16, "I": 2,
                     "J": 12, "K": 12, "L": 2})
@@ -1601,10 +1623,10 @@ class Builder:
                                 left_px=18, top_px=96, width_px=128, gap_px=10, height_px=34)
         ws.row_dimensions[4].height = 20
         ws.row_dimensions[5].height = 20
-        section(ws, "B7", "Year groups")
+        section(ws, "B7", "Year group" if len(self.years) == 1 else "Year groups")
         header_cells(ws, 8, 2, ["Year group", "Leaves in", "Students", "Tests set", "Scores entered",
                                 "Latest test", "Open"], height=22)
-        for i, y in enumerate(YEARS):
+        for i, y in enumerate(self.years):
             r = 9 + i
             t = TABLE[y]
             put(ws, f"B{r}", YEAR_NAME[y], f=font(10, True), border=BOX)
@@ -1619,8 +1641,8 @@ class Builder:
 
         guide = [
             ("For class teachers", [
-                "Open your year group's sheet and click your class in the Class slicer (top left). Your class "
-                "is one unbroken block, in surname order.",
+                "Open the year group's sheet (the Open link above) and click your class in the Class slicer "
+                "(top left). Your class is one unbroken block, in surname order.",
                 "Type each student's mark in the test's Raw Score column. Type A for absent; leave the cell "
                 "empty if they have not sat it yet.",
                 "To paste marks, paste one class at a time, in the same order as the sheet. Excel also pastes "
@@ -1634,14 +1656,15 @@ class Builder:
                 "The same form edits a title, maximum mark or date, and removes a test added by mistake.",
                 "Update students reads a new 'All Students' export from the MIS: new students are added, classes and "
                 "details are updated, scores are never touched. Students missing from the export are listed, "
-                "not deleted.",
+                "not deleted. It uses only this file's year group, so every year group's file reads the "
+                "same export.",
                 "Class overview, Dashboard and Watch list update by themselves as marks go in.",
                 "Type teachers' names on the Settings sheet to show them on the dashboards.",
                 "If the buttons do nothing, Excel is blocking macros. Marks, stanines and dashboards still work. "
                 "Ask IT to allow macros for this file, or add a test by hand (see the end of this sheet).",
             ]),
         ]
-        row = 16
+        row = 9 + len(self.years) + 2
         for heading, items in guide:
             section(ws, f"B{row}", heading)
             row += 1
@@ -1672,8 +1695,8 @@ class Builder:
             "It does not show that one year group or one test is harder than another.",
             "Stanines settle once every class has entered its marks for a test; until then they are relative "
             "to the students entered so far.",
-            "A whole year group always averages about stanine 5, so compare year groups using mean %. "
-            "Compare classes using both.",
+            "A whole year group always averages about stanine 5, so use stanines to compare classes and "
+            "students, not year groups. Mean % cannot compare year groups either: tests differ in difficulty.",
             "Avg KS2 is the mean of each student's KS2 maths and reading scaled scores (or the one that exists), "
             "and its band is a stanine within the year group. 'vs expected' is the mean stanine minus the "
             "average for students with the same KS2 band in the year group, so it measures progress fairly "
@@ -1941,7 +1964,10 @@ def main():
                     help="existing tracker whose tests and scores to bring across (repeatable)")
     ap.add_argument("--academic-year", default="2026-27")
     ap.add_argument("--school", default="Science")
-    ap.add_argument("--out", default=str(HERE / "Mastery-Quiz-Tracker-demo.xlsm"))
+    ap.add_argument("--out-dir", default=None,
+                    help="folder for the workbooks (default: ./demo for the demo, else the current folder)")
+    ap.add_argument("--year", type=int, action="append", choices=YEARS,
+                    help="build only this year group (repeatable); default: all five")
     ap.add_argument("--no-cache", action="store_true",
                     help="skip filling in calculated values with LibreOffice (faster)")
     ap.add_argument("--static-charts", action="store_true", help=argparse.SUPPRESS)
@@ -1958,17 +1984,17 @@ def main():
     else:
         students, tests = demo_data(args.academic_year)
         demo = True
-    with_tests = [t.year for t in tests]
-    busiest = max(YEARS, key=lambda y: (with_tests.count(y), y)) if tests else 7
-    data = Dataset(students, tests, args.academic_year, args.school, demo,
-                   dashboard_year=busiest, watch_year=busiest, teachers=demo_teachers() if demo else {})
-    builder = Builder(data)
-    wb = builder.build()
-    out = Path(args.out)
-    xlsm_package.save(wb, builder.extras, out, fill_cache=not args.no_cache)
-    counts = {y: len(builder.students[y]) for y in YEARS}
-    print(f"Wrote {out}  ({sum(counts.values())} students: "
-          + ", ".join(f"Y{y} {n}" for y, n in counts.items()) + f"; {len(tests)} test{'' if len(tests) == 1 else 's'})")
+    out_dir = Path(args.out_dir) if args.out_dir else (HERE / "demo" if demo else Path.cwd())
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for y in sorted(set(args.year or YEARS)):
+        data = Dataset(students, tests, args.academic_year, args.school, demo, years=(y,),
+                       dashboard_year=y, watch_year=y, teachers=demo_teachers() if demo else {})
+        builder = Builder(data)
+        wb = builder.build()
+        out = out_dir / workbook_name(y, args.academic_year, demo)
+        xlsm_package.save(wb, builder.extras, out, fill_cache=not args.no_cache)
+        n_tests = len(builder.tests[y])
+        print(f"Wrote {out}  ({len(builder.students[y])} students, {n_tests} test{'' if n_tests == 1 else 's'})")
 
 
 if __name__ == "__main__":

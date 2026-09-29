@@ -1,20 +1,23 @@
 # 🧪 Science Mastery Quiz Tracker — Years 7 to 11
 
-One Excel workbook that tracks every mastery quiz for every year group, turns each mark
-into a **stanine** so students can be compared across tests, classes and year groups,
-and shows how each class and each year group is doing — without a single empty
-placeholder column.
+One Excel workbook **per year group** that tracks every mastery quiz, turns each mark into a
+**stanine** so students can be compared across tests and classes, and shows how each class and the
+year group as a whole is doing — without a single empty placeholder column. The files are named like
+the school's own trackers: *Year 11 Leave 2027 - Mastery Quiz Tracker.xlsm*, *Year 10 Leave 2028 - …*,
+and so on.
 
-**[⬇ Download the demo workbook](Mastery-Quiz-Tracker-demo.xlsm)** — every student, class and
-score in it is made up, so you can try every button safely.
+**⬇ Demo workbooks:** [Year 7](demo/Year%207%20Leave%202031%20-%20Mastery%20Quiz%20Tracker%20%28demo%29.xlsm) · [Year 8](demo/Year%208%20Leave%202030%20-%20Mastery%20Quiz%20Tracker%20%28demo%29.xlsm) · [Year 9](demo/Year%209%20Leave%202029%20-%20Mastery%20Quiz%20Tracker%20%28demo%29.xlsm) · [Year 10](demo/Year%2010%20Leave%202028%20-%20Mastery%20Quiz%20Tracker%20%28demo%29.xlsm) · [Year 11](demo/Year%2011%20Leave%202027%20-%20Mastery%20Quiz%20Tracker%20%28demo%29.xlsm) — every student, class and score in them is made up, so you can try
+every button safely.
+
+Each year group's file holds:
 
 | Sheet | What it does |
 | --- | --- |
-| **Start** | Buttons, a year-group summary, instructions for teachers and the data lead, the stanine key. |
-| **Overview** | Every class in every year group: mean stanine, progress against KS2, share of results at stanines 7–9 and 1–3, and the latest test. |
-| **Dashboard** | One year group in depth: the chosen test by class, its stanine spread against the expected spread, PP / SEN / sex gaps, a colour-coded grid of every test by class, and a trend chart for one class. |
-| **Watch List** | Students whose results are well below what students with the same KS2 results achieve in their year group (rules set on **Settings**). |
-| **Year 7 … Year 11** | One table per year group, laid out like the original Year 11 tracker: student details, KS2 band, class, then two columns per test — *Raw Score* and *Stanine*. Rows are grouped class by class. Class and KS2-band slicers sit in the frozen top-left corner. |
+| **Start** | Buttons, a summary of the year group, instructions for teachers and the data lead, the stanine key. |
+| **Overview** | Every class: mean stanine, progress against KS2, share of results at stanines 7–9 and 1–3, and the latest test. |
+| **Dashboard** | The year group in depth: the chosen test by class, its stanine spread against the expected spread, PP / SEN / sex gaps, a colour-coded grid of every test by class, and a trend chart for one class. |
+| **Watch List** | Students whose results are well below what students with the same KS2 results achieve in the year group (rules set on **Settings**). |
+| **Year 7** (or 8, 9, 10, 11) | The year group's table, laid out like the original Year 11 tracker: student details, KS2 band, class, then two columns per test — *Raw Score* and *Stanine*. Rows are grouped class by class. Class and KS2-band slicers sit in the frozen top-left corner. |
 | **Assessment Info** | The register of tests (max mark, date, how many sat, completion, mean, SD) and the stanine lookup. |
 | **Settings** | Academic year, class teachers, watch-list rules. |
 
@@ -22,8 +25,8 @@ score in it is made up, so you can try every button safely.
 
 **Class teachers**
 
-1. Open your year group's sheet and click your class in the **Class** slicer. The class is one
-   unbroken block, in surname order.
+1. Open your year group's file and its year sheet, and click your class in the **Class** slicer. The
+   class is one unbroken block, in surname order.
 2. Type each mark in the test's *Raw Score* column. Type **A** for absent. Leave the cell empty if the
    student has not sat the test yet. Out-of-range marks are refused.
 3. To paste marks, paste one class at a time, in the same order as the sheet. Excel also pastes into
@@ -43,17 +46,19 @@ do not run, the register's **Check** column counts any invalid marks for each te
 
 **Data lead**
 
-- **Manage tests** (on Start, each year sheet, the Dashboard and the register) opens a form:
-  - *Add a test* — year group, optional code (e.g. `4C09`), title, maximum mark and date. It adds the
-    two columns at the right-hand end of that year's table, with the stanine formula, the 0-to-max
+- **Manage tests** (on Start, the year sheet, the Dashboard and the register) opens a form:
+  - *Add a test* — optional code (e.g. `4C09`), title, maximum mark and date. It adds the
+    two columns at the right-hand end of the year group's table, with the stanine formula, the 0-to-max
     check and the traffic-light icons, adds a row to the register and takes you to the new column.
   - *Edit or remove a test* — fix a title, code, maximum mark or date (Excel rewrites every formula
     that uses the renamed columns), or remove a test added by mistake, after a confirmation that says
     how many marks will be deleted.
-- **Update students** reads a new *All Students* export from the MIS. Students are matched by UPN
+- **Update students** reads a new *All Students* export from the MIS — the same whole-school export in
+  every file, because each file takes only its own year group's students. Run it in each file. Students
+  are matched by UPN
   (by name only for rows that have no UPN, so two students who share a name are never merged; an export
-  with an empty UPN column is refused); details and classes are updated, new students are added to their
-  year group, and anyone missing from the export is listed — never deleted. **Marks are never
+  with an empty UPN column is refused); details and classes are updated, new students are added, and
+  anyone missing from the export is listed — never deleted. **Marks are never
   touched.** A summary appears before anything changes, a backup copy is saved next to the file when
   it lives on your computer, and every change is listed on an *Update Report* sheet. The macros store
   codes, titles and class names as text, so `4.10` stays `4.10`. Use the `.xlsx` export rather than a
@@ -85,21 +90,23 @@ and all 110 KS2 bands in that file come out identical.
 - A stanine shows where a student stands **within their own year group** on that test. A whole year
   group therefore always averages about stanine 5, and stanines cannot show that one year group is
   stronger than another. Mean % cannot either, because tests differ in difficulty: only a test sat by
-  several year groups could compare them. Compare classes and students, not year groups.
+  several year groups could compare them. Compare classes and students, not year groups. (This is also
+  why nothing is lost by keeping each year group in its own file.)
 
 ## First time in Excel: a five-minute acceptance test
 
-The workbook, its formulas and its macros were built and tested without Excel (see *How it is built
-and tested*). Please run this once in desktop Excel before sharing the file with staff:
+The workbooks, their formulas and their macros were built and tested without Excel (see *How it is
+built and tested*). Please run this once in desktop Excel, on the Year 8 file, before sharing the files
+with staff:
 
 1. Open the file. If Excel says macros are blocked, close it, right-click the file → **Properties** →
    tick **Unblock** → OK, and open it again. Click **Enable Content**.
-2. **Start** shows five year groups with their student counts. The year sheets show the Class and KS2
-   band slicers in their top-left corners.
-3. **Manage tests → Add a test**: Year 8, code `T1`, title `Acceptance`, maximum 10 → *Add test*.
-   Excel opens Year 8 at the new *Raw Score* column.
+2. **Start** shows Year 8 with its student count. The Year 8 sheet shows the Class and KS2 band
+   slicers in its top-left corner.
+3. **Manage tests → Add a test**: code `T1`, title `Acceptance`, maximum 10 → *Add test*. Excel opens
+   Year 8 at the new *Raw Score* column.
 4. Type `3`, `7`, `10` and `A` for four students: stanines appear; typing `11` is refused.
-5. **Dashboard**: choose Year 8 — the grid shows *T1 - Acceptance*; the charts follow the year group.
+5. **Dashboard**: the grid shows *T1 - Acceptance*, and the class chart shows the new test.
 6. On Year 8, try three accidents: paste `abc` into a *Raw Score* cell; type over a grey *Stanine*
    cell; filter the Class slicer to one class, copy a column of 40 cells and paste it into that class's
    first mark. Each is undone with a message.
@@ -107,7 +114,8 @@ and tested*). Please run this once in desktop Excel before sharing the file with
    stanines still work. Then **Remove test** → Yes: the columns and the register row disappear.
 8. Close without saving.
 
-If anything in steps 2–7 fails, the manual set-up below takes about five minutes.
+If anything in steps 2–7 fails, the manual set-up below takes about five minutes per file. The five
+files share the same macros, so one file passing is good evidence for the others.
 
 ## If Excel ever removes the macros
 
@@ -124,13 +132,16 @@ The macros are plain text in [`vba/`](vba). To put them back by hand (desktop Ex
 
 ## Limits worth knowing
 
-- **One file per academic year.** Next September, students move up a year group and every test starts
-  again. There is no *New academic year* button yet: build a fresh tracker from the new export with the
-  generator (or add that button before September 2027).
+- **One set of files per academic year.** Next September, students move up a year group and every test
+  starts again. There is no *New academic year* button yet: build fresh files from the new export with
+  the generator (or add that button before September 2027).
+- **No page compares year groups.** Each file shows its own year group. Stanines cannot compare year
+  groups anyway (see above).
 - **Eight classes per year group** fit on the Overview and Dashboard. With more, the extra classes are
   left out and both sheets say so; the year sheets and the Watch List still include every student.
-- **Sharing.** On a network drive only one person can edit at a time. For several teachers at once,
-  keep the file in SharePoint or OneDrive; co-authoring a macro-enabled file there has not been tested.
+- **Sharing.** On a network drive only one person can edit a file at a time, but each year group's
+  team has its own file. For several teachers in one year group at once, keep the files in SharePoint or
+  OneDrive; co-authoring a macro-enabled file there has not been tested.
 - **Backups.** Each *Update students* run saves a full copy next to the file. Delete old copies: they
   hold the same personal data.
 - **Speed.** At 1,500 students with 40 tests per year group, one typed mark takes under a second to
@@ -155,27 +166,28 @@ the backup cannot be saved, Excel asks before it changes anything.
 
 ## Privacy
 
-The real workbook holds personal data about children (names, UPNs, SEN and PP status,
-attendance). Keep it in a staff-only location. **Never commit a real export or a real workbook to
-this repository** — it is public. Put them in `private/`, which git ignores.
+The real workbooks hold personal data about children (names, UPNs, SEN and PP status,
+attendance). Keep them in staff-only locations; with one file per year group, each year team can be
+given only its own file. **Never commit a real export or a real workbook to this repository** — it is
+public. Put them in `private/`, which git ignores.
 
 ## How it is built and tested
 
 ```bash
 pip install openpyxl lxml oletools
-python3 generate_tracker.py                       # demo workbook with fictional students
+python3 generate_tracker.py                       # five demo workbooks in demo/
 python3 generate_tracker.py --students private/All_Students.xlsx \
-    --carry-over "private/Year 11 tracker.xlsx" \
-    --out "private/Science Mastery Quiz Tracker 2026-27.xlsm"
-python3 verify_tracker.py [workbook.xlsm]         # needs LibreOffice
+    --carry-over "private/Year 11 tracker.xlsx" --out-dir private
+python3 generate_tracker.py --year 7 ...           # one year group only (repeatable)
+python3 verify_tracker.py [folder or workbooks]   # default: demo/; needs LibreOffice
 ```
 
 | File | Role |
 | --- | --- |
-| `generate_tracker.py` | Builds every sheet, table, formula, name, rule and chart with openpyxl. Reads the formula templates from `vba/modTracker.bas`, so a test added by the macro and a test written by the generator are identical. |
+| `generate_tracker.py` | Builds one workbook per year group — every sheet, table, formula, name, rule and chart — with openpyxl. Reads the formula templates from `vba/modTracker.bas`, so a test added by the macro and a test written by the generator are identical. |
 | `xlsm_package.py` | Adds what openpyxl cannot write: table slicers (mirroring Excel's own XML), macro buttons, the VBA project, and cached values computed by LibreOffice so the numbers show before Excel recalculates. |
 | `vba_project.py` | Writes `vbaProject.bin` from the text in `vba/`: the compound-file container, VBA compression, the `dir`/`PROJECT` streams and an empty UserForm designer, following Microsoft's [MS-CFB], [MS-OVBA] and [MS-OFORMS] specifications and the layout of a project saved by Office. |
-| `verify_tracker.py` | Recalculates copies of a workbook in LibreOffice — one per dashboard selection — and compares every KS2 band, stanine, *vs Expected* value (including the fitted line), register figure, Overview and Dashboard cell and Watch List row with an independent Python calculation; reads the VBA back with oletools; checks LibreOffice imports the modules and the form; runs the macros' helper functions (including the guard's mark check) in LibreOffice's VBA engine; and repeats everything on an edge-case workbook (a brand-new test, a single-score test, absences, missing KS2, a student with no class, an empty year group, a mark typed as text and one above the maximum). |
+| `verify_tracker.py` | For every workbook in a folder: recalculates copies in LibreOffice — one per dashboard selection — and compares every KS2 band, stanine, *vs Expected* value (including the fitted line), register figure, Overview and Dashboard cell and Watch List row with an independent Python calculation; reads the VBA back with oletools; checks LibreOffice imports the modules and the form; runs the macros' helper functions (including the guard's mark check) in LibreOffice's VBA engine; and repeats everything on an edge-case workbook for each year group (a brand-new test, a single-score test, absences, missing KS2, a student with no class, a year group with no students yet, number-like class names, a mark typed as text and one above the maximum). |
 
 Formulas are restricted to what Excel and LibreOffice calculate identically, so the checks are
 meaningful: tables are always referenced as `table[#Data]` (LibreOffice reads a bare table name as

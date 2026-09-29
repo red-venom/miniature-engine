@@ -62,6 +62,7 @@ is plain `VLOOKUP`/`COUNTIF`/`MATCH`-era functions.
 
 ## Also in this repository
 
-**[Science Mastery Quiz Tracker](mastery-quiz-tracker/)** — a macro-enabled workbook that tracks
-mastery quizzes for Years 7–11, converts marks to stanines and shows how every class and year group
-is doing, with a form for adding tests and a verifier that recalculates it in LibreOffice.
+**[Science Mastery Quiz Tracker](mastery-quiz-tracker/)** — one macro-enabled workbook per year
+group (Years 7–11) that tracks mastery quizzes, converts marks to stanines and shows how every class
+and the year group are doing, with a form for adding tests and a verifier that recalculates it in
+LibreOffice.

@@ -70,9 +70,11 @@ Private Sub UserForm_Initialize()
         cboEditYear.AddItem CStr(y)
     Next y
     startYear = gStartYear
-    If Len(startYear) = 0 Then startYear = "Year 7"
-    cboAddYear.Value = startYear
-    cboEditYear.Value = startYear
+    If Len(startYear) = 0 Then startYear = FirstYear()
+    If Len(startYear) > 0 Then
+        cboAddYear.Value = startYear
+        cboEditYear.Value = startYear
+    End If
     txtAddDate.Text = Format$(Date, "dd\/mm\/yyyy")
 
     mReady = True

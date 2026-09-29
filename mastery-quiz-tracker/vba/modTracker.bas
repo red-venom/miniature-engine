@@ -44,7 +44,7 @@ End Type
 '==============================================================================
 Public Sub ShowManageTests()
     gStartYear = YearOfSheet(ActiveSheet)
-    If Len(gStartYear) = 0 Then gStartYear = "Year 7"
+    If Len(gStartYear) = 0 Then gStartYear = FirstYear()
     frmTests.Show
 End Sub
 
@@ -81,38 +81,63 @@ End Sub
 '==============================================================================
 ' Year groups, tables and names
 '==============================================================================
+' Each workbook holds one year group (the generator can also put several in one file).
+' Year sheets are found through their tables (tblY7 ... tblY11), not through sheet code
+' names, so the same code runs in every year group's file.
+
 Public Function YearNames() As Variant
-    YearNames = Split(YEAR_LIST, "|")
+    ' The year groups this workbook holds, in order, e.g. Array("Year 9").
+    Dim y As Variant, found As String
+    For Each y In Split(YEAR_LIST, "|")
+        If Not YearTable(CStr(y)) Is Nothing Then found = found & "|" & y
+    Next y
+    YearNames = Split(Mid$(found, 2), "|")          ' an empty list when there are none
+End Function
+
+Public Function FirstYear() As String
+    Dim names As Variant
+    names = YearNames()
+    If UBound(names) >= 0 Then FirstYear = CStr(names(0))
 End Function
 
 Public Function YearSheet(ByVal yearName As String) As Worksheet
-    Select Case yearName
-        Case "Year 7": Set YearSheet = shY7
-        Case "Year 8": Set YearSheet = shY8
-        Case "Year 9": Set YearSheet = shY9
-        Case "Year 10": Set YearSheet = shY10
-        Case "Year 11": Set YearSheet = shY11
-    End Select
+    Dim lo As ListObject
+    Set lo = YearTable(yearName)
+    If Not lo Is Nothing Then Set YearSheet = lo.Parent
 End Function
 
 Public Function YearTable(ByVal yearName As String) As ListObject
-    Dim ws As Worksheet
-    Set ws = YearSheet(yearName)
-    If ws Is Nothing Then Exit Function
+    ' The table tblY9 for "Year 9", or else the first table on a sheet called "Year 9".
+    Dim sh As Worksheet, lo As ListObject, named As Worksheet
+    If Not yearName Like "Year #*" Then Exit Function
+    For Each sh In ThisWorkbook.Worksheets
+        For Each lo In sh.ListObjects
+            If StrComp(lo.Name, "tblY" & Mid$(yearName, 6), vbTextCompare) = 0 Then
+                Set YearTable = lo
+                Exit Function
+            End If
+        Next lo
+    Next sh
     On Error Resume Next
-    Set YearTable = ws.ListObjects("tblY" & Mid$(yearName, 6))
-    If YearTable Is Nothing And ws.ListObjects.Count > 0 Then Set YearTable = ws.ListObjects(1)
+    Set named = ThisWorkbook.Worksheets(yearName)
     On Error GoTo 0
+    If Not named Is Nothing Then
+        If named.ListObjects.Count > 0 Then Set YearTable = named.ListObjects(1)
+    End If
 End Function
 
 Public Function YearOfSheet(ByVal sh As Object) As String
-    Dim y As Variant
-    For Each y In YearNames()
-        If YearSheet(CStr(y)) Is sh Then
-            YearOfSheet = CStr(y)
+    ' "Year 9" when sh is that year group's sheet, otherwise "". Runs on every edit (the
+    ' change guard), so it looks only at this sheet's own tables.
+    Dim lo As ListObject
+    If TypeName(sh) <> "Worksheet" Then Exit Function
+    For Each lo In sh.ListObjects
+        If lo.Name Like "tblY#*" Then
+            YearOfSheet = "Year " & Mid$(lo.Name, 5)
             Exit Function
         End If
-    Next y
+    Next lo
+    If sh.Name Like "Year #*" And sh.ListObjects.Count > 0 Then YearOfSheet = sh.Name
 End Function
 
 Public Function Register() As ListObject
