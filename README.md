@@ -59,3 +59,9 @@ override, the Hunter's last arrow and both win conditions — 24 assertions in a
 Excel 2019+/365, Google Sheets and LibreOffice Calc. In older Excel the single
 `TEXTJOIN` formula (the wolf-pack line on Role Cards) shows `#NAME?`; everything else
 is plain `VLOOKUP`/`COUNTIF`/`MATCH`-era functions.
+
+## Also in this repository
+
+**[Science Mastery Quiz Tracker](mastery-quiz-tracker/)** — a macro-enabled workbook that tracks
+mastery quizzes for Years 7–11, converts marks to stanines and shows how every class and year group
+is doing, with a form for adding tests and a verifier that recalculates it in LibreOffice.
