@@ -819,6 +819,11 @@ def edge_case_workbook(out):
         S("E101", "Hale", "Hana", 8, "F", "N", "N", 96.0, 104.0, "8A/Sc1"),
         S("E102", "Iqbal", "Isa", 8, "M", "K", "Y", 91.0, 98.0, "8A/Sc2"),
         S("E201", "Jones", "Jo", 9, "F", "", "N", 94.0, 102.0, "9A/Sc1"),
+        # Class names that COUNTIF would read as numbers ("9.1" and "9.10" as the same class)
+        S("E202", "Keane", "Kim", 9, "F", "N", "N", 96.0, 101.0, "9.1"),
+        S("E203", "Lamb", "Lou", 9, "M", "N", "Y", 93.0, 99.0, "9.10"),
+        S("E204", "Marsh", "May", 9, "F", "K", "N", 97.0, 104.0, "9.10"),
+        S("E205", "Nolan", "Ned", 9, "M", "N", "N", 95.0, 97.0, "10"),
         S("E301", "King", "Kit", 11, "M", "N", "N", 93.0, 100.0, "11S/Sc1"),
     ]
     T = gt.Test
@@ -833,6 +838,7 @@ def edge_case_workbook(out):
         T(7, "", "Just Added", 25, None, {}),
         T(8, "E81", "Two classes", 30, dt.date(2026, 10, 1), {"E101": 21, "E102": 30}),
         T(9, "E91", "Typed as text", 20, None, {"E201": "15"}),
+        T(9, "E92", "Number-like classes", 20, None, {"E201": 11, "E202": 14, "E203": 9, "E204": "A", "E205": 16}),
         T(11, "E11", "Out of range", 10, None, {"E301": 12}),
     ]
     data = gt.Dataset(students, tests, "2026-27", "Test school", demo=True, dashboard_year=7, watch_year=7,
@@ -868,7 +874,10 @@ def main():
             {"test": "E02 - One score", "measure": "Completion %"},
             {"year": "Year 10", "test": "", "class": "", "watch": "Year 10"},
             {"year": "Year 8", "test": "E81 - Two classes", "class": "8A/Sc2", "watch": "Year 8"},
+            {"year": "Year 9", "test": "E92 - Number-like classes", "class": "9.10", "watch": "Year 9"},
         ], (tmp / "edge"))
+        check("edge: number-like class names stay separate (9.1, 9.10, 10)",
+              einp.years[9].classes == ["10", "9.1", "9.10", "9A/Sc1"], str(einp.years[9].classes))
         check("edge: a class typed in a different case joins its class (7a/sc1 = 7A/Sc1)",
               einp.years[7].classes == ["7A/Sc1", "7B/Sc1"], str(einp.years[7].classes))
         m7 = einp.years[7]

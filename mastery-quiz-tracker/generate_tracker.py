@@ -117,6 +117,7 @@ MAX_STUDENTS = 600       # helper rows per year on the Calc sheet
 MAX_TESTS = 60           # tests per year shown on the Dashboard
 CLASS_SLOTS = 8          # classes per year shown on the dashboards
 WATCH_ROWS = 50
+MAX_NAME = 150          # longest test name (the Manage tests form has the same limit)
 FIT_MIN_STUDENTS = 10    # students with a KS2 band and a mean stanine before 'vs Expected' shows
 BELOW_EXPECTED = "Below expected for KS2"
 
@@ -207,8 +208,12 @@ def header_cells(ws, row, first_col, titles, fl=NAVY, color=WHITE, height=30):
         c.border = BOX
 
 
-def selector(ws, ref, value, merge_to=None):
-    c = put(ws, ref, value, f=font(11, True), fl=INPUT_FILL, al=LEFT, border=BOX)
+def selector(ws, ref, value, merge_to=None, text=True):
+    """An input cell. Text inputs are formatted as Text: Excel enters a drop-down pick as if it
+    were typed, so without it a test called 4.10 would become 4.1 and a class 7-1 a date."""
+    c = keep_text(put(ws, ref, value, f=font(11, True), fl=INPUT_FILL, al=LEFT, border=BOX))
+    if text:
+        c.number_format = "@"
     c.protection = UNLOCKED
     if merge_to:
         ws.merge_cells(f"{ref}:{merge_to}")
@@ -350,6 +355,30 @@ class Dataset:
     dashboard_measure: str = "Mean %"
 
 
+# Class-name criteria. COUNTIF/AVERAGEIFS read a criterion that looks like a number or a
+# date as one (Excel treats a class called 7-1 as 7 January), and * ? ~ as wildcards. These
+# SUMPRODUCT forms compare text with text, ignoring case, in Excel and LibreOffice alike.
+def same_text(rng, x):
+    return f'(({rng})&""=({x})&"")'
+
+
+def n_class(rng, x):                                     # COUNTIF(rng, x)
+    return f"SUMPRODUCT(--{same_text(rng, x)})"
+
+
+def n_class_num(rng, x, vals, cond=">=0"):               # COUNTIFS(rng, x, vals, cond)
+    return f"SUMPRODUCT({same_text(rng, x)}*ISNUMBER({vals})*(({vals}){cond}))"
+
+
+def n_class_absent(rng, x, vals):                        # COUNTIFS(rng, x, vals, "A")
+    return f'SUMPRODUCT({same_text(rng, x)}*(({vals})&""="A"))'
+
+
+def avg_class(rng, x, vals):                             # AVERAGEIFS(vals, rng, x)
+    mask = f"{same_text(rng, x)}*ISNUMBER({vals})"
+    return f"SUMPRODUCT({mask},{vals})/SUMPRODUCT({mask})"
+
+
 def keep_text(cell):
     """Store a data string as text. openpyxl would otherwise write a name or class that
     starts with "=" as a live formula (the spreadsheet form of an injection attack)."""
@@ -450,7 +479,9 @@ def load_carry_over(path, students):
     tests = []
     raw_cols = [i for i, h in enumerate(headers) if h.endswith("\n" + RAW_SUFFIX)]
     for n, ci in enumerate(raw_cols):
-        name = clean_text(headers[ci][: -len(RAW_SUFFIX) - 1])
+        # At most 150 characters, as the Manage tests form allows: Excel's MATCH refuses
+        # lookup values over 255 characters, and the headings add "\nRaw Score".
+        name = clean_text(clean_text(headers[ci][: -len(RAW_SUFFIX) - 1])[:MAX_NAME])
         code, _, title = name.partition(" - ")
         if not title:
             code, title = "", name
@@ -468,7 +499,7 @@ def load_carry_over(path, students):
         if not scores:
             continue
         year = max(set(years), key=years.count)
-        best = max(v for v in scores.values() if isinstance(v, (int, float)))
+        best = max((v for v in scores.values() if isinstance(v, (int, float))), default=1)
         mm = max_marks[n] if n < len(max_marks) else max(best, 1)
         test = Test(year, code.strip(), title.strip(), mm, None, scores)
         taken = {t.name.upper() for t in tests if t.year == year}
@@ -594,8 +625,10 @@ class Builder:
         self.tests = {y: [t for t in data.tests if t.year == y] for y in YEARS}
         for y, tests in self.tests.items():
             names = [t.name.upper() for t in tests]
-            if len(names) != len(set(names)) or any(clean_text(t.name) != t.name or not t.name for t in tests):
-                raise ValueError(f"Year {y} test names must be unique, non-empty and clean: {names}")
+            if len(names) != len(set(names)) or any(clean_text(t.name) != t.name or not t.name
+                                                    or len(t.name) > MAX_NAME for t in tests):
+                raise ValueError(f"Year {y} test names must be unique, non-empty, clean and at most "
+                                 f"{MAX_NAME} characters: {names}")
         self.classes = {y: sorted({s.cls for s in self.students[y] if s.cls}, key=str.upper) for y in YEARS}
 
     # -- helpers -------------------------------------------------------------
@@ -906,11 +939,11 @@ class Builder:
 
         section(ws, "B8", "Watch list rules")
         put(ws, "B9", "Flag a student whose mean stanine is at least this far below expected for their KS2 band")
-        selector(ws, "C9", 1.5).number_format = "0.0"
+        selector(ws, "C9", 1.5, text=False).number_format = "0.0"
         put(ws, "B10", "... once they have sat at least this many tests")
-        selector(ws, "C10", 2)
+        selector(ws, "C10", 2, text=False)
         put(ws, "B11", "Also flag students with no KS2 data whose mean stanine is this or lower")
-        selector(ws, "C11", 3).number_format = "0.0"
+        selector(ws, "C11", 3, text=False).number_format = "0.0"
         self.name("WlGap", "Settings!$C$9")
         self.name("WlMinTests", "Settings!$C$10")
         self.name("WlLowMean", "Settings!$C$11")
@@ -1012,8 +1045,8 @@ class Builder:
             put(ws, f"{m}{first - 1}", f"{YEAR_NAME[y]} class", f=font(9, True))
             for r in range(first, last + 1):
                 ws[f"{m}{r}"] = f'=IFERROR(INDEX({TABLE[y]}[Class],ROWS({m}${first}:{m}{r}))&"","")'
-                ws[f"{k}{r}"] = (f'=IF({m}{r}="","",IF(COUNTIF({m}${first}:{m}{r},{m}{r})=1,'
-                                 f'COUNTIF({m}${first}:{m}${last},"<"&{m}{r})+1,""))')
+                ws[f"{k}{r}"] = (f'=IF({m}{r}="","",IF(SUMPRODUCT(--({m}${first}:{m}{r}={m}{r}))=1,'
+                                 f'SUMPRODUCT(--({m}${first}:{m}${last}<{m}{r}))+1,""))')
             slot = get_column_letter(19 + i)                                        # S ... W
             put(ws, f"{slot}2", YEAR_NAME[y], f=font(9, True))
             for j in range(CLASS_SLOTS):
@@ -1034,6 +1067,7 @@ class Builder:
                 "dSex": "Sex Code", "dTests": "Tests Sat"}
         for nm, part in cols.items():
             self.name(nm, choose("dYear", part))
+        self.name("dCount", "IF(ISNUMBER(dYear),COUNTA(dLast),0)")     # COUNTA would count an #N/A as 1
         self.name("dRaw", f'INDEX(dData,0,MATCH(SelTest&{LF}&"{RAW_SUFFIX}",dHdr,0))')
         self.name("dStn", f'INDEX(dData,0,MATCH(SelTest&{LF}&"{STANINE_SUFFIX}",dHdr,0))')
         self.name("dHasTest", f'ISNUMBER(MATCH(SelTest&{LF}&"{RAW_SUFFIX}",dHdr,0))')
@@ -1071,8 +1105,8 @@ class Builder:
             for k in range(CLASS_SLOTS):
                 cls = f"$Y${3 + k}"
                 ws[f"{get_column_letter(75 + k)}{r}"] = (
-                    f'=IF(OR($AA{r}="",{cls}=""),"",IFERROR((COUNTIFS(dClass,{cls},{raw},">=0")'
-                    f'+COUNTIFS(dClass,{cls},{raw},"A"))/COUNTIF(dClass,{cls}),""))')
+                    f'=IF(OR($AA{r}="",{cls}=""),"",IFERROR(({n_class_num("dClass", cls, raw)}'
+                    f'+{n_class_absent("dClass", cls, raw)})/{n_class("dClass", cls)},""))')
 
         # Latest test per year group (Overview, Watch List, Start).
         put(ws, "AF2", "Latest test", f=font(9, True))
@@ -1096,7 +1130,7 @@ class Builder:
             stn = f'INDEX(dData,0,MATCH(AA{r}&{LF}&"{STANINE_SUFFIX}",dHdr,0))'
             ws[f"AK{r}"] = f'=IF(AA{r}="","",IF(AD{r}<>"",AD{r},LEFT(AA{r},14)))'
             ws[f"AL{r}"] = f'=IF(AA{r}="",NA(),IFERROR(AVERAGE({stn}),NA()))'
-            ws[f"AM{r}"] = f'=IF(OR(AA{r}="",SelClass=""),NA(),IFERROR(AVERAGEIFS({stn},dClass,SelClass),NA()))'
+            ws[f"AM{r}"] = f'=IF(OR(AA{r}="",SelClass=""),NA(),IFERROR({avg_class("dClass", "SelClass", stn)},NA()))'
         n_tests = "MAX(1,MIN(60,Calc!$AA$64))"
         self.name("chTrendCats", f"OFFSET(Calc!$AK$3,0,0,{n_tests},1)", sheet=ws)
         self.name("chTrendYear", f"OFFSET(Calc!$AL$3,0,0,{n_tests},1)", sheet=ws)
@@ -1112,7 +1146,7 @@ class Builder:
         for j in range(CLASS_SLOTS):
             r = 4 + j
             ws[f"AO{r}"] = f'=Y{3 + j}'
-            ws[f"AP{r}"] = f'=IF(AO{r}="",NA(),IFERROR(AVERAGEIFS(dRaw,dClass,AO{r})/dMax,NA()))'
+            ws[f"AP{r}"] = f'=IF(AO{r}="",NA(),IFERROR({avg_class("dClass", f"AO{r}", "dRaw")}/dMax,NA()))'
         self.name("chClassCats", "OFFSET(Calc!$AO$3,0,0,1+Calc!$Y$12,1)", sheet=ws)
         self.name("chClassVals", "OFFSET(Calc!$AP$3,0,0,1+Calc!$Y$12,1)", sheet=ws)
 
@@ -1213,11 +1247,15 @@ class Builder:
                 is_year = j == 0
                 if is_year:
                     put(ws, f"B{r}", "Whole year", f=font(10, True), border=YEAR_RULE)
-                    crit, mask, count = "", "", f"COUNTA({t}[Preferred Last name])"
+                    mask, count = "", f"COUNTA({t}[Preferred Last name])"
+                    avg = lambda rng: f"AVERAGE({rng})"
+                    done = f'COUNTIFS({raw_col},">=0")+COUNTIFS({raw_col},"A")'
                 else:
                     put(ws, f"B{r}", f"=Calc!{get_column_letter(19 + i)}{2 + j}")
-                    crit, mask, count = f",{t}[Class],$B{r}", f"({t}[Class]=$B{r})*", f"COUNTIF({t}[Class],$B{r})"
-                avg = "AVERAGEIFS" if crit else "AVERAGE"
+                    C, x = f"{t}[Class]", f"$B{r}"
+                    mask, count = f"{same_text(C, x)}*", n_class(C, x)
+                    avg = lambda rng, C=C, x=x: avg_class(C, x, rng)
+                    done = f"{n_class_num(C, x, raw_col)}+{n_class_absent(C, x, raw_col)}"
 
                 def share(cond):
                     return (f"SUMPRODUCT({mask}{stn_mask}*ISNUMBER({t}[#Data])*({t}[#Data]{cond}))"
@@ -1225,15 +1263,15 @@ class Builder:
                 cells = {
                     "C": "" if is_year else self.teacher_lookup(f'"{yname}"', f"$B{r}"),
                     "D": count,
-                    "E": f"{avg}({t}[Avg KS2 Band]{crit})",
-                    "F": f"{avg}({t}[Tests Sat]{crit})",
-                    "G": f"{avg}({t}[Mean Stanine]{crit})",
-                    "H": f"{avg}({t}[vs Expected]{crit})",
+                    "E": avg(f"{t}[Avg KS2 Band]"),
+                    "F": avg(f"{t}[Tests Sat]"),
+                    "G": avg(f"{t}[Mean Stanine]"),
+                    "H": avg(f"{t}[vs Expected]"),
                     "I": share(">=7"),
                     "J": share("<=3"),
-                    "K": f'IF({latest}="","",{avg}({raw_col}{crit})/{latest_max})',
-                    "L": f'IF({latest}="","",{avg}({stn_col}{crit}))',
-                    "M": f'IF({latest}="","",(COUNTIFS({raw_col},">=0"{crit})+COUNTIFS({raw_col},"A"{crit}))/{count})',
+                    "K": f'IF({latest}="","",{avg(raw_col)}/{latest_max})',
+                    "L": f'IF({latest}="","",{avg(stn_col)})',
+                    "M": f'IF({latest}="","",({done})/{count})',
                 }
                 fmts = {"D": "0", "E": "0.0", "F": "0.0", "G": "0.0", "H": "+0.0;-0.0;0.0", "I": "0%",
                         "J": "0%", "K": "0%", "L": "0.0", "M": "0%"}
@@ -1298,9 +1336,9 @@ class Builder:
         dv_list(ws, "C6", "DashTests")
         dv_list(ws, "C7", "DashClasses")
 
-        tiles = [("Students", "=IFERROR(COUNTA(dLast),0)", "0"),
+        tiles = [("Students", "=dCount", "0"),
                  ("Tests set", "=IFERROR(dTestCount,0)", "0"),
-                 ("Completion, this test", "=IFERROR((COUNT(dRaw)+COUNTIF(dRaw,\"A\"))/COUNTA(dLast),\"-\")", "0%"),
+                 ("Completion, this test", "=IFERROR((COUNT(dRaw)+COUNTIF(dRaw,\"A\"))/dCount,\"-\")", "0%"),
                  ("Year mean, this test", "=IFERROR(AVERAGE(dRaw)/dMax,\"-\")", "0%")]
         stat_tiles(ws, 4, ["I", "K", "M", "O"], ["J", "L", "N", "Q"], tiles, height_rows=4)
 
@@ -1323,25 +1361,34 @@ class Builder:
             b = f"$B{r}"
             skip = f'OR({b}="",N($E{r})=0)' if not is_year else f'N($E{r})=0'
 
-            def count(*crit):
-                """COUNTIFS for this class (or the whole year) with extra criteria pairs."""
-                pairs = ([] if is_year else ["dClass", b]) + list(crit)
-                return ("COUNTIFS(" + ",".join(pairs) + ")") if pairs else "COUNTA(dLast)"
+            def count(vals=None, *conds):
+                """Students in this row (the whole year or one class), optionally only those whose
+                value in vals meets every condition. Classes are matched as text (see same_text)."""
+                if is_year:
+                    if vals is None:
+                        return "dCount"
+                    return "COUNTIFS(" + ",".join(f"{vals},{Q(c)}" for c in conds) + ")"
+                if vals is None:
+                    return n_class("dClass", b)
+                if conds == ("A",):
+                    return n_class_absent("dClass", b, vals)
+                tests = "".join(f"*(({vals}){c})" for c in conds)
+                return f"SUMPRODUCT({same_text('dClass', b)}*ISNUMBER({vals}){tests})"
 
             def mean(rng):
-                return f"AVERAGE({rng})" if is_year else f"AVERAGEIFS({rng},dClass,{b})"
+                return f"AVERAGE({rng})" if is_year else avg_class("dClass", b, rng)
             cells = {
                 "C": "" if is_year else self.teacher_lookup("SelYear", b),
-                "D": "COUNTA(dLast)" if is_year else f'IF({b}="","",COUNTIF(dClass,{b}))',
-                "E": 'IF(dHasTest,COUNT(dRaw),"")' if is_year else f'IF({b}="","",{count("dRaw", chr(34) + ">=0" + chr(34))})',
-                "F": 'COUNTIF(dRaw,"A")' if is_year else f'IF({b}="","",{count("dRaw", chr(34) + "A" + chr(34))})',
+                "D": "dCount" if is_year else f'IF({b}="","",{count()})',
+                "E": 'IF(dHasTest,COUNT(dRaw),"")' if is_year else f'IF({b}="","",{count("dRaw", ">=0")})',
+                "F": 'COUNTIF(dRaw,"A")' if is_year else f'IF({b}="","",{count("dRaw", "A")})',
                 "G": f'IF($D{r}="","",$D{r}-$E{r}-$F{r})',
                 "H": f'IF({skip},"",{mean("dRaw")})',
                 "I": f'IF($H{r}="","",$H{r}/dMax)',
                 "J": f'IF({skip},"",{mean("dStn")})',
-                "K": f'IF({skip},"",{count("dStn", Q("<=3"))}/$E{r})',
-                "L": f'IF({skip},"",{count("dStn", Q(">=4"), "dStn", Q("<=6"))}/$E{r})',
-                "M": f'IF({skip},"",{count("dStn", Q(">=7"))}/$E{r})',
+                "K": f'IF({skip},"",{count("dStn", "<=3")}/$E{r})',
+                "L": f'IF({skip},"",{count("dStn", ">=4", "<=6")}/$E{r})',
+                "M": f'IF({skip},"",{count("dStn", ">=7")}/$E{r})',
                 "N": "" if is_year else f'IF(OR($I{r}="",$I$12=""),"",($I{r}-$I$12)*100)',
             }
             fmts = {"D": "0", "E": "0", "F": "0", "G": "0", "H": "0.0", "I": "0%", "J": "0.0", "K": "0%",
@@ -1413,7 +1460,7 @@ class Builder:
                 """
                 part = "+".join(template.format(rng=rng, v=Q(v)) for v in codes)
                 return f"({everyone}-({part}))" if others else f"({part})"
-            students = total("COUNTIFS({rng},{v})", "COUNTA(dLast)")
+            students = total("COUNTIFS({rng},{v})", "dCount")
             sat = total('COUNTIFS({rng},{v},dRaw,">=0")', "COUNT(dRaw)")
             put(ws, f"B{r}", label)
             cells = {
@@ -1453,17 +1500,17 @@ class Builder:
             put(ws, f"B{r}", f"=Calc!AA{3 + j}")
             put(ws, f"C{r}", f"=Calc!AC{3 + j}", al=CENTER, fmt="dd/mm/yy")
             put(ws, f"D{r}", f"=Calc!AB{3 + j}", al=CENTER, fmt="0")
-            put(ws, f"E{r}", f'=IF($B{r}="","",IFERROR(COUNT({raw}),""))', al=CENTER, fmt="0")
-            put(ws, f"F{r}", f'=IF($B{r}="","",IFERROR(($E{r}+COUNTIF({raw},"A"))/COUNTA(dLast),""))',
+            put(ws, f"E{r}", f'=IF($B{r}="","",IFERROR(ROWS({raw})*0+COUNT({raw}),""))', al=CENTER, fmt="0")
+            put(ws, f"F{r}", f'=IF($B{r}="","",IFERROR(($E{r}+COUNTIF({raw},"A"))/dCount,""))',
                 al=CENTER, fmt="0%")
             put(ws, f"G{r}", f'=IF($B{r}="","",IFERROR(CHOOSE({mi},AVERAGE({raw})/$D{r},AVERAGE({stn}),$F{r}),""))',
                 f=font(10, True), al=CENTER, fmt="0%")
             for k in range(CLASS_SLOTS):
                 col = get_column_letter(8 + k)
                 h = f"{col}$45"
-                fml = (f'=IF(OR($B{r}="",{h}=""),"",IFERROR(CHOOSE({mi},AVERAGEIFS({raw},dClass,{h})/$D{r},'
-                       f'AVERAGEIFS({stn},dClass,{h}),(COUNTIFS(dClass,{h},{raw},">=0")+COUNTIFS(dClass,{h},{raw},"A"))'
-                       f'/COUNTIF(dClass,{h})),""))')
+                fml = (f'=IF(OR($B{r}="",{h}=""),"",IFERROR(CHOOSE({mi},{avg_class("dClass", h, raw)}/$D{r},'
+                       f'{avg_class("dClass", h, stn)},({n_class_num("dClass", h, raw)}+'
+                       f'{n_class_absent("dClass", h, raw)})/{n_class("dClass", h)}),""))')
                 put(ws, f"{col}{r}", fml, al=CENTER, fmt="0%")
         grid = f"G46:O{45 + MAX_TESTS}"
         # The stanine number format comes first: Excel applies every true rule, but
