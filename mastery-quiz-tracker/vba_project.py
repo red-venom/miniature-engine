@@ -319,6 +319,12 @@ CODEPAGE = 1252
 LCID = 0x0409
 
 FORMS_CLSID = "{C62A69F0-16DC-11CE-9E98-00AA00574A4F}"
+# VBA saves the Forms designer's type-information version as TypeInfoVer in the
+# form's \x03VBFrame stream; the designer reloads its own copy as ShapeCookie
+# from the f stream. Office always writes the two equal, and Excel refuses to
+# load a form whose values differ (run-time error 370, "The ActiveX Designer's
+# Type Information does not match what was saved").
+FORM_TYPEINFO_VERSION = 1
 WORKBOOK_BASE = "0{00020819-0000-0000-C000-000000000046}"
 WORKSHEET_BASE = "0{00020820-0000-0000-C000-000000000046}"
 
@@ -549,7 +555,7 @@ def _vbframe_stream(m: Module):
         "   ClientTop       =   465\r\n"
         f"   ClientWidth     =   {_twips(m.width_pt)}\r\n"
         "   StartUpPosition =   1  'CenterOwner\r\n"
-        "   TypeInfoVer     =   1\r\n"
+        f"   TypeInfoVer     =   {FORM_TYPEINFO_VERSION}\r\n"
         "End\r\n"
     )
     return text.encode("cp1252")
@@ -560,12 +566,13 @@ def _form_f_stream(m: Module):
 
     Same property mask as a form saved by Office (NextAvailableID, DisplayedSize,
     LogicalSize, Font, ShapeCookie, DrawBuffer) with an empty site table.
+    ShapeCookie must equal TypeInfoVer in the VBFrame stream.
     """
     prop_mask = (1 << 3) | (1 << 10) | (1 << 11) | (1 << 20) | (1 << 26) | (1 << 27)
     data_block = (struct.pack("<I", 0)          # NextAvailableID
                   + struct.pack("<H", 0xFFFF)   # Font: MUST be 0xFFFF
                   + bytes(2)                    # padding to 4 bytes
-                  + struct.pack("<I", 0)        # ShapeCookie
+                  + struct.pack("<I", FORM_TYPEINFO_VERSION)   # ShapeCookie
                   + struct.pack("<I", 32000))   # DrawBuffer
     extra = (struct.pack("<ii", _himetric(m.width_pt), _himetric(m.height_pt))   # DisplayedSize
              + struct.pack("<ii", 0, 0))                                          # LogicalSize

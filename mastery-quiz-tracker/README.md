@@ -152,8 +152,8 @@ The macros are plain text in [`vba/`](vba). To put them back by hand (desktop Ex
 
 | | Scores, formulas, dashboards | Slicers | Buttons and the form |
 | --- | --- | --- | --- |
-| Excel for Microsoft 365 / 2021 / 2019 / 2016 (Windows) | ✓ | ✓ | ✓ |
-| Excel 2013 (Windows) | ✓ | ✓ | ✓ |
+| Excel for Microsoft 365 / 2021 / 2019 / 2016 (Windows) | ✓ | ✓ | ✓ ² |
+| Excel 2013 (Windows) | ✓ | ✓ | ✓ ² |
 | Excel for Mac 2016 or later | ✓ | ✓ | expected to work, not tested ¹ |
 | Excel for the web, Teams | ✓ | ✓ | ✗ (macros do not run in the browser) |
 | LibreOffice Calc | ✓ | ✗ | ✗ |
@@ -163,6 +163,12 @@ No dynamic-array functions are used, so older versions of Excel calculate everyt
 ¹ On a Mac, two things are untested: the form creates its tabs and boxes in code when it opens,
 and **Update students** may need permission to save its backup copy in the tracker's folder. If
 the backup cannot be saved, Excel asks before it changes anything.
+
+² First run in desktop Excel for Windows: the workbook opened and the buttons ran their macros, but
+the Manage tests form would not load (run-time error 370, "The ActiveX Designer's Type Information
+does not match what was saved"). The form's saved type-information version did not match the
+designer's own copy; they now match, as in forms saved by Office, and the verifier checks it. The
+fixed form still needs its first run in Excel: steps 3 and 7 of the acceptance test.
 
 ## Privacy
 
@@ -187,7 +193,7 @@ python3 verify_tracker.py [folder or workbooks]   # default: demo/; needs LibreO
 | `generate_tracker.py` | Builds one workbook per year group — every sheet, table, formula, name, rule and chart — with openpyxl. Reads the formula templates from `vba/modTracker.bas`, so a test added by the macro and a test written by the generator are identical. |
 | `xlsm_package.py` | Adds what openpyxl cannot write: table slicers (mirroring Excel's own XML), macro buttons, the VBA project, and cached values computed by LibreOffice so the numbers show before Excel recalculates. |
 | `vba_project.py` | Writes `vbaProject.bin` from the text in `vba/`: the compound-file container, VBA compression, the `dir`/`PROJECT` streams and an empty UserForm designer, following Microsoft's [MS-CFB], [MS-OVBA] and [MS-OFORMS] specifications and the layout of a project saved by Office. |
-| `verify_tracker.py` | For every workbook in a folder: recalculates copies in LibreOffice — one per dashboard selection — and compares every KS2 band, stanine, *vs Expected* value (including the fitted line), register figure, Overview and Dashboard cell and Watch List row with an independent Python calculation; reads the VBA back with oletools; checks LibreOffice imports the modules and the form; runs the macros' helper functions (including the guard's mark check) in LibreOffice's VBA engine; and repeats everything on an edge-case workbook for each year group (a brand-new test, a single-score test, absences, missing KS2, a student with no class, a year group with no students yet, number-like class names, a mark typed as text and one above the maximum). |
+| `verify_tracker.py` | For every workbook in a folder: recalculates copies in LibreOffice — one per dashboard selection — and compares every KS2 band, stanine, *vs Expected* value (including the fitted line), register figure, Overview and Dashboard cell and Watch List row with an independent Python calculation; reads the VBA back with oletools; checks that the form's saved type-information version matches its designer's (Excel will not load the form otherwise); checks LibreOffice imports the modules and the form; runs the macros' helper functions (including the guard's mark check) in LibreOffice's VBA engine; and repeats everything on an edge-case workbook for each year group (a brand-new test, a single-score test, absences, missing KS2, a student with no class, a year group with no students yet, number-like class names, a mark typed as text and one above the maximum). |
 
 Formulas are restricted to what Excel and LibreOffice calculate identically, so the checks are
 meaningful: tables are always referenced as `table[#Data]` (LibreOffice reads a bare table name as

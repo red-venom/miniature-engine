@@ -23,6 +23,7 @@ Requires: openpyxl, lxml, oletools, LibreOffice.
 import datetime as dt
 import re
 import statistics
+import struct
 import sys
 import tempfile
 import zipfile
@@ -627,6 +628,30 @@ def check_vba(path):
     ole = olefile.OleFileIO(data)
     list(oleform.extract_OleFormVariables(ole, ["frmTests"]))
     check("the frmTests designer data parses (oletools oleform)", True)
+    frame = ole.openstream("frmTests/\x03VBFrame").read().decode("cp1252")
+    saved = re.search(r"^\s*TypeInfoVer\s*=\s*(\d+)\s*$", frame, re.M)
+    cookie = form_shape_cookie(ole.openstream("frmTests/f").read())
+    check("frmTests: TypeInfoVer in VBFrame equals ShapeCookie in f, as Office writes them "
+          "(Excel refuses a form whose values differ: run-time error 370)",
+          saved is not None and cookie is not None and int(saved.group(1)) == cookie,
+          f"TypeInfoVer={saved and saved.group(1)}, ShapeCookie={cookie}")
+
+
+def form_shape_cookie(f_stream):
+    """ShapeCookie from a FormControl ([MS-OFORMS] 2.2.10.1), or None if the mask omits it."""
+    mask = struct.unpack_from("<I", f_stream, 4)[0]
+    # FormDataBlock fields in mask-bit order, with their sizes (each aligned to its size).
+    fields = [(1, 4), (2, 4), (3, 4), (6, 4), (7, 1), (8, 1), (9, 1), (13, 4), (15, 2), (16, 1),
+              (17, 1), (18, 4), (19, 4), (20, 2), (21, 2), (22, 4), (23, 1), (24, 1), (25, 1),
+              (26, 4), (27, 4)]
+    pos = 0
+    for bit, size in fields:
+        if mask >> bit & 1:
+            pos += -pos % size
+            if bit == 26:
+                return struct.unpack_from("<I", f_stream, 8 + pos)[0]
+            pos += size
+    return None
 
 
 def check_vba_in_libreoffice(path):

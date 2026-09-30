@@ -43,9 +43,30 @@ End Type
 ' Buttons
 '==============================================================================
 Public Sub ShowManageTests()
+    Dim i As Long, reason As String
     gStartYear = YearOfSheet(ActiveSheet)
     If Len(gStartYear) = 0 Then gStartYear = FirstYear()
+    ' Load separately so a form that cannot load or build gives a message,
+    ' not the VBA debugger.
+    On Error GoTo CannotOpen
+    Load frmTests
+    On Error GoTo 0
     frmTests.Show
+    Exit Sub
+CannotOpen:
+    reason = Err.Description & " (error " & Err.Number & ")"
+    Resume CleanUp
+CleanUp:
+    On Error Resume Next
+    For i = VBA.UserForms.Count - 1 To 0 Step -1
+        If VBA.UserForms(i).Name = "frmTests" Then Unload VBA.UserForms(i)
+    Next i
+    On Error GoTo 0
+    MsgBox "The Manage tests form could not open." & vbCrLf & vbCrLf & _
+           "Excel reported: " & reason & "." & vbCrLf & vbCrLf & _
+           "A test can still be added by hand: the end of the Start sheet explains how. " & _
+           "To repair the form, follow ""If Excel ever removes the macros"" in the tracker's README.", _
+           vbExclamation, "Manage tests"
 End Sub
 
 Public Sub GoToStart()
