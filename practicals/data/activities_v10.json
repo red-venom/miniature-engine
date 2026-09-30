@@ -1,0 +1,2020 @@
+{
+ "1": {
+  "title": "Molar mass of carbon dioxide by gas weighing",
+  "lesson": "Year 12 · 8 The Ideal Gas Equation",
+  "mode": "Teacher demonstration",
+  "time": "15–20 min plus calculations",
+  "focus": "Determine a gas molar mass from a corrected mass difference and pV = nRT.",
+  "equipment": "100 mL gas-tight syringe with cap; 0.001 g balance; thermometer; barometer; prepared bag of dry CO2 and dry air; gas tubing.",
+  "safety": "Teacher handles gas supply; use small ambient-pressure gas bags in a ventilated room. No heating, needles or rigidly restrained heated syringe. Keep the same dry syringe, cap and external volume for every weighing.",
+  "method": [
+   "Check that the syringe moves freely and is leak-tight. Flush with dry air, draw exactly 100.0 mL at room pressure, cap and weigh the complete assembly.",
+   "Record room temperature and atmospheric pressure. Uncap before changing volume.",
+   "Flush the syringe three times with CO2 from the prepared bag. Let the freely moving plunger settle at atmospheric pressure, then adjust to 100.0 mL, cap and weigh promptly.",
+   "Repeat the air and CO2 measurements twice. Keep temperature, volume and all fittings identical. Record any volume drift; reject a leaking run.",
+   "Calculate Δm = mass with CO2 − mass with air. Calculate n = pV/RT using Pa, m³ and K. Then M(CO2) = 28.97 + Δm/n in g mol−1. The air correction is essential."
+  ],
+  "results": "Run; air mass / g; CO2 mass / g; Δm / g; V / mL; T / K; p / Pa; M / g mol−1.",
+  "questions": [
+   "Why is Δm not the CO2 mass?",
+   "How does an air leak affect the inferred value?",
+   "What makes this measurement demanding?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.3 - Practical Follow Up - IMPROVED v1.0.docx",
+  "change": "Replaces heated hexane with room-temperature gas weighing. Removes the fixed-plunger contradiction and adds an explicit air-mass correction.",
+  "skills": "Gas mass difference; pV = nRT; repeated readings; uncertainty and air correction.",
+  "prep": "Prepare dry gas in ambient-pressure bags using the department gas-supply procedure. This air-reference adaptation uses equal external volume to cancel buoyancy differences. Trial three pairs: expect a positive mass difference near 0.06 g for 100 mL at room conditions. Record measured spread; do not claim an exact value of 44.01.",
+  "answers": [
+   [
+    "Why is Δm not the CO2 mass?",
+    "The starting syringe already contains air. Δm is the mass of CO2 minus the mass of the same amount of air."
+   ],
+   [
+    "How does an air leak affect the inferred value?",
+    "It reduces the CO2–air mass difference and biases the molar mass towards that of air."
+   ],
+   [
+    "What makes this measurement demanding?",
+    "A roughly 0.06 g mass difference requires a 0.001 g balance, stable temperature and leak-free, dry gas handling."
+   ]
+  ],
+  "sources": [
+   "https://edu.rsc.org/experiments/determining-relative-molecular-mass-by-weighing-gases/832.article"
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.3 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Ideal gases",
+  "original": "Relative molecular mass of a volatile liquid"
+ },
+ "2": {
+  "title": "Water of crystallisation in magnesium sulfate",
+  "lesson": "Year 12 · 9 Empirical and Molecular Formula",
+  "mode": "Student practical",
+  "time": "60 min plus any further cooling cycles",
+  "focus": "Determine water of crystallisation by gravimetry; distinguish constant mass from one timed heating.",
+  "equipment": "About 2 g labelled MgSO4·7H2O; crucible and lid; balance preferably 0.001 g; burner, pipe-clay triangle, tripod, tongs and heatproof mat.",
+  "safety": "Wear splash goggles. Handle hot equipment with tongs; cool to room temperature before weighing. Heat gently first to prevent spitting; do not leave a flame unattended.",
+  "method": [
+   "Weigh the clean, dry crucible and lid. Add about 2 g hydrate and reweigh.",
+   "With the lid slightly ajar, warm gently until visible water evolution subsides; then heat more strongly for the technician-trialled period.",
+   "Replace the lid, cool fully in the agreed dry location and weigh.",
+   "Repeat heating for two minutes, cooling fully and weighing until successive masses agree within the declared balance tolerance. Record every mass.",
+   "Calculate hydrate mass, residue mass and water lost. Use n(H2O) = water mass/18.02 and n(MgSO4) = residue mass/120.37.",
+   "Report x in MgSO4·xH2O with an uncertainty discussion. Do not force an unexpected result to 7."
+  ],
+  "results": "Crucible + lid / g; initial total / g; each cooled total / g; mass change between cycles / g.",
+  "questions": [
+   "Why cool before weighing?",
+   "Effect of incomplete dehydration?",
+   "Does constant mass prove anhydrous salt?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.4 - Practical 3 - IMPROVED v1.0.docx",
+  "change": "Adds a defined constant-mass criterion, hydration check and trial of complete dehydration.",
+  "skills": "Heat, cool and reweigh to constant mass; mole ratios; direction of error.",
+  "prep": "Verify the bottle is heptahydrate. Pilot the actual crucible, flame and cooling routine against x ≈ 7 before issue. Set constant-mass tolerance from the balance, e.g. 0.002 g on a suitable 0.001 g balance; never promise that a fixed number of heating cycles is sufficient.",
+  "answers": [
+   [
+    "Why cool before weighing?",
+    "Hot objects create unstable balance readings and can damage the balance."
+   ],
+   [
+    "Effect of incomplete dehydration?",
+    "Water loss is too small and residue too large, so calculated x is too low."
+   ],
+   [
+    "Does constant mass prove anhydrous salt?",
+    "No. A stable partially dehydrated residue is possible; the known hydrate and heating routine need a pilot."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.4 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Empirical formula",
+  "original": "Formula of a hydrated salt"
+ },
+ "3": {
+  "title": "Empirical formula of magnesium oxide",
+  "lesson": "Year 12 · 9 Empirical and Molecular Formula",
+  "mode": "Student practical",
+  "time": "50–60 min",
+  "focus": "Determine an empirical formula from a mass gain and evaluate whether the gain is large enough to measure.",
+  "equipment": "Clean Mg ribbon giving about 0.20 g; crucible/lid; 0.001 g balance; emery paper; tongs; tripod/triangle; burner and mat.",
+  "safety": "Wear goggles. Do not look directly at burning magnesium. Keep the lid over the crucible, lifting briefly for oxygen; retain the smoke. Cool before weighing.",
+  "method": [
+   "Clean ribbon to remove surface oxide. Weigh dry crucible and lid, then add about 0.20 g coiled ribbon and record the total.",
+   "Heat gently then strongly with the lid on; briefly lift it at intervals to admit air while minimising loss of white oxide.",
+   "Continue until no shiny magnesium is visible. Cool fully with the lid on and weigh.",
+   "Reheat, cool and reweigh to constant mass within the specified balance tolerance.",
+   "Calculate Mg mass and mass gained as oxygen. Divide by 24.31 and 16.00 respectively and determine the simplest mole ratio.",
+   "Compare with 1:1 and discuss smoke loss, incomplete oxidation and possible nitride formation."
+  ],
+  "results": "Crucible + lid / g; initial total / g; cooled product totals / g; Mg mass / g; oxygen gain / g.",
+  "questions": [
+   "Why clean the ribbon?",
+   "Why lift and replace the lid?",
+   "Effect of losing oxide?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.4 - Practical Formula - IMPROVED v1.0.docx",
+  "change": "Replaces an arbitrary ribbon length with a measurable mass and protects oxygen-gain precision.",
+  "skills": "Crucible and lid technique; constant mass; mass gain; empirical formula.",
+  "prep": "Trial the approximate 0.20 g loading with the crucible capacity and ventilation. Expected oxygen gain is about 0.13 g if conversion is complete. Do not add water to a hot residue. Set constant-mass tolerance and include cooling time.",
+  "answers": [
+   [
+    "Why clean the ribbon?",
+    "Surface oxide would be counted as starting magnesium and distort the mass-gain calculation."
+   ],
+   [
+    "Why lift and replace the lid?",
+    "Oxygen is needed, but the lid limits loss of product smoke."
+   ],
+   [
+    "Effect of losing oxide?",
+    "Measured oxygen gain is too small; the calculated Mg:O ratio is too high."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.4 - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Empirical formula",
+  "original": "Empirical formula of magnesium oxide"
+ },
+ "4": {
+  "title": "Molar mass of a diprotic acid by titration",
+  "lesson": "Year 12 · 12 RP01 Practical: Carrying Out Titration; 13 RP01 Analysis: Titration Calculations",
+  "mode": "Student practical",
+  "time": "60 min plus 20 min analysis",
+  "focus": "Combine volumetric solution preparation, diprotic stoichiometry and titration to determine Mr.",
+  "equipment": "1.8–2.2 g succinic acid labelled unknown diprotic acid; balance; 250.0 mL flask; 25.0 mL pipette; burette; standardised 0.1000 M NaOH; phenolphthalein.",
+  "safety": "Wear goggles; avoid acid/alkali contact. Use a pipette filler. Fill the burette below eye level. Wash splashes promptly as instructed.",
+  "method": [
+   "Record the exact mass of the acid. Dissolve it in deionised water, transfer quantitatively into a 250.0 mL volumetric flask, make to the mark at room temperature and invert repeatedly.",
+   "Rinse/fill the burette with the acid solution and remove the funnel. Pipette 25.0 mL of standardised NaOH into a conical flask.",
+   "Add two drops of phenolphthalein. Titrate acid into the swirling alkali until the last faint pink disappears.",
+   "Take a rough titre, then repeat with fresh aliquots until at least two accurate titres agree within 0.10 mL. Record all readings to the burette precision.",
+   "Use n(acid aliquot) = n(NaOH)/2. Find acid concentration, total acid moles in 250.0 mL and Mr = mass/moles."
+  ],
+  "results": "Run; initial and final burette / mL; titre / mL; included in mean?; exact solid mass / g; labelled NaOH concentration.",
+  "questions": [
+   "Why divide NaOH moles by two?",
+   "Expected titre for 2.000 g and exactly 0.1000 M NaOH?",
+   "Why is rinsing the burette with water alone unsuitable?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.4 - Practical MR - IMPROVED v1.0.docx",
+  "change": "Clarifies acid identity, diprotic ratio, endpoint direction and concordance.",
+  "skills": "Make a solution from a weighed solid; concordant titres; stoichiometry; Mr.",
+  "topic": "Moles and titration",
+  "original": "Relative molecular mass by titration",
+  "answers": [
+   [
+    "Why divide NaOH moles by two?",
+    "Succinic acid is diprotic and reacts with two moles of hydroxide per mole."
+   ],
+   [
+    "Expected titre for 2.000 g and exactly 0.1000 M NaOH?",
+    "About 18.45 mL, using Mr 118.09."
+   ],
+   [
+    "Why is rinsing the burette with water alone unsuitable?",
+    "Residual water dilutes the acid, increasing the titre and biasing the result."
+   ]
+  ],
+  "prep": "Use standardised NaOH and disclose its measured concentration. Supply enough acid for three accurate titres plus a rough run. Pilot endpoint and confirm the expected 17–21 mL range.",
+  "sources": []
+ },
+ "5": {
+  "title": "Precision and accuracy in acid base titration",
+  "lesson": "Year 12 · 11 RP01 Planning: Titration Method; 12 RP01 Practical: Carrying Out Titration",
+  "mode": "Student practical",
+  "time": "50–60 min",
+  "focus": "Develop repeatable endpoint judgement and separate precision from accuracy.",
+  "equipment": "0.07350 M potassium hydrogenphthalate (KHP); approximately 0.1000 M standardised NaOH; 25.0 mL pipette; burette; conical flasks; phenolphthalein.",
+  "safety": "Wear goggles; use a filler and rinse apparatus with its own solution. Avoid touching the burette tip to the receiving solution.",
+  "method": [
+   "Record the stated KHP concentration. Rinse and fill the burette with KHP solution.",
+   "Pipette 25.0 mL NaOH into a flask and add two drops of phenolphthalein.",
+   "Add KHP while swirling until the final faint pink disappears. Take one rough titre.",
+   "Repeat using fresh NaOH until at least two accurate titres agree within 0.10 mL. Keep all readings; explain exclusions.",
+   "Use the 1:1 KHP:NaOH ratio to calculate NaOH concentration. Compare individual concordance with the class spread.",
+   "Only after calculation, obtain the reference NaOH concentration and calculate percentage difference. Discuss whether averaging could remove a systematic error."
+  ],
+  "results": "Rough and repeat burette readings / mL; mean titre / mL; calculated and reference concentration / mol dm−3.",
+  "questions": [
+   "What demonstrates precision?",
+   "Why is the class mean not proof of accuracy?",
+   "Expected titre?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.5 - Practical - IMPROVED v1.0.docx",
+  "change": "Adds individual concordant repeats and a reference for accuracy.",
+  "skills": "Pipette and burette use; rough versus accurate titres; class data; precision.",
+  "topic": "Titration technique",
+  "original": "Precise reliable and accurate titration",
+  "answers": [
+   [
+    "What demonstrates precision?",
+    "Close agreement between independent repeated titres."
+   ],
+   [
+    "Why is the class mean not proof of accuracy?",
+    "Every group may share a biased reagent concentration or endpoint convention."
+   ],
+   [
+    "Expected titre?",
+    "34.01 mL for 25.0 mL of exactly 0.1000 M NaOH and 0.07350 M KHP."
+   ]
+  ],
+  "prep": "Prepare or obtain KHP standard and standardise NaOH independently. Keep reference concentration hidden until analysis. Repeats, not pooling alone, are required. Making a standard solution from solid remains a separate student skill if not performed here.",
+  "sources": []
+ },
+ "6": {
+  "title": "Ethanoic acid concentration in vinegar",
+  "lesson": "Year 12 · 12 RP01 Practical: Carrying Out Titration; 13 RP01 Analysis: Titration Calculations",
+  "mode": "Student practical",
+  "time": "50–60 min plus analysis",
+  "focus": "Track a dilution factor through an authentic acid–base assay.",
+  "equipment": "Clear vinegar; 25.0 mL pipette; 250.0 mL volumetric flask; burette; standardised 0.1000 M NaOH; phenolphthalein.",
+  "safety": "Wear goggles; use a filler. Do not taste the vinegar. Use clean, correctly rinsed volumetric equipment.",
+  "method": [
+   "Pipette 25.0 mL vinegar into a 250.0 mL volumetric flask. Add water to the mark and invert to mix.",
+   "Rinse/fill the burette with diluted vinegar. Pipette 25.0 mL NaOH into a flask and add two drops phenolphthalein.",
+   "Titrate until the last faint pink disappears. Take a rough run then at least two accurate titres within 0.10 mL.",
+   "Calculate acid concentration using the 1:1 reaction. Multiply by ten for the original vinegar.",
+   "Convert to g ethanoic acid per 100 mL using Mr 60.05. Compare cautiously with the product label."
+  ],
+  "results": "Burette readings/titres / mL; NaOH concentration; dilution factor; original acid concentration and g per 100 mL.",
+  "questions": [
+   "Why multiply by ten?",
+   "What does a 30.00 mL mean titre imply?",
+   "Why use clear vinegar?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/Amounts - Practical Follow Up - IMPROVED v1.0.docx",
+  "change": "Makes dilution, endpoint and concentration calculations explicit.",
+  "skills": "Volumetric dilution; concordant titres; dilution factor; concentration.",
+  "prep": "Trial the actual brand; 5% acidity should give about 30 mL with this design. Supply enough diluted sample and disclose actual NaOH concentration. The label is not a certified standard.",
+  "answers": [
+   [
+    "Why multiply by ten?",
+    "25.0 mL original vinegar was diluted to 250.0 mL."
+   ],
+   [
+    "What does a 30.00 mL mean titre imply?",
+    "0.08333 M diluted acid, 0.8333 M original, about 5.00 g per 100 mL."
+   ],
+   [
+    "Why use clear vinegar?",
+    "Colour can obscure the phenolphthalein endpoint."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/Amounts - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Titration and dilution",
+  "original": "Ethanoic acid concentration in vinegar"
+ },
+ "7": {
+  "title": "Back titration of a known carbonate sample",
+  "lesson": "Year 12 · 13 RP01 Analysis: Titration Calculations; 14 Consolidation A: Atomic Structure and Moles",
+  "mode": "Student practical",
+  "time": "60 min plus analysis",
+  "focus": "Practise the excess-reagent mole balance before analysing a formulated tablet.",
+  "equipment": "About 0.80 g pure CaCO3; 50.00 mL 0.5000 M HCl; 250.0 mL flask; 25.0 mL pipette; 0.1000 M NaOH; burette; methyl orange; beaker and electric heater.",
+  "safety": "Wear goggles. Add acid in portions to contain fizzing. Heat gently without boiling dry; cool before quantitative transfer or volumetric dilution.",
+  "method": [
+   "Record the exact CaCO3 mass in a beaker. Add 50.00 mL standard HCl gradually; cover loosely with a watch glass during reaction.",
+   "When fizzing subsides, warm gently to complete reaction and remove dissolved CO2. Do not evaporate to dryness. Rinse any condensate back into the beaker and cool.",
+   "Transfer quantitatively into a 250.0 mL flask, rinsing the beaker and watch glass. Make to volume and mix.",
+   "Pipette 25.0 mL into a conical flask, add methyl orange and titrate with standard NaOH through the agreed orange endpoint. Obtain concordant titres.",
+   "Multiply remaining-acid moles in the aliquot by ten. Subtract from the HCl originally added, then divide by two for CaCO3 moles.",
+   "Calculate recovered CaCO3 mass and percentage recovery against the weighed sample."
+  ],
+  "results": "Sample mass; acid volume/concentration; dilution; NaOH burette readings and mean titre.",
+  "questions": [
+   "Why is this a back titration?",
+   "Expected titre for exactly 0.800 g?",
+   "Why is a tablet a harder sample?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/Amounts - Practical 2 - IMPROVED v1.0.docx",
+  "change": "Replaces variable antacid formulation with pure CaCO3; uses an acid-range indicator and explicit excess-acid calculation.",
+  "skills": "Weigh and dissolve; volumetric transfer; excess reagent; back titration.",
+  "prep": "Pilot warming to remove CO2 without acid loss. Run a reagent blank through the same handling if investigating recovery. The known sample is the adopted training version; a tablet extension requires a separately checked formulation and expected titre.",
+  "answers": [
+   [
+    "Why is this a back titration?",
+    "The residual known excess of acid is titrated, rather than the insoluble carbonate directly."
+   ],
+   [
+    "Expected titre for exactly 0.800 g?",
+    "About 9.01 mL of 0.1000 M NaOH per aliquot."
+   ],
+   [
+    "Why is a tablet a harder sample?",
+    "Other active ingredients consume acid and insoluble binders complicate preparation."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/Amounts - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Titration extension",
+  "original": "Indigestion tablet composition by back titration"
+ },
+ "8": {
+  "title": "Sodium chloride preparation by titration",
+  "lesson": "Year 12 · 12 RP01 Practical: Carrying Out Titration; 10 Equations, Yields and Atom Economy",
+  "mode": "Student practical in stages",
+  "time": "60 min plus crystallisation and drying revisit",
+  "focus": "Prepare a clean soluble salt using titration and account for isolated yield.",
+  "change": "Replaces ammonium nitrate entirely; no ammonium nitrate heating or neutral-pH claim remains.",
+  "skills": "Concordant titres; indicator-free preparation; crystallisation; percentage yield.",
+  "prep": "Supply matching 0.400 M solutions and trial final concentration/drying logistics. NaCl has limited temperature dependence of solubility: evaporation is essential and simply cooling 50 mL will not give a useful crop. Allow more than one lesson visit.",
+  "answers": [
+   [
+    "Why repeat without indicator?",
+    "To avoid contaminating the product with indicator."
+   ],
+   [
+    "Theoretical mass for 25.0 mL of 0.400 M NaOH?",
+    "0.0100 mol NaCl, or 0.5844 g, provided sufficient HCl is added."
+   ],
+   [
+    "Why can the yield be low?",
+    "Some salt remains in solution and transfers/filtration lose material; wet crystals can falsely inflate yield."
+   ]
+  ],
+  "sources": [
+   "https://edu.rsc.org/concentration-of-solutions-and-titration/titrating-sodium-hydroxide-with-hydrochloric-acid/697.article"
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.5 - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "0.400 M HCl and NaOH; 25.0 mL pipette; burette; methyl orange; conical flask; evaporating basin; electric water bath; filter paper and balance.",
+  "safety": "Wear goggles. Handle warm glassware with tongs. Concentrate in an electric water bath; do not heat a salt mixture to dryness or lean over it.",
+  "method": [
+   "Pipette 25.0 mL NaOH into a flask, add two drops methyl orange and titrate with HCl to the agreed orange endpoint.",
+   "Repeat until two accurate titres agree within 0.10 mL; calculate the mean.",
+   "In clean apparatus, combine a fresh 25.0 mL NaOH with the mean acid volume, this time without indicator.",
+   "Transfer to an evaporating basin. Gently concentrate on the water bath to a small volume, stopping before dryness. Label and allow to crystallise.",
+   "At the next visit, collect and dry crystals using the department routine. Weigh only when successive room-temperature masses are stable.",
+   "Calculate theoretical NaCl from the limiting reagent and percentage isolated yield."
+  ],
+  "results": "Accurate titres; reagent concentrations; empty vessel mass; vessel + dry salt mass; theoretical and actual yield.",
+  "questions": [
+   "Why repeat without indicator?",
+   "Theoretical mass for 25.0 mL of 0.400 M NaOH?",
+   "Why can the yield be low?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.5 - Practical Ammonium Nitrate - IMPROVED v1.0.docx",
+  "topic": "Titration and yield",
+  "original": "Ammonium nitrate preparation by titration"
+ },
+ "9": {
+  "title": "Thermal decomposition of sodium hydrogencarbonate",
+  "lesson": "Year 12 · 10 Equations, Yields and Atom Economy",
+  "mode": "Student practical",
+  "time": "50–60 min",
+  "focus": "Test a defined decomposition equation using constant-mass measurements.",
+  "change": "Replaces an ambiguous magnesium carbonate reagent with a defined compound and correct gas-loss equation.",
+  "skills": "Successive heating and weighing; mass loss; reaction stoichiometry.",
+  "prep": "Use labelled sodium hydrogencarbonate, not basic magnesium carbonate. Trial complete decomposition and constant mass on the available burner. Record balance resolution and tolerance.",
+  "answers": [
+   [
+    "Theoretical residue from 2.000 g?",
+    "About 1.262 g Na2CO3; expected total mass loss is about 0.738 g."
+   ],
+   [
+    "Is all lost mass CO2?",
+    "No. Water vapour is also produced."
+   ],
+   [
+    "How is conversion estimated?",
+    "Observed loss divided by theoretical loss for complete decomposition, multiplied by 100; the stated assumptions are essential."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.6 - Practical Yield (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "About 2.0 g NaHCO3; crucible and lid; 0.001 g balance preferred; burner, triangle, tongs and mat.",
+  "safety": "Wear goggles. Keep the lid slightly ajar during heating to vent gas. Cool fully before weighing; never place hot apparatus on the balance.",
+  "method": [
+   "Weigh the dry crucible and lid. Add about 2.0 g NaHCO3 and record the exact mass.",
+   "Heat gently first, then moderately for five minutes with the lid slightly ajar.",
+   "Cool fully with the lid on and weigh. Reheat for two minutes, cool and reweigh until constant mass within the declared tolerance.",
+   "Use 2NaHCO3 → Na2CO3 + CO2 + H2O to calculate the expected dry residue.",
+   "Calculate observed mass loss and percentage conversion assuming no solid was lost and only the stated reaction occurred.",
+   "Evaluate those assumptions if conversion is above 100% or unexpectedly low."
+  ],
+  "results": "Initial mass; cooled totals after each heating; constant residue mass; theoretical mass loss.",
+  "questions": [
+   "Theoretical residue from 2.000 g?",
+   "Is all lost mass CO2?",
+   "How is conversion estimated?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.6 - Practical - IMPROVED v1.0.docx",
+  "topic": "Yield and conversion",
+  "original": "Percentage conversion of magnesium carbonate"
+ },
+ "10": {
+  "title": "Reacting ratios from precipitation data",
+  "lesson": "Year 12 · 10 Equations, Yields and Atom Economy; 9 Empirical and Molecular Formula",
+  "mode": "Data investigation with optional link to practical 03",
+  "time": "25–35 min",
+  "focus": "Infer a reacting ratio from a graph breakpoint and distinguish model data from measurements.",
+  "change": "Replaces the lead/centrifuge experiment while preserving breakpoint analysis and stoichiometry.",
+  "skills": "Interpret evidence; distinguish observations from model data; justify a chemical conclusion.",
+  "prep": "Use the included calculated dataset, not fabricated “class results”. If practical 03 is already scheduled, refer back to it rather than booking it twice. No lead salt handling is needed.",
+  "answers": [
+   [
+    "What is the breakpoint and ratio?",
+    "2.50 mL gives 0.00250 mol Pb2+ against 0.00500 mol I−: Pb:I = 1:2."
+   ],
+   [
+    "Write the equation.",
+    "Pb2+(aq) + 2I−(aq) → PbI2(s)."
+   ],
+   [
+    "Why would precipitate height be less reliable than dry mass?",
+    "Height depends on settling, particle size and packing; a common total volume does not control all of these."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.6 - Practical Formula (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "Graph paper or spreadsheet; the model dataset below; periodic table. No lead reagents or centrifuge are required.",
+  "safety": "This is a data exercise. The values are simulated for teaching and must not be presented as student experimental results.",
+  "method": [
+   "Each model tube contains 5.00 mL 1.00 M KI, a varied volume of 1.00 M Pb(NO3)2 and enough water for the same total volume.",
+   "Plot precipitate mass against lead-solution volume using the supplied model data.",
+   "Draw the rising trend and plateau; identify their intersection rather than selecting the largest noisy point.",
+   "Calculate moles of iodide initially and moles of lead at the breakpoint. Deduce the ion ratio.",
+   "Write the precipitation equation and explain why further lead solution gives no extra product.",
+   "Compare this inference with the directly measured mass-gain method in practical 03."
+  ],
+  "results": "Lead solution / mL versus model PbI2 mass / g: 0.50,0.230; 1.00,0.461; 1.50,0.692; 2.00,0.922; 2.50,1.153; 3.00,1.153; 3.50,1.153; 4.00,1.153.",
+  "questions": [
+   "What is the breakpoint and ratio?",
+   "Write the equation.",
+   "Why would precipitate height be less reliable than dry mass?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.5 - The Mole/Kerboodle/2.6 - Practical Formula - IMPROVED v1.0.docx",
+  "topic": "Reacting ratios",
+  "original": "Formula of a precipitated product"
+ },
+ "11": {
+  "title": "Structure from conductivity and solubility",
+  "lesson": "Year 12 · 18 Properties and Structure",
+  "mode": "Student practical and data interpretation",
+  "time": "45–60 min",
+  "focus": "Infer structure from several properties, acknowledging the limits of each test.",
+  "equipment": "Small samples of copper wire, sodium chloride, sulfur and quartz; water; conductivity meter/low-voltage tester; beakers, spatulas and supplied melting-point data.",
+  "safety": "Wear goggles. Do not heat these solids in test tubes to attempt melting. Use intact quartz pieces and avoid dust; keep sulfur away from flames.",
+  "method": [
+   "Describe each solid. Test dry conductivity with consistent contact; first confirm the tester with copper and an insulating blank.",
+   "Add a small sample of each solid to 10 mL water in separate labelled beakers. Stir equally and record solubility.",
+   "Test the water blank and each liquid phase with the conductivity meter, rinsing between tests. Avoid transferring solid onto electrodes.",
+   "Compare with these approximate melting points: sulfur 115°C, NaCl 801°C, copper 1085°C, quartz about 1710°C.",
+   "Classify the structures using combined evidence. Explain dry-solid and aqueous conductivity separately.",
+   "Identify one limitation of each test and propose a useful control."
+  ],
+  "results": "Substance; dry conductivity; solubility; liquid conductivity; melting point; proposed structure; reasoning.",
+  "questions": [
+   "Why does NaCl solution conduct but solid NaCl not?",
+   "Why does insolubility not establish structure?",
+   "Why does copper conduct?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/02 - Structure and Bonding/_Shared Resources/2.1 - Bonding/Kerboodle/3.7 - Practical - IMPROVED v1.0.docx",
+  "change": "Removes unsuitable high-temperature test-tube heating and adds controls and data-supported classification.",
+  "skills": "Conductivity and solubility tests; controlled observations; evidence-based classification.",
+  "topic": "Bonding and structure",
+  "original": "Structure and bonding from properties",
+  "answers": [
+   [
+    "Why does NaCl solution conduct but solid NaCl not?",
+    "Its ions are mobile in solution but fixed in the solid lattice."
+   ],
+   [
+    "Why does insolubility not establish structure?",
+    "Both simple molecular sulfur and giant covalent quartz are insoluble in water."
+   ],
+   [
+    "Why does copper conduct?",
+    "Delocalised electrons carry charge through the metallic structure."
+   ]
+  ],
+  "prep": "Verify dry electrical contact and meter sensitivity; use low voltage only. Supply melting data as reference information, not observations. Collect residues according to the departmental waste plan.",
+  "sources": []
+ },
+ "12": {
+  "title": "Molecular polarity and a deflected water stream",
+  "lesson": "Year 12 · 20 Electronegativity and Bond Polarity; 21 Intermolecular Forces",
+  "mode": "Teacher demonstration and modelling",
+  "time": "10–15 min",
+  "focus": "Connect molecular shape to net dipole and evaluate what a demonstration can establish.",
+  "change": "Uses the accepted simpler demonstration and removes a misleading binary solvent assay.",
+  "skills": "Predict from molecular shape; observe deflection; compare evidence with a model.",
+  "topic": "Polarity and intermolecular forces",
+  "original": "Deflecting liquid streams with a charged rod",
+  "answers": [
+   [
+    "Why is CO2 non-polar despite polar bonds?",
+    "The two equal C=O bond dipoles oppose and cancel in the linear molecule."
+   ],
+   [
+    "Why does H2O have a net dipole?",
+    "Its bent geometry prevents cancellation of the O–H dipoles."
+   ],
+   [
+    "What does the demo not establish?",
+    "It does not uniquely determine molecular polarity; electrical and flow conditions also influence deflection."
+   ]
+  ],
+  "questions": [
+   "Why is CO2 non-polar despite polar bonds?",
+   "Why does H2O have a net dipole?",
+   "What does the demo not establish?"
+  ],
+  "equipment": "Water burette or narrow tap stream; receiving beaker; dry plastic rod and cloth; molecular models of H2O, CO2 and CH4.",
+  "safety": "Use water only. Secure glassware and keep the stream away from electrical equipment. Dry spills promptly.",
+  "prep": "Trial stream thickness and rod charging before class. This water-only activity replaces the six-solvent comparison. Assess the molecular reasoning rather than the size of stream movement.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "13": {
+  "title": "Period 3 reactions and oxide behaviour",
+  "lesson": "Year 13 · 19 Period 3 Elements and Their Oxides",
+  "mode": "Observation and interpretation activity",
+  "time": "30–40 min",
+  "focus": "Link selected Period 3 evidence to oxide acid–base behaviour.",
+  "equipment": "Teacher-selected recorded demonstrations or prepared observation cards; periodic table; models of Na2O, MgO, Al2O3, SiO2, P4O10 and SO2.",
+  "safety": "No student handling of sodium, sulfur combustion or burning magnesium is required in this revised activity. Label supplied observations as reference observations.",
+  "method": [
+   "Observe the teacher-selected demonstrations/records for sodium with water, magnesium with oxygen and sulfur with oxygen.",
+   "Record observations before writing equations. Distinguish an observation from an inferred product.",
+   "Use the supplied reference facts: Na2O/MgO are basic, Al2O3 amphoteric, SiO2 and the selected non-metal oxides acidic.",
+   "Write equations showing MgO reacting with acid and SO2 reacting with water/base.",
+   "Explain the broad acid–base pattern across Period 3 using bonding and oxide type.",
+   "State why the selected reactions do not prove a universal reactivity order across the period."
+  ],
+  "results": "Element; conditions; observation; product/equation; oxide acid–base behaviour; evidence source.",
+  "questions": [
+   "Magnesium combustion equation?",
+   "Give an oxide neutralisation equation.",
+   "Why is Al2O3 a useful exception?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.3 - Electron Configuration/Kerboodle/Periodicity - Practical - IMPROVED v1.0.docx",
+  "change": "Narrows the activity to selected evidence; removes unsafe unneeded student reactions and the one-week cold-water timing dependency.",
+  "skills": "Compare reactions with oxygen/water; observation table; balanced equations.",
+  "prep": "Supply these reference observations if no recording is available: sodium moves/fizzes on water; burning Mg gives a bright white light and white solid; sulfur burns blue to a colourless choking gas (never ask students to smell it). This is scheduled mainly at Y13 #19.",
+  "answers": [
+   [
+    "Magnesium combustion equation?",
+    "2Mg + O2 → 2MgO."
+   ],
+   [
+    "Give an oxide neutralisation equation.",
+    "MgO + 2H+ → Mg2+ + H2O; SO2 + 2OH− → SO3²− + H2O."
+   ],
+   [
+    "Why is Al2O3 a useful exception?",
+    "It reacts with both acids and bases and is amphoteric, so a simple metal/non-metal rule is incomplete."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/01 - Atomic Structure and Moles/_Shared Resources/1.3 - Electron Configuration/Kerboodle/Periodicity - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Periodicity",
+  "original": "Reactions of Period 3 elements"
+ },
+ "14": {
+  "title": "Group 2 solubility and sulfate identification",
+  "lesson": "Year 12 · 35 Group 2 Trends and Reactions; 36 Group 2 Solubility; 37 Group 2 Uses and Tests; 42 RP04 Practical: Carrying Out Tests",
+  "mode": "Student microscale tests plus observed demonstrations",
+  "time": "Two lesson sections of 30–40 min",
+  "focus": "Distinguish Group 2 reactivity from hydroxide/sulfate solubility trends.",
+  "equipment": "0.10 M MgCl2, CaCl2, SrCl2, BaCl2; 0.10 M NaOH and Na2SO4; dropper bottles; well plate; 0.10 M sulfate unknown/control; 0.5 M HCl; 0.10 M BaCl2 test reagent.",
+  "safety": "Wear goggles. Barium salts must be collected as labelled waste. Use separate droppers; no metal/water gas trapping, sealing or ignition by students.",
+  "method": [
+   "Label two rows of four wells Mg, Ca, Sr and Ba. Put five drops of the corresponding metal solution in each well.",
+   "Add five drops NaOH to each first-row well; mix gently and record turbidity immediately and after two minutes.",
+   "Add five drops Na2SO4 to each second-row well; mix and record in the same way.",
+   "Interpret precipitate/no precipitate as a solubility comparison at these concentrations, not as a numerical solubility measurement.",
+   "For the sulfate test, place 1 mL sample in a tube, add two drops 0.5 M HCl, then two drops 0.10 M BaCl2. Run sulfate-positive and water-negative controls alongside.",
+   "Use supplied observations for Mg/Ca with water and Mg with steam; write equations. Do not recreate the old thumb-sealed hydrogen test."
+  ],
+  "results": "Cation; hydroxide result; sulfate result. Separate sample/control sulfate-test table and metal reaction equations.",
+  "questions": [
+   "What trends are expected?",
+   "Why acidify before the sulfate test?",
+   "Mg with steam equation?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/03 - Periodicity, Acids and Group 2/_Shared Resources/3.2 - Group 2/Kerboodle/9.1 - Practical - IMPROVED v1.0.docx",
+  "change": "Adopts microscale student solubility tests, separates the four teaching components and removes the sealed gas instruction.",
+  "skills": "Compare reactivity and pH; precipitation tests; infer hydroxide/sulfate trends.",
+  "prep": "Pilot all eight wells: Mg hydroxide should be clear to observe; Ba hydroxide should remain dissolved at these concentrations. Sulfate appearances can be subtle, particularly Ca. Provide reference data where the visible pattern is ambiguous. Reference metal observations: Ca fizzes in cold water; Mg is slow in cold water but reacts with steam. Separate waste for barium-containing mixtures.",
+  "answers": [
+   [
+    "What trends are expected?",
+    "Hydroxides become more soluble down the group; sulfates less soluble. Exact visible thresholds depend on concentrations."
+   ],
+   [
+    "Why acidify before the sulfate test?",
+    "It removes interfering carbonate before barium reagent is added."
+   ],
+   [
+    "Mg with steam equation?",
+    "Mg + H2O(g) → MgO + H2; cold-water Mg reacts much more slowly."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/03 - Periodicity, Acids and Group 2/_Shared Resources/3.2 - Group 2/Kerboodle/9.1 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Group 2",
+  "original": "Group 2 metals and solubility trends"
+ },
+ "15": {
+  "title": "Halide identification and reducing strength",
+  "lesson": "Year 12 · 39 Halide Reactions and RP04; 42 RP04 Practical: Carrying Out Tests",
+  "mode": "Student tests plus separate redox interpretation",
+  "time": "35 min tests and 15 min interpretation",
+  "focus": "Distinguish halide identification from halide reducing strength.",
+  "change": "Reconciles variants, corrects ammonia labels and species names, and replaces concentrated-acid gas handling with interpretation.",
+  "skills": "AgNO3/NH3 tests; systematic observations; ionic and redox equations.",
+  "prep": "Pilot the approved concentrated-ammonia concentration and quantities; 2 M is the dilute bottle, not a reliable substitute for the concentrated test. Supply known controls and one coded halide. Use separate fresh portions and collect all silver/ammonia mixtures promptly under current disposal guidance.",
+  "answers": [
+   [
+    "Why not acidify with HCl?",
+    "It introduces chloride and may give a false silver-chloride precipitate."
+   ],
+   [
+    "Expected precipitate results?",
+    "AgCl white and soluble in dilute NH3; AgBr cream, requiring concentrated NH3; AgI yellow and insoluble."
+   ],
+   [
+    "Which species is the reducing agent in the acid reactions?",
+    "The halide ion, which loses electrons: 2X− → X2 + 2e−."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/05 - Redox and Group 7/_Shared Resources/5.2 - Halogen Trends (3.2.3.1) [RP4]/Kerboodle/10.3 - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "0.10 M NaCl, NaBr and NaI/unknowns; 0.05 M AgNO3; 0.5 M HNO3; 2 M NH3; teacher-only approved concentrated ammonia station; tubes/droppers.",
+  "safety": "Wear goggles. Teacher handles concentrated ammonia in a fume cupboard. Collect silver waste. Concentrated-H2SO4 redox chemistry is studied through supplied observations, not a student gas test.",
+  "method": [
+   "Place 1 mL of each known halide and an unknown in labelled tubes. Add two drops HNO3 then three drops AgNO3. Record precipitate colour promptly.",
+   "Add dilute NH3 dropwise to each precipitate, mix and record whether it dissolves.",
+   "The teacher tests a fresh AgBr portion with the department-approved concentrated ammonia reagent in the fume cupboard. Record the result; AgI remains insoluble under the test conditions.",
+   "Identify the unknown using both colour and ammonia behaviour, not colour alone.",
+   "Study the reference concentrated-acid observations: chloride gives HCl fumes; bromide gives brown Br2 and SO2; iodide can give I2 with sulfur/H2S/SO2 depending on conditions. No smelling is involved.",
+   "Write ionic precipitation equations and explain increasing reducing power of halide ions down the group."
+  ],
+  "results": "Halide/unknown; AgNO3 observation; dilute NH3; teacher concentrated-NH3 observation; inference.",
+  "questions": [
+   "Why not acidify with HCl?",
+   "Expected precipitate results?",
+   "Which species is the reducing agent in the acid reactions?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/05 - Redox and Group 7/_Shared Resources/5.2 - Halogen Trends (3.2.3.1) [RP4]/Kerboodle/10.3 - Practical - IMPROVED v1.0.docx",
+  "topic": "Group 7 and RP4",
+  "original": "Halide identification and reducing ability"
+ },
+ "16": {
+  "title": "Iron II determination by redox titration",
+  "lesson": "Year 12 · 32 Redox in Context",
+  "mode": "Student practical",
+  "time": "50–60 min plus analysis",
+  "focus": "Develop reliable redox titration and the 1:5 stoichiometric calculation.",
+  "change": "Adopts the known-salt training alternative; removes hot volumetric filling, tablet interference and poorly known titrant concentration.",
+  "skills": "Prepare a sample; manganate(VII) endpoint; half-equations; Fe mass calculation.",
+  "prep": "Prepare fresh Mohr-salt solution in dilute sulfuric acid using the verified hydrate formula; about 39.21 g (NH4)2Fe(SO4)2·6H2O per litre gives 0.1000 M. Standardise KMnO4 and record actual concentration. Supply enough solution for rough plus repeats. Keep tablet analysis as an optional later separately validated task.",
+  "answers": [
+   [
+    "Balanced ionic equation?",
+    "MnO4− + 8H+ + 5Fe2+ → Mn2+ + 4H2O + 5Fe3+."
+   ],
+   [
+    "Expected titre for the stated nominal concentrations?",
+    "25.00 mL."
+   ],
+   [
+    "Why no separate indicator?",
+    "The first persistent excess of coloured permanganate marks the endpoint."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/05 - Redox and Group 7/_Shared Resources/5.1 - Redox Reactions (3.1.7)/Kerboodle/Redox - Practical (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "Fresh approximately 0.1000 M ammonium iron(II) sulfate in dilute H2SO4; standardised 0.02000 M KMnO4; 25.0 mL pipette; burette; 1.0 M H2SO4, 20 mL per run.",
+  "safety": "Wear goggles. Acid is corrosive/irritant according to concentration; permanganate stains and oxidises. Do not replace sulfuric acid with hydrochloric acid. Collect manganese/iron waste as directed.",
+  "method": [
+   "Record titrant concentration. Rinse/fill the burette with standardised KMnO4.",
+   "Pipette 25.0 mL iron(II) solution into a flask and add 20 mL 1.0 M H2SO4.",
+   "Titrate with swirling until one excess drop gives a faint pink colour persisting for 30 seconds.",
+   "Take a rough run and repeat until at least two accurate titres agree within 0.10 mL.",
+   "Use MnO4−:Fe2+ = 1:5 to calculate iron(II) concentration and mass of Fe per litre.",
+   "Compare with the independently known preparation concentration; explain why a tablet assay would add sample-preparation uncertainty."
+  ],
+  "results": "KMnO4 concentration; burette readings and titres; calculated Fe2+ concentration; reference concentration.",
+  "questions": [
+   "Balanced ionic equation?",
+   "Expected titre for the stated nominal concentrations?",
+   "Why no separate indicator?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/05 - Redox and Group 7/_Shared Resources/5.1 - Redox Reactions (3.1.7)/Kerboodle/Redox - Practical - IMPROVED v1.0.docx",
+  "topic": "Redox applications",
+  "original": "Iron content of tablets by redox titration"
+ },
+ "17": {
+  "title": "Quantitative calorimetry instead of alcohol combustion",
+  "lesson": "Year 12 · 25 RP02 Practical: Measuring Enthalpy Change; 26 RP02 Analysis: Hess's Law Context",
+  "mode": "Student practical",
+  "time": "50–60 min",
+  "focus": "Measure a quantitative enthalpy change with an explicit heat-loss evaluation.",
+  "equipment": "25.0 mL 1.00 M HCl and 25.0 mL 1.00 M NaOH per run; insulated cup in beaker with loose lid; temperature probe 0.1°C; cylinders; timer; stirrer; balance.",
+  "safety": "Wear goggles; avoid acid/alkali contact. Support the cup in a beaker. Do not seal the vessel. Rinse splashes promptly; retain solutions for instructed disposal.",
+  "method": [
+   "Bring the two solutions to the same room temperature. Record actual concentrations and the empty cup mass.",
+   "Place 25.0 mL HCl in the insulated cup. Record temperature every 30 seconds for three minutes; measure the NaOH temperature separately.",
+   "At exactly three minutes add 25.0 mL NaOH, replace the loose lid, stir gently and continue readings every 30 seconds for five minutes.",
+   "Weigh the cup plus mixture after temperature recording to estimate actual solution mass, keeping the cup dry externally.",
+   "Plot temperature against time and extrapolate the post-reaction cooling trend back to mixing time. Use the corresponding baseline temperature to estimate corrected ΔT.",
+   "Calculate q = m × 4.18 × ΔT in joules and ΔH = −q/n, with n the moles of water formed. Repeat and compare."
+  ],
+  "results": "Time / s; temperature / °C; mixing time; solution mass / g; reagent volumes/concentrations; corrected ΔT; ΔH / kJ mol−1.",
+  "questions": [
+   "Expected sign and approximate scale?",
+   "Why include both solutions in m?",
+   "What does the correction not remove?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/04 - Energetics/_Shared Resources/4.1 - Enthalpy Change (3.1.4.1)/Kerboodle/4.3 - Practical - IMPROVED v1.0.docx",
+  "change": "Replaces alcohol-burning calorimetry with the adopted quantitative neutralisation method. Fuel combustion is retained only as a written evaluation comparison.",
+  "skills": "Temperature logging; controlled volumes; heat-loss extrapolation; q = mcΔT; molar enthalpy.",
+  "topic": "Calorimetry and RP2",
+  "original": "Enthalpy of combustion of alcohols",
+  "answers": [
+   [
+    "Expected sign and approximate scale?",
+    "Exothermic; a few degrees rise, with ideal strong-acid/strong-base ΔH near −57 kJ mol−1. Simple apparatus usually underestimates its magnitude."
+   ],
+   [
+    "Why include both solutions in m?",
+    "Both receive the released energy; using only one volume halves the estimated heat."
+   ],
+   [
+    "What does the correction not remove?",
+    "Heat absorbed by apparatus, imperfect insulation/mixing and assumptions about density and specific heat remain."
+   ]
+  ],
+  "prep": "For three runs per pair allow at least 90 mL of each solution. Verify probe response, equal initial temperatures and an observable approximately 6–7°C rise. Do not seal the lid around the probe. Model the extrapolation before expecting independent interpretation.",
+  "sources": []
+ },
+ "18": {
+  "title": "Enthalpy of neutralisation by cup calorimetry",
+  "lesson": "Year 12 · 25 RP02 Practical: Measuring Enthalpy Change; 26 RP02 Analysis: Hess's Law Context",
+  "mode": "Student practical",
+  "time": "50–60 min",
+  "focus": "Measure a quantitative enthalpy change with an explicit heat-loss evaluation.",
+  "equipment": "25.0 mL 1.00 M HCl and 25.0 mL 1.00 M NaOH per run; insulated cup in beaker with loose lid; temperature probe 0.1°C; cylinders; timer; stirrer; balance.",
+  "safety": "Wear goggles; avoid acid/alkali contact. Support the cup in a beaker. Do not seal the vessel. Rinse splashes promptly; retain solutions for instructed disposal.",
+  "method": [
+   "Bring the two solutions to the same room temperature. Record actual concentrations and the empty cup mass.",
+   "Place 25.0 mL HCl in the insulated cup. Record temperature every 30 seconds for three minutes; measure the NaOH temperature separately.",
+   "At exactly three minutes add 25.0 mL NaOH, replace the loose lid, stir gently and continue readings every 30 seconds for five minutes.",
+   "Weigh the cup plus mixture after temperature recording to estimate actual solution mass, keeping the cup dry externally.",
+   "Plot temperature against time and extrapolate the post-reaction cooling trend back to mixing time. Use the corresponding baseline temperature to estimate corrected ΔT.",
+   "Calculate q = m × 4.18 × ΔT in joules and ΔH = −q/n, with n the moles of water formed. Repeat and compare."
+  ],
+  "results": "Time / s; temperature / °C; mixing time; solution mass / g; reagent volumes/concentrations; corrected ΔT; ΔH / kJ mol−1.",
+  "questions": [
+   "Expected sign and approximate scale?",
+   "Why include both solutions in m?",
+   "What does the correction not remove?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/04 - Energetics/_Shared Resources/4.1 - Enthalpy Change (3.1.4.1)/Kerboodle/4.3 - Practical 3 - IMPROVED v1.0.docx",
+  "change": "Adopts one equal-concentration neutralisation, replacing the three competing methods and improving heat-loss treatment.",
+  "skills": "Temperature logging; controlled volumes; heat-loss extrapolation; q = mcΔT; molar enthalpy.",
+  "topic": "Calorimetry and RP2",
+  "original": "Measuring enthalpy changes in solution",
+  "answers": [
+   [
+    "Expected sign and approximate scale?",
+    "Exothermic; a few degrees rise, with ideal strong-acid/strong-base ΔH near −57 kJ mol−1. Simple apparatus usually underestimates its magnitude."
+   ],
+   [
+    "Why include both solutions in m?",
+    "Both receive the released energy; using only one volume halves the estimated heat."
+   ],
+   [
+    "What does the correction not remove?",
+    "Heat absorbed by apparatus, imperfect insulation/mixing and assumptions about density and specific heat remain."
+   ]
+  ],
+  "prep": "For three runs per pair allow at least 90 mL of each solution. Verify probe response, equal initial temperatures and an observable approximately 6–7°C rise. Do not seal the lid around the probe. Model the extrapolation before expecting independent interpretation.",
+  "sources": []
+ },
+ "19": {
+  "title": "Hess cycle for sodium hydrogencarbonate decomposition",
+  "lesson": "Year 12 · 27 Hess's Law; 26 RP02 Analysis: Hess's Law Context",
+  "mode": "Student practical",
+  "time": "60 min plus 20 min analysis",
+  "focus": "Use measured reaction enthalpies to construct a Hess cycle with correct scaling and signs.",
+  "change": "Fixes masses within the acid-excess range, controls foam and specifies the target cycle and signs.",
+  "skills": "Two calorimetry measurements; scale/reverse equations; combine enthalpy changes.",
+  "topic": "Hess’s law",
+  "original": "Hess cycle for sodium hydrogencarbonate decomposition",
+  "answers": [
+   [
+    "Why multiply the hydrogencarbonate value by two?",
+    "Two moles occur in the target decomposition equation."
+   ],
+   [
+    "Why subtract the carbonate value?",
+    "That measured reaction is reversed in the Hess cycle."
+   ],
+   [
+    "Why might the result differ from a reference?",
+    "Heat loss, gas escape, dissolution and solution heat-capacity approximations affect both measurements."
+   ]
+  ],
+  "questions": [
+   "Why multiply the hydrogencarbonate value by two?",
+   "Why subtract the carbonate value?",
+   "Why might the result differ from a reference?"
+  ],
+  "equipment": "NaHCO3 about 3.50 g; anhydrous Na2CO3 about 2.50 g; two 30.0 mL portions 2.00 M HCl; large supported insulated cup with loose lid; probe; timer; balance.",
+  "safety": "Wear goggles. Add solids in a controlled way to prevent foam overflow. The cup must have ample headspace and must not be sealed. Use matched separate runs, not a combined reaction.",
+  "prep": "Trial these specified masses with the selected cup. HCl is 0.0600 mol; requirements are about 0.0417 mol and 0.0472 mol respectively. Allow extra acid/solid for repeats. If overflow occurs, scale both solid and acid together only after a technician trial.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "20": {
+  "title": "Hess cycle for hydration of magnesium sulfate",
+  "lesson": "Year 13 · 2 Ionic Model and Enthalpy of Solution",
+  "mode": "Student practical",
+  "time": "60 min plus analysis",
+  "focus": "Use a Hess cycle to distinguish salt hydration from gaseous-ion hydration enthalpy.",
+  "change": "Matches salt moles and final water content explicitly; removes approximate unmatched-state subtraction.",
+  "skills": "Compare two dissolution enthalpies; account for crystal water; construct a cycle.",
+  "topic": "Hess’s law and hydration",
+  "original": "Hess cycle for magnesium sulfate hydration",
+  "answers": [
+   [
+    "Why reduce added water in the hydrate run?",
+    "Crystal water enters the final solution; matching total water and salt makes the final states comparable."
+   ],
+   [
+    "What hydration is measured?",
+    "Formation of a hydrated solid from anhydrous solid and liquid water, not hydration of gaseous ions."
+   ],
+   [
+    "What if the hydrate signal is indistinguishable from noise?",
+    "Report it as unresolved; use supplied/reference enthalpies for the cycle rather than inventing a measured value."
+   ]
+  ],
+  "questions": [
+   "Why reduce added water in the hydrate run?",
+   "What hydration is measured?",
+   "What if the hydrate signal is indistinguishable from noise?"
+  ],
+  "equipment": "Verified anhydrous MgSO4 about 3.009 g; MgSO4·7H2O about 6.162 g; deionised water; 0.001 g balance; insulated cup/lid; sensitive temperature probe; timer.",
+  "safety": "Wear goggles. Keep anhydrous reagent closed before weighing. Use separate clean dry cups/runs; do not heat the mixtures.",
+  "prep": "For exactly 0.02500 mol use 3.009 g anhydrous salt, 6.162 g hydrate and about 46.85 g added water in the hydrate run. Verify anhydrous stock condition and pilot the small hydrate temperature signal. Record sensitivity and repeatability.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "21": {
+  "title": "Concentration changes in iron thiocyanate equilibrium",
+  "lesson": "Year 12 · 45 Dynamic Equilibrium and Le Chatelier's Principle",
+  "mode": "Student microscale comparison",
+  "time": "20–25 min",
+  "focus": "Explain concentration changes using a reversible equilibrium and a reference sample.",
+  "equipment": "0.10 M Fe(NO3)3 and 0.10 M KSCN; water; dropper pipettes; four small tubes; white background; 10 mL cylinder.",
+  "safety": "Wear goggles; avoid reagent contact and collect metal-containing solutions as instructed. Use small quantities and separate droppers.",
+  "method": [
+   "Mix 10.0 mL water with one drop each of Fe(NO3)3 and KSCN. The teacher checks that the red colour is pale enough for comparison.",
+   "Divide equally among four tubes. Keep tube 1 unchanged.",
+   "Add one drop water to tube 2, one drop Fe(NO3)3 to tube 3 and one drop KSCN to tube 4. Mix equally.",
+   "Compare each with both the unchanged and water-addition controls against a white background.",
+   "Explain the changes using Fe3+ + SCN− ⇌ [FeSCN]2+. Separate observed colour from the inferred shift.",
+   "Do not add ammonium chloride in this introductory version: it introduces a competing-complex effect outside the displayed equation."
+  ],
+  "results": "Tube; addition; prediction; colour relative to controls; equilibrium explanation.",
+  "questions": [
+   "Why do both reactant additions deepen red?",
+   "Why include water control?",
+   "Does darker red measure Kc?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/06 - Equilibrium/_Shared Resources/6.1 - Chemical Equilibria (3.1.6)/Kerboodle/6.2 - Practical - IMPROVED v1.0.docx",
+  "change": "Adopts the simple concentration comparison and removes the misleading ammonium-chloride arm.",
+  "skills": "Keep a reference tube; observe shifts; explain concentration effects.",
+  "prep": "Pilot starting colour using the actual dropper size. Supply a prepared pale stock if necessary and record its recipe consistently. Use nitrate rather than chloride as the Fe salt to avoid introducing chloride competition. This is not a Kp activity.",
+  "answers": [
+   [
+    "Why do both reactant additions deepen red?",
+    "Each increases a reactant concentration and shifts the equilibrium towards the red complex."
+   ],
+   [
+    "Why include water control?",
+    "It helps distinguish dilution from a reagent-induced shift."
+   ],
+   [
+    "Does darker red measure Kc?",
+    "No. This qualitative comparison has no calibrated concentration measurement."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/06 - Equilibrium/_Shared Resources/6.1 - Chemical Equilibria (3.1.6)/Kerboodle/6.2 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Le Chatelier’s principle",
+  "original": "Iron thiocyanate equilibrium"
+ },
+ "22": {
+  "title": "Temperature changes in cobalt equilibrium",
+  "lesson": "Year 12 · 45 Dynamic Equilibrium and Le Chatelier's Principle; 48 Effect of Temperature on Kc",
+  "mode": "Teacher demonstration",
+  "time": "10–15 min",
+  "focus": "Use temperature and reversibility to infer the sign of an equilibrium enthalpy change.",
+  "equipment": "Three small equal samples of technician-prepared violet cobalt/chloride equilibrium mixture; water baths near room temperature, ice-cold and about 60°C; tubes/rack; white background.",
+  "safety": "Teacher demonstration in a fume cupboard under the department procedure. Cobalt compounds and strong acid require suitable gloves/goggles and dedicated waste. Never seal heated tubes or allow residues to dry.",
+  "method": [
+   "Observe the three identical violet samples at room temperature; identify the unchanged reference.",
+   "The teacher places one in the warm bath and one in the cold bath, keeping sample composition unchanged.",
+   "Record colour after thermal equilibration, compared with the reference.",
+   "Return both samples to room temperature and record whether the change reverses.",
+   "Use [Co(H2O)6]2+ + 4Cl− ⇌ [CoCl4]2− + 6H2O to explain the result and infer the sign of the forward enthalpy change.",
+   "Use practical 21 for concentration effects; do not repeat acid additions here."
+  ],
+  "results": "Bath condition; prediction; observed colour; return-to-room-temperature observation; explanation.",
+  "questions": [
+   "Which side is blue?",
+   "If warming favours blue, what is the sign of forward ΔH?",
+   "Why return samples to room temperature?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/06 - Equilibrium/_Shared Resources/6.1 - Chemical Equilibria (3.1.6)/Kerboodle/6.2 - Practical 2 - IMPROVED v1.0.docx",
+  "change": "Consolidates cobalt work into one temperature demonstration; concentration teaching moves to iron thiocyanate.",
+  "skills": "Predict colour changes; control comparison; distinguish concentration and temperature.",
+  "prep": "Technician only, in a fume cupboard under the departmental procedure: dissolve 2.0 g CoCl2·6H2O in 20 mL water, then add concentrated HCl gradually with cooling until a violet midpoint is reached, around 50 mL total mixture in the RSC recipe. The cobalt concentration at 50 mL is about 0.17 M, not the 0.4 M quoted in that source. Dispense three 2 mL portions; do not issue concentrated acid to students. Trial reversibility at the selected baths; collect cobalt waste rather than copying old drain-disposal advice.",
+  "answers": [
+   [
+    "Which side is blue?",
+    "The tetrachlorocobaltate(II) side."
+   ],
+   [
+    "If warming favours blue, what is the sign of forward ΔH?",
+    "Positive: the forward reaction is endothermic."
+   ],
+   [
+    "Why return samples to room temperature?",
+    "Reversal supports an equilibrium interpretation rather than a permanent chemical change."
+   ]
+  ],
+  "sources": [
+   "https://edu.rsc.org/exhibition-chemistry/easier-equilibrium/3007629.article"
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/06 - Equilibrium/_Shared Resources/6.1 - Chemical Equilibria (3.1.6)/Kerboodle/6.2 - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Le Chatelier’s principle",
+  "original": "Cobalt equilibrium with concentration and temperature"
+ },
+ "23": {
+  "title": "Cobalt equilibrium temperature demonstration",
+  "lesson": "Year 12 · 48 Effect of Temperature on Kc",
+  "mode": "Teacher demonstration",
+  "time": "10–15 min",
+  "focus": "Use temperature and reversibility to infer the sign of an equilibrium enthalpy change.",
+  "equipment": "Three small equal samples of technician-prepared violet cobalt/chloride equilibrium mixture; water baths near room temperature, ice-cold and about 60°C; tubes/rack; white background.",
+  "safety": "Teacher demonstration in a fume cupboard under the department procedure. Cobalt compounds and strong acid require suitable gloves/goggles and dedicated waste. Never seal heated tubes or allow residues to dry.",
+  "method": [
+   "Observe the three identical violet samples at room temperature; identify the unchanged reference.",
+   "The teacher places one in the warm bath and one in the cold bath, keeping sample composition unchanged.",
+   "Record colour after thermal equilibration, compared with the reference.",
+   "Return both samples to room temperature and record whether the change reverses.",
+   "Use [Co(H2O)6]2+ + 4Cl− ⇌ [CoCl4]2− + 6H2O to explain the result and infer the sign of the forward enthalpy change.",
+   "Use practical 21 for concentration effects; do not repeat acid additions here."
+  ],
+  "results": "Bath condition; prediction; observed colour; return-to-room-temperature observation; explanation.",
+  "questions": [
+   "Which side is blue?",
+   "If warming favours blue, what is the sign of forward ΔH?",
+   "Why return samples to room temperature?"
+  ],
+  "student_src": "Activity resources/23 Cobalt equilibrium temperature demonstration - Student - IMPROVED v1.0.docx",
+  "change": "This is the same improved temperature demonstration as entry 22. Use one copy; do not book a second cobalt practical.",
+  "skills": "Compare hot/cold/reference samples; infer the sign of reaction enthalpy.",
+  "topic": "Temperature and equilibrium",
+  "original": "Temperature and cobalt equilibrium",
+  "answers": [
+   [
+    "Which side is blue?",
+    "The tetrachlorocobaltate(II) side."
+   ],
+   [
+    "If warming favours blue, what is the sign of forward ΔH?",
+    "Positive: the forward reaction is endothermic."
+   ],
+   [
+    "Why return samples to room temperature?",
+    "Reversal supports an equilibrium interpretation rather than a permanent chemical change."
+   ]
+  ],
+  "prep": "Technician only, in a fume cupboard under the departmental procedure: dissolve 2.0 g CoCl2·6H2O in 20 mL water, then add concentrated HCl gradually with cooling until a violet midpoint is reached, around 50 mL total mixture in the RSC recipe. The cobalt concentration at 50 mL is about 0.17 M, not the 0.4 M quoted in that source. Dispense three 2 mL portions; do not issue concentrated acid to students. Trial reversibility at the selected baths; collect cobalt waste rather than copying old drain-disposal advice.",
+  "sources": []
+ },
+ "24": {
+  "title": "Equilibrium constant from a prepared ester mixture",
+  "lesson": "Year 12 · 46 Equilibrium Constant Kc; 47 Kc Calculations",
+  "mode": "Student titration of technician-prepared equilibrium mixture",
+  "time": "50–60 min plus analysis; preparation at least one week earlier",
+  "focus": "Determine equilibrium amounts by titration, including subtraction of acid catalyst.",
+  "equipment": "Prepared mixture of ethanol/ethanoic acid/HCl catalyst; preparation record; accurate 3.00 mL graduated pipette; 0.5000 M NaOH; burette; phenolphthalein; water.",
+  "safety": "Wear goggles. Mixture is flammable and acidic; no flames. Do not smell or heat. Keep stock sealed between sampling. Only the technician prepares/stores the equilibrium batch.",
+  "method": [
+   "Read the batch record: actual initial amounts of ethanol, ethanoic acid, water and HCl, mixing date, storage temperature and total sampled mixture volume.",
+   "Mix the stock consistently. Transfer an accurate 3.00 mL aliquot into 20 mL water.",
+   "Titrate promptly with standard NaOH to a faint pink endpoint persisting for 10 seconds. Do not keep adding alkali to chase long-term fading.",
+   "Repeat with fresh aliquots until accurate titres agree within 0.10 mL.",
+   "Subtract HCl catalyst moles in the aliquot from total titratable acid. Convert the remaining ethanoic acid to the amount in the original mixture.",
+   "Use initial/change/equilibrium amounts to calculate ester and water formed. Calculate Kc = [ester][water]/([acid][ethanol]) and discuss approximations."
+  ],
+  "results": "Batch composition/date; aliquot volume; NaOH concentration; titres; catalyst correction; initial/change/equilibrium table.",
+  "questions": [
+   "Why subtract HCl?",
+   "Why can a delayed endpoint drift?",
+   "Why is the result approximate?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/06 - Equilibrium/_Shared Resources/6.1 - Chemical Equilibria (3.1.6)/Kerboodle/6.4 - Practical - IMPROVED v1.0.docx",
+  "change": "Adopts a pre-equilibrated teacher batch; fixes sealing, accurate sampling, catalyst correction and water accounting.",
+  "skills": "Accurate sampling; titration; subtract acid catalyst; equilibrium amounts and Kc.",
+  "prep": "Prepare the original 6 mL ethanol + 4 mL glacial ethanoic acid + 5 mL 3 M HCl batch only under the current acid/flammable-liquid procedure, in a compatible sealed labelled vessel. Record actual masses, purity and water content from stock data; do not assume 5 mL HCl solution is 5 g water. Leave at least a week. Pilot replicate aliquots and confirm stable titres over an additional interval before issuing. Use standardised 0.5000 M NaOH: a 3.00 mL aliquot of this batch should give a titre around 20–25 mL, subject to actual composition and equilibrium. The weaker 0.1000 M titrant would require roughly 100 mL and is unsuitable for one burette fill.",
+  "answers": [
+   [
+    "Why subtract HCl?",
+    "It consumes alkali but is not ethanoic acid in the equilibrium expression."
+   ],
+   [
+    "Why can a delayed endpoint drift?",
+    "Alkaline hydrolysis of ester can consume further hydroxide."
+   ],
+   [
+    "Why is the result approximate?",
+    "Composition/water estimates, sampling, equilibrium attainment and endpoint chemistry limit accuracy."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/06 - Equilibrium/_Shared Resources/6.1 - Chemical Equilibria (3.1.6)/Kerboodle/6.4 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Equilibrium calculations",
+  "original": "Kc for esterification"
+ },
+ "25": {
+  "title": "Structural isomers with molecular models",
+  "lesson": "Year 12 · 61 Structural Isomerism",
+  "mode": "Student modelling",
+  "time": "25–35 min",
+  "focus": "Recognise identical connectivity despite rotations and systematically enumerate structural isomers.",
+  "change": "Corrects the impossible propanol/cyclohexane grouping and the incomplete ether list.",
+  "skills": "Build and compare structures; translate representations; systematic naming.",
+  "topic": "Structural isomerism",
+  "original": "Structural isomers using molecular models",
+  "answers": [
+   [
+    "C4H10 isomers?",
+    "Butane and 2-methylpropane."
+   ],
+   [
+    "Four C4H10O alcohols?",
+    "Butan-1-ol, butan-2-ol, 2-methylpropan-1-ol and 2-methylpropan-2-ol."
+   ],
+   [
+    "Three ethers and the cyclohexane error?",
+    "Ethoxyethane, 1-methoxypropane and 2-methoxypropane. Cyclohexane is C6H12, not C3H8O."
+   ]
+  ],
+  "questions": [
+   "C4H10 isomers?",
+   "Four C4H10O alcohols?",
+   "Three ethers and the cyclohexane error?"
+  ],
+  "equipment": "Molecular model kits; periodic table; drawing paper.",
+  "safety": "Do not place model pieces in the mouth. Count atoms before deciding that two structures are isomers.",
+  "prep": "Prepare sufficient oxygen atoms and spare bonds. Restrict ether extension to students ready for that functional group. Mark connectivity and correct valency, not orientation on the page.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "26": {
+  "title": "Controlled test for unsaturation",
+  "lesson": "Year 12 · 72 Electrophilic Addition Reactions; 64 Combustion of Alkanes",
+  "mode": "Student microscale tests",
+  "time": "20–25 min",
+  "focus": "Use a controlled bromine test as evidence for unsaturation without over-identifying a substance.",
+  "change": "Adopts prepared reagent and known controls, removing food-mixture claims and in-situ bromine extraction.",
+  "skills": "Controlled chemical tests; positive and negative controls; distinguish phase transfer from reaction; ionic and organic equations.",
+  "topic": "Combustion and unsaturation",
+  "original": "Reactions of alkanes and alkenes",
+  "answers": [
+   [
+    "Expected controls?",
+    "Cyclohexane retains bromine colour; cyclohexene decolourises it under the test conditions."
+   ],
+   [
+    "Cyclohexene addition equation?",
+    "C6H10 + Br2 → C6H10Br2."
+   ],
+   [
+    "Why remove the butter/margarine binary test?",
+    "Fats are mixtures with variable unsaturation and are not hydrocarbons; a fixed saturated/unsaturated answer is misleading."
+   ]
+  ],
+  "questions": [
+   "Expected controls?",
+   "Cyclohexene addition equation?",
+   "Why remove the butter/margarine binary test?"
+  ],
+  "equipment": "Cyclohexane, cyclohexene and limonene in labelled dropping bottles; fresh 0.02 M bromine water; small glass tubes; pipettes; white background.",
+  "safety": "Wear goggles; use a ventilated laboratory and the department bromine procedure. No flames or direct smelling. Collect organic/bromine waste as directed; use glass or a verified solvent-compatible plate.",
+  "prep": "Pilot fresh bromine and actual drop sizes. Keep away from strong light to limit unwanted alkane substitution. Supply only the small quantities needed. The focus is the test, not combustion or food analysis.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "27": {
+  "title": "Cracking hydrocarbons in one demonstration",
+  "lesson": "Year 12 · 63 Alkanes: Properties, Fractional Distillation and Cracking",
+  "mode": "Teacher demonstration",
+  "time": "15–20 min",
+  "focus": "Link cracking to formation of smaller molecules and evidence for C=C bonds.",
+  "change": "Adopts the single-run demonstration and removes repeat cracking and ignition of initial gas.",
+  "skills": "Gas collection; heating sequence; test products; connect products to equations.",
+  "topic": "Cracking",
+  "original": "Catalytic cracking including repeat cracking",
+  "answers": [
+   [
+    "Why discard initial gas?",
+    "It includes displaced air, so is neither a representative product nor suitable for ignition."
+   ],
+   [
+    "Example equation?",
+    "C10H22 → C8H18 + C2H4 is one possible model, not proof of the actual product mixture."
+   ],
+   [
+    "Why remove the outlet from water before stopping heating?",
+    "Cooling gas contracts and could draw water into very hot glass."
+   ]
+  ],
+  "questions": [
+   "Why discard initial gas?",
+   "Example equation?",
+   "Why remove the outlet from water before stopping heating?"
+  ],
+  "equipment": "Hard-glass boiling tube; about 2 mL liquid paraffin on mineral wool; porous pot catalyst; secure clamp; delivery tube with tested anti-suck-back valve; trough; two collection tubes; pale bromine water; screen.",
+  "safety": "Teacher-only with an assistant under a current cracking procedure. Hot glass, flammable gases and suck-back are the main risks. Use a safety screen, eye protection and ventilation. Never ignite the initial air/gas mixture.",
+  "prep": "Rehearse the complete setup and shutdown with the assistant; check valve function and unblocked flow. Use the linked RSC apparatus diagram as the setup reference. Select a single run; collect sufficient later gas for a small bromine test. Do not improvise a microscale conversion without the required equipment.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "28": {
+  "title": "Alkene evidence after catalytic cracking",
+  "lesson": "Year 12 · 63 Alkanes: Properties, Fractional Distillation and Cracking",
+  "mode": "Teacher demonstration",
+  "time": "15–20 min",
+  "focus": "Interpret the alkene test on a gas produced from a saturated feedstock.",
+  "change": "Same improved single-run demonstration as entry 27; these source variants now agree and should not be scheduled twice.",
+  "skills": "Collect gas; discard initial air; bromine test; coordinate apparatus handling.",
+  "topic": "Cracking",
+  "original": "Formation of alkenes by cracking",
+  "answers": [
+   [
+    "Why discard initial gas?",
+    "It includes displaced air, so is neither a representative product nor suitable for ignition."
+   ],
+   [
+    "Example equation?",
+    "C10H22 → C8H18 + C2H4 is one possible model, not proof of the actual product mixture."
+   ],
+   [
+    "Why remove the outlet from water before stopping heating?",
+    "Cooling gas contracts and could draw water into very hot glass."
+   ]
+  ],
+  "questions": [
+   "Why discard initial gas?",
+   "Example equation?",
+   "Why remove the outlet from water before stopping heating?"
+  ],
+  "equipment": "Hard-glass boiling tube; about 2 mL liquid paraffin on mineral wool; porous pot catalyst; secure clamp; delivery tube with tested anti-suck-back valve; trough; two collection tubes; pale bromine water; screen.",
+  "safety": "Teacher-only with an assistant under a current cracking procedure. Hot glass, flammable gases and suck-back are the main risks. Use a safety screen, eye protection and ventilation. Never ignite the initial air/gas mixture.",
+  "prep": "Rehearse the complete setup and shutdown with the assistant; check valve function and unblocked flow. Use the linked RSC apparatus diagram as the setup reference. Select a single run; collect sufficient later gas for a small bromine test. Do not improvise a microscale conversion without the required equipment.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "29": {
+  "title": "Addition polymerisation using models and a prepared sample",
+  "lesson": "Year 12 · 73 Markovnikov's Rule, Addition Polymers and Bromine Test",
+  "mode": "Student modelling with demonstration evidence",
+  "time": "20–25 min",
+  "focus": "Connect monomer structure to repeat units and distinguish polymer from foam.",
+  "equipment": "Clean commercial polystyrene sample, including a foam and non-foam example if available; molecular model kit; paper; optional teacher-selected reaction recording.",
+  "safety": "No styrene or peroxide handling. Do not heat or burn polymer samples. A prepared laboratory sample must be confirmed free of residual monomer before handling.",
+  "method": [
+   "Examine polystyrene samples and distinguish the polymer material from its foamed physical form.",
+   "Draw phenylethene as C6H5–CH=CH2. Identify the alkene bond involved in polymerisation.",
+   "Model several monomers joining by replacing each alkene double bond with the appropriate chain bonds.",
+   "Draw the repeat unit [–CH2–CH(C6H5)–]n with continuation bonds through the brackets.",
+   "Explain the evidence a reaction recording could provide and why appearance alone cannot establish conversion or purity.",
+   "Deduce the monomer for a second teacher-supplied addition-polymer repeat unit."
+  ],
+  "results": "Monomer drawing; repeat unit; atom accounting; distinction between material and foam structure.",
+  "questions": [
+   "What small molecule is eliminated?",
+   "Why is the product not necessarily foam?",
+   "Why not use an immediate product mass as pure-polymer yield?"
+  ],
+  "student_src": "Source copies/02 - Year 13 (A2) Lessons/3.3.12 - Polymers/_Shared Resources/Kerboodle/Polymerisation - Practical - IMPROVED v1.0.docx",
+  "change": "Adopts prepared sample/models instead of variable styrene polymerisation.",
+  "skills": "Molecular modelling; repeat-unit drawing; atom accounting; evaluate product claims.",
+  "prep": "Supply models and commercial material, so the activity works without a successful styrene polymerisation batch or a video. The laboratory synthesis route is retired from these improved copies; no inhibitor-removal or initiator recipe is required.",
+  "answers": [
+   [
+    "What small molecule is eliminated?",
+    "None in addition polymerisation."
+   ],
+   [
+    "Why is the product not necessarily foam?",
+    "Foam requires gas-filled cells introduced during processing; polymerisation alone does not create that structure."
+   ],
+   [
+    "Why not use an immediate product mass as pure-polymer yield?",
+    "Residual monomer and solvent can inflate the mass."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/02 - Year 13 (A2) Lessons/3.3.12 - Polymers/_Shared Resources/Kerboodle/Polymerisation - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Addition polymerisation",
+  "original": "Making polystyrene"
+ },
+ "30": {
+  "title": "Comparing halogenoalkane hydrolysis rates",
+  "lesson": "Year 12 · 67 Nucleophilic Substitution: NH3 and Rates",
+  "mode": "Student comparative practical",
+  "time": "50–60 min",
+  "focus": "Compare structural effects on hydrolysis with controlled conditions and an operational endpoint.",
+  "change": "Replaces variable drops with measured aliquots and states the limited inference from precipitation times.",
+  "skills": "Control bath temperature; timed precipitation; compare halogen and structure effects.",
+  "prep": "Pilot 0.10 mL aliquots and 0.050 M AgNO3 at 50°C with the available dispenser. Set an observation limit such as five minutes only after the pilot. If tertiary clouding is too fast, revise the whole consistent scheme and reissue it; do not accept unmeasurable timings. Equal volumes are not claimed to be equal molar concentrations.",
+  "answers": [
+   [
+    "Expected primary-halide order?",
+    "Iodo faster than bromo faster than chloro, generally reflecting C–X bond strengths in these conditions."
+   ],
+   [
+    "Expected bromide structural trend?",
+    "Tertiary normally faster than secondary then primary in aqueous ethanolic silver-nitrate conditions; explain within this specific system."
+   ],
+   [
+    "Why are times not exact kinetic constants?",
+    "Silver-halide solubility, concentration differences at equal liquid volumes and subjective turbidity thresholds affect detection."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.1 - Nucleophilic Substitution/Kerboodle/13.2 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "1-chlorobutane, 1-bromobutane, 1-iodobutane, 2-bromobutane, 2-bromo-2-methylpropane; ethanol; 0.050 M AgNO3; glass tubes; 50°C electric bath; timer; measured micro-pipette.",
+  "safety": "Wear goggles. No flames; use the electric bath and ventilation. Collect organic/silver waste. Handle small measured quantities, not open stock bottles at benches.",
+  "method": [
+   "Place 1.00 mL ethanol and 0.10 mL of each halogenoalkane into five labelled tubes using the calibrated dispenser. Prepare a solvent blank without halogenoalkane.",
+   "Place separate 1.00 mL portions of AgNO3 in tubes in the same 50°C bath. Allow both sets to equilibrate for five minutes.",
+   "Combine one pair, mix consistently and start timing immediately. Record time to the first persistent cloudiness against the same marked background.",
+   "Repeat for the other compounds and solvent blank. Record no visible precipitate after the declared observation limit as a censored result, not zero time.",
+   "Repeat selected comparisons with fresh mixtures. Keep temperature, volumes, mixing and judgement consistent.",
+   "Compare the three primary butyl halides separately from the three bromide structures. Treat 1/t as an operational comparison, not an exact rate constant."
+  ],
+  "results": "Compound; bath temperature; time 1/2 / s; observation limit; ranking; control result.",
+  "questions": [
+   "Expected primary-halide order?",
+   "Expected bromide structural trend?",
+   "Why are times not exact kinetic constants?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.1 - Nucleophilic Substitution/Kerboodle/13.2 - Practical - IMPROVED v1.0.docx",
+  "topic": "Nucleophilic substitution",
+  "original": "Halogenoalkane hydrolysis rates"
+ },
+ "31": {
+  "title": "Liquid purification through cyclohexene preparation",
+  "lesson": "Year 13 · 78 RP10 Practical: Synthesis and Purification",
+  "mode": "Student synthesis",
+  "time": "Two 60 min lessons",
+  "focus": "Develop separation, drying and distillation skills in the chosen cyclohexene route.",
+  "equipment": "10.0 mL cyclohexanol; 4.0 mL concentrated phosphoric acid; 50 mL flask; electric mantle; distillation apparatus; 0–110°C thermometer; separating funnel; saturated NaCl; anhydrous CaCl2; balance; bromine water.",
+  "safety": "Work in the approved fume-cupboard setup with goggles and suitable gloves. No naked flames. Apparatus must remain vented; add anti-bumping granules before heating. Vent the separating funnel away from people. Never distil to dryness.",
+  "method": [
+   "Record cyclohexanol mass by difference when transferring about 10.0 mL into the reaction flask. Add 4.0 mL phosphoric acid slowly with swirling, then anti-bumping granules.",
+   "Assemble and have the teacher check the distillation apparatus: thermometer bulb at the side-arm level, condenser water entering the lower port, outlet/receiver open to atmosphere.",
+   "Heat gently with the electric mantle. Collect the fraction distilling at 70–90°C; stop while liquid remains in the flask.",
+   "Cool the distillate, transfer to a separating funnel and mix with an equal volume of saturated NaCl. Vent, allow layers to separate and identify the aqueous layer using a water-drop check.",
+   "Remove the lower aqueous layer. Transfer organic liquid to a dry flask, add small portions of anhydrous CaCl2, swirl and leave until clear with some free-flowing drying agent.",
+   "Decant into clean dry distillation apparatus, add fresh anti-bumping granules and redistil. Collect 81–85°C into a pre-weighed receiver; never heat the residue dry.",
+   "Weigh dry product promptly. Test a small separate portion with bromine water and calculate yield using the original cyclohexanol mass."
+  ],
+  "results": "Starting mass; collection temperature ranges; layer test; product mass; bromine observation; yield.",
+  "questions": [
+   "Theoretical yield relationship?",
+   "Why use brine then drying agent?",
+   "Does the bromine test prove purity?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.1 - Nucleophilic Substitution/Kerboodle/13.2 - Practical 2 - IMPROVED v1.0.docx",
+  "change": "Replaces 2-chloro-2-methylpropane preparation with the chosen cyclohexene purification route. Teach substitution separately using entry 30; do not duplicate entry 35.",
+  "skills": "Distillation; separating funnel; drying; redistillation; yield; limited purity evidence.",
+  "prep": "Pilot the complete 10 mL scale in the actual glassware to check hold-up and yield. Prepare dedicated organic/acid waste and adequate fume-cupboard capacity. If splitting lessons, store cooled intermediate in an appropriately labelled compatible container under the department procedure. Record which purification steps each student performs.",
+  "answers": [
+   [
+    "Theoretical yield relationship?",
+    "n(cyclohexene) = n(cyclohexanol); theoretical mass = starting mass × 82.15/100.16."
+   ],
+   [
+    "Why use brine then drying agent?",
+    "Brine assists phase separation; the anhydrous salt removes remaining dissolved water."
+   ],
+   [
+    "Does the bromine test prove purity?",
+    "No. It supports unsaturation; boiling range and purification history provide additional, limited evidence."
+   ]
+  ],
+  "sources": [
+   "https://media.aqa.org.uk/resources/chemistry/AQA-7404-7405-PHBK.PDF"
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.1 - Nucleophilic Substitution/Kerboodle/13.2 - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Elimination and organic purification",
+  "original": "Preparation of a halogenoalkane"
+ },
+ "32": {
+  "title": "Fermentation and recovery of ethanol",
+  "lesson": "Year 12 · 74 Alcohol Classification and Production",
+  "mode": "Student setup and teacher fractional distillation",
+  "time": "20–30 min setup; 3–7 days; 20–30 min demonstration",
+  "focus": "Explain fermentation conditions and distinguish ethanol production from its isolation.",
+  "equipment": "Per group: 5.0 g glucose, 50 mL water, about 0.5 g fresh yeast, 250 mL flask with fermentation airlock. Teacher: prepared larger culture, fractional-distillation kit, electric heat, thermometer.",
+  "safety": "Wear goggles. Fermentation vessels must vent through an airlock and never be sealed. No flames near ethanol/distillate; no tasting or direct smelling. Use only the teacher-approved incubating temperature.",
+  "method": [
+   "Dissolve 5.0 g glucose in 50 mL water, cool/adjust to 30°C and add about 0.5 g fresh yeast.",
+   "Fit the vented airlock, label with date and contents, and record starting temperature. Place in the agreed temperature-controlled location.",
+   "Over 3–7 days record bubbling and appearance; acknowledge that gas production alone does not measure ethanol yield.",
+   "Observe teacher fractional distillation of a previously trialled larger culture after settling/decanting yeast. Record head temperature and fraction volumes.",
+   "Interpret a low-boiling fraction as ethanol-enriched water, not pure ethanol. Compare with teacher-supplied reference tests/data rather than attempting to ignite dilute fractions.",
+   "Calculate the theoretical ethanol mass from glucose and explain biological/collection losses."
+  ],
+  "results": "Date/time; temperature; gas/appearance observations; demonstration fraction temperature and volume; theoretical yield.",
+  "questions": [
+   "Fermentation equation?",
+   "Maximum ethanol from 5.00 g glucose?",
+   "Why may distillation recover little?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.2 - Practical - IMPROVED v1.0.docx",
+  "change": "Keeps student fermentation while adopting a practical-scale teacher recovery; removes ignition and false purity claims.",
+  "skills": "Set up fermentation; fractional distillation; evaluate purity and yield.",
+  "prep": "Check yeast viability beforehand. Prepare a larger 10% w/v glucose culture for the teacher demonstration, matched to the distillation equipment capacity and headspace. Trial recovery; use the electric heater and a vented receiver, stop well before dryness. Do not pool contaminated student cultures automatically.",
+  "answers": [
+   [
+    "Fermentation equation?",
+    "C6H12O6 → 2C2H5OH + 2CO2."
+   ],
+   [
+    "Maximum ethanol from 5.00 g glucose?",
+    "About 2.56 g, assuming complete fermentation by that equation."
+   ],
+   [
+    "Why may distillation recover little?",
+    "Incomplete fermentation, evaporation and apparatus hold-up reduce recovery; the small group culture is primarily a setup activity."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.2 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Alcohol production",
+  "original": "Ethanol production by fermentation"
+ },
+ "33": {
+  "title": "Oxidation of ethanol under reflux",
+  "lesson": "Year 12 · 75 Reactions of Alcohols; 77 RP05 Practical: Distil Product",
+  "mode": "Student synthesis under close supervision",
+  "time": "Two 60 min lessons",
+  "focus": "Connect reflux and controlled oxidation with subsequent distillation and product evidence.",
+  "change": "Replaces the insufficient original oxidant recipe with a published smaller-ethanol method; uses electric heating and explicit waste handling.",
+  "skills": "Controlled addition; reflux; reconfigure for distillation; explain oxidation conditions.",
+  "prep": "Use the Pearson Core Practical 5 reagent specification: 19 g sodium dichromate dihydrate dissolved in 100 mL pre-cooled 3 M H2SO4, dispensed as 20 mL reagent per 1 mL ethanol. Preparation is by the technician in small cooled batches under current Cr(VI)/acid guidance, not a student stock-making task. This is a reagent mixture, not a final-volume volumetric standard. Pilot product tests. Keep the public CLEAPSS PP026 link as a current departmental cross-check; do not claim its member-only recipe was inspected.",
+  "answers": [
+   [
+    "Oxidation equation using [O]?",
+    "CH3CH2OH + 2[O] → CH3COOH + H2O."
+   ],
+   [
+    "Why reflux before distillation?",
+    "It retains volatile intermediates while oxidation proceeds; distillation then separates a volatile product-containing fraction."
+   ],
+   [
+    "Why is the distillate not pure ethanoic acid?",
+    "Water and possibly other volatile components co-distil; qualitative acid tests do not prove purity."
+   ]
+  ],
+  "sources": [
+   "https://qualifications.pearson.com/content/dam/pdf/A%20Level/Chemistry/2015/teaching-and-learning-materials/AS-and-A-level-Chemistry-Core-Practical-5_Oxidation_of_Ethanol_Student_Teacher_TEchnician_Worksheets.pdf"
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.3 - Practical (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "1.00 mL ethanol; 20.0 mL technician-prepared acidified sodium dichromate reagent specified in teacher notes; 50 mL Quickfit flask/condenser; electric heat; ice bath; distillation kit; pH paper; CaCO3.",
+  "safety": "Fume-cupboard work only, with goggles and suitable chemical-resistant gloves. Cr(VI) is carcinogenic/oxidising; collect all chromium waste. Add ethanol slowly with cooling. Keep apparatus open to atmosphere; no flames and no distillation to dryness.",
+  "method": [
+   "Place 20.0 mL of the labelled oxidation reagent in the flask in an ice bath. Add anti-bumping granules and have the teacher check the reflux apparatus and running condenser.",
+   "Add the measured 1.00 mL ethanol in small portions down the condenser, allowing the reaction to subside between additions.",
+   "After addition, allow controlled warming to room temperature, then maintain gentle reflux for 20 minutes using approved electric heating.",
+   "Cool fully before reconfiguring for distillation. Check the thermometer and condenser positions; collect only 3–4 mL colourless distillate, stopping well before dryness.",
+   "Test separate small portions for acidic pH and reaction with a small amount of CaCO3. Compare with a water blank.",
+   "Explain that these observations support an acidic oxidation product but do not establish pure ethanoic acid."
+  ],
+  "results": "Reflux/distillation apparatus labels; observations; fraction volume/temperature; pH and carbonate-test results.",
+  "questions": [
+   "Oxidation equation using [O]?",
+   "Why reflux before distillation?",
+   "Why is the distillate not pure ethanoic acid?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.3 - Practical - IMPROVED v1.0.docx",
+  "topic": "Alcohol oxidation",
+  "original": "Oxidation of a primary alcohol to an acid"
+ },
+ "34": {
+  "title": "Why distillation favours an aldehyde",
+  "lesson": "Year 12 · 77 RP05 Practical: Distil Product; 75 Reactions of Alcohols",
+  "mode": "Teacher demonstration evidence and student interpretation",
+  "time": "20–30 min",
+  "focus": "Explain how product removal changes the extent of oxidation.",
+  "change": "Adopts the demonstration/interpretation alternative instead of unreliable student collection of highly volatile ethanal.",
+  "skills": "Annotate apparatus; interpret observations; explain reaction conditions; oxidation equations.",
+  "prep": "The supplied reference record makes the lesson usable without a video. If using a recording, identify its source and ask learners to record only visible evidence. Retain student distillation in the cyclohexene practical; do not mark this observation task as hands-on RP5.",
+  "answers": [
+   [
+    "Two oxidation stages?",
+    "CH3CH2OH + [O] → CH3CHO + H2O; CH3CHO + [O] → CH3COOH."
+   ],
+   [
+    "Expected aldehyde test?",
+    "A suitable freshly prepared Fehling’s test can give a brick-red Cu2O precipitate with ethanal; the actual mixture needs controls."
+   ],
+   [
+    "Does this supply individual RP5 apparatus evidence?",
+    "No. Students must carry out distillation themselves elsewhere, for example in entry 35."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.3 - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "equipment": "Teacher-selected partial-oxidation recording or the supplied reference observation record; diagrams drawn from the described reflux/distillation setups; molecular models.",
+  "safety": "This revised student activity does not involve collection or smelling of ethanal. Any optional live demonstration must use a separately approved current departmental procedure.",
+  "method": [
+   "Draw two apparatus arrangements: vertical condenser returning liquid to the flask, and sloping condenser leading to a cooled receiver. Label water inlet/outlet and the open gas path.",
+   "Use the reference record: prompt distillation during partial oxidation can give an aldehyde-containing fraction; continued reflux with sufficient oxidant favours acid.",
+   "Predict the result of an aldehyde test and an acid test on each product mixture. Distinguish predicted results from observations from a recording.",
+   "Explain how removal from the reaction vessel reduces the aldehyde’s opportunity for further oxidation.",
+   "Write equations for both oxidation stages using [O].",
+   "Explain why a displayed temperature near ethanal’s boiling point cannot prove an aqueous collected fraction is pure ethanal."
+  ],
+  "results": "Apparatus comparison; prediction versus supplied/recorded evidence; oxidation equations; limitations.",
+  "questions": [
+   "Two oxidation stages?",
+   "Expected aldehyde test?",
+   "Does this supply individual RP5 apparatus evidence?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.3 - Practical 2 - IMPROVED v1.0.docx",
+  "topic": "Alcohol oxidation and RP5",
+  "original": "Partial oxidation to an aldehyde"
+ },
+ "35": {
+  "title": "Preparation and purification of cyclohexene",
+  "lesson": "Year 12 · 77 RP05 Practical: Distil Product; 78 RP05 Analysis: Purity Assessment",
+  "mode": "Student synthesis",
+  "time": "Two 60 min lessons",
+  "focus": "Prepare and purify an organic liquid, separating conversion from isolated yield.",
+  "equipment": "10.0 mL cyclohexanol; 4.0 mL concentrated phosphoric acid; 50 mL flask; electric mantle; distillation apparatus; 0–110°C thermometer; separating funnel; saturated NaCl; anhydrous CaCl2; balance; bromine water.",
+  "safety": "Work in the approved fume-cupboard setup with goggles and suitable gloves. No naked flames. Apparatus must remain vented; add anti-bumping granules before heating. Vent the separating funnel away from people. Never distil to dryness.",
+  "method": [
+   "Record cyclohexanol mass by difference when transferring about 10.0 mL into the reaction flask. Add 4.0 mL phosphoric acid slowly with swirling, then anti-bumping granules.",
+   "Assemble and have the teacher check the distillation apparatus: thermometer bulb at the side-arm level, condenser water entering the lower port, outlet/receiver open to atmosphere.",
+   "Heat gently with the electric mantle. Collect the fraction distilling at 70–90°C; stop while liquid remains in the flask.",
+   "Cool the distillate, transfer to a separating funnel and mix with an equal volume of saturated NaCl. Vent, allow layers to separate and identify the aqueous layer using a water-drop check.",
+   "Remove the lower aqueous layer. Transfer organic liquid to a dry flask, add small portions of anhydrous CaCl2, swirl and leave until clear with some free-flowing drying agent.",
+   "Decant into clean dry distillation apparatus, add fresh anti-bumping granules and redistil. Collect 81–85°C into a pre-weighed receiver; never heat the residue dry.",
+   "Weigh dry product promptly. Test a small separate portion with bromine water and calculate yield using the original cyclohexanol mass."
+  ],
+  "results": "Starting mass; collection temperature ranges; layer test; product mass; bromine observation; yield.",
+  "questions": [
+   "Theoretical yield relationship?",
+   "Why use brine then drying agent?",
+   "Does the bromine test prove purity?"
+  ],
+  "student_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.3 - Practical 3 - IMPROVED v1.0.docx",
+  "change": "Adopts electric heating, explicit apparatus checks and full two-stage purification; provides the preferred RP10 liquid route.",
+  "skills": "Distillation; separating funnel; drying; redistillation; yield; limited purity evidence.",
+  "prep": "Pilot the complete 10 mL scale in the actual glassware to check hold-up and yield. Prepare dedicated organic/acid waste and adequate fume-cupboard capacity. If splitting lessons, store cooled intermediate in an appropriately labelled compatible container under the department procedure. Record which purification steps each student performs.",
+  "answers": [
+   [
+    "Theoretical yield relationship?",
+    "n(cyclohexene) = n(cyclohexanol); theoretical mass = starting mass × 82.15/100.16."
+   ],
+   [
+    "Why use brine then drying agent?",
+    "Brine assists phase separation; the anhydrous salt removes remaining dissolved water."
+   ],
+   [
+    "Does the bromine test prove purity?",
+    "No. It supports unsaturation; boiling range and purification history provide additional, limited evidence."
+   ]
+  ],
+  "sources": [
+   "https://media.aqa.org.uk/resources/chemistry/AQA-7404-7405-PHBK.PDF"
+  ],
+  "teacher_src": "Source copies/01 - Year 12 (AS) Lessons/09 - Further Organic Chemistry/_Shared Resources/9.6 - Alcohol Production/Kerboodle/15.3 - Practical 3 (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Dehydration and RP5",
+  "original": "Cyclohexene from cyclohexanol"
+ },
+ "36": {
+  "title": "Iodine clock with controlled detection threshold",
+  "lesson": "Year 13 · 11 RP07 Practical: Rate Measurements; 12 RP07 Analysis: Processing Rate Data",
+  "mode": "Student kinetics investigation",
+  "time": "60 min plus graph analysis",
+  "focus": "Determine apparent order in iodide using a fixed small detection threshold.",
+  "change": "Replaces the inconsistent peroxide-dilution sheet with a defined iodide investigation, separate stocks and a calculated small fixed threshold.",
+  "skills": "Controlled dilution; timing; repeats; fixed threshold; 1/t graph; apparent reaction order.",
+  "prep": "This is an explicitly adapted AQA-type design: lower KI and thiosulfate concentrations keep the detection fraction small while retaining a useful timing scale. Make 0.0100 M thiosulfate with the verified hydrate (2.482 g/L pentahydrate); keep acid separate. Use fresh peroxide/starch. Pilot all five conditions: require manageable non-instantaneous timings, preferably about 20–180 s, clear endpoints and consistent repeats. If outside this range, revise the written recipe coherently and re-trial before issuing. RP7 continuous monitoring remains separate.",
+  "answers": [
+   [
+    "What is held constant?",
+    "Peroxide, acid, thiosulfate threshold, starch, total volume, temperature and mixing/timing convention."
+   ],
+   [
+    "Why is 1/t a relative rate?",
+    "A fixed small quantity of iodine must form each time; it is not itself a concentration/time rate."
+   ],
+   [
+    "What order is expected and what cannot be inferred?",
+    "Approximately first order in iodide under these conditions. This experiment alone does not determine peroxide or acid order."
+   ]
+  ],
+  "sources": [
+   "https://media.aqa.org.uk/resources/chemistry/AQA-7404-7405-PHBK.PDF",
+   "https://edu.rsc.org/experiments/iodine-clock-reaction-demonstration-method/744.article"
+  ],
+  "teacher_src": "Source copies/02 - Year 13 (A2) Lessons/3.1.9 - Rate Equations/Archive/Legacy - Kinetics/Kerboodle/Kinetics - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Rate equations and RP7",
+  "original": "Iodine clock initial rate method",
+  "questions": [
+   "What is held constant?",
+   "Why is 1/t a relative rate?",
+   "What order is expected and what cannot be inferred?"
+  ],
+  "equipment": "Per run: 25.0 mL 0.25 M H2SO4; 1.0 mL fresh 1% starch; 5.0 mL 0.0100 M Na2S2O3; 10.0 mL fresh 0.100 M H2O2; variable 0.0200 M KI and water; beakers; pipettes/cylinders; timer.",
+  "safety": "Wear goggles. Keep acid and thiosulfate in separate labelled stock bottles; combine only immediately for a run. Use ventilation and the department iodine-waste procedure. Do not leave acidified thiosulfate standing.",
+  "method": [],
+  "results": ""
+ },
+ "37": {
+  "title": "Rechargeable cells and charge discharge data",
+  "lesson": "Year 13 · 25 Commercial Cells",
+  "mode": "Teacher demonstration with data analysis",
+  "time": "25–35 min",
+  "focus": "Distinguish charge, energy and reversibility using controlled model data.",
+  "equipment": "A commercially protected educational rechargeable-cell kit with its specified charger/load, if available; supplied model data; calculator. No improvised lead/acid cell.",
+  "safety": "Use only the manufacturer-matched charger and load; never short circuit or dismantle a cell. The data activity is complete without hardware. Do not use the old lead-foil/acid instructions.",
+  "method": [
+   "If a kit is available, observe the teacher operating it according to its instructions through charge and discharge; record only what is visible/measured.",
+   "Analyse the model dataset for a constant charging current of 0.050 A. Calculate charge supplied Q = It for each duration.",
+   "Use discharge current 0.020 A and the model discharge durations to calculate recovered charge and percentage charge recovery.",
+   "Explain why these are model data and why real cells depend on initial charge state, history and endpoint voltage.",
+   "Derive the theoretical lead–acid discharge half-equations for Pb/PbSO4 and PbO2/PbSO4 in sulfuric acid; reverse them for charging.",
+   "Distinguish this activity from measuring open-circuit EMF in RP8."
+  ],
+  "results": "Model charge time / s: 60,120,180,240. Model discharge time / s: 120,240,360,480. Charging I = 0.050 A; discharge I = 0.020 A.",
+  "questions": [
+   "What charge is supplied after 120 s?",
+   "Lead–acid discharge half-equations?",
+   "Is charge efficiency the same as energy efficiency?"
+  ],
+  "student_src": "Activity resources/37 Rechargeable cells and charge discharge data - Student - IMPROVED v1.0.docx",
+  "change": "Adopts a qualitative commercial-kit option and complete data activity, removing lead handling and lamp-time capacity claims.",
+  "skills": "Interpret evidence; distinguish observations from model data; justify a chemical conclusion.",
+  "topic": "Commercial cells",
+  "original": "Rechargeable lead–acid cell",
+  "answers": [
+   [
+    "What charge is supplied after 120 s?",
+    "6.0 C; recovered charge is 4.8 C, so model charge recovery is 80%."
+   ],
+   [
+    "Lead–acid discharge half-equations?",
+    "Pb + SO4²− → PbSO4 + 2e−; PbO2 + SO4²− + 4H+ + 2e− → PbSO4 + 2H2O."
+   ],
+   [
+    "Is charge efficiency the same as energy efficiency?",
+    "No. Energy also depends on voltage throughout charging/discharging."
+   ]
+  ],
+  "prep": "Supply the included explicitly simulated data even if hardware is unavailable. Where a kit is used, follow its specified voltage/current limits. The model does not represent measured lead-cell performance and cannot be used as student experimental endorsement evidence.",
+  "sources": []
+ },
+ "38": {
+  "title": "pH curves for the two required weak strong pairings",
+  "lesson": "Year 13 · 32 RP09 pH Curves Practical; 33 RP09 Analysis: Interpreting pH Curves",
+  "mode": "Student practical",
+  "time": "Two 60 min lessons, one curve each",
+  "focus": "Connect the pH–volume curve to equivalence, buffering and indicator choice.",
+  "change": "Measures actual volume, uses stable pH readings and prioritises the two RP9 pairings.",
+  "skills": "pH-probe use; volume increments; graph interpretation; equivalence and indicators.",
+  "topic": "pH curves and RP9",
+  "original": "Acid–base titration curves",
+  "answers": [
+   [
+    "Expected equivalence volumes?",
+    "About 25.0 mL for both nominally equal concentrations."
+   ],
+   [
+    "Why are equivalence pH values different?",
+    "Ethanoate hydrolyses to give an alkaline equivalence mixture; ammonium gives an acidic one."
+   ],
+   [
+    "Does adding immersion water change equivalence volume?",
+    "It changes concentrations/pH but not the original analyte moles, so not the stoichiometric equivalence volume."
+   ]
+  ],
+  "questions": [
+   "Expected equivalence volumes?",
+   "Why are equivalence pH values different?",
+   "Does adding immersion water change equivalence volume?"
+  ],
+  "equipment": "0.100 M ethanoic acid, NaOH, HCl and ammonia; 25.0 mL pipette; burette; calibrated pH probe; beakers; stirrer; water; buffers appropriate to the pH range.",
+  "safety": "Wear goggles; use a filler. Keep the fragile probe clear of glass and stirring equipment. Rinse and blot gently between solutions; no continuous unmeasured acid stream.",
+  "prep": "Pilot sensor immersion and choose a suitably small beaker; set consistent stabilisation criterion. Ensure students obtain both required pairings, not just shared curves. Strong/strong and weak/weak curves can be supplied for comparison; weak/weak has no suitable sharp visual endpoint. Allow extra time if the chosen probe is slow.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "39": {
+  "title": "Acid strength using a conductivity probe",
+  "lesson": "Year 13 · 29 Weak Acids and Ka; 27 pH of Strong Acids",
+  "mode": "Student comparison or teacher demonstration",
+  "time": "25 min student work or 10–15 min demo",
+  "focus": "Distinguish acid strength from concentration using controlled conductivity comparisons.",
+  "equipment": "Conductivity probe/meter with calibration standard; water blank; 0.100 M HCl and ethanoic acid; beakers; thermometer; optional coded sample from the same two stocks.",
+  "safety": "Wear goggles; use the sensor according to its range/immersion instructions. No 8 V DC electrolysis circuit. Rinse the probe between samples.",
+  "method": [
+   "Calibrate/check the conductivity meter using its specified standard. Record temperature.",
+   "Measure the water blank and then 25 mL portions of each equal-concentration acid, keeping probe immersion and temperature constant.",
+   "Wait for stable readings, record units and repeat after rinsing.",
+   "If given a coded sample known to be one of these two stocks, classify it by comparison; state that this restricted choice is essential.",
+   "Explain the conductivity difference using degree of ionisation and mobile ions.",
+   "Predict why a more concentrated weak acid cannot be classified simply by comparing it with an arbitrary dilute strong acid."
+  ],
+  "results": "Sample; stated concentration; temperature; conductivity and units; repeat; inference.",
+  "questions": [
+   "Why does HCl usually conduct more here?",
+   "Is concentration the same as strength?",
+   "Can conductivity uniquely identify an arbitrary acid?"
+  ],
+  "student_src": "Source copies/02 - Year 13 (A2) Lessons/3.1.12 - Acids and Bases/Legacy - Acids & Bases/Kerboodle/Acids - Practical 2 - IMPROVED v1.0.docx",
+  "change": "Replaces the DC circuit with a proper conductivity sensor and constrains the unknown inference.",
+  "skills": "Control concentration/electrode geometry; compare conductivity; explain ionisation.",
+  "prep": "Check the meter range for 0.100 M HCl and use a suitable calibration standard. Supply equal-temperature stocks. Only use an unknown selected from the stated matched pair. Collect solutions as directed by local guidance.",
+  "answers": [
+   [
+    "Why does HCl usually conduct more here?",
+    "At equal concentration it is much more extensively ionised, producing more mobile ions."
+   ],
+   [
+    "Is concentration the same as strength?",
+    "No. Concentration is amount per volume; strength describes extent of ionisation."
+   ],
+   [
+    "Can conductivity uniquely identify an arbitrary acid?",
+    "No. Concentration, ion mobility, temperature and other dissolved ions all matter."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/02 - Year 13 (A2) Lessons/3.1.12 - Acids and Bases/Legacy - Acids & Bases/Kerboodle/Acids - Practical 2 (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Acid strength",
+  "original": "Defining an acid by conductivity"
+ },
+ "40": {
+  "title": "Two equivalence points in a carbonate pH curve",
+  "lesson": "Year 13 · 30 pH Curves; 31 Titration Calculations and Indicators",
+  "mode": "Student extension practical",
+  "time": "50–60 min",
+  "focus": "Explain two protonation stages and locate both carbonate equivalence points.",
+  "change": "Provides one consistent dilute recipe with both endpoints inside a standard burette range.",
+  "skills": "Collect pH/volume data; identify two equivalence points; staged protonation.",
+  "prep": "Prepare 0.0500 M carbonate using a verified anhydrous standard (5.2995 g/L) and standardised 0.1000 M HCl. Trial both inflections with the actual probe. These deliberately reduced concentrations replace both contradictory acid concentrations in the source.",
+  "answers": [
+   [
+    "First protonation equation?",
+    "CO3²− + H+ → HCO3−."
+   ],
+   [
+    "Second stage?",
+    "HCO3− + H+ → CO2 + H2O."
+   ],
+   [
+    "Why does the second endpoint need twice the acid volume?",
+    "Two moles of H+ are required per initial mole of carbonate for complete neutralisation."
+   ]
+  ],
+  "sources": [
+   "Basis: original Kerboodle instructions and the chemical, stoichiometric and classroom review recorded in the change register. Use the departmental safety guidance for the actual stocks and apparatus."
+  ],
+  "teacher_src": "Source copies/02 - Year 13 (A2) Lessons/3.1.12 - Acids and Bases/Legacy - Acids & Bases/Kerboodle/Acids - Practical 3 (Teacher) - IMPROVED v1.0.docx",
+  "topic": "pH curves extension",
+  "original": "Sodium carbonate titration curve",
+  "questions": [
+   "First protonation equation?",
+   "Second stage?",
+   "Why does the second endpoint need twice the acid volume?"
+  ],
+  "equipment": "25.0 mL 0.0500 M anhydrous Na2CO3 solution; 0.1000 M HCl; burette/pipette; calibrated pH probe; small beaker; stirrer.",
+  "safety": "Wear goggles. Rinse the probe between readings/solutions; keep it clear of the stirrer. Do not heat or seal the reacting solution.",
+  "method": [],
+  "results": ""
+ },
+ "41": {
+  "title": "Precipitation and ligand exchange with ammonia",
+  "lesson": "Year 13 · 39 Shapes and Ligand Exchange; 43 Reactions of Metal Aqua Ions",
+  "mode": "Student microscale practical",
+  "time": "20–30 min",
+  "focus": "Distinguish hydroxide precipitation from ligand substitution and oxidation.",
+  "change": "Separates limited/excess addition, removes variable cobalt oxidation from the core task and corrects the aqua-ion explanation.",
+  "skills": "Microscale drops; limited/excess reagent; precipitate versus solution; complex formulae.",
+  "topic": "Ligand exchange and aqua ions",
+  "original": "Complex formation with ammonia",
+  "answers": [
+   [
+    "Expected copper observations?",
+    "Pale-blue hydroxide precipitate, then deep-blue solution in excess ammonia."
+   ],
+   [
+    "Copper ligand-exchange equation?",
+    "[Cu(H2O)6]2+ + 4NH3 ⇌ [Cu(NH3)4(H2O)2]2+ + 4H2O."
+   ],
+   [
+    "What about magnesium?",
+    "White Mg(OH)2 persists; dissolved Mg2+ is hydrated, so “no complex ion” is incorrect."
+   ]
+  ],
+  "questions": [
+   "Expected copper observations?",
+   "Copper ligand-exchange equation?",
+   "What about magnesium?"
+  ],
+  "equipment": "0.10 M Cu(NO3)2 and Mg(NO3)2; 0.10 M NH3 for limited addition; 2.0 M NH3 for excess; small tubes; separate droppers; white background.",
+  "safety": "Wear goggles and work with ventilation. Ammonia is irritating; do not smell directly. Collect copper-containing waste. Cobalt is omitted from the core student comparison.",
+  "prep": "Pilot diluted limited-addition reagent so the precipitation stage is visible before excess NH3. Verify that the stated 2.0 mL maximum excess reagent gives the intended copper dissolution in the issued tubes; amend both sheets after trial if necessary. This is preparation for, not complete coverage of, RP11.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "42": {
+  "title": "Transition metal oxidation states from evidence",
+  "lesson": "Year 13 · 41 Variable Oxidation States and Catalysis",
+  "mode": "Teacher observation activity",
+  "time": "20–25 min",
+  "focus": "Calculate oxidation states and distinguish redox from acid–base colour changes.",
+  "change": "Makes the original teacher-demonstration recommendation an observation activity with complete reference evidence; removes unreliable open-tube endpoint promises.",
+  "skills": "Interpret evidence; distinguish observations from model data; justify a chemical conclusion.",
+  "topic": "Transition-metal redox",
+  "original": "Variable oxidation states of vanadium and chromium",
+  "answers": [
+   [
+    "Vanadium oxidation states in order?",
+    "+5, +4, +3 and +2."
+   ],
+   [
+    "Chromate/dichromate equation?",
+    "2CrO4²− + 2H+ ⇌ Cr2O7²− + H2O; Cr remains +6."
+   ],
+   [
+    "Example reduction half-equation?",
+    "Cr2O7²− + 14H+ + 6e− → 2Cr3+ + 7H2O; Cr3+ + e− → Cr2+."
+   ]
+  ],
+  "questions": [
+   "Vanadium oxidation states in order?",
+   "Chromate/dichromate equation?",
+   "Example reduction half-equation?"
+  ],
+  "equipment": "Teacher-selected recordings or the included reference colour sequence; periodic table; whiteboard. No student vanadium/chromium reagent handling.",
+  "safety": "Use recorded/reference evidence in this improved activity. Any live demonstration requires its own current approved method; never seal a hydrogen-evolving zinc/acid mixture.",
+  "prep": "Provide the full reference sequence in the student sheet even if no recording is available. Avoid treating a textbook colour as a guaranteed live result. Link any recording used in the class record. This is conceptual redox teaching, not hands-on transition-metal identification evidence.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "43": {
+  "title": "Chirality and optical rotation",
+  "lesson": "Year 13 · 50 Chirality and Enantiomers; 51 Racemic Mixtures and Applications",
+  "mode": "Student modelling and data interpretation",
+  "time": "15–20 min",
+  "focus": "Demonstrate non-superimposable mirror images and interpret optical rotation.",
+  "change": "Adopts models and optical-rotation data, making subjective smell optional.",
+  "skills": "Interpret evidence; distinguish observations from model data; justify a chemical conclusion.",
+  "topic": "Optical isomerism",
+  "original": "Stereoisomers of limonene",
+  "answers": [
+   [
+    "What makes the centre stereogenic?",
+    "Four different substituent paths/groups around the tetrahedral carbon."
+   ],
+   [
+    "Why is the equal mixture optically inactive?",
+    "Equal and opposite rotations cancel under the same conditions."
+   ],
+   [
+    "Does zero rotation prove no chiral molecules?",
+    "No. A racemate contains chiral molecules; cancellation or other limitations can give zero net rotation."
+   ]
+  ],
+  "questions": [
+   "What makes the centre stereogenic?",
+   "Why is the equal mixture optically inactive?",
+   "Does zero rotation prove no chiral molecules?"
+  ],
+  "equipment": "Model kits; structure of limonene from textbook; supplied model polarimetry data; optional verified enantiomer samples for teacher illustration only.",
+  "safety": "No smelling or sample handling is necessary. Any optional sample demonstration follows the current limonene handling procedure and allows students to opt out of smelling.",
+  "prep": "Label the rotation values as simulated teaching data, not measured limonene specific rotations. Use identical-path-length/concentration conditions in the task. Models supply the main evidence, so no reagent purchase is needed.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "44": {
+  "title": "Small scale preparation of an ester",
+  "lesson": "Year 13 · 57 Esters: Formation, Hydrolysis and Uses",
+  "mode": "Student practical",
+  "time": "25–30 min",
+  "focus": "Explain ester formation, catalyst action and the purpose of removing residual acid.",
+  "change": "Specifies the alcohol isomer, reverses the wash addition for controlled fizzing and removes assessed smell recognition.",
+  "skills": "Small-scale reaction; water-bath heating; product evidence; naming and equations.",
+  "topic": "Esterification",
+  "original": "Making esters",
+  "answers": [
+   [
+    "Product and equation?",
+    "Pentyl ethanoate: CH3COOH + HO(CH2)4CH3 ⇌ CH3COO(CH2)4CH3 + H2O."
+   ],
+   [
+    "Role of sulfuric acid?",
+    "Acid catalyst; it speeds approach to equilibrium."
+   ],
+   [
+    "Why carbonate?",
+    "It neutralises residual acids, releasing CO2; gradual addition prevents overflow."
+   ]
+  ],
+  "questions": [
+   "Product and equation?",
+   "Role of sulfuric acid?",
+   "Why carbonate?"
+  ],
+  "equipment": "Pentan-1-ol; glacial ethanoic acid; teacher-dispensed concentrated H2SO4; tubes; 50°C electric water bath; 1.0 M Na2CO3; pipettes; thermometer.",
+  "safety": "Wear splash goggles. Teacher dispenses concentrated acid. No flames or direct smelling. Cool before neutralising; add the acidic mixture slowly to carbonate with space for fizzing. Do not stopper the reaction during neutralisation.",
+  "prep": "Pilot the stated temperature/time with the actual reagents and an unreacted comparison. If little ester evidence is obtained, amend the teacher-approved heating time on both sheets after trial. Confirm pentan-1-ol identity and use fresh reagents; the task is formation, not yield/purity.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "45": {
+  "title": "Aspirin synthesis purification and melting range",
+  "lesson": "Year 13 · 76 Multi-Step Synthesis Routes; 78 RP10 Practical: Synthesis and Purification; 79 Synthesis Exam Practice",
+  "mode": "Student synthesis in stages",
+  "time": "Two to three 60 min lessons plus drying",
+  "focus": "Prepare, recrystallise and assess the purity of an organic solid.",
+  "change": "Adopts the shorter synthesis and actually includes recrystallisation, drying and melting-range measurement; catalyst lists now agree.",
+  "skills": "Synthesis; suction filtration; recrystallisation; drying; yield; melting range.",
+  "topic": "Multistep synthesis and RP10",
+  "original": "Aspirin from oil of wintergreen",
+  "answers": [
+   [
+    "Theoretical mass from 6.00 g salicylic acid?",
+    "6.00 × 180.16/138.12 ≈ 7.83 g aspirin, with anhydride in excess."
+   ],
+   [
+    "Why can purification reduce yield but improve quality?",
+    "Impurities are removed, but some aspirin remains dissolved or is lost during transfers."
+   ],
+   [
+    "What would a broad depressed melting range suggest?",
+    "Impurity, residual solvent or decomposition; it is evidence to investigate, not a definitive purity percentage."
+   ]
+  ],
+  "questions": [
+   "Theoretical mass from 6.00 g salicylic acid?",
+   "Why can purification reduce yield but improve quality?",
+   "What would a broad depressed melting range suggest?"
+  ],
+  "equipment": "6.00 g salicylic acid; 10.0 mL ethanoic anhydride; five drops concentrated H2SO4 teacher-dispensed; electric 60°C bath; suction filtration; 15 mL ethanol; water; ice; balance; melting-point apparatus.",
+  "safety": "Fume-cupboard synthesis with goggles and suitable gloves; no flames. Teacher supervises anhydride/acid addition and the cooled aqueous work-up. Use vacuum-rated filtration glassware. Laboratory aspirin must never be consumed.",
+  "prep": "Uses the AQA direct salicylic-acid route, not wintergreen hydrolysis. Trial crystallisation and drying with the actual apparatus; control the exothermic anhydride work-up and allow hydrolysis to finish before filtration. Calibrate/check the melting apparatus; a reference near 135–136°C is a comparison, not a promised result. Record students’ own filtration, recrystallisation and measurement skills.",
+  "sources": [],
+  "method": [],
+  "results": ""
+ },
+ "46": {
+  "title": "Identifying organic functional groups systematically",
+  "lesson": "Year 13 · 74 Consolidation E: A2 Functional Group Reactions",
+  "mode": "Student planned investigation",
+  "time": "60 min after a short planning task",
+  "focus": "Plan a discriminating sequence covering the four RP6 functional groups.",
+  "change": "Replaces the misleading original table with a controlled decision tree including an aldehyde; removes amine smelling and unnecessary esterification.",
+  "skills": "Plan a minimal test sequence; record evidence; distinguish functional groups.",
+  "prep": "Trial each coded sample and every control at the issued concentrations. Use freshly prepared Fehling reagent; provide teacher-prepared acidified dichromate according to current recipe guidance, never ask learners to mix concentrated acid stocks. This revised set includes an aldehyde and covers the four RP6 functional groups; it does not identify arbitrary real-world unknowns.",
+  "answers": [
+   [
+    "Why test aldehyde separately from alcohol oxidation?",
+    "Both an aldehyde and a primary alcohol can reduce acidified dichromate; Fehling distinguishes the aldehyde within this set."
+   ],
+   [
+    "Does ordinary phenol give the carboxylic-acid carbonate fizz test?",
+    "No. Salicylic acid does so because it contains COOH as well as phenol."
+   ],
+   [
+    "How are all five assigned?",
+    "Acid: carbonate fizz; aldehyde: Fehling positive; alcohol: oxidation positive/Fehling negative; alkene: bromine positive with aldehyde excluded; ketone: remaining negative pattern within the declared set."
+   ]
+  ],
+  "sources": [
+   "https://media.aqa.org.uk/resources/chemistry/AQA-7404-7405-PHBK.PDF"
+  ],
+  "teacher_src": "Source copies/02 - Year 13 (A2) Lessons/3.3.10 - Aromatic Chemistry/_Shared Resources/Kerboodle/Aromatics - Practical (Teacher) - IMPROVED v1.0.docx",
+  "topic": "Organic analysis",
+  "original": "Identifying unknown organic compounds",
+  "questions": [
+   "Why test aldehyde separately from alcohol oxidation?",
+   "Does ordinary phenol give the carboxylic-acid carbonate fizz test?",
+   "How are all five assigned?"
+  ],
+  "equipment": "Coded samples from butan-1-ol, propanal, cyclohexene, 0.50 M ethanoic acid and propanone; 0.02 M bromine water; 0.10 M Na2CO3; fresh Fehling reagent; teacher-prepared acidified 0.10 M dichromate test reagent; tubes; 60°C electric bath.",
+  "safety": "Wear goggles; no flames or smelling. Small samples only. Teacher issues Cr(VI) reagent under the current procedure; collect chromium, copper and organic wastes separately. Keep test portions separate and never return them to stock.",
+  "method": [],
+  "results": ""
+ },
+ "47": {
+  "title": "Unsaturation testing with prepared bromine water",
+  "lesson": "Year 12 · 72 Electrophilic Addition Reactions; 84 RP06 Practical: Carry Out Tests",
+  "mode": "Student microscale tests",
+  "time": "20–25 min",
+  "focus": "Use controls to infer unsaturation without claiming unique identity.",
+  "equipment": "Cyclohexane, cyclohexene and limonene in labelled dropping bottles; fresh 0.02 M bromine water; small glass tubes; pipettes; white background.",
+  "safety": "Wear goggles; use a ventilated laboratory and the department bromine procedure. No flames or direct smelling. Collect organic/bromine waste as directed; use glass or a verified solvent-compatible plate.",
+  "method": [
+   "Label three clean tubes with the known compounds and a fourth as reagent blank.",
+   "Add 0.5 mL bromine water to each. Add two drops of the appropriate organic liquid to each test tube; leave the blank without organic liquid.",
+   "Mix carefully using the teacher-demonstrated technique and compare both phases after the same interval.",
+   "Record whether colour persists anywhere in the mixture; transfer of bromine into an organic layer is not decolourisation.",
+   "Use cyclohexane as a negative and cyclohexene as a positive control. Explain the limonene result.",
+   "For a coded sample, conclude whether the test supports C=C under these conditions; do not claim unique molecular identity."
+  ],
+  "results": "Sample/control; before mixing; aqueous layer; organic layer; conclusion and limitation.",
+  "questions": [
+   "Expected controls?",
+   "Cyclohexene addition equation?",
+   "Why remove the butter/margarine binary test?"
+  ],
+  "student_src": "Source copies/02 - Year 13 (A2) Lessons/3.3.10 - Aromatic Chemistry/_Shared Resources/Kerboodle/Aromatics - Practical - IMPROVED v1.0.docx",
+  "change": "Replaces bromate/bromide generation and hexane extraction with prepared bromine water and known controls. It does not distinguish cyclohexene from limonene by casual drop counting.",
+  "skills": "Microscale tests; positive and negative controls; distinguish layer transfer from reaction.",
+  "topic": "Alkene tests and analysis",
+  "original": "Microscale test for unsaturation",
+  "answers": [
+   [
+    "Expected controls?",
+    "Cyclohexane retains bromine colour; cyclohexene decolourises it under the test conditions."
+   ],
+   [
+    "Cyclohexene addition equation?",
+    "C6H10 + Br2 → C6H10Br2."
+   ],
+   [
+    "Why remove the butter/margarine binary test?",
+    "Fats are mixtures with variable unsaturation and are not hydrocarbons; a fixed saturated/unsaturated answer is misleading."
+   ]
+  ],
+  "prep": "Pilot fresh bromine and actual drop sizes. Keep away from strong light to limit unwanted alkane substitution. Supply only the small quantities needed. The focus is the test, not combustion or food analysis.",
+  "sources": []
+ }
+}
