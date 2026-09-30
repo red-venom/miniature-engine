@@ -59,3 +59,15 @@ override, the Hunter's last arrow and both win conditions — 24 assertions in a
 Excel 2019+/365, Google Sheets and LibreOffice Calc. In older Excel the single
 `TEXTJOIN` formula (the wolf-pack line on Role Cards) shows `#NAME?`; everything else
 is plain `VLOOKUP`/`COUNTIF`/`MATCH`-era functions.
+
+## Improved KS5 practicals (red-team rebuild)
+
+`practicals/` holds the generator for the "Improved KS5 Practicals" package (AQA A-level chemistry).
+
+- `build_practicals.py` rebuilds the whole package from `data/activities_v10.json` plus the v1.1 fixes in `v11_content.py`; `verify_practicals.py` checks inventory, links, register, units and stoichiometric expectations.
+- `v11_review.py` is the red-team finding list; it is also rendered into the package as a Word document and a CSV.
+- `Improved_Practicals_2026-09-30_v1.1.zip` is the built package (94 activity sheets, 102 source copies, three masters, review, index).
+
+```
+cd practicals && python3 build_practicals.py && python3 verify_practicals.py
+```
