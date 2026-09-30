@@ -42,7 +42,7 @@ for r in rows:
     for c in r["canonical"].split("; "): check(os.path.exists(os.path.join(OUT, c)), f"register canonical missing: {c}")
     check("," not in r["activities"], f"comma separator in activities: {r['activities']}")
     check(not r["source"].startswith("/"), f"absolute source path leaked: {r['source']}")
-    check(r["replacement"].endswith(f"IMPROVED {VERSION}.docx"), f"bad replacement name {r['replacement']}")
+    check(r["replacement"].endswith(f" {VERSION}.docx"), f"bad replacement name {r['replacement']}")
 js = json.load(open(os.path.join(OUT, "Source register.json"), encoding="utf-8"))
 check(len(js["rows"]) == 102 and js["version"] == VERSION, "register json mismatch")
 
@@ -119,6 +119,10 @@ check("16.5" in sheet(4, "Teacher") and "20.5" in sheet(4, "Teacher"), "4 correc
 check("hexane" in sheet(12, "Student"), "12 caveat about non-polar liquids")
 check("1.0 mol dm⁻³ Na2CO3" in sheet(46, "Student"), "46 carbonate concentration")
 check("nominally" in sheet(16, "Student"), "16 concentration wording")
+
+# 7b. path length: longest relative path must leave room for a deep OneDrive prefix
+longest = max((os.path.relpath(os.path.join(dp, f), os.path.dirname(OUT)) for dp, dn, fn in os.walk(OUT) for f in fn), key=len)
+check(len(longest) <= 150, f"path too long ({len(longest)}): {longest}")
 
 # 8. zip present and complete
 z = os.path.join(HERE, PACKAGE.replace(" ", "_") + ".zip")

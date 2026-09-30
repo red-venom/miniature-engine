@@ -21,19 +21,19 @@ from docx.oxml import OxmlElement
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from v11_content import OVERRIDES, TECH_INTRO, ANSWERS_INTRO, SHARED
+from v11_content import OVERRIDES, TECH_INTRO, ANSWERS_INTRO, SHARED, SHORT
 from v11_review import FINDINGS, DECISIONS
 
 VERSION = "v1.1"
 DATE_ISO = "2026-09-30"
 DATE_TXT = "30 September 2026"
-PACKAGE = f"Improved Practicals {DATE_ISO} {VERSION}"
+PACKAGE = f"KS5 Practicals {VERSION}"      # short: the package sits inside a deep OneDrive path
 STAMP = f"IMPROVED {VERSION} • {DATE_TXT}"
 UNITS_AQA = True            # cm³ / mol dm⁻³ (False keeps the v1.0 mL / M)
 SOURCE_ROOT_MARKER = "/06 - KS5 - Chemistry/"
 BUILD = os.path.join(HERE, "build")
 OUT = os.path.join(BUILD, PACKAGE)
-ACT_DIR = "Activity resources"
+ACT_DIR = "Activities"
 SRC_DIR = "Source copies"
 
 # ---------------------------------------------------------------- data ------
@@ -85,7 +85,8 @@ def load_register():
         i = src.find(SOURCE_ROOT_MARKER)
         r["source"] = src[i + len(SOURCE_ROOT_MARKER):] if i >= 0 else os.path.basename(src)
         r["activities"] = ";".join(x.strip() for x in re.split(r"[;,]", r["activities"]))
-        r["replacement"] = r["replacement"].replace("IMPROVED v1.0", f"IMPROVED {VERSION}")
+        stem = os.path.splitext(os.path.basename(r["source"]))[0]   # legacy names are unique across folders
+        r["replacement"] = f"{SRC_DIR}/{stem} {VERSION}.docx"
         r["canonical"] = ""      # filled after canonical names are known
     return rows
 
@@ -217,7 +218,7 @@ def guide_doc(acts):
     P(d, "Use this version with the improved student and teacher files. All 47 mapped entries have been revised and every entry now has a student sheet and a teacher sheet. This guide shows the intended learning, existing lesson match and realistic lesson commitment; the HTML index opens each paired resource.")
     P(d, "The method changes are adopted in this release. Original files remain untouched. Live procedures need a local technician trial and current departmental risk assessment before issue; no claim of physical testing is made. Sheets written in v1.1 for activities that had none in v1.0 are marked in the change log and need the same trial.")
     H(d, "Using the set")
-    P(d, f"Open START HERE.html for the 47 pairs and the complete source register. Files marked Student are for learners; Teacher files include preparation, expected results, reliability checks and answers. The source copies folder preserves original names with an IMPROVED {VERSION} suffix. Use activity numbers to avoid mixing versions.")
+    P(d, f"Open START HERE.html for the 47 pairs and the complete source register. Files marked Student are for learners; Teacher files include preparation, expected results, reliability checks and answers. The source copies folder preserves original file names with a {VERSION} suffix; the source register gives each original's folder. Use activity numbers to avoid mixing versions.")
     P(d, "Some formerly live activities now use models or reference data. They support conceptual learning, but cannot replace hands-on required practical evidence. " + SHARED)
     H(d, "What good practical teaching looks like")
     P(d, "Choose a specific learning purpose; explicitly teach the technique; control the variables that matter; give students a feasible measurement or observation; then require a conclusion supported by evidence. Build in controls, uncertainty and adequate time to interpret results. An entertaining demonstration alone is not evidence of individual practical competence.")
@@ -280,7 +281,7 @@ def review_doc(inventory):
     return d
 
 # ---------------------------------------------------------------- build -----
-def canon_name(n, title, role): return f"{num(n)} {title} - {role} - IMPROVED {VERSION}.docx"
+def canon_name(n, title, role): return f"{num(n)} {SHORT[n]} - {role}.docx"
 
 def main():
     acts = load_activities(); reg = load_register(); chg = load_changes()
@@ -292,10 +293,10 @@ def main():
             rel = f"{ACT_DIR}/{canon_name(n, a['title'], role)}"
             docs[rel] = fn(a, n); docs[rel].save(os.path.join(OUT, rel))
     masters = {
-        "guide": f"Improved KS5 practical lesson guide - IMPROVED {VERSION}.docx",
-        "answers": f"Answers master - IMPROVED {VERSION}.docx",
-        "tech": f"Technician preparation master - IMPROVED {VERSION}.docx",
-        "review": f"Red team review - IMPROVED {VERSION}.docx",
+        "guide": f"Lesson guide {VERSION}.docx",
+        "answers": f"Answers {VERSION}.docx",
+        "tech": f"Technician prep {VERSION}.docx",
+        "review": f"Red team review {VERSION}.docx",
     }
     guide_doc(acts).save(os.path.join(OUT, masters["guide"]))
     answers_doc(acts).save(os.path.join(OUT, masters["answers"]))
@@ -360,8 +361,8 @@ START HERE.html is the main index. It opens the lesson guide, the three masters,
 
 Inventory (checked by verify_practicals.py on every build):
 """ + "".join(f"  {k}: {v}\n" for k, v in inventory) + f"""
-Activity resources: numbered sheets for teaching and preparation. Every activity has a Student and a Teacher sheet.
-Source copies: separately named replacements for the 102 original files; the source register maps each one to its numbered activity. Where one original file stood for two activities (19 and 20) the copy contains both sheets. Legacy file names are kept on purpose so existing references still resolve; the content is the improved activity named inside.
+Activities: numbered sheets for teaching and preparation, named 'NN Short title - Student.docx' and '- Teacher.docx'. The full activity title is on the first line of each sheet; file names are kept short so the package fits inside a deep OneDrive path (Windows limits a full path to 260 characters).
+Source copies: replacements for the 102 original files in one flat folder, keeping the original file name plus a '{VERSION}' suffix (the v1.0 mirrored folder tree made paths too long); the register's 'source' column gives each file's original folder; the source register maps each one to its numbered activity. Where one original file stood for two activities (19 and 20) the copy contains both sheets. Legacy file names are kept on purpose so existing references still resolve; the content is the improved activity named inside.
 Source register: paths are relative to the department folder '…/02 - Resources/06 - KS5 - Chemistry/'. The absolute OneDrive prefix present in v1.0 was removed because it identified the author.
 Answers master: answers and expected results for the revised questions in this set.
 Technician preparation master: summary table, then quantities, controls, trial notes and expected results for every activity.

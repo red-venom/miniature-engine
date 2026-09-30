@@ -396,3 +396,21 @@ ANSWERS_INTRO = ("This replacement covers the 47 reviewed activities. Use it wit
                  "Original wider resources remain available separately.")
 
 SHARED = "Activities 22 and 23 share the cobalt temperature demonstration; 27 and 28 share cracking; 31 and 35 share cyclohexene; 26 and 47 share the prepared-bromine test. Entry 17 (combustion) and entry 18 (neutralisation) are now distinct calorimetry practicals. Plan each shared activity once unless deliberate repetition has a new purpose."
+
+# Short activity names used in file names (keep under 30 characters so the
+# package fits inside a deep OneDrive path on Windows).
+SHORT = {
+ 1: "CO2 molar mass", 2: "Water of crystallisation", 3: "Magnesium oxide formula", 4: "Diprotic acid Mr",
+ 5: "Titration precision", 6: "Vinegar titration", 7: "Carbonate back titration", 8: "NaCl by titration",
+ 9: "NaHCO3 decomposition", 10: "Precipitation ratios", 11: "Structure from properties", 12: "Polarity water stream",
+ 13: "Period 3 oxides", 14: "Group 2 solubility", 15: "Halide tests", 16: "Iron(II) redox titration",
+ 17: "Alcohol combustion", 18: "Neutralisation enthalpy", 19: "Hess cycle NaHCO3", 20: "Hess cycle MgSO4",
+ 21: "Iron thiocyanate equilibrium", 22: "Cobalt equilibrium temp", 23: "Cobalt equilibrium demo", 24: "Ester Kc",
+ 25: "Structural isomers", 26: "Unsaturation test", 27: "Cracking demo", 28: "Cracking alkene evidence",
+ 29: "Addition polymerisation", 30: "Halogenoalkane hydrolysis", 31: "Cyclohexene purification", 32: "Fermentation ethanol",
+ 33: "Ethanol oxidation reflux", 34: "Distillation aldehyde", 35: "Cyclohexene preparation", 36: "Iodine clock",
+ 37: "Rechargeable cells", 38: "pH curves RP9", 39: "Acid strength conductivity", 40: "Carbonate pH curve",
+ 41: "Ammonia ligand exchange", 42: "Transition metal ox states", 43: "Chirality optical rotation", 44: "Ester preparation",
+ 45: "Aspirin synthesis", 46: "Functional group tests", 47: "Bromine water test",
+}
+assert all(len(v) <= 30 for v in SHORT.values()) and len(SHORT) == 47
