@@ -6,7 +6,7 @@
 
 import { P, v, type Pt } from '../kernel/geom'
 import type { Layer } from '../kernel/contents'
-import { DocBuilder, anchorWorld } from '../model/build'
+import { DocBuilder, anchorOf, anchorWorld } from '../model/build'
 import type { SymbolItem } from '../model/types'
 import { toWorld } from '../model/transform'
 import { geometry } from '../symbols/registry'
@@ -21,12 +21,6 @@ const water = (amount: number, extra: Partial<Layer> = {}): Layer => ({ kind: 'l
 /** A wire through the points: straight runs with square corners. */
 const wire = (b: DocBuilder, ...pts: Pt[]) => b.connector('wire', pts)
 const at = (it: SymbolItem, anchor: string) => anchorWorld(it, anchor)
-/** Draw `it` just under `other`: move it before `other` in the draw order. */
-function drawUnder(b: DocBuilder, it: SymbolItem, other: SymbolItem): void {
-  const order = b.doc.order
-  order.splice(order.indexOf(it.id), 1)
-  order.splice(order.indexOf(other.id), 0, it.id)
-}
 /** Left end x of plain text (label size 15) centred on cx. Width estimate as in render.ts: 0.56 × the size for each character. */
 const centred = (text: string, cx: number) => cx - (text.length * 15 * 0.56) / 2
 /** Left edge x of a label column: text on the left ends here. */
@@ -48,8 +42,6 @@ const specificHeatCapacity: TemplateDef = {
     const heater = b.on('immersionHeater', 'tip', block, 'heater', { dy: 0.78 * block.h - 2 })
     const thermo = b.on('thermometer', 'bulb', block, 'thermo', { dy: 0.6 * block.h - 2, h: 180 })
     thermo.contents = { main: [{ kind: 'liquid', amount: readingToAmount(geometry('thermometer', 9, 180), 20) ?? 0.25, colour: THERMO_RED }] }
-    // The bulb (13 u) is wider than its hole (10 u): drawn under the block, it is trimmed to the hole.
-    drawUnder(b, thermo, block)
 
     // The power supply stands on the bench to the left. The joulemeter is above it: its terminals are on its lower edge.
     const psu = b.on('powerSupply', 'base', mat, 'under', { dx: -235 })
@@ -361,12 +353,16 @@ const acceleration: TemplateDef = {
     const b = new DocBuilder('Force, mass and acceleration')
     const bench = b.at('benchLine', 'top', P(0, 0), { w: 640 })
     const trolley = b.on('trolley', 'wheels', bench, 'top', { dx: -220, params: { card: true } })
-    // Pulley clamped to the end of the bench: the bench edge is in the slot, whose inner end is 21 u left of and 53 u below
-    // the top of the wheel (pulley recipe, default size).
-    const end = toWorld(bench, P(bench.w / 2, 0))
-    const pulley = b.at('pulley', 'top', P(end.x + 21, end.y - 53))
+    // The string must be parallel to the bench, so the top of the pulley wheel is level with the trolley's hook. The pulley
+    // is clamped to the end of the bench, the bench edge in its slot. At its default size (50 × 70) the inner end of the slot
+    // is 21 u left of and 53 u below the top of the wheel (pulley recipe), so the pulley is scaled by hook height / 53.
+    const hook = at(trolley, 'front'),
+      end = toWorld(bench, P(bench.w / 2, 0)),
+      k = (end.y - hook.y) / 53,
+      size = (n: number) => Math.round(n * k * 100) / 100
+    const pulley = b.at('pulley', 'top', P(end.x + 21 * k, hook.y), { w: size(50), h: size(70) })
     const hanger = b.on('massHanger', 'hook', pulley, 'side', { dy: 60 })
-    b.connector('line', overPulley(at(trolley, 'front'), pulley, at(hanger, 'hook').y))
+    b.connector('line', overPulley(hook, pulley, at(hanger, 'hook').y))
     // Two light gates astride the track, added after the string so that their frames hide it where it passes through.
     // Their beams are at the height of the card.
     const gate1 = b.on('lightGate', 'base', bench, 'top', { dx: -40 })
@@ -386,8 +382,10 @@ const acceleration: TemplateDef = {
     b.label('card', L, trolley.y - 35, [trolley, -15, -13])
     b.label('trolley', L, trolley.y + 5, [trolley, -trolley.w / 2, 13])
     b.label('light gate', R, gate2.y - 55, [gate2, gate2.w / 2, 5])
-    b.label('pulley', R, at(pulley, 'side').y + 5, [pulley, 22, 18])
-    b.label('string', R, at(pulley, 'side').y + 45, P(at(pulley, 'side').x, at(pulley, 'side').y + 40))
+    const side = at(pulley, 'side'),
+      rim = anchorOf(pulley, 'side')
+    b.label('pulley', R, side.y + 5, [pulley, rim.x, rim.y])
+    b.label('string', R, side.y + 45, P(side.x, side.y + 40))
     b.label('slotted masses', R, hanger.y + 35, [hanger, 18, 85])
     return b.doc
   },
