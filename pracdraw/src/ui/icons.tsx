@@ -108,9 +108,25 @@ export const icons = {
       <path d="M13 7V4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13H7" />
     </>,
   ),
+  /** An arrow down into a tray. */
+  download: icon(
+    <>
+      <path d="M10 3v9.5M6 9l4 4 4-4" />
+      <path d="M3.5 14v2.5h13V14" />
+    </>,
+  ),
   menu: icon(
     <>
       <path d="M4 6h12M4 10h12M4 14h12" />
+    </>,
+  ),
+  /** The inspector: three sliders, each with its knob. */
+  inspector: icon(
+    <>
+      <path d="M3 5.5h14M3 10h14M3 14.5h14" />
+      <circle cx="7" cy="5.5" r="1.75" fill="currentColor" />
+      <circle cx="13" cy="10" r="1.75" fill="currentColor" />
+      <circle cx="9" cy="14.5" r="1.75" fill="currentColor" />
     </>,
   ),
   plus: icon(

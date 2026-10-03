@@ -1,9 +1,10 @@
 // TopBar.tsx — title, tools, undo and redo, zoom, snap, photocopy-safe, label mode, files, Copy image, export, help.
-// Below 1300 px the secondary controls move into a "More" menu. Below 1100 px the panels become drawers.
+// Below FULL_BAR (1540 px) the secondary controls move into a "More" menu. Below 1100 px the panels become drawers.
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useMedia } from './useMedia'
 import * as a from '../editor/actions'
+import { copyImage, save } from '../editor/files'
 import { TOOL_KEYS } from '../editor/keys'
 import { useEditor, type Tool } from '../editor/store'
 import type { Host } from '../host/host'
@@ -104,10 +105,19 @@ interface Props {
   onInspector(): void
   onHelp(): void
   onOpen(): void
+  onExport(): void
 }
 
-export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }: Props) {
-  const compact = useMedia('(max-width: 1299px)')
+/**
+ * The narrowest window, in CSS px, that shows the whole bar: every control of section 12, with 8 px spacing and a title
+ * at least 160 px wide. Below it, the bar keeps the tools, Undo, Redo, Label mode, Copy image and Export, and the More
+ * menu holds the rest. Section 12 says 1300 px; with 8 px spacing the whole bar needs 1537 px in Chromium, rounded up
+ * to a multiple of 20.
+ */
+export const FULL_BAR = 1540
+
+export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen, onExport }: Props) {
+  const compact = useMedia(`(max-width: ${FULL_BAR - 1}px)`)
   const tool = useEditor((s) => s.tool)
   const canUndo = useEditor((s) => s.past.length > 0)
   const canRedo = useEditor((s) => s.future.length > 0)
@@ -150,7 +160,7 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
       <button type="button" onClick={onOpen} title="Open (Ctrl+O)">
         Open
       </button>
-      <button type="button" onClick={() => void a.saveJson(host)} title="Save (Ctrl+S)">
+      <button type="button" onClick={() => void save(host)} title="Save (Ctrl+S)">
         Save
       </button>
     </>
@@ -167,14 +177,14 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
   )
 
   return (
-    <header className="topbar">
+    <header className={compact ? 'topbar' : 'topbar full'}>
       {narrow && (
         <button type="button" className="icon-button" aria-label="Library" onClick={onLibrary}>
           {icons.menu}
         </button>
       )}
       <Title />
-      <div className="group" role="toolbar" aria-label="Tools">
+      <div className="group switch" role="toolbar" aria-label="Tools">
         {TOOLS.map((t) => (
           <button
             key={t.tool}
@@ -189,7 +199,7 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
           </button>
         ))}
       </div>
-      <div className="group">
+      <div className="group switch">
         <button type="button" className="icon-button" aria-label="Undo" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={a.undo}>
           {icons.undo}
         </button>
@@ -209,18 +219,13 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
       {!compact && labelAll}
       <span className="spacer" />
       {!compact && <div className="group">{files}</div>}
-      <button type="button" className="primary" onClick={() => void a.copyImage(host)} title="Copy image (Ctrl+Shift+C)">
+      <button type="button" className="primary" onClick={() => void copyImage(host)} title="Copy image: PNG at 2× (Ctrl+Shift+C)">
         {icons.copy}
         Copy image
       </button>
-      <Menu label="Export" align="right">
-        <button type="button" role="menuitem" onClick={() => void a.savePng(host)}>
-          Download PNG (2×)
-        </button>
-        <button type="button" role="menuitem" onClick={() => void a.saveSvg(host)}>
-          Download SVG
-        </button>
-      </Menu>
+      <button type="button" onClick={onExport} title="Export a PNG or an SVG">
+        Export
+      </button>
       {compact ? (
         <Menu label="More" align="right">
           <div className="menu-row">{zoomControls}</div>
@@ -233,8 +238,8 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
         help
       )}
       {narrow && (
-        <button type="button" aria-label="Inspector" onClick={onInspector}>
-          Inspector
+        <button type="button" className="icon-button" aria-label="Inspector" title="Inspector" onClick={onInspector}>
+          {icons.inspector}
         </button>
       )}
     </header>

@@ -6,6 +6,7 @@ import { PACKS, PRESET_GROUP, searchPresets, searchSymbols } from '../editor/sea
 import { useEditor } from '../editor/store'
 import { CONNECTOR_PRESETS, type ConnectorPreset } from '../model/connectors'
 import { SYMBOLS, symbolDef } from '../symbols/registry'
+import type { Doc } from '../model/types'
 import type { SymbolDef } from '../symbols/types'
 import { TEMPLATES } from '../templates'
 import type { TemplateDef } from '../templates/types'
@@ -121,31 +122,65 @@ function Apparatus() {
   )
 }
 
+/** Each template's document, built once: `build` is pure, so the thumbnail never changes. */
+const built = new Map<string, Doc>()
+function templateDoc(tpl: TemplateDef): Doc {
+  let doc = built.get(tpl.id)
+  if (!doc) {
+    doc = tpl.build()
+    built.set(tpl.id, doc)
+  }
+  return doc
+}
+
+/**
+ * A template card (section 12): a thumbnail, the title and the practical references. A click inserts the template:
+ * into an empty diagram it becomes the diagram and gives it its title; otherwise its items are added at the centre of
+ * the view with new ids, and they become the selection.
+ */
 function TemplateCard({ tpl }: { tpl: TemplateDef }) {
-  const doc = useMemo(() => tpl.build(), [tpl])
   return (
     <button type="button" className="card" onClick={() => insertTemplateAt(tpl)} aria-label={`Insert template: ${tpl.title}`}>
-      <DocThumbnail doc={doc} width={232} height={120} />
+      <DocThumbnail doc={templateDoc(tpl)} width={232} height={120} />
       <span className="card-title">{tpl.title}</span>
       <span className="muted">{tpl.refs}</span>
     </button>
   )
 }
 
-function Templates() {
+/** The filter chips of the gallery. */
+const GROUPS = ['All', 'General', 'Chemistry', 'Biology', 'Physics'] as const
+type TemplateFilter = 'All' | TemplateDef['group']
+
+function Templates({ group, setGroup }: { group: TemplateFilter; setGroup(g: TemplateFilter): void }) {
+  const shown = group === 'All' ? TEMPLATES : TEMPLATES.filter((t) => t.group === group)
   return (
-    <div className="panel-scroll">
-      <div className="cards">
-        {TEMPLATES.map((t) => (
-          <TemplateCard key={t.id} tpl={t} />
+    <>
+      <div className="chips" role="radiogroup" aria-label="Template group">
+        {GROUPS.map((g) => (
+          <button key={g} type="button" role="radio" className="chip" aria-checked={g === group} onClick={() => setGroup(g)}>
+            {g}
+          </button>
         ))}
       </div>
-    </div>
+      <div className="panel-scroll">
+        {shown.length ? (
+          <div className="cards">
+            {shown.map((t) => (
+              <TemplateCard key={t.id} tpl={t} />
+            ))}
+          </div>
+        ) : (
+          <p className="muted">No templates in this group yet.</p>
+        )}
+      </div>
+    </>
   )
 }
 
 export function Library({ open, onClose }: { open: boolean; onClose(): void }) {
   const [tab, setTab] = useState<'apparatus' | 'templates'>('apparatus')
+  const [group, setGroup] = useState<TemplateFilter>('All')
   return (
     <aside className={`panel library${open ? ' open' : ''}`} aria-label="Library">
       <div className="tabs" role="tablist">
@@ -159,7 +194,7 @@ export function Library({ open, onClose }: { open: boolean; onClose(): void }) {
           {icons.close}
         </button>
       </div>
-      {tab === 'apparatus' ? <Apparatus /> : <Templates />}
+      {tab === 'apparatus' ? <Apparatus /> : <Templates group={group} setGroup={setGroup} />}
     </aside>
   )
 }

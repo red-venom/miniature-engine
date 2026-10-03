@@ -10,7 +10,7 @@ const START = [
   'Drag items to move them: parts snap together (hold Ctrl to stop it). Use the handles to resize and turn them.',
   'The inspector on the right shows the properties of the selection.',
   'With nothing selected, the inspector shows the document settings: label mode, photocopy-safe.',
-  'Copy image puts a PNG on the clipboard. Export downloads a PNG or an SVG.',
+  'Copy image puts a PNG on the clipboard. Export makes a PNG or an SVG, also with blank lines or letters. Save keeps the diagram as a file; Open reads it, or an exported SVG, again.',
 ]
 
 export function HelpDialog({ onClose }: { onClose(): void }) {

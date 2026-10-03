@@ -1,12 +1,16 @@
-// App.tsx — the editor: top bar, library, canvas, inspector, status bar (section 12 of the specification).
+// App.tsx — the editor: top bar, library, canvas, inspector, status bar (section 12 of the specification), and the
+// dialogs and banner of section 13. The host starts as the web host and becomes the Claude host when it answers.
 
 import { useEffect, useRef, useState } from 'react'
-import { docFromText, loadDoc } from './editor/actions'
 import { restoreAutosave, startAutosave } from './editor/autosave'
+import { closeFallback, openFile } from './editor/files'
 import { handleKey } from './editor/keys'
 import { useEditor } from './editor/store'
-import { webHost } from './host/web'
+import { connectHost, host } from './host/current'
+import { Banner } from './ui/Banner'
 import { Canvas } from './ui/Canvas'
+import { ExportDialog } from './ui/ExportDialog'
+import { FallbackDialog } from './ui/FallbackDialog'
 import { HelpDialog } from './ui/HelpDialog'
 import { Inspector } from './ui/Inspector'
 import { Library } from './ui/Library'
@@ -15,30 +19,32 @@ import { StatusBar } from './ui/StatusBar'
 import { TopBar } from './ui/TopBar'
 import { useMedia } from './ui/useMedia'
 
-const host = webHost
-
 export default function App() {
   const [help, setHelp] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [library, setLibrary] = useState(false)
   const [inspector, setInspector] = useState(false)
+  const fallback = useEditor((s) => s.fallback)
   const narrow = useMedia('(max-width: 1099px)')
   const file = useRef<HTMLInputElement>(null)
-  const helpRef = useRef(help)
+  /** What Escape closes while a dialog is open (the one on top), or null when none is open. */
+  const dialog = useRef<(() => void) | null>(null)
   useEffect(() => {
-    helpRef.current = help
-  }, [help])
+    dialog.current = fallback ? closeFallback : exporting ? () => setExporting(false) : help ? () => setHelp(false) : null
+  }, [fallback, exporting, help])
 
-  // The autosave: restore on start, then save 500 ms after each change.
+  // The autosave: restore on start, then save 500 ms after each change. The Claude host, if it answers.
   useEffect(() => {
     restoreAutosave(host)
+    void connectHost()
     return startAutosave(host)
   }, [])
 
-  // The keys of section 12.
+  // The keys of section 12. While a dialog is open, only Escape, which closes it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (helpRef.current) {
-        if (e.key === 'Escape') setHelp(false)
+      if (dialog.current) {
+        if (e.key === 'Escape') dialog.current()
         return
       }
       const done = handleKey(e, {
@@ -58,13 +64,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const onFile = async (f: File | undefined) => {
-    if (!f) return
-    const doc = docFromText(await f.text())
-    if (doc) loadDoc(doc)
-    else useEditor.getState().setStatus('Not a PracDraw file')
-  }
-
   return (
     <div className={`app${narrow ? ' narrow' : ''}`}>
       <TopBar
@@ -74,12 +73,16 @@ export default function App() {
         onInspector={() => setInspector(!inspector)}
         onHelp={() => setHelp(true)}
         onOpen={() => file.current?.click()}
+        onExport={() => setExporting(true)}
       />
       <Library open={library} onClose={() => setLibrary(false)} />
       <Canvas />
+      <Banner />
       <Inspector open={inspector} onClose={() => setInspector(false)} />
       <StatusBar />
       {help && <HelpDialog onClose={() => setHelp(false)} />}
+      {exporting && <ExportDialog host={host} onClose={() => setExporting(false)} />}
+      <FallbackDialog host={host} />
       <input
         ref={file}
         type="file"
@@ -87,7 +90,8 @@ export default function App() {
         hidden
         aria-label="Open file"
         onChange={(e) => {
-          void onFile(e.target.files?.[0])
+          const f = e.target.files?.[0]
+          if (f) void openFile(f)
           e.target.value = ''
         }}
       />

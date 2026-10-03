@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { FILE } from './hook.ts'
 import { demoDoc } from '../src/demo.ts'
 import { P, bounds, dist, scan, type Pt } from '../src/kernel/geom.ts'
 import { parseMarkup, smartChem } from '../src/kernel/text.ts'
@@ -12,23 +12,6 @@ import type { ConnectorItem, Doc, LabelItem, ShapeItem, SymbolItem } from '../sr
 import { labelPoint } from '../src/symbols/label.ts'
 import { geometry, labelText, symbolDef } from '../src/symbols/registry.ts'
 import { amountToReading } from '../src/symbols/scale.ts'
-
-// The built single file, opened straight from disk: the hardest hosting case.
-const FILE = pathToFileURL('dist/index.html').href
-
-interface Hook {
-  doc(): Doc
-  load(doc: Doc): void
-  png(scale: number): string
-  svg(): string
-  view(v?: { x?: number; y?: number; zoom?: number }): { x: number; y: number; zoom: number }
-  screenRect(): { x: number; y: number; width: number; height: number }
-}
-declare global {
-  interface Window {
-    __pracdraw: Hook
-  }
-}
 
 const getDoc = (page: Page) => page.evaluate(() => window.__pracdraw.doc())
 const getSvg = (page: Page) => page.evaluate(() => window.__pracdraw.svg())
@@ -1085,7 +1068,7 @@ const shownLines = (l: LabelItem) =>
 
 const labelsOf = (doc: Doc) => doc.order.map((id) => doc.items[id]).filter((it): it is LabelItem => it.type === 'label')
 
-/** Label all: in the top bar, or in its More menu when the window is narrower than 1300 px. */
+/** Label all: in the top bar, or in its More menu when the window is narrower than the whole bar (FULL_BAR, 1540 px). */
 async function labelAll(page: Page) {
   const more = page.getByRole('button', { name: 'More' })
   if (await more.isVisible()) await more.click()
@@ -1143,6 +1126,26 @@ test('label-follows-item', async ({ page }) => {
   const wall2 = labelPoint(geometry(resized.symbol, resized.w, resized.h, resized.params), resized.w, resized.h, 'right')
   expect(scaled.lx).toBeCloseTo(wall2.x, 0)
   expect(scaled.ly).toBeCloseTo(wall2.y, 0)
+  // Section 7, rule 2: the target also follows the symbol when it turns or flips. After each, the leader end as the SVG
+  // export draws it is the world point of { item, lx, ly }, and the label itself is unchanged.
+  const fixedLabel = doc.items[label.id] as LabelItem
+  const end0 = await leaderEnd()
+  await page.getByRole('complementary', { name: 'Inspector' }).getByRole('button', { name: 'Rotate 90° clockwise' }).click()
+  doc = await getDoc(page)
+  const turned = doc.items[beaker.id] as SymbolItem
+  expect(turned.rot).toBe(90)
+  expect(doc.items[label.id]).toEqual(fixedLabel)
+  const end1 = await leaderEnd()
+  expectNear(end1, toWorld(turned, P(scaled.lx, scaled.ly)), 1)
+  expect(dist(end1, end0)).toBeGreaterThan(20)
+  await page.keyboard.press('h') // flip
+  doc = await getDoc(page)
+  const flipped = doc.items[beaker.id] as SymbolItem
+  expect(flipped).toMatchObject({ rot: 90, flip: true })
+  expect(doc.items[label.id]).toEqual(fixedLabel)
+  const end2 = await leaderEnd()
+  expectNear(end2, toWorld(flipped, P(scaled.lx, scaled.ly)), 1)
+  expect(dist(end2, end1)).toBeGreaterThan(20)
 })
 
 test('blank-mode-has-no-label-text', async ({ page }) => {
@@ -1529,4 +1532,40 @@ test('align-and-guides-measure-label-text', async ({ page }) => {
   await page.locator('.canvas').click({ position: { x: 5, y: 5 } })
   await dragTo(page, P(260, 115), P(made.x, made.y), P(box.x0 + 4, made.y))
   expect((await getDoc(page)).items[made.id]).toMatchObject({ x: box.x0, y: made.y })
+})
+
+test('enter-on-a-focused-control-presses-it', async ({ page, context }) => {
+  // With one label selected, Enter edits its text only when the focus is on the page or the canvas. On a focused
+  // button or radio button, Enter presses it, and no text box opens.
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await open(page)
+  const b = new DocBuilder('Enter')
+  const beaker = b.symbol('beaker', { x: 0, y: 0 })
+  b.symbol('conicalFlask', { x: -200, y: 0 })
+  const made = b.label('beaker', 160, -40, [beaker, 50, 60])
+  await page.evaluate((d) => window.__pracdraw.load(d), b.doc)
+  await page.keyboard.press('1') // fit
+  await page.locator(`#stage [data-id="${made.id}"] text`).click()
+  await expect(page.locator('.statusbar .selected')).toHaveText('Label "beaker"')
+  const textBox = page.getByRole('textbox', { name: 'Label text' })
+  // A label-mode radio button in the top bar.
+  await page.getByRole('radio', { name: 'Blank' }).focus()
+  await page.keyboard.press('Enter')
+  expect((await getDoc(page)).settings.labelMode).toBe('blank')
+  await expect(textBox).toHaveCount(0)
+  // Copy image.
+  await page.getByRole('button', { name: 'Copy image' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('status')).toHaveText('Copied')
+  await expect(textBox).toHaveCount(0)
+  // The inspector's Back: the label goes to the back of the draw order.
+  await page.getByRole('complementary', { name: 'Inspector' }).getByRole('button', { name: 'Back', exact: true }).focus()
+  await page.keyboard.press('Enter')
+  expect((await getDoc(page)).order[0]).toBe(made.id)
+  await expect(textBox).toHaveCount(0)
+  // With the focus back on the page, Enter edits the label.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  await page.keyboard.press('Enter')
+  await expect(textBox).toBeFocused()
+  await expect(textBox).toHaveValue('beaker')
 })

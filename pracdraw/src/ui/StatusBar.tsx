@@ -1,5 +1,7 @@
-// StatusBar.tsx — a hint for the active tool and the name of the selected item. An aria-live region.
+// StatusBar.tsx — a hint for the active tool and the name of the selected item. An aria-live region. After a download
+// from Save, the link "Download did not start?" opens the fallback dialog with the same file (section 13).
 
+import { openFallback } from '../editor/files'
 import { toolHint } from '../editor/hints'
 import { itemName } from '../editor/names'
 import { useEditor } from '../editor/store'
@@ -9,6 +11,7 @@ export function StatusBar() {
   const doc = useEditor((s) => s.doc)
   const selection = useEditor((s) => s.selection)
   const status = useEditor((s) => s.status)
+  const retry = useEditor((s) => s.retry)
   const tool = useEditor((s) => s.tool)
   const drawing = useEditor((s) => !!s.draft?.points.length)
   const editing = useEditor((s) => !!s.textEdit)
@@ -25,6 +28,11 @@ export function StatusBar() {
       <span className="status" role="status" aria-live="polite">
         {status}
       </span>
+      {retry && (
+        <button type="button" className="link" onClick={() => openFallback(retry)}>
+          Download did not start?
+        </button>
+      )}
     </footer>
   )
 }
