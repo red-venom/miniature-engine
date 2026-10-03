@@ -1,0 +1,30 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1b1f24;
+  background: #f3f4f6;
+}
+body {
+  margin: 0;
+}
+.bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border-bottom: 1px solid #d9dde3;
+  align-items: center;
+}
+.bar button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid #b9c0ca;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+#stage {
+  display: block;
+  background: #fff;
+  margin: 12px;
+  box-shadow: 0 0 0 1px #d9dde3;
+}
