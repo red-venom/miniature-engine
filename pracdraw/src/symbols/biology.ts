@@ -44,7 +44,7 @@ const microscope: SymbolDef = {
       ux = -Math.sin(tilt),
       uy = -Math.cos(tilt),
       nx = -10,
-      ny = 121,
+      ny = 111, // high enough that the objective clears a slide with its cover slip
       tubeLen = 95
     const arm = new Path()
       .M(s(-26), s(58))
@@ -59,7 +59,7 @@ const microscope: SymbolDef = {
     const eyepiece = along(s(nx), s(ny), ux, uy, s(tubeLen), s(tubeLen + 18), s(8))
     // Objectives: one straight down at the stage, a shorter one turned 35° to the side.
     const o2 = (35 * Math.PI) / 180
-    const objectives = along(s(-14), s(124), 0, 1, 0, s(24), s(5)) + along(s(-2), s(124), Math.sin(o2), Math.cos(o2), 0, s(16), s(5))
+    const objectives = along(s(-14), s(114), 0, 1, 0, s(24), s(5)) + along(s(-2), s(114), Math.sin(o2), Math.cos(o2), 0, s(16), s(5))
     const lamp = new Path()
       .M(s(-24), baseY * k)
       .A(s(10), s(-4), baseY * k, true)
@@ -68,7 +68,8 @@ const microscope: SymbolDef = {
       prims: [
         { d: arm.d(), role: 'solid' },
         { d: rrect(s(stage0), s(stageY - 3), s(stage1), s(stageY + 3), s(1)), role: 'solid' }, // stage
-        { d: `M${f(s(-48))} ${f(s(stageY - 3))}v${f(s(-3))}h${f(s(28))}v${f(s(3))}`, role: 'detail' }, // stage clip
+        // Stage clip: a post at the left end of the stage and a spring arm that rests on a slide, away from the cover slip.
+        { d: `M${f(s(-58))} ${f(s(stageY - 3))}V${f(s(stageY - 7.25))}H${f(s(-38))}`, role: 'detail' },
         { d: lamp.d(), role: 'solid' },
         { d: rrect(s(-64), baseY * k, s(64), H * k, s(2)), role: 'solid' },
         { d: circle(s(40), s(190), s(9)), role: 'solid' }, // coarse focus

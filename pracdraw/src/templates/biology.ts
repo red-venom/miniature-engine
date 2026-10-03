@@ -30,8 +30,8 @@ const microscopeParts: TemplateDef = {
     // The slide lies on the stage, centred under the objective that points down.
     const slide = b.on('microscopeSlide', 'under', scope, 'stage', { w: 80 })
     // Left column: the optical path from the eyepiece down to the lamp.
-    b.label('eyepiece', -100, 50, [scope, -61.2, 30.1])
-    b.label('objective lenses', -100, 90, [scope, -19, 138])
+    b.label('eyepiece', -100, 50, [scope, -61.2, 20.1])
+    b.label('objective lenses', -100, 90, [scope, -19, 128])
     b.label('microscope slide', -100, 130, [slide, -30, 3])
     b.label('stage', -100, 170, [scope, -58, 155])
     b.label('lamp', -100, 210, [scope, -21.1, 230.9])
