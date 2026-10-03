@@ -10,6 +10,7 @@ import { DEFAULT_SETTINGS, type Doc } from '../model/types'
 import { connectorNode, docNodes, symbolNode } from '../render/render'
 import { geometry } from '../symbols/registry'
 import type { SymbolDef } from '../symbols/types'
+import type { TemplateDef } from '../templates/types'
 
 export interface Thumb {
   nodes: Node[]
@@ -53,6 +54,18 @@ export function presetThumb(preset: ConnectorPreset): Thumb {
   t = { nodes: [connectorNode(it, DEFAULT_SETTINGS)], viewBox: `${(x0 + x1 - size) / 2} ${(y0 + y1 - size) / 2} ${size} ${size}` }
   presetThumbs.set(preset.id, t)
   return t
+}
+
+const templateDocs = new Map<string, Doc>()
+
+/** A template's document for its thumbnail, built once: `build` is pure, so the thumbnail never changes. */
+export function templateDoc(tpl: TemplateDef): Doc {
+  let doc = templateDocs.get(tpl.id)
+  if (!doc) {
+    doc = tpl.build()
+    templateDocs.set(tpl.id, doc)
+  }
+  return doc
 }
 
 /** A whole document in a view box of the given aspect ratio, centred on the drawing. */

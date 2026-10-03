@@ -1,8 +1,9 @@
 // ExportDialog.tsx — one dialog exports the diagram (section 13): Format, Size, Background, Labels, Answer key and
 // Photocopy-safe, then Copy or Download. A preview shows the picture as the options draw it. After a download the
-// dialog offers "Download did not start?", which opens the fallback dialog with the same file.
+// dialog offers "Download did not start?", which opens the fallback dialog with the same file. Each row is a radio
+// group: Tab reaches its chosen option, and the arrow keys choose another. The focus stays in the dialog.
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { copyExport, downloadExport, openFallback } from '../editor/files'
 import { measureText } from '../editor/measure'
 import { useEditor, type Fallback } from '../editor/store'
@@ -12,11 +13,8 @@ import { pngSize } from '../export/png'
 import type { Host } from '../host/host'
 import { NodeView } from '../render/NodeView'
 import { icons } from './icons'
-
-interface Option<T> {
-  value: T
-  label: string
-}
+import { RadioSwitch, type RadioOption as Option } from './RadioSwitch'
+import { trapTab, useDialogFocus } from './useDialog'
 
 /** One row of the dialog: its name and a switch of options (radio buttons). */
 function Choice<T extends string | number>({
@@ -40,13 +38,7 @@ function Choice<T extends string | number>({
       <span className="export-name" id={id}>
         {label}
       </span>
-      <div className="switch" role="radiogroup" aria-labelledby={id}>
-        {options.map((o) => (
-          <button key={String(o.value)} type="button" role="radio" aria-checked={value === o.value} disabled={disabled} onClick={() => onChange(o.value)}>
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <RadioSwitch labelledBy={id} value={value} options={options} onChange={onChange} disabled={disabled} />
       {note && <span className="muted export-note">{note}</span>}
     </div>
   )
@@ -113,7 +105,7 @@ export function ExportDialog({ host, onClose }: { host: Host; onClose(): void })
   const picture = useMemo(() => exportPicture(doc, o, measureText), [doc, o])
   const letters = exportLabelMode(doc, o) === 'letters'
   const keyId = useId()
-  useEffect(() => ref.current?.focus(), [])
+  useDialogFocus(ref)
 
   const set = (patch: Partial<ExportOptions>) => {
     setO({ ...o, ...patch })
@@ -148,6 +140,7 @@ export function ExportDialog({ host, onClose }: { host: Host; onClose(): void })
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose()
+          trapTab(e)
           e.stopPropagation()
         }}
       >

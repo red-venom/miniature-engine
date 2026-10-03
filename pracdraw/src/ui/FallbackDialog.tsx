@@ -1,20 +1,20 @@
 // FallbackDialog.tsx — when a copy or a download fails (section 13), this dialog gives the file to take by hand: a PNG
 // as a picture with the line "Right-click the picture and choose Copy image", an SVG or a saved file as text with a
-// Select all button. "Download did not start?" opens it too.
+// Select all button. "Download did not start?" opens it too. The focus stays in it while it is open, and goes back to
+// where it was when it closes.
 
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { closeFallback, copyFallbackText } from '../editor/files'
 import { useEditor } from '../editor/store'
 import type { Host } from '../host/host'
 import { icons } from './icons'
+import { trapTab, useDialogFocus } from './useDialog'
 
 export function FallbackDialog({ host }: { host: Host }) {
   const f = useEditor((s) => s.fallback)
   const ref = useRef<HTMLDivElement>(null)
   const text = useRef<HTMLTextAreaElement>(null)
-  useEffect(() => {
-    if (f) ref.current?.focus()
-  }, [f])
+  useDialogFocus(ref, !!f)
   if (!f) return null
   const title = f.why === 'copy' ? 'Copy by hand' : 'Download did not start?'
   const selectAll = () => {
@@ -33,6 +33,7 @@ export function FallbackDialog({ host }: { host: Host }) {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === 'Escape') closeFallback()
+          trapTab(e)
           e.stopPropagation()
         }}
       >

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Host } from '../host/host'
 import { DocBuilder } from '../model/build'
 import type { SymbolItem } from '../model/types'
-import { controlKey, handleKey, inTextField, type KeyContext } from './keys'
+import { KEY_TABLE, controlKey, handleKey, inTextField, keyTable, modName, type KeyContext } from './keys'
 import { useEditor } from './store'
 
 const s = () => useEditor.getState()
@@ -43,6 +43,61 @@ describe('controlKey', () => {
     expect(controlKey(el('SELECT'), 'Delete')).toBe(false)
     expect(controlKey(el('BODY'), ' ')).toBe(false)
     expect(controlKey(null, 'ArrowLeft')).toBe(false)
+  })
+
+  it('leaves the arrow keys to a button with the role radio or tab (the label-mode switch, the library tabs)', () => {
+    for (const role of ['radio', 'tab', 'slider'])
+      for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) expect(controlKey(el('BUTTON', { role }), key)).toBe(true)
+    // The role of a real element is its attribute.
+    const radio = el('BUTTON', { getAttribute: (name: string) => (name === 'role' ? 'radio' : null) })
+    expect(controlKey(radio, 'ArrowRight')).toBe(true)
+    // A plain button, a toolbar button or the canvas: the arrow keys move the selection.
+    expect(controlKey(el('BUTTON'), 'ArrowRight')).toBe(false)
+    expect(controlKey(el('BUTTON', { role: 'button' }), 'ArrowRight')).toBe(false)
+    expect(controlKey(el('DIV', { role: 'application' }), 'ArrowRight')).toBe(false)
+    // Delete is still the editor's on a radio button.
+    expect(controlKey(el('BUTTON', { role: 'radio' }), 'Delete')).toBe(false)
+  })
+})
+
+describe('keyTable', () => {
+  it('names Cmd for Ctrl on a Mac, and Ctrl elsewhere', () => {
+    expect(modName(true)).toBe('Cmd')
+    expect(modName(false)).toBe('Ctrl')
+    expect(keyTable(false)).toBe(KEY_TABLE)
+    const mac = keyTable(true)
+    expect(mac).toHaveLength(KEY_TABLE.length)
+    expect(mac.map(([k]) => k)).toContain('Cmd+Z, Cmd+Shift+Z or Cmd+Y')
+    expect(mac.flat().join(' ')).not.toContain('Ctrl')
+    expect(KEY_TABLE.filter(([k]) => k.includes('Ctrl')).length).toBeGreaterThan(5)
+  })
+
+  it('lists every key of the table in section 12', () => {
+    const keys = KEY_TABLE.map(([k]) => k).join(' | ')
+    for (const k of [
+      'Ctrl+Z',
+      'Ctrl+Y',
+      'Ctrl+C',
+      'Ctrl+X',
+      'Ctrl+V',
+      'Ctrl+D',
+      'Delete',
+      'Backspace',
+      'Ctrl+A',
+      'Ctrl+G',
+      'Ctrl+Shift+G',
+      'H',
+      'Ctrl+S',
+      'Ctrl+O',
+      'Ctrl+Shift+C',
+      '/',
+      'Escape',
+      '?',
+    ])
+      expect(keys).toContain(k)
+    expect(keys).toContain('] and [')
+    expect(keys).toContain('+ and −, 0, 1')
+    expect(keys).toContain('Arrow keys')
   })
 })
 

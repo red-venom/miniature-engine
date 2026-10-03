@@ -1,4 +1,8 @@
-/* index.css — the look of the app: light theme, neutral greys, accent for selection and the primary button. */
+/* index.css — the look of the app: light theme, neutral greys, accent for selection and the primary button.
+   Every text colour has a contrast of 4.5:1 or more against every background it is drawn on (section 12, "Access"):
+   --muted is at least 4.6:1 even on --active, and text in the accent colour on --accent-soft is --accent-ink.
+   Every control that can take the focus shows a ring of --focus, 2 px wide and 2 px outside it, when the keyboard
+   moved the focus there. */
 
 :root {
   --bg: #f3f4f6;
@@ -6,12 +10,14 @@
   --border: #d9dde3;
   --border-strong: #b9c0ca;
   --text: #1b1f24;
-  --muted: #6b7280;
+  --muted: #5f6672;
   --hover: #eef0f3;
   --active: #e3e6eb;
   --accent: #2f6fde;
   --accent-soft: #e3ecfb;
+  --accent-ink: #1f56c0;
   --accent-text: #ffffff;
+  --focus: #1d4fc4;
   --guide: #d6249f;
   --danger: #b42318;
   --notice: #fff8e6;
@@ -20,6 +26,9 @@
   --shade: rgba(27, 31, 36, 0.4);
   --dot: #cfd3d9;
   --swatch-edge: #8a919c;
+  --shadow: rgba(0, 0, 0, 0.12);
+  --shadow-drawer: rgba(0, 0, 0, 0.16);
+  --shadow-dialog: rgba(0, 0, 0, 0.2);
   --canvas: #ffffff;
   --ink: #111111;
   --radius: 6px;
@@ -70,7 +79,7 @@ textarea {
 button {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   height: 32px;
   padding: 0 8px;
   border: 1px solid var(--border-strong);
@@ -93,15 +102,16 @@ button[aria-pressed='true'],
 button[aria-checked='true'] {
   background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
 }
+/* Darker on hover, never lighter: white text keeps its contrast. */
 button.primary:hover {
-  filter: brightness(1.08);
+  filter: brightness(0.92);
 }
 button.icon-button {
   width: 32px;
@@ -115,9 +125,14 @@ button.small {
 button.danger {
   color: var(--danger);
 }
+/* The focus ring: clear on white, on the grey panels and round the blue primary button (the 2 px gap shows the bar). */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }
 .icon {
   flex: none;
@@ -206,18 +221,18 @@ button.danger {
 }
 .popover {
   position: absolute;
-  top: 36px;
+  top: 40px;
   left: 0;
   z-index: 40;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   min-width: 200px;
   padding: 8px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px var(--shadow);
 }
 .popover.right {
   left: auto;
@@ -230,7 +245,7 @@ button.danger {
 .menu-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
 }
 
 /* ---- panels */
@@ -263,7 +278,14 @@ button.danger {
 }
 .tabs [role='tab'][aria-selected='true'] {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
+}
+/* The content of the chosen tab fills the rest of the panel. */
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 .tab-title {
   font-weight: 600;
@@ -531,7 +553,12 @@ button.swatch {
 .canvas.typing {
   cursor: text;
 }
-/* The text box of a label: the text as typed, in the label's font and size, over the canvas at its text anchor. */
+/* The canvas takes the focus (a press, Enter in the search box): its ring is drawn inside it. */
+.canvas:focus-visible {
+  outline-offset: -2px;
+}
+/* The text box of a label: the text as typed, in the label's font and size, over the canvas at its text anchor. It
+   always has the focus while it is open, and shows the focus ring. */
 .canvas .text-box {
   position: absolute;
   z-index: 2;
@@ -545,8 +572,6 @@ button.swatch {
   overflow: hidden;
   white-space: pre;
   user-select: text;
-  outline: none;
-  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .canvas.panning {
   cursor: grab;
@@ -565,6 +590,12 @@ button.swatch {
   fill: var(--panel);
   stroke: var(--accent);
   stroke-width: 1.5;
+}
+/* On a coarse pointer, a transparent circle 28 px across under each handle: the area a finger can hit. */
+.overlay .handle-hit {
+  pointer-events: all;
+  fill: transparent;
+  stroke: none;
 }
 .overlay .handle.level {
   cursor: ns-resize;
@@ -655,6 +686,11 @@ button.swatch {
   min-width: 80px;
   text-align: right;
 }
+/* "Download did not start?": 20 px high, so that its focus ring fits inside the bar. */
+.statusbar button.link {
+  height: 20px;
+  outline-offset: 0;
+}
 
 /* ---- dialog */
 
@@ -674,7 +710,7 @@ button.swatch {
   padding: 16px 24px 24px;
   background: var(--panel);
   border-radius: var(--radius);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 48px var(--shadow-dialog);
 }
 .dialog-head {
   display: flex;
@@ -723,7 +759,7 @@ button.link {
   padding: 0;
   border: none;
   background: none;
-  color: var(--accent);
+  color: var(--accent-ink);
   text-decoration: underline;
 }
 button.link:hover {
@@ -846,7 +882,7 @@ button.link:hover {
   background: var(--notice);
   border: 1px solid var(--notice-edge);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px var(--shadow);
 }
 .banner-head {
   display: flex;
@@ -875,7 +911,56 @@ button.link:hover {
 .chip {
   height: 28px;
   padding: 0 8px;
-  border-radius: 14px;
+  border-radius: var(--radius);
+}
+
+/* ---- the card on the canvas of an empty diagram (section 12, "First run") */
+
+.empty-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+  text-align: center;
+  cursor: default;
+}
+.empty-card h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+.empty-templates {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.empty-template {
+  flex-direction: column;
+  width: 136px;
+  height: auto;
+  padding: 8px;
+  white-space: normal;
+  text-align: center;
+}
+.empty-template .thumb {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--canvas);
+}
+.empty-card .muted {
+  margin: 16px 0 0;
+}
+.nowrap {
+  white-space: nowrap;
 }
 
 /* ---- narrow windows: the panels become drawers */
@@ -893,8 +978,9 @@ button.link:hover {
   bottom: 24px;
   width: 280px;
   z-index: 30;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-  transform: translateX(-100%);
+  box-shadow: 0 8px 24px var(--shadow-drawer);
+  /* A shut drawer goes 32 px further than its width, so that its shadow does not show at the edge of the canvas. */
+  transform: translateX(calc(-100% - 32px));
   transition: transform 0.15s;
 }
 .app.narrow .library {
@@ -902,7 +988,7 @@ button.link:hover {
 }
 .app.narrow .inspector {
   right: 0;
-  transform: translateX(100%);
+  transform: translateX(calc(100% + 32px));
 }
 .app.narrow .panel.open {
   transform: none;

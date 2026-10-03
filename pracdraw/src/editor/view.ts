@@ -1,6 +1,6 @@
 // view.ts — pan and zoom arithmetic. Pure.
 
-import { P, type Box, type Pt } from '../kernel/geom'
+import { P, dist, type Box, type Pt } from '../kernel/geom'
 import { ZOOM_MAX, ZOOM_MIN, type View } from './store'
 
 export const FIT_MARGIN = 40
@@ -18,6 +18,21 @@ export function zoomAt(v: View, zoom: number, at: Pt): View {
   const z = clampZoom(zoom)
   const w = toWorld(v, at)
   return { zoom: z, x: at.x - w.x * z, y: at.y - w.y * z }
+}
+
+/**
+ * Two fingers on the canvas (section 12, "Touch"). `from` is where they came down, `to` is where they are now, in screen
+ * px. The world point that was under the middle of the two fingers stays under their middle, and the zoom changes by
+ * the change in the distance between them. So a pinch zooms about its centre, and two fingers that move together pan.
+ */
+export function pinchView(v0: View, from: readonly [Pt, Pt], to: readonly [Pt, Pt]): View {
+  const mid = (a: Pt, b: Pt): Pt => P((a.x + b.x) / 2, (a.y + b.y) / 2)
+  const d0 = dist(from[0], from[1]),
+    d1 = dist(to[0], to[1])
+  const zoom = clampZoom(d0 > 0 && d1 > 0 ? (v0.zoom * d1) / d0 : v0.zoom)
+  const w = toWorld(v0, mid(from[0], from[1])),
+    c = mid(to[0], to[1])
+  return { zoom, x: c.x - w.x * zoom, y: c.y - w.y * zoom }
 }
 
 /** Show the whole box with a margin, as large as the canvas allows within the zoom limits. */

@@ -39,8 +39,9 @@ function ColourMenu({ layer, onPreset, onColour }: { layer: Layer; onPreset(p: P
     const away = (e: PointerEvent) => {
       if (!box.current?.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('pointerdown', away)
-    return () => document.removeEventListener('pointerdown', away)
+    // Captured, so that a press that goes no further (in the text box of a label) still shuts the list.
+    document.addEventListener('pointerdown', away, true)
+    return () => document.removeEventListener('pointerdown', away, true)
   }, [open])
   const close = () => {
     setOpen(false)

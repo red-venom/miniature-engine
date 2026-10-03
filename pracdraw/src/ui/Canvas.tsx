@@ -2,8 +2,13 @@
 // box, handles, marquee, snap guides, the connector being drawn, the leader of a label being made) in a separate SVG
 // layer above the diagram, and the text box of a label. Hits come from the DOM. A move snaps with `snap` from
 // src/model/snap.ts.
+//
+// Pointer events only (section 12, "Touch"): a finger and a pen work as the mouse does. Two fingers pinch to zoom
+// about their centre and pan; a double tap is a double-click; on a coarse pointer every handle has a hit area 28 px
+// across. The canvas takes the focus when it is pressed, so the keys work on it and a field that was typed in commits.
+// An empty diagram shows the card of the first run.
 
-import { useEffect, useRef, type DragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, type DragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { P, type Box, type Pt } from '../kernel/geom'
 import {
   addPresetAt,
@@ -11,6 +16,7 @@ import {
   clearSelection,
   commitText,
   draftAdd,
+  draftCancel,
   draftFinish,
   draftHover,
   editLabel,
@@ -28,7 +34,8 @@ import { filledAt, surfaces } from '../editor/level'
 import { measureText } from '../editor/measure'
 import { cachedNodes } from '../editor/nodes'
 import { useEditor, type Draft, type Gesture, type TextEdit, type Tool, type View } from '../editor/store'
-import { screenBox, toScreen, toWorld, zoomAt } from '../editor/view'
+import { COARSE, HIT_PX, isDoubleTap, isTap, type Tap } from '../editor/touch'
+import { pinchView, screenBox, toScreen, toWorld, zoomAt } from '../editor/view'
 import { boxCentre, boxesTouch, itemBox, itemsBox, labelBox, labelTarget } from '../model/bounds'
 import { duplicateItems, newId, rotateItems, setRotation, setSize } from '../model/commands'
 import { CONNECTOR_PRESETS, insertPoint, isDrawable, makeConnector, movePoint } from '../model/connectors'
@@ -42,8 +49,10 @@ import { NodeView } from '../render/NodeView'
 import { connectorNode, labelNode } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { ResizeMode } from '../symbols/types'
-import { DRAG_TYPE, PRESET_DRAG_TYPE } from './constants'
+import { CANVAS_ID, DRAG_TYPE, HINT_ID, PRESET_DRAG_TYPE } from './constants'
+import { EmptyState } from './EmptyState'
 import { TextBox } from './TextBox'
+import { useMedia } from './useMedia'
 
 const HANDLE = 8
 /** A move of the Select tool starts after this many screen px. */
@@ -60,8 +69,13 @@ type Drag =
    */
   | { kind: 'move'; start: Pt; ids: Id[]; alt: boolean; moving: boolean; base: Doc; last?: string }
   | { kind: 'marquee'; start: Pt; keep: Id[] }
-  | { kind: 'resize'; id: Id; handle: HandleId }
-  | { kind: 'rotate'; ids: Id[]; centre: Pt; start: number }
+  /**
+   * A resize handle. `grab` is from where it was pressed to the handle, in world units: a handle pressed off its
+   * centre (a finger in its hit area) keeps that offset, so the corner does not jump to the pointer.
+   */
+  | { kind: 'resize'; id: Id; handle: HandleId; grab: Pt }
+  /** The rotate handle. `turn`, for one item: its rotation less the pointer's angle at the press, for the same reason. */
+  | { kind: 'rotate'; ids: Id[]; centre: Pt; start: number; turn: number }
   | { kind: 'level'; id: Id; cavity: string; dy: number } // dy: from the pointer to the surface, so that the surface does not jump
   /**
    * A press with a connector tool (section 10). `p` is where a click puts its point; `fresh` is true when the press
@@ -135,6 +149,16 @@ export function Canvas() {
    * double-click, the point goes again: the double-click adds its point once (section 10).
    */
   const released = useRef(false)
+  /** The fingers that are down on the canvas: where each one is, in screen px from the canvas origin, by pointer id. */
+  const touches = useRef(new Map<number, Pt>())
+  /** Two fingers on the canvas: their ids, where they came down, and the view then. */
+  const pinch = useRef<{ ids: readonly [number, number]; from: readonly [Pt, Pt]; view0: View } | null>(null)
+  /** Where the last press of a finger or a pen went down (page px), to tell a tap from a drag. */
+  const press = useRef<{ type: string; at: Pt } | null>(null)
+  /** The last tap of a finger or a pen: a second tap soon after and near it is a double tap. */
+  const lastTap = useRef<Tap | null>(null)
+  /** The kind of pointer that last pressed the canvas. A dblclick that follows taps is ignored: the double tap did it. */
+  const lastType = useRef('mouse')
   const doc = useEditor((s) => s.doc)
   const view = useEditor((s) => s.view)
   const selection = useEditor((s) => s.selection)
@@ -195,14 +219,53 @@ export function Canvas() {
     return pointFor(s.doc, wp, prev ? [prev] : [], s.view.zoom, s.prefs.snap, e)
   }
 
+  const capture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      // The pointer is already gone.
+    }
+  }
+
+  /**
+   * The second finger: the pinch begins. What the first finger began goes back (a move, a marquee, the first point of a
+   * connector, a label): two fingers only zoom and pan.
+   */
+  const startPinch = () => {
+    const s = useEditor.getState()
+    const d = drag.current
+    drag.current = null
+    if (s.gesture) s.cancelGesture()
+    if (d?.kind === 'draw' && d.fresh) draftCancel()
+    const [[ia, a], [ib, b]] = [...touches.current]
+    pinch.current = { ids: [ia, ib], from: [a, b], view0: s.view }
+    press.current = null
+    lastTap.current = null
+  }
+
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.button !== 1) return
+    lastType.current = e.pointerType
+    if (e.pointerType === 'touch') {
+      touches.current.set(e.pointerId, screenPt(e))
+      // A third finger does nothing; a second one starts the pinch.
+      if (pinch.current || touches.current.size > 2) return
+      if (touches.current.size === 2) {
+        startPinch()
+        capture(e)
+        return
+      }
+    }
+    press.current = { type: e.pointerType, at: P(e.clientX, e.clientY) }
+    // The press takes the focus to the canvas: a field of the inspector or the text box that has the focus loses it, and
+    // commits what was typed, before the press changes anything. From now on the keys act on the canvas.
+    if (document.activeElement !== e.currentTarget) e.currentTarget.focus({ preventScroll: true })
     // A press outside the text box finishes the text (the box's own presses do not reach the canvas). The tool is then
     // Select, and the press goes on as a press of the Select tool.
     if (useEditor.getState().textEdit) commitText()
     const s = useEditor.getState()
     if (s.gesture) return
-    e.currentTarget.setPointerCapture(e.pointerId)
+    capture(e)
     const sp = screenPt(e),
       wp = toWorld(s.view, sp)
     if (e.button === 1 || space.current) {
@@ -253,11 +316,15 @@ export function Canvas() {
         s.beginGesture('level')
       } else if (handle === 'rotate') {
         const one = s.selection.length === 1 ? s.doc.items[s.selection[0]] : null
-        const centre = one && (one.type === 'symbol' || one.type === 'shape') ? P(one.x, one.y) : boxCentre(itemsBox(s.doc, s.selection, measureText)!)
-        drag.current = { kind: 'rotate', ids: s.selection, centre, start: rotationTo(centre, wp) }
+        const turns = one && (one.type === 'symbol' || one.type === 'shape') ? one : null
+        const centre = turns ? P(turns.x, turns.y) : boxCentre(itemsBox(s.doc, s.selection, measureText)!)
+        const start = rotationTo(centre, wp)
+        drag.current = { kind: 'rotate', ids: s.selection, centre, start, turn: turns ? turns.rot - start : 0 }
         s.beginGesture('rotate')
       } else {
-        drag.current = { kind: 'resize', id: s.selection[0], handle }
+        const it = s.doc.items[s.selection[0]]
+        const at = it && (it.type === 'symbol' || it.type === 'shape') ? handlePoint(it, handle) : wp
+        drag.current = { kind: 'resize', id: s.selection[0], handle, grab: P(at.x - wp.x, at.y - wp.y) }
         s.beginGesture('resize')
       }
       e.preventDefault()
@@ -287,6 +354,15 @@ export function Canvas() {
   }
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (touches.current.has(e.pointerId)) touches.current.set(e.pointerId, screenPt(e))
+    const p = pinch.current
+    if (p) {
+      // The world point under the middle of the two fingers stays under it; their distance sets the zoom.
+      const a = touches.current.get(p.ids[0]),
+        b = touches.current.get(p.ids[1])
+      if (p.ids.includes(e.pointerId) && a && b) useEditor.getState().setView(pinchView(p.view0, p.from, [a, b]))
+      return
+    }
     const d = drag.current
     const s = useEditor.getState()
     const sp = screenPt(e),
@@ -343,12 +419,13 @@ export function Canvas() {
         const it = base.items[d.id]
         const how = resizeOf(it)
         if (!how || (it.type !== 'symbol' && it.type !== 'shape')) return
-        s.preview(setSize(base, d.id, resizeWith(it, how.mode, how.min, d.handle, wp, e.shiftKey)))
+        s.preview(setSize(base, d.id, resizeWith(it, how.mode, how.min, d.handle, P(wp.x + d.grab.x, wp.y + d.grab.y), e.shiftKey)))
         return
       }
       case 'rotate': {
         const one = d.ids.length === 1 ? base.items[d.ids[0]] : null
-        if (one && (one.type === 'symbol' || one.type === 'shape')) s.preview(setRotation(base, one.id, snapAngle(rotationTo(d.centre, wp), e.shiftKey)))
+        if (one && (one.type === 'symbol' || one.type === 'shape'))
+          s.preview(setRotation(base, one.id, snapAngle(rotationTo(d.centre, wp) + d.turn, e.shiftKey)))
         else s.preview(rotateItems(base, d.ids, snapAngle(rotationTo(d.centre, wp) - d.start, e.shiftKey), d.centre))
         return
       }
@@ -419,10 +496,45 @@ export function Canvas() {
   }
 
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    touches.current.delete(e.pointerId)
+    // A finger of the pinch comes up: the pinch ends. The other finger does nothing until it comes up too.
+    if (pinch.current) {
+      if (pinch.current.ids.includes(e.pointerId)) pinch.current = null
+      return
+    }
     const d = drag.current
     if (!d) return
     drag.current = null
-    e.currentTarget.releasePointerCapture(e.pointerId)
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // The pointer is already gone.
+    }
+    finish(d, e)
+    if (e.type === 'pointerup') tapped(e)
+  }
+
+  /**
+   * A finger or a pen that comes up where it went down has tapped. A second tap soon after the first and near it is a
+   * double tap: it does what a double-click does. (A mouse makes its own dblclick.)
+   */
+  const tapped = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const down = press.current
+    press.current = null
+    if (e.pointerType === 'mouse' || !down || down.type !== e.pointerType) return
+    const tap: Tap = { t: e.timeStamp, p: P(e.clientX, e.clientY) }
+    if (!isTap(down.at, tap.p)) {
+      lastTap.current = null
+      return
+    }
+    if (isDoubleTap(lastTap.current, tap)) {
+      lastTap.current = null
+      doubleClick(e.clientX, e.clientY)
+    } else lastTap.current = tap
+  }
+
+  /** The end of a press of one pointer: what its drag does on release. */
+  const finish = (d: Drag, e: ReactPointerEvent<HTMLDivElement>) => {
     const s = useEditor.getState()
     switch (d.kind) {
       case 'draw':
@@ -463,7 +575,8 @@ export function Canvas() {
     }
   }
 
-  const onDoubleClick = (e: ReactMouseEvent<HTMLDivElement>) => {
+  /** A double-click of the mouse, or a double tap, at a page point. */
+  const doubleClick = (x: number, y: number) => {
     const s = useEditor.getState()
     // A double-click finishes the connector being drawn. Its first click has already placed its point, so a point that
     // its second click placed goes again.
@@ -475,14 +588,19 @@ export function Canvas() {
     if (s.tool !== 'select' || s.textEdit) return
     // A double-click on a square handle deletes that point. The event can be aimed at the canvas, which captured the
     // pointer, so the handle is found under the pointer.
-    const el = document.elementsFromPoint(e.clientX, e.clientY).find((q) => q.getAttribute('data-handle') === 'point')
+    const el = document.elementsFromPoint(x, y).find((q) => q.getAttribute('data-handle') === 'point')
     if (el && s.selection.length === 1) {
       removePoint(s.selection[0], Number(el.getAttribute('data-index')))
       return
     }
     // A double-click on a label edits its text (section 11).
-    const label = labelAt(e.clientX, e.clientY, s.doc)
+    const label = labelAt(x, y, s.doc)
     if (label) editLabel(label)
+  }
+
+  const onDoubleClick = (e: ReactMouseEvent<HTMLDivElement>) => {
+    // After taps, the browser's dblclick comes too late and twice over: the double tap has done it.
+    if (lastType.current === 'mouse') doubleClick(e.clientX, e.clientY)
   }
 
   const onPointerLeave = () => {
@@ -521,8 +639,13 @@ export function Canvas() {
   return (
     <div
       ref={ref}
+      id={CANVAS_ID}
       className={tool === 'select' ? 'canvas' : tool === 'text' ? 'canvas typing' : 'canvas drawing'}
       style={style}
+      tabIndex={0}
+      role="application"
+      aria-label="Canvas"
+      aria-describedby={HINT_ID}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -539,6 +662,7 @@ export function Canvas() {
       </svg>
       <Overlay doc={doc} selection={selection} view={view} gesture={gesture} tool={tool} textEdit={textEdit} />
       {textEdit && <TextBox edit={textEdit} view={view} doc={doc} />}
+      <EmptyState />
     </div>
   )
 }
@@ -596,6 +720,32 @@ function SnapGuides({ guides, view }: { guides: readonly SnapGuide[]; view: View
       })}
     </>
   )
+}
+
+/** A handle, for its hit area on a coarse pointer: its centre (screen px) and the attributes that a press reads. */
+interface HitSpot {
+  key: string
+  p: Pt
+  handle: string
+  index?: number
+  cavity?: string
+}
+
+/**
+ * The hit area of a handle on a coarse pointer such as a finger (section 12, "Touch"): a transparent circle 28 px
+ * across, centred on the handle, under every handle. A press on it is a press on the handle.
+ */
+function HitArea({ spot }: { spot: HitSpot }) {
+  return (
+    <circle className="handle-hit" data-handle={spot.handle} data-index={spot.index} data-cavity={spot.cavity} cx={spot.p.x} cy={spot.p.y} r={HIT_PX / 2} />
+  )
+}
+
+/** The handles of a selected connector, for their hit areas: the middle of each segment, then each point. */
+function connectorSpots(it: ConnectorItem, view: View): HitSpot[] {
+  const pts = it.points.map((p) => toScreen(view, p))
+  const mids = pts.slice(1).map((b, i): HitSpot => ({ key: `mid${i}`, p: P((pts[i].x + b.x) / 2, (pts[i].y + b.y) / 2), handle: 'mid', index: i }))
+  return [...mids, ...pts.map((p, i): HitSpot => ({ key: `point${i}`, p, handle: 'point', index: i }))]
 }
 
 /**
@@ -721,7 +871,10 @@ function Overlay({
   textEdit: TextEdit | null
 }) {
   const draft = useEditor((s) => s.draft)
-  const kids = []
+  const coarse = useMedia(COARSE)
+  const kids: ReactNode[] = []
+  /** The handles shown, for their hit areas on a coarse pointer. */
+  const spots: HitSpot[] = []
   if (gesture?.marquee) {
     const m = screenBox(view, gesture.marquee)
     kids.push(<rect key="marquee" className="marquee" x={m.x0} y={m.y0} width={m.x1 - m.x0} height={m.y1 - m.y0} />)
@@ -737,12 +890,23 @@ function Overlay({
     if (!busy) {
       // The level handles first, so that a resize handle on the same spot stays on top and can still be grabbed.
       if (one.type === 'symbol')
-        for (const sf of surfaces(one)) kids.push(<LevelHandle key={`level-${sf.cavity}`} cavity={sf.cavity} p={toScreen(view, sf.right)} />)
-      for (const h of handlesFor(how.mode)) kids.push(<Handle key={h} id={h} p={toScreen(view, handlePoint(one, h))} />)
-      kids.push(<RotateHandle key="rotate" from={toScreen(view, handlePoint(one, 'n'))} to={toScreen(view, rotatePoint(one, ROTATE_GAP / view.zoom))} />)
+        for (const sf of surfaces(one)) {
+          const p = toScreen(view, sf.right)
+          kids.push(<LevelHandle key={`level-${sf.cavity}`} cavity={sf.cavity} p={p} />)
+          spots.push({ key: `level-${sf.cavity}`, p: P(p.x - LEVEL.w / 2, p.y), handle: 'level', cavity: sf.cavity })
+        }
+      for (const h of handlesFor(how.mode)) {
+        const p = toScreen(view, handlePoint(one, h))
+        kids.push(<Handle key={h} id={h} p={p} />)
+        spots.push({ key: h, p, handle: h })
+      }
+      const r = toScreen(view, rotatePoint(one, ROTATE_GAP / view.zoom))
+      kids.push(<RotateHandle key="rotate" from={toScreen(view, handlePoint(one, 'n'))} to={r} />)
+      spots.push({ key: 'rotate', p: r, handle: 'rotate' })
     }
   } else if (one && one.type === 'connector') {
     kids.push(<ConnectorHandles key="connector" it={one} view={view} busy={busy} />)
+    if (!busy) spots.push(...connectorSpots(one, view))
   } else if (one && one.type === 'label') {
     // One label: a box round what is drawn at its text anchor, and a round handle on its leader end. A label does not
     // turn, so it has no rotate handle.
@@ -750,14 +914,22 @@ function Overlay({
       const s = screenBox(view, labelBox(doc, one, measureText))
       kids.push(<rect key="box" className="selection" x={s.x0} y={s.y0} width={s.x1 - s.x0} height={s.y1 - s.y0} />)
       const t = labelTarget(doc, one)
-      if (t && !busy) kids.push(<TargetHandle key="target" p={toScreen(view, t)} />)
+      if (t && !busy) {
+        const p = toScreen(view, t)
+        kids.push(<TargetHandle key="target" p={p} />)
+        spots.push({ key: 'target', p, handle: 'target' })
+      }
     }
   } else if (selection.length) {
     const b = itemsBox(doc, selection, measureText)
     if (b) {
       const s = screenBox(view, b)
       kids.push(<rect key="box" className="selection" x={s.x0} y={s.y0} width={s.x1 - s.x0} height={s.y1 - s.y0} />)
-      if (!busy) kids.push(<RotateHandle key="rotate" from={P((s.x0 + s.x1) / 2, s.y0)} to={P((s.x0 + s.x1) / 2, s.y0 - ROTATE_GAP)} />)
+      if (!busy) {
+        const r = P((s.x0 + s.x1) / 2, s.y0 - ROTATE_GAP)
+        kids.push(<RotateHandle key="rotate" from={P((s.x0 + s.x1) / 2, s.y0)} to={r} />)
+        spots.push({ key: 'rotate', p: r, handle: 'rotate' })
+      }
     }
   }
   if (gesture?.anchor) kids.push(<Guide key="anchor" p={toScreen(view, gesture.anchor)} />)
@@ -767,6 +939,7 @@ function Overlay({
   if (draft) kids.push(<DraftView key="draft" draft={draft} view={view} settings={doc.settings} />)
   return (
     <svg className="overlay" width="100%" height="100%" aria-hidden="true">
+      {coarse && spots.map((spot) => <HitArea key={`hit-${spot.key}`} spot={spot} />)}
       {kids}
     </svg>
   )

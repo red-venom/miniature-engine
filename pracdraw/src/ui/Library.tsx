@@ -1,18 +1,23 @@
-// Library.tsx — the left panel: Apparatus (search, Recent, one section for each pack) and Templates.
+// Library.tsx — the left panel: Apparatus (search, Recent, one section for each pack) and Templates. The two tabs
+// move with the arrow keys. Enter in the search box adds the first result and gives the focus to the canvas, where the
+// arrow keys move the new item at once.
 
-import { useMemo, useState, type DragEvent } from 'react'
+import { useId, useMemo, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { addPresetAt, addSymbolAt, insertTemplateAt } from '../editor/actions'
 import { PACKS, PRESET_GROUP, searchPresets, searchSymbols } from '../editor/search'
 import { useEditor } from '../editor/store'
+import { templateDoc } from '../editor/thumbs'
 import { CONNECTOR_PRESETS, type ConnectorPreset } from '../model/connectors'
 import { SYMBOLS, symbolDef } from '../symbols/registry'
-import type { Doc } from '../model/types'
 import type { SymbolDef } from '../symbols/types'
 import { TEMPLATES } from '../templates'
 import type { TemplateDef } from '../templates/types'
 import { DocThumbnail, PresetThumbnail, SymbolThumbnail } from './Thumbnail'
 import { DRAG_TYPE, PRESET_DRAG_TYPE, SEARCH_ID } from './constants'
 import { icons } from './icons'
+import { RadioSwitch } from './RadioSwitch'
+
+export type LibraryTab = 'apparatus' | 'templates'
 
 function Tile({ def }: { def: SymbolDef }) {
   const onDragStart = (e: DragEvent) => {
@@ -54,7 +59,7 @@ function Tiles({ defs, presets = [] }: { defs: SymbolDef[]; presets?: readonly C
   )
 }
 
-function Apparatus() {
+function Apparatus({ onAdded }: { onAdded?(): void }) {
   const [query, setQuery] = useState('')
   const recent = useEditor((s) => s.prefs.recent)
   const results = useMemo(() => searchSymbols(query), [query])
@@ -77,6 +82,7 @@ function Apparatus() {
               if (results.length) addSymbolAt(results[0].id)
               else addPresetAt(presets[0])
               e.preventDefault()
+              onAdded?.()
             }
             if (e.key === 'Escape') {
               setQuery('')
@@ -122,17 +128,6 @@ function Apparatus() {
   )
 }
 
-/** Each template's document, built once: `build` is pure, so the thumbnail never changes. */
-const built = new Map<string, Doc>()
-function templateDoc(tpl: TemplateDef): Doc {
-  let doc = built.get(tpl.id)
-  if (!doc) {
-    doc = tpl.build()
-    built.set(tpl.id, doc)
-  }
-  return doc
-}
-
 /**
  * A template card (section 12): a thumbnail, the title and the practical references. A click inserts the template:
  * into an empty diagram it becomes the diagram and gives it its title; otherwise its items are added at the centre of
@@ -149,20 +144,14 @@ function TemplateCard({ tpl }: { tpl: TemplateDef }) {
 }
 
 /** The filter chips of the gallery. */
-const GROUPS = ['All', 'General', 'Chemistry', 'Biology', 'Physics'] as const
 type TemplateFilter = 'All' | TemplateDef['group']
+const GROUPS = (['All', 'General', 'Chemistry', 'Biology', 'Physics'] as const).map((g) => ({ value: g, label: g }))
 
 function Templates({ group, setGroup }: { group: TemplateFilter; setGroup(g: TemplateFilter): void }) {
   const shown = group === 'All' ? TEMPLATES : TEMPLATES.filter((t) => t.group === group)
   return (
     <>
-      <div className="chips" role="radiogroup" aria-label="Template group">
-        {GROUPS.map((g) => (
-          <button key={g} type="button" role="radio" className="chip" aria-checked={g === group} onClick={() => setGroup(g)}>
-            {g}
-          </button>
-        ))}
-      </div>
+      <RadioSwitch className="chips" buttonClassName="chip" label="Template group" value={group} options={GROUPS} onChange={setGroup} />
       <div className="panel-scroll">
         {shown.length ? (
           <div className="cards">
@@ -178,23 +167,62 @@ function Templates({ group, setGroup }: { group: TemplateFilter; setGroup(g: Tem
   )
 }
 
-export function Library({ open, onClose }: { open: boolean; onClose(): void }) {
-  const [tab, setTab] = useState<'apparatus' | 'templates'>('apparatus')
+const TABS: { id: LibraryTab; label: string }[] = [
+  { id: 'apparatus', label: 'Apparatus' },
+  { id: 'templates', label: 'Templates' },
+]
+
+interface Props {
+  /** The drawer is open (narrow windows). */
+  open: boolean
+  /** The drawer is shut and off the screen: nothing in it can take the focus. */
+  shut?: boolean
+  tab: LibraryTab
+  setTab(tab: LibraryTab): void
+  onClose(): void
+  /** Enter in the search box added the first result. */
+  onAdded?(): void
+}
+
+/** The library. Its tab lives in the app, so that `/` can open the Apparatus tab before it focuses the search box. */
+export function Library({ open, shut, tab, setTab, onClose, onAdded }: Props) {
+  const id = useId()
   const [group, setGroup] = useState<TemplateFilter>('All')
+  // The ARIA tabs: Tab reaches the chosen tab, and the arrow keys move to the other one.
+  const onTabKey = (e: KeyboardEvent, i: number) => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+    if (!step || e.altKey || e.ctrlKey || e.metaKey) return
+    e.preventDefault()
+    e.stopPropagation()
+    const next = TABS[(i + step + TABS.length) % TABS.length].id
+    setTab(next)
+    document.getElementById(`${id}-${next}`)?.focus()
+  }
   return (
-    <aside className={`panel library${open ? ' open' : ''}`} aria-label="Library">
-      <div className="tabs" role="tablist">
-        <button type="button" role="tab" aria-selected={tab === 'apparatus'} onClick={() => setTab('apparatus')}>
-          Apparatus
-        </button>
-        <button type="button" role="tab" aria-selected={tab === 'templates'} onClick={() => setTab('templates')}>
-          Templates
-        </button>
+    <aside className={`panel library${open ? ' open' : ''}`} aria-label="Library" inert={shut}>
+      <div className="tabs" role="tablist" aria-label="Library">
+        {TABS.map((t, i) => (
+          <button
+            key={t.id}
+            id={`${id}-${t.id}`}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            aria-controls={`${id}-panel`}
+            tabIndex={tab === t.id ? 0 : -1}
+            onClick={() => setTab(t.id)}
+            onKeyDown={(e) => onTabKey(e, i)}
+          >
+            {t.label}
+          </button>
+        ))}
         <button type="button" className="icon-button drawer-close" aria-label="Close library" onClick={onClose}>
           {icons.close}
         </button>
       </div>
-      {tab === 'apparatus' ? <Apparatus /> : <Templates group={group} setGroup={setGroup} />}
+      <div className="tab-panel" id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
+        {tab === 'apparatus' ? <Apparatus onAdded={onAdded} /> : <Templates group={group} setGroup={setGroup} />}
+      </div>
     </aside>
   )
 }

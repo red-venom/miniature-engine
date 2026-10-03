@@ -17,11 +17,19 @@ export interface KeyContext {
 
 export const isMac = (): boolean => /Mac|iPhone|iPad/.test(navigator.platform) || /Mac OS/.test(navigator.userAgent)
 
-/** The fields of an event target that the key rules read. Read by name, so that the rules are unit-tested without a DOM. */
+/** The name of the key that goes with the letter keys: Cmd on a Mac, Ctrl elsewhere. */
+export const modName = (mac = isMac()): string => (mac ? 'Cmd' : 'Ctrl')
+
+/**
+ * The fields of an event target that the key rules read. Read by name, so that the rules are unit-tested without a DOM.
+ * `role` is the ARIA role: an element's `getAttribute('role')`, or a plain field in the tests.
+ */
 interface KeyTarget {
   tagName?: unknown
   type?: unknown
   isContentEditable?: unknown
+  role?: unknown
+  getAttribute?: unknown
 }
 
 /** The kinds of input that take typed text. */
@@ -29,10 +37,17 @@ const TEXT_INPUTS = new Set(['text', 'search', 'number', 'email', 'url', 'tel', 
 /** The kinds of input that Space works. */
 const SPACE_INPUTS = new Set(['checkbox', 'radio', 'color', 'button', 'submit', 'reset', 'file'])
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
+/** The ARIA roles whose arrow keys move within a group: the radio buttons of a switch, the tabs of the library. */
+const ARROW_ROLES = new Set(['radio', 'tab', 'slider', 'menuitem', 'menuitemradio', 'option'])
 
 const tagOf = (target: EventTarget | null): string => {
   const tag = (target as KeyTarget | null)?.tagName
   return typeof tag === 'string' ? tag.toUpperCase() : ''
+}
+const roleOf = (target: EventTarget | null): string => {
+  const t = target as KeyTarget | null
+  const role = typeof t?.getAttribute === 'function' ? (t.getAttribute as (name: string) => unknown).call(t, 'role') : t?.role
+  return typeof role === 'string' ? role : ''
 }
 const inputType = (target: EventTarget | null): string => {
   const type = (target as KeyTarget | null)?.type
@@ -52,14 +67,16 @@ export function inTextField(target: EventTarget | null): boolean {
 
 /**
  * True when the control with the focus uses this key (with no Ctrl, Cmd or Alt) itself: Space presses a button, ticks a
- * checkbox or opens a select; the arrow keys move a slider, a radio button or a select; Enter presses a button, a radio
- * button or a link, and belongs to whatever has the focus unless that is the page or the canvas (`onPage`). The editor
- * leaves those keys to the control, so that the inspector and the top bar still work from the keyboard.
+ * checkbox or opens a select; the arrow keys move a slider, a radio button (an input, or a button with the role radio,
+ * as in the label-mode switch), a tab or a select; Enter presses a button, a radio button or a link, and belongs to
+ * whatever has the focus unless that is the page or the canvas (`onPage`). The editor leaves those keys to the control,
+ * so that the inspector and the top bar still work from the keyboard.
  */
 export function controlKey(target: EventTarget | null, key: string): boolean {
   const tag = tagOf(target)
   if (key === ' ') return tag === 'BUTTON' || tag === 'SELECT' || tag === 'SUMMARY' || (tag === 'INPUT' && SPACE_INPUTS.has(inputType(target)))
-  if (ARROW_KEYS.has(key)) return tag === 'SELECT' || (tag === 'INPUT' && (inputType(target) === 'range' || inputType(target) === 'radio'))
+  if (ARROW_KEYS.has(key))
+    return tag === 'SELECT' || (tag === 'INPUT' && (inputType(target) === 'range' || inputType(target) === 'radio')) || ARROW_ROLES.has(roleOf(target))
   if (key === 'Enter') return !onPage(target)
   return false
 }
@@ -200,7 +217,7 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
   return false
 }
 
-/** The key table for the help dialog. */
+/** The key table for the help dialog, as on a PC. `keyTable` gives it for the computer in use. */
 export const KEY_TABLE: [string, string][] = [
   ['V, L, T, U, W, A, R, E', 'Tools: Select, Label, Text, Tube, Wire, Line and arrow, Rectangle, Ellipse'],
   ['Double-click or Enter; Backspace', 'Finish a connector; take back its last point'],
@@ -221,6 +238,13 @@ export const KEY_TABLE: [string, string][] = [
   ['+ and −, 0, 1', 'Zoom in and out, 100 %, fit'],
   ['/', 'Search the library'],
   ['Space+drag, middle button, wheel', 'Pan. Ctrl+wheel zooms'],
+  ['Two fingers (touch)', 'Pinch to zoom; move them together to pan. A double tap is a double-click'],
   ['Escape', 'Cancel the connector being drawn or the gesture, leave a drawing tool, or clear the selection'],
   ['?', 'Help'],
 ]
+
+/** The key table with Cmd for Ctrl on a Mac (section 12: on a Mac, Cmd replaces Ctrl). */
+export function keyTable(mac = isMac()): [string, string][] {
+  if (!mac) return KEY_TABLE
+  return KEY_TABLE.map(([key, what]) => [key.replace(/Ctrl/g, 'Cmd'), what.replace(/Ctrl/g, 'Cmd')])
+}
