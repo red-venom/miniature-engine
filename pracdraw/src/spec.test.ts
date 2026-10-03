@@ -51,7 +51,9 @@ describe('symbols match the catalogue', () => {
       expect(params.sort()).toEqual([...row.params].sort())
       // Label text at the default parameters, and whether "Label all" may label it.
       if (row.label) expect(labelText(def)).toBe(row.label)
-      else expect(def.label, `${def.id} sets a label that the catalogue does not list`).toBeUndefined()
+      // A row with no label may still have a label function (section 8, rule 11: hotPlate, chromatographyPaper), as long as it gives the
+      // default text at the default parameters.
+      else expect(labelText(def), `${def.id} sets a label that the catalogue does not list`).toBe(labelText({ ...def, label: undefined }))
       expect(def.autoLabel !== false).toBe(row.autoLabel !== false)
     })
   }
