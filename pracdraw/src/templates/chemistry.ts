@@ -192,8 +192,9 @@ const rateGasSyringe: TemplateDef = {
     stand.h = Math.round(-(toWorld(syringe, P(0, 1)).y - 25)) // the bench is at y = 0; the rod ends 25 u above the barrel
     standUnder(stand, clamp, 0)
     const nozzle = anchorWorld(syringe, 'nozzle')
-    // From just below the bung, up and across into the nozzle. The tube overlaps the nozzle, so that it hides the nozzle's end.
-    b.connector('glassTube', [v(hole.x, hole.y + 32), v(hole.x, nozzle.y, 12), v(nozzle.x + 8, nozzle.y)])
+    // From just below the bung, up and across into the nozzle. The tube runs 12 u into the nozzle, so that its white body hides
+    // the nozzle's end and the end of the clamp's arm, and the gas path shows open.
+    b.connector('glassTube', [v(hole.x, hole.y + 32), v(hole.x, nozzle.y, 12), v(nozzle.x + 12, nozzle.y)])
     const watch = b.near('stopwatch', flask, 'base', { dx: 330, dy: -33 })
     const top = toWorld(syringe, P(0, 1)).y
     b.label('clamp', nozzle.x - 20, top - 40, [clamp, 20, 1]) // the upper jaw, on the barrel's top wall
