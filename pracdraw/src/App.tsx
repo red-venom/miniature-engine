@@ -1,68 +1,96 @@
-// App.tsx — starter shell only. It shows the style reference and proves the three render back-ends.
-// Phase 2 replaces this file with the editor.
+// App.tsx — the editor: top bar, library, canvas, inspector, status bar (section 12 of the specification).
 
-import { useEffect, useMemo, useState } from 'react'
-import { create } from 'zustand'
-import { demoDoc, DEMO_SIZE } from './demo'
-import { canvasToBlob, renderCanvas } from './export/canvas'
-import { svgDocument } from './kernel/nodes'
-import type { Doc, DocSettings } from './model/types'
-import { NodeView } from './render/NodeView'
-import { docNodes } from './render/render'
+import { useEffect, useRef, useState } from 'react'
+import { docFromText, loadDoc } from './editor/actions'
+import { restoreAutosave, startAutosave } from './editor/autosave'
+import { handleKey } from './editor/keys'
+import { useEditor } from './editor/store'
+import { webHost } from './host/web'
+import { Canvas } from './ui/Canvas'
+import { HelpDialog } from './ui/HelpDialog'
+import { Inspector } from './ui/Inspector'
+import { Library } from './ui/Library'
+import { SEARCH_ID } from './ui/constants'
+import { StatusBar } from './ui/StatusBar'
+import { TopBar } from './ui/TopBar'
+import { useMedia } from './ui/useMedia'
 
-interface Store {
-  doc: Doc
-  set: (patch: Partial<DocSettings>) => void
-}
-const useStore = create<Store>((set) => ({
-  doc: demoDoc(),
-  set: (patch) => set((s) => ({ doc: { ...s.doc, settings: { ...s.doc.settings, ...patch } } })),
-}))
-
-declare global {
-  interface Window {
-    __starter: { png: (scale: number) => string; svg: () => string }
-  }
-}
-
-const MODES: DocSettings['labelMode'][] = ['text', 'blank', 'letters']
-const { w, h } = DEMO_SIZE
+const host = webHost
 
 export default function App() {
-  const doc = useStore((s) => s.doc)
-  const set = useStore((s) => s.set)
-  const [msg, setMsg] = useState('')
-  const nodes = useMemo(() => docNodes(doc), [doc])
-
-  // Test hooks for e2e/starter.spec.ts.
+  const [help, setHelp] = useState(false)
+  const [library, setLibrary] = useState(false)
+  const [inspector, setInspector] = useState(false)
+  const narrow = useMedia('(max-width: 1099px)')
+  const file = useRef<HTMLInputElement>(null)
+  const helpRef = useRef(help)
   useEffect(() => {
-    window.__starter = { png: (scale) => renderCanvas(nodes, w, h, scale, '#ffffff').toDataURL('image/png'), svg: () => svgDocument(nodes, w, h, '#ffffff') }
-  }, [nodes])
+    helpRef.current = help
+  }, [help])
 
-  const copy = async () => {
-    try {
-      // Give ClipboardItem a promise, so that the write starts inside the click (Safari needs this).
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': canvasToBlob(renderCanvas(nodes, w, h, 2, '#ffffff')) })])
-      setMsg('Copied')
-    } catch (e) {
-      setMsg('Copy failed: ' + (e as Error).message)
+  // The autosave: restore on start, then save 500 ms after each change.
+  useEffect(() => {
+    restoreAutosave(host)
+    return startAutosave(host)
+  }, [])
+
+  // The keys of section 12.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (helpRef.current) {
+        if (e.key === 'Escape') setHelp(false)
+        return
+      }
+      const done = handleKey(e, {
+        host,
+        focusSearch: () => {
+          setLibrary(true)
+          const el = document.getElementById(SEARCH_ID) as HTMLInputElement | null
+          el?.focus()
+          el?.select()
+        },
+        toggleHelp: () => setHelp((h) => !h),
+        openFile: () => file.current?.click(),
+      })
+      if (done) e.preventDefault()
     }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const onFile = async (f: File | undefined) => {
+    if (!f) return
+    const doc = docFromText(await f.text())
+    if (doc) loadDoc(doc)
+    else useEditor.getState().setStatus('Not a PracDraw file')
   }
 
   return (
-    <>
-      <div className="bar">
-        <strong>PracDraw starter</strong>
-        <button onClick={() => set({ mono: !doc.settings.mono })}>{doc.settings.mono ? 'Colour' : 'Photocopy-safe'}</button>
-        <button onClick={() => set({ labelMode: MODES[(MODES.indexOf(doc.settings.labelMode) + 1) % 3] })}>Labels: {doc.settings.labelMode}</button>
-        <button onClick={copy}>Copy PNG</button>
-        <span role="status">{msg}</span>
-      </div>
-      <svg id="stage" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        {nodes.map((n, i) => (
-          <NodeView key={n.t === 'g' && n.key ? n.key : i} n={n} />
-        ))}
-      </svg>
-    </>
+    <div className={`app${narrow ? ' narrow' : ''}`}>
+      <TopBar
+        host={host}
+        narrow={narrow}
+        onLibrary={() => setLibrary(!library)}
+        onInspector={() => setInspector(!inspector)}
+        onHelp={() => setHelp(true)}
+        onOpen={() => file.current?.click()}
+      />
+      <Library open={library} onClose={() => setLibrary(false)} />
+      <Canvas />
+      <Inspector open={inspector} onClose={() => setInspector(false)} />
+      <StatusBar />
+      {help && <HelpDialog onClose={() => setHelp(false)} />}
+      <input
+        ref={file}
+        type="file"
+        accept=".json,.svg,application/json,image/svg+xml"
+        hidden
+        aria-label="Open file"
+        onChange={(e) => {
+          void onFile(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+    </div>
   )
 }
