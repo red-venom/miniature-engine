@@ -179,7 +179,7 @@ const rateGasSyringe: TemplateDef = {
     const b = new DocBuilder('Rate of reaction: gas syringe')
     // The stand and its clamp are made first, so that they are drawn behind the syringe and the tube, and placed once those are.
     const stand = b.symbol('clampStand', { w: 100 })
-    const clamp = b.symbol('bossClamp', { w: 80, params: { grip: 44 } }) // the jaws open just wider than the 34 u barrel
+    const clamp = b.symbol('bossClamp', { w: 80, params: { grip: 38 } }) // the jaws touch the 34 u barrel
     const flask = b.at('conicalFlask', 'base', P(0, 0), {
       contents: { main: [lumps(0.1, GRANULES), liquid(0.3, COLOURLESS, { bubbles: 'many' })] },
     })
@@ -196,7 +196,7 @@ const rateGasSyringe: TemplateDef = {
     b.connector('glassTube', [v(hole.x, hole.y + 32), v(hole.x, nozzle.y, 12), v(nozzle.x + 8, nozzle.y)])
     const watch = b.near('stopwatch', flask, 'base', { dx: 330, dy: -33 })
     const top = toWorld(syringe, P(0, 1)).y
-    b.label('clamp', nozzle.x - 20, top - 40, [clamp, 20, -2]) // the upper jaw, just above the barrel's top wall
+    b.label('clamp', nozzle.x - 20, top - 40, [clamp, 20, 1]) // the upper jaw, on the barrel's top wall
     b.label('gas syringe', nozzle.x + 110, top - 40, [syringe, -40, 1])
     b.label('clamp stand', nozzle.x + 60, -60, [stand, -26, stand.h * 0.8])
     b.label('delivery tube', -90, -205, P(-3.5, -190))
@@ -372,7 +372,7 @@ const distillation: TemplateDef = {
     b.label('water out', 130, -318, [condenser, -83, 4])
     b.label('thermometer', -90, -380, [thermo, -4.5, 40])
     b.label('round-bottomed flask', -90, -140, [flask, -53, 80])
-    b.label('anti-bumping granules', -90, -90, [flask, -8, 145])
+    b.label('anti-bumping granules', -90, -90, [flask, -14.5, 145]) // the centre of the left-hand granule
     b.label('heating mantle', -90, -30, [mantle, -55, 80])
     b.label('Liebig condenser', 300, -290, [condenser, 60, 18])
     b.label('distillate', 480, -30, [collect, 15, 92])
@@ -717,8 +717,10 @@ const thermalDecomposition: TemplateDef = {
       contents: { main: [c2Powder(0.15, c2Preset.greenPowder)] },
     })
     const bung = b.on('bung', 'plug', tube, 'mouth', { rot: 80 })
-    // The clamp grips the neck, near the mouth, and is drawn in front of the sloping tube: behind it, the tube would hide the boss and arm. Its stand rises behind the tube.
-    const clamp = b.on('bossClamp', 'grip', tube, 'neck', { w: 70, params: { grip: 34 } })
+    // The clamp grips the neck, near the mouth. It is turned with the tube, so its jaws lie along the walls, and it is drawn
+    // behind the tube with its stand, as the condenser's clamp in distillation.
+    const clamp = b.on('bossClamp', 'grip', tube, 'neck', { w: 76, rot: -10, params: { grip: 38 } })
+    c2Behind(b.doc, clamp, tube)
     c2Stand(stand, clamp, anchorWorld(mat, 'under').y)
     // The rack stands on the bench 15 u to the right of the stand's base plate (75 + 15 + 60).
     const rack = b.on('testTubeRack', 'base', stand, 'base', { dx: 150, w: 120, params: { holes: 3 } })
@@ -729,7 +731,7 @@ const thermalDecomposition: TemplateDef = {
       lw = anchorWorld(limewater, 'mouth'),
       lb = anchorWorld(limewater, 'bottom')
     b.connector('glassTube', [v(inside.x, inside.y), v(out.x, out.y, 12), v(lw.x, out.y, 12), v(lw.x, lb.y - 6)]) // the outlet is below every bubble: gas leaves it and rises
-    b.label('clamp', -80, -270, [clamp, -26, 11])
+    b.label('clamp', -80, -270, [clamp, 20, 1]) // the upper jaw
     b.label('boiling tube', -80, -230, [tube, -17, 120])
     b.label('copper carbonate', -80, -190, [tube, 12, 167])
     b.label('Bunsen burner', -80, -52, [burner, -7, 75])

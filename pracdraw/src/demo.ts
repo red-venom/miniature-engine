@@ -43,7 +43,7 @@ export function demoDoc(): Doc {
     v(535, floor - 58),
   ])
   b.label('dilute HCl(aq)', 118, 262, [flask, -22, 112])
-  b.label('CaCO3 chips', 104, 352, [flask, -18, 143])
+  b.label('CaCO3 chips', 104, 352, [flask, -42, 145]) // the centre of the left-hand chip
   b.label('delivery tube', 290, 100, P(300, 118), { side: 'right' })
   b.label('34 cm3 of CO2', 600, 195, [cyl, 0, 140])
   b.label('100 cm3 measuring cylinder', 600, 228, [cyl, -18, 80])
