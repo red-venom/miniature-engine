@@ -6,6 +6,7 @@ import { toolHint } from '../editor/hints'
 import { itemName } from '../editor/names'
 import { useEditor } from '../editor/store'
 import type { Item } from '../model/types'
+import { HINT_ID } from './constants'
 
 export function StatusBar() {
   const doc = useEditor((s) => s.doc)
@@ -20,7 +21,9 @@ export function StatusBar() {
   const one = items.length === 1 ? items[0].type : null
   return (
     <footer className="statusbar">
-      <span className="hint">{toolHint(tool, { drawing, editing, connector: one === 'connector', label: one === 'label' })}</span>
+      <span className="hint" id={HINT_ID}>
+        {toolHint(tool, { drawing, editing, connector: one === 'connector', label: one === 'label' })}
+      </span>
       <span className="spacer" />
       <span className="selected" aria-live="polite">
         {selected}

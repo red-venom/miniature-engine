@@ -353,7 +353,8 @@ function DocumentFields({ doc }: { doc: Doc }) {
   )
 }
 
-export function Inspector({ open, onClose }: { open: boolean; onClose(): void }) {
+/** `shut`: the drawer is shut and off the screen (narrow windows), so nothing in it can take the focus. */
+export function Inspector({ open, shut, onClose }: { open: boolean; shut?: boolean; onClose(): void }) {
   const doc = useEditor((s) => s.doc)
   const selection = useEditor((s) => s.selection)
   const items = selection.map((id) => doc.items[id]).filter((it): it is Item => !!it)
@@ -374,7 +375,7 @@ export function Inspector({ open, onClose }: { open: boolean; onClose(): void })
       )
   }
   return (
-    <aside className={`panel inspector${open ? ' open' : ''}`} aria-label="Inspector">
+    <aside className={`panel inspector${open ? ' open' : ''}`} aria-label="Inspector" inert={shut}>
       <div className="tabs">
         <span className="tab-title">{items.length ? 'Selection' : 'Settings'}</span>
         <button type="button" className="icon-button drawer-close" aria-label="Close inspector" onClick={onClose}>

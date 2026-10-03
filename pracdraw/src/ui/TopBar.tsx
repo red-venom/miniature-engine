@@ -1,15 +1,18 @@
 // TopBar.tsx — title, tools, undo and redo, zoom, snap, photocopy-safe, label mode, files, Copy image, export, help.
 // Below FULL_BAR (1540 px) the secondary controls move into a "More" menu. Below 1100 px the panels become drawers.
+// Every control has a name, and works from the keyboard: Tab reaches each one, the label-mode switch moves with the
+// arrow keys, and the More menu opens with Enter or Space, keeps the focus in order and shuts with Escape.
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { useMedia } from './useMedia'
 import * as a from '../editor/actions'
 import { copyImage, save } from '../editor/files'
-import { TOOL_KEYS } from '../editor/keys'
+import { TOOL_KEYS, modName } from '../editor/keys'
 import { useEditor, type Tool } from '../editor/store'
 import type { Host } from '../host/host'
 import type { DocSettings } from '../model/types'
 import { icons } from './icons'
+import { RadioSwitch, type RadioOption } from './RadioSwitch'
 
 /** The tools of section 12, in the order of its table. */
 const TOOLS: { tool: Tool; label: string; icon: ReactNode }[] = [
@@ -26,31 +29,53 @@ const TOOLS: { tool: Tool; label: string; icon: ReactNode }[] = [
 /** A tool's key, for its tooltip. */
 const keyOf = (tool: Tool): string => (Object.keys(TOOL_KEYS).find((k) => TOOL_KEYS[k] === tool) ?? '').toUpperCase()
 
-const MODES: { value: DocSettings['labelMode']; label: string }[] = [
+const MODES: RadioOption<DocSettings['labelMode']>[] = [
   { value: 'text', label: 'Text' },
   { value: 'blank', label: 'Blank' },
   { value: 'letters', label: 'Letters' },
 ]
 
-function Menu({ label, icon, children, align }: { label: string; icon?: ReactNode; children: ReactNode; align?: 'right' }) {
+/**
+ * A button that shows and hides a panel of more controls below it (a disclosure). The panel follows the button in the
+ * Tab order. Choosing a control in it, a press outside it, the focus leaving it or Escape shuts it; when the focus was
+ * in it, the focus goes back to the button.
+ */
+function Menu({ label, children, align }: { label: string; children: ReactNode; align?: 'right' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const button = useRef<HTMLButtonElement>(null)
+  const panel = useId()
+  // A press anywhere else shuts it. The listener captures, so that a press that goes no further (on the card of an
+  // empty canvas, in a text box) still shuts it.
   useEffect(() => {
     if (!open) return
     const close = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false)
     }
-    window.addEventListener('pointerdown', close)
-    return () => window.removeEventListener('pointerdown', close)
+    window.addEventListener('pointerdown', close, true)
+    return () => window.removeEventListener('pointerdown', close, true)
   }, [open])
+  const shut = () => {
+    const inside = !!ref.current?.contains(document.activeElement)
+    setOpen(false)
+    if (inside) button.current?.focus()
+  }
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && open) {
+      e.stopPropagation()
+      shut()
+    }
+  }
+  const onBlur = (e: FocusEvent) => {
+    if (open && e.relatedTarget instanceof Node && !ref.current?.contains(e.relatedTarget)) setOpen(false)
+  }
   return (
-    <div className="menu" ref={ref}>
-      <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {icon}
+    <div className="menu" ref={ref} onKeyDown={onKeyDown} onBlur={onBlur}>
+      <button ref={button} type="button" aria-expanded={open} aria-controls={open ? panel : undefined} onClick={() => setOpen(!open)}>
         {label}
       </button>
       {open && (
-        <div className={`popover${align === 'right' ? ' right' : ''}`} role="menu" onClick={() => setOpen(false)}>
+        <div id={panel} className={`popover${align === 'right' ? ' right' : ''}`} role="group" aria-label={label} onClick={shut}>
           {children}
         </div>
       )}
@@ -88,6 +113,7 @@ function Title() {
       type="button"
       className="title"
       title="Rename"
+      aria-label={`Rename: ${title}`}
       onClick={() => {
         setText(title)
         setEditing(true)
@@ -101,6 +127,9 @@ function Title() {
 interface Props {
   host: Host
   narrow: boolean
+  /** Whether the drawers are open (narrow windows only). */
+  libraryOpen: boolean
+  inspectorOpen: boolean
   onLibrary(): void
   onInspector(): void
   onHelp(): void
@@ -116,7 +145,7 @@ interface Props {
  */
 export const FULL_BAR = 1540
 
-export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen, onExport }: Props) {
+export function TopBar({ host, narrow, libraryOpen, inspectorOpen, onLibrary, onInspector, onHelp, onOpen, onExport }: Props) {
   const compact = useMedia(`(max-width: ${FULL_BAR - 1}px)`)
   const tool = useEditor((s) => s.tool)
   const canUndo = useEditor((s) => s.past.length > 0)
@@ -125,6 +154,7 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen, o
   const snap = useEditor((s) => s.prefs.snap)
   const mono = useEditor((s) => s.doc.settings.mono)
   const labelMode = useEditor((s) => s.doc.settings.labelMode)
+  const mod = modName()
 
   const zoomControls = (
     <>
@@ -157,10 +187,10 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen, o
       <button type="button" onClick={a.newDiagram}>
         New
       </button>
-      <button type="button" onClick={onOpen} title="Open (Ctrl+O)">
+      <button type="button" onClick={onOpen} title={`Open (${mod}+O)`}>
         Open
       </button>
-      <button type="button" onClick={() => void save(host)} title="Save (Ctrl+S)">
+      <button type="button" onClick={() => void save(host)} title={`Save (${mod}+S)`}>
         Save
       </button>
     </>
@@ -179,7 +209,7 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen, o
   return (
     <header className={compact ? 'topbar' : 'topbar full'}>
       {narrow && (
-        <button type="button" className="icon-button" aria-label="Library" onClick={onLibrary}>
+        <button type="button" className="icon-button" aria-label="Library" aria-expanded={libraryOpen} onClick={onLibrary}>
           {icons.menu}
         </button>
       )}
@@ -200,26 +230,20 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen, o
         ))}
       </div>
       <div className="group switch">
-        <button type="button" className="icon-button" aria-label="Undo" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={a.undo}>
+        <button type="button" className="icon-button" aria-label="Undo" title={`Undo (${mod}+Z)`} disabled={!canUndo} onClick={a.undo}>
           {icons.undo}
         </button>
-        <button type="button" className="icon-button" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled={!canRedo} onClick={a.redo}>
+        <button type="button" className="icon-button" aria-label="Redo" title={`Redo (${mod}+Shift+Z)`} disabled={!canRedo} onClick={a.redo}>
           {icons.redo}
         </button>
       </div>
       {!compact && <div className="group">{zoomControls}</div>}
       {!compact && <div className="group">{toggles}</div>}
-      <div className="group switch" role="radiogroup" aria-label="Label mode">
-        {MODES.map((m) => (
-          <button key={m.value} type="button" role="radio" aria-checked={labelMode === m.value} onClick={() => a.settings({ labelMode: m.value })}>
-            {m.label}
-          </button>
-        ))}
-      </div>
+      <RadioSwitch className="group switch" label="Label mode" value={labelMode} options={MODES} onChange={(labelMode) => a.settings({ labelMode })} />
       {!compact && labelAll}
       <span className="spacer" />
       {!compact && <div className="group">{files}</div>}
-      <button type="button" className="primary" onClick={() => void copyImage(host)} title="Copy image: PNG at 2× (Ctrl+Shift+C)">
+      <button type="button" className="primary" onClick={() => void copyImage(host)} title={`Copy image: PNG at 2× (${mod}+Shift+C)`}>
         {icons.copy}
         Copy image
       </button>
@@ -238,7 +262,7 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen, o
         help
       )}
       {narrow && (
-        <button type="button" className="icon-button" aria-label="Inspector" title="Inspector" onClick={onInspector}>
+        <button type="button" className="icon-button" aria-label="Inspector" aria-expanded={inspectorOpen} title="Inspector" onClick={onInspector}>
           {icons.inspector}
         </button>
       )}
