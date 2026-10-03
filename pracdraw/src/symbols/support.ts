@@ -85,7 +85,8 @@ const benchLine: SymbolDef = {
     const x = w / 2,
       s = 10 / Math.SQRT2 // a hatch line 10 u long at 45 degrees
     let hatch = ''
-    for (let hx = s + ((x - s) % 8); hx <= x; hx += 8) hatch += line(hx, 0, hx - s, s) + line(-hx + s, 0, -hx, s)
+    // One run from the left end to the right at an 8 u pitch, so that every gap is 8 u. Each line stays inside the box.
+    for (let hx = -x + s; hx <= x; hx += 8) hatch += line(hx, 0, hx - s, s)
     return {
       prims: [
         { d: hatch, role: 'detail' },
@@ -263,6 +264,7 @@ const chromatographyPaper: SymbolDef = {
   id: 'chromatographyPaper',
   name: 'Chromatography paper',
   aliases: ['TLC plate', 'chromatogram'],
+  label: (p) => (bool(p.plate, false) ? 'TLC plate' : 'chromatography paper'),
   pack: 'support',
   size: { w: 50, h: 105 },
   resize: 'free',

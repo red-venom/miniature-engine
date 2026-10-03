@@ -33,6 +33,7 @@ const hotPlate: SymbolDef = {
   id: 'hotPlate',
   name: 'Hot plate',
   aliases: ['electric heater', 'hotplate', 'magnetic stirrer', 'stirrer hotplate'],
+  label: (p) => (bool(p.stirrer, false) ? 'magnetic stirrer' : 'hot plate'),
   pack: 'heating',
   size: { w: 150, h: 62 },
   resize: 'free',
