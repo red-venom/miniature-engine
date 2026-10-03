@@ -128,6 +128,38 @@ describe('contents', () => {
     expect(buildContents(cav, layers, opts(0)).some((p) => p.stroke && p.d.includes('Q'))).toBe(true)
     expect(buildContents(cav, [{ ...layers[0], meniscus: false }, layers[1]], opts(0)).some((p) => p.stroke && p.d.includes('Q'))).toBe(false)
   })
+  it('keeps a liquid in a narrow tube visible in photocopy-safe mode, from the level to the bottom', () => {
+    // A thermometer thread: 2.6 u wide, too narrow for a row of dashes. Upright, and turned 30°.
+    const thread = [[P(-1.3, 0), P(-1.3, 150), P(1.3, 150), P(1.3, 0)]]
+    for (const rot of [0, 30]) {
+      const o = { ...opts(rot, true) }
+      const b = bounds(thread[0].map((p) => xf(P(p.x, p.y - 75), rot)))
+      const level = b.y1 - 0.5 * (b.y1 - b.y0)
+      const prims = buildContents(thread, [{ kind: 'liquid', amount: 0.5, colour: '#d33333' }], o)
+      const ys = prims
+        .filter((p) => p.stroke)
+        .flatMap((p) =>
+          pathPolys(p.d)
+            .flat()
+            .map((q) => q.y),
+        )
+      expect(Math.min(...ys)).toBeCloseTo(level, 0) // the mark starts at the level, so the reading survives
+      expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(0.9 * (b.y1 - level))
+    }
+  })
+  it('adds no mark at the narrow tip of a round-bottomed tube in photocopy-safe mode', () => {
+    const tubeCav = [new Path().M(-12, 0).L(-12, 138).A(12, 12, 138, false).L(12, 0).Z().polys()[0]]
+    const prims = buildContents(tubeCav, [{ kind: 'liquid', amount: 0.5, colour: '#cfe8f7' }], { ...opts(0, true), pivot: P(0, 75) })
+    const ys = prims
+      .filter((p) => p.stroke && !/h7/.test(p.d))
+      .flatMap((p) =>
+        pathPolys(p.d)
+          .flat()
+          .map((q) => q.y),
+      )
+    // Only the surface line: nothing near the bottom of the tube (local y 150 = world y 75).
+    expect(Math.max(...ys)).toBeLessThan(60)
+  })
   it('uses no colour in photocopy-safe mode', () => {
     const prims = buildContents(
       cav,

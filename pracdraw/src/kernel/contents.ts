@@ -99,7 +99,10 @@ export function buildContents(cavity: Pt[][], layers: Layer[], o: ContentOpts): 
       const men = !!layer.meniscus && li === top && hi < FULL
       if (men) for (const [xa, xb] of surface) d += meniscusPatch(xa, xb, yTop)
       if (!o.mono) fills.push({ d, fill: layer.colour })
-      else marks.push({ d: dashRows(W, yTop, yFloor), stroke: ink, sw: 1 })
+      else {
+        marks.push({ d: dashRows(W, yTop, yFloor), stroke: ink, sw: 1 })
+        marks.push({ d: centreLines(W, yTop, yFloor), stroke: ink, sw: 1.25 })
+      }
       if (hi < FULL || !isLast) {
         const s = men
           ? surface.map(([xa, xb]) => `M${f(xa)} ${f(yTop - MENISCUS)}Q${f((xa + xb) / 2)} ${f(yTop + MENISCUS)} ${f(xb)} ${f(yTop - MENISCUS)}`).join('')
@@ -140,6 +143,44 @@ function dashRows(W: Pt[][], yTop: number, yBottom: number): string {
     }
   }
   return d
+}
+
+/** A span narrower than this holds no dash: a thermometer thread, a jet, a stem. */
+const NARROW = 2 * DASH.inset + DASH.len
+/** A narrow run shorter than this is the tip of a rounded bottom, not a tube: it gets no line. */
+const MIN_RUN = 6
+
+/**
+ * Photocopy-safe liquid in a span too narrow for a dash: one line down the centre of the span, from the surface to the
+ * bottom. Without it a thermometer or a burette jet would show no liquid, and its reading would be lost (rule S12).
+ */
+function centreLines(W: Pt[][], yTop: number, yBottom: number): string {
+  const step = 1.5
+  const runs: Pt[][] = []
+  let open: Pt[][] = [] // runs that reached the band above
+  for (let y0 = yTop; y0 < yBottom - 1e-6; y0 += step) {
+    const y1 = Math.min(yBottom, y0 + step),
+      next: Pt[][] = []
+    for (const [xa, xb] of scan(W, (y0 + y1) / 2)) {
+      if (xb - xa >= NARROW) continue
+      const c = (xa + xb) / 2
+      const run = open.find((r) => Math.abs(r[r.length - 1].x - c) <= (xb - xa) / 2 + step)
+      if (run) {
+        run.push(P(c, y1))
+        open = open.filter((r) => r !== run)
+        next.push(run)
+      } else {
+        const r = [P(c, y0), P(c, y1)]
+        runs.push(r)
+        next.push(r)
+      }
+    }
+    open = next
+  }
+  return runs
+    .filter((r) => r[r.length - 1].y - r[0].y >= MIN_RUN)
+    .map((r) => polyD(r, false))
+    .join('')
 }
 
 const circle = (cx: number, cy: number, r: number) => `M${f(cx - r)} ${f(cy)}a${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0Z`
