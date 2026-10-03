@@ -225,7 +225,10 @@ function cloud(W: Pt[][], yTop: number, yBottom: number, rand: () => number): st
 function lumps(W: Pt[][], yTop: number, yBottom: number, rand: () => number): string {
   let d = ''
   const size = 6.5
-  for (let y = yBottom - size * 0.75; y > yTop + size * 0.4; y -= size * 1.5) {
+  const first = yBottom - size * 0.75
+  // Rows from the bottom up. A layer thinner than one row, but at least half a lump deep, still gets its bottom row:
+  // anti-bumping granules are usually a thin layer (0.05 of a flask).
+  for (let y = first; y > yTop + size * 0.4 || (y === first && yBottom - yTop >= size * 0.5); y -= size * 1.5) {
     for (const [xa, xb] of scan(W, y)) {
       for (let x = xa + size + rand() * 3; x < xb - size; x += size * 2 + rand() * 4) {
         const k = 5 + Math.floor(rand() * 2),

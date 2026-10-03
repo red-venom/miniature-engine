@@ -100,6 +100,22 @@ describe('contents', () => {
       )
     expect(run()).toBe(run())
   })
+  it('draws a thin layer of lumps: anti-bumping granules at 0.05 of a flask', () => {
+    // 4 % of this 150 u cavity is 6 u: thinner than one lump, but the granules must still show.
+    const prims = buildContents(cav, [{ kind: 'lumps', amount: 0.04, colour: '#eee' }], opts(0))
+    const lumps = prims.find((p) => p.fill === '#eee')
+    expect(lumps?.d.length ?? 0).toBeGreaterThan(0)
+    // Lumps lie at the bottom: no lump reaches above twice the layer depth.
+    expect(
+      Math.min(
+        ...pathPolys(lumps!.d)
+          .flat()
+          .map((q) => q.y),
+      ),
+    ).toBeGreaterThan(75 - 2 * 6 - 1)
+    // A layer thinner than half a lump draws none.
+    expect(buildContents(cav, [{ kind: 'lumps', amount: 0.015, colour: '#eee' }], opts(0)).some((p) => p.fill === '#eee')).toBe(false)
+  })
   it('fills liquid between lumps, and draws lumps last', () => {
     const prims = buildContents(
       cav,

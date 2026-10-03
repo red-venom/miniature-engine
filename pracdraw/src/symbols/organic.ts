@@ -178,7 +178,8 @@ const meltingPointApparatus: SymbolDef = {
       bw = 0.5 * w,
       bh = 0.3 * h,
       depth = 0.6 * bh, // of the holes
-      xT = -0.12 * w, // thermometer hole, 9 wide
+      xT = -0.12 * w, // thermometer hole: 16 wide (the recipe's 9 is narrower than the 13 u bulb, rule S9)
+      tH = 8, // its half-width
       xS = 0.12 * w, // capillary (sample) hole, 5 wide
       yFront = top + bh + 0.5 * (h - top - bh), // centre of the lens and the dial
       xLens = -0.22 * w,
@@ -189,10 +190,10 @@ const meltingPointApparatus: SymbolDef = {
     const block = roundPoly(
       [
         v(-bw / 2, top),
-        v(xT - HOLE, top),
-        v(xT - HOLE, top + depth),
-        v(xT + HOLE, top + depth),
-        v(xT + HOLE, top),
+        v(xT - tH, top),
+        v(xT - tH, top + depth),
+        v(xT + tH, top + depth),
+        v(xT + tH, top),
         v(xS - 2.5, top),
         v(xS - 2.5, top + depth),
         v(xS + 2.5, top + depth),
@@ -221,7 +222,7 @@ const meltingPointApparatus: SymbolDef = {
       prims,
       anchors: [
         { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: w },
-        { id: 'thermo', kind: 'mouth', x: xT, y: top, dir: -90, width: 2 * HOLE },
+        { id: 'thermo', kind: 'mouth', x: xT, y: top, dir: -90, width: 2 * tH },
         { id: 'sample', kind: 'mouth', x: xS, y: top, dir: -90, width: 5 },
       ],
     }

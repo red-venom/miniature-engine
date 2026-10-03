@@ -105,9 +105,8 @@ const reflux: TemplateDef = {
     // The rod stops below the water inlet, so that the "water in" leader passes over it.
     const stand = b.symbol('clampStand', { w: 200, h: 225 })
     const mantle = b.at('heatingMantle', 'base', P(0, 0), { w: 150 })
-    // Granules 0.06, not 0.05: a lumps layer under 7.5 u deep draws no lumps, and 0.05 of this flask is 7.4 u.
     const flask = b.on('roundBottomFlask', 'bottom', mantle, 'cup', {
-      contents: { main: [{ kind: 'lumps', amount: 0.06, colour: c2Preset.granules }, c2Liquid(0.4, c2Preset.colourless)] },
+      contents: { main: [{ kind: 'lumps', amount: 0.05, colour: c2Preset.granules }, c2Liquid(0.4, c2Preset.colourless)] },
     })
     // Upright: the cone (the lower end) seats in the flask neck, and the socket at the top is the one opening.
     // With rot 90 the lower water port faces left and the upper one faces right.
