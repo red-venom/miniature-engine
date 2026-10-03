@@ -28,7 +28,8 @@ export interface Prefs {
 
 export type Tool = 'select' | 'label' | 'text' | 'tube' | 'wire' | 'line' | 'rect' | 'ellipse'
 
-export type GestureKind = 'move' | 'resize' | 'rotate' | 'marquee' | 'pan'
+/** `level` is the level handle on the canvas; `slider` is an amount slider in the inspector. Each drag is one undo step. */
+export type GestureKind = 'move' | 'resize' | 'rotate' | 'marquee' | 'pan' | 'level' | 'slider'
 
 export interface Gesture {
   kind: GestureKind

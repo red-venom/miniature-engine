@@ -1,5 +1,6 @@
 // layers.test.ts — the import table of section 6: each folder may import only from the folders below it.
 // It reads the imports of every file in src and fails when one crosses the line.
+// Test files are exempt: a test may import from any folder.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'

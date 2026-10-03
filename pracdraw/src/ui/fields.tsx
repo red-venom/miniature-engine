@@ -4,7 +4,8 @@ import { useId, useState, type ReactNode } from 'react'
 
 interface NumberProps {
   label: string
-  value: number
+  /** Null shows an empty field (a reading with nothing to read). */
+  value: number | null
   onCommit(value: number): void
   min?: number
   max?: number
@@ -15,7 +16,7 @@ interface NumberProps {
 
 export function NumberField({ label, value, onCommit, min, max, step, disabled, unit }: NumberProps) {
   const id = useId()
-  const shown = String(Math.round(value * 100) / 100)
+  const shown = value === null ? '' : String(Math.round(value * 100) / 100)
   const [text, setText] = useState(shown)
   const [was, setWas] = useState(shown)
   if (was !== shown) {
@@ -23,6 +24,7 @@ export function NumberField({ label, value, onCommit, min, max, step, disabled, 
     setText(shown)
   }
   const commit = () => {
+    if (text === shown) return // nothing typed: Enter and then blur make one step, not two
     const n = Number(text)
     if (!Number.isFinite(n) || text.trim() === '') {
       setText(shown)
@@ -30,7 +32,8 @@ export function NumberField({ label, value, onCommit, min, max, step, disabled, 
     }
     const v = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, n))
     if (v !== value) onCommit(v)
-    else setText(shown)
+    // A commit that changes the value shows the new value; one that changes nothing shows the old one again.
+    setText(shown)
   }
   return (
     <div className="field">
@@ -132,10 +135,12 @@ export function SelectField({
   )
 }
 
-export function Section({ title, children }: { title: string; children: ReactNode }) {
+/** A titled block of the inspector. With `group`, it is a group named by its title (one block for each cavity). */
+export function Section({ title, children, group }: { title: string; children: ReactNode; group?: boolean }) {
+  const id = useId()
   return (
-    <section className="section">
-      <h3>{title}</h3>
+    <section className="section" role={group ? 'group' : undefined} aria-labelledby={group ? id : undefined}>
+      <h3 id={id}>{title}</h3>
       {children}
     </section>
   )

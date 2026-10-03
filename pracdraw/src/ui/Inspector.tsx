@@ -5,6 +5,7 @@ import { useEditor } from '../editor/store'
 import type { ConnectorItem, Doc, DocSettings, Item, LabelItem, ShapeItem, SymbolItem } from '../model/types'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { ParamDef } from '../symbols/types'
+import { ContentsBlocks, ReadingField } from './Contents'
 import { CheckField, NumberField, Row, Section, SelectField, TextField } from './fields'
 import { icons } from './icons'
 
@@ -92,6 +93,8 @@ function SymbolFields({ it }: { it: SymbolItem }) {
           ))}
         </Section>
       ) : null}
+      <ContentsBlocks it={it} />
+      <ReadingField it={it} />
       <Arrange />
       <ItemButtons items={[it]} />
     </>

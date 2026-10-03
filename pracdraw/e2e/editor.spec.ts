@@ -2,7 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { demoDoc } from '../src/demo.ts'
+import { bounds, scan, type Pt } from '../src/kernel/geom.ts'
+import { toWorld } from '../src/model/transform.ts'
 import type { Doc, SymbolItem } from '../src/model/types.ts'
+import { geometry } from '../src/symbols/registry.ts'
+import { amountToReading } from '../src/symbols/scale.ts'
 
 // The built single file, opened straight from disk: the hardest hosting case.
 const FILE = pathToFileURL('dist/index.html').href
@@ -37,6 +41,19 @@ async function drag(page: Page, from: { x: number; y: number }, dx: number, dy: 
   for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + (dx * i) / steps, from.y + (dy * i) / steps)
   await page.mouse.up()
 }
+
+/** A world point on the page, in CSS px. */
+async function onScreen(page: Page, p: Pt): Promise<Pt> {
+  const v = await page.evaluate(() => window.__pracdraw.view())
+  const r = (await page.locator('#stage').boundingBox())!
+  return { x: r.x + v.x + p.x * v.zoom, y: r.y + v.y + p.y * v.zoom }
+}
+
+/** A symbol's cavity in the world, as the item stands, computed with the kernel. */
+const worldCavity = (it: SymbolItem, cavity = 'main'): Pt[][] =>
+  geometry(it.symbol, it.w, it.h, it.params)
+    .cavities!.find((c) => c.id === cavity)!
+    .polys.map((poly) => poly.map((p) => toWorld(it, p)))
 
 async function addFromLibrary(page: Page, name: string): Promise<SymbolItem> {
   await page.getByRole('button', { name, exact: true }).click()
@@ -238,12 +255,26 @@ test('autosave-restores', async ({ page }) => {
   await page.goto(FILE)
   const beaker = await addFromLibrary(page, 'Beaker')
   await page.getByRole('radio', { name: 'Letters' }).click()
+  await page.locator('.canvas').click({ position: { x: 10, y: 10 } }) // clear the selection: the inspector shows the settings
+  await page.getByLabel('Dot grid').uncheck() // a view preference: stored beside the document, not in it
   await page.waitForTimeout(800)
+  // The one autosave slot holds the document and, beside it, the view preferences.
+  const slot = async () => {
+    const stored = await page.evaluate(() => localStorage.getItem('pracdraw.autosave.v1'))
+    expect(stored).not.toBeNull()
+    const saved = JSON.parse(stored!) as { doc: Doc; prefs: { snap: boolean; grid: boolean; recent: string[] } }
+    expect(saved.doc.order).toEqual([beaker.id])
+    expect(saved.doc.settings.labelMode).toBe('letters')
+    expect(saved.prefs).toMatchObject({ grid: false, snap: true, recent: ['beaker'] })
+  }
+  await slot()
   await page.reload()
   const doc = await getDoc(page)
   expect(doc.order).toEqual([beaker.id])
   expect(doc.items[beaker.id]).toMatchObject({ symbol: 'beaker', x: beaker.x, y: beaker.y })
   expect(doc.settings.labelMode).toBe('letters')
+  await expect(page.getByLabel('Dot grid')).not.toBeChecked()
+  await slot()
 })
 
 test('insert-template-twice', async ({ page }) => {
@@ -272,4 +303,128 @@ test('insert-template-twice', async ({ page }) => {
     }
   }
   expect(doc.order.slice(n).filter((id) => doc.items[id].type === 'label').length).toBe(7)
+})
+
+// ---------------------------------------------------------------- phase 3 gate tests: contents
+
+test('fill-and-turn-stays-level', async ({ page }) => {
+  await page.goto(FILE)
+  const beaker = await addFromLibrary(page, 'Beaker')
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await inspector.getByRole('group', { name: 'Contents', exact: true }).getByRole('button', { name: 'Water', exact: true }).click()
+  const rotation = inspector.getByLabel('Rotation', { exact: true })
+  await rotation.fill('30')
+  await rotation.press('Enter')
+  const it = (await getDoc(page)).items[beaker.id] as SymbolItem
+  expect(it.rot).toBe(30)
+  expect(it.contents).toEqual({ main: [{ kind: 'liquid', amount: 0.5, colour: '#cfe8f7' }] })
+  // What the screen draws, in world coordinates (the view's pan and zoom undone): the turn of the glass, the turn of the
+  // liquid, and the two ends of each surface line.
+  const drawn = await page.evaluate((id) => {
+    const view = document.querySelector('#stage > g') as SVGGElement
+    const item = document.querySelector(`#stage [data-id="${id}"]`)!
+    const worldOf = (el: SVGGraphicsElement) => view.getCTM()!.inverse().multiply(el.getCTM()!)
+    const turn = (m: DOMMatrix) => (Math.atan2(m.b, m.a) * 180) / Math.PI
+    const liquid = item.querySelector('path[fill="#cfe8f7"]') as SVGPathElement
+    const lines = [...liquid.parentElement!.querySelectorAll('path')].filter((p) => p.getAttribute('fill') === 'none' && p.getAttribute('stroke'))
+    return {
+      glass: turn(worldOf(item.children[2] as SVGGElement)),
+      liquid: turn(worldOf(liquid)),
+      lines: lines.map((p) => {
+        const m = worldOf(p)
+        const a = p.getPointAtLength(0).matrixTransform(m),
+          b = p.getPointAtLength(p.getTotalLength()).matrixTransform(m)
+        return [a.x, a.y, b.x, b.y]
+      }),
+    }
+  }, beaker.id)
+  expect(drawn.glass).toBeCloseTo(30, 3)
+  expect(drawn.liquid).toBeCloseTo(0, 6)
+  // One surface line, horizontal in the world: both ends at the same height.
+  expect(drawn.lines).toHaveLength(1)
+  const [x0, y0, x1, y1] = drawn.lines[0]
+  expect(Math.abs(y1 - y0)).toBeLessThan(0.01)
+  // It is at half the height of the turned cavity and runs from wall to wall (the kernel's own sums, done here).
+  const W = worldCavity(it)
+  const box = bounds(W.flat())
+  const level = box.y1 - 0.5 * (box.y1 - box.y0)
+  expect(y0).toBeCloseTo(level, 1)
+  const span = scan(W, level + 1e-6)
+  expect(span).toHaveLength(1)
+  expect(Math.min(x0, x1)).toBeCloseTo(span[0][0], 1)
+  expect(Math.max(x0, x1)).toBeCloseTo(span[0][1], 1)
+  expect(span[0][1] - span[0][0]).toBeGreaterThan(50)
+})
+
+test('set-reading-37', async ({ page }) => {
+  await page.goto(FILE)
+  const cylinder = await addFromLibrary(page, 'Measuring cylinder')
+  expect(cylinder.contents).toEqual({})
+  expect(geometry(cylinder.symbol, cylinder.w, cylinder.h, cylinder.params).scale).toMatchObject({ v0: 0, v1: 100 }) // capacity 100 cm³
+  const field = page.getByRole('complementary', { name: 'Inspector' }).getByLabel('Reading', { exact: true })
+  await field.fill('37')
+  await field.press('Enter')
+  const it = (await getDoc(page)).items[cylinder.id] as SymbolItem
+  expect(it.contents.main).toHaveLength(1)
+  expect(it.contents.main[0]).toMatchObject({ kind: 'liquid', colour: '#cfe8f7' })
+  const amount = it.contents.main.reduce((sum, l) => sum + l.amount, 0)
+  const reading = amountToReading(geometry(it.symbol, it.w, it.h, it.params), amount)!
+  expect(Math.abs(reading - 37)).toBeLessThanOrEqual(0.05)
+  await expect(field).toHaveValue('37')
+})
+
+test('drop-into-beaker-comes-to-front', async ({ page }) => {
+  await page.goto(FILE)
+  const beaker = await addFromLibrary(page, 'Beaker')
+  const thermometer = await addFromLibrary(page, 'Thermometer')
+  await page.getByRole('complementary', { name: 'Inspector' }).getByRole('button', { name: 'Back', exact: true }).click()
+  expect((await getDoc(page)).order).toEqual([thermometer.id, beaker.id])
+  // Behind the beaker only its ends show. Grab the stem below the beaker and drag it clear to the right: no change.
+  const stem = { x: thermometer.x, y: thermometer.y + thermometer.h / 2 - 25 }
+  expect(stem.y).toBeGreaterThan(beaker.y + beaker.h / 2 + 10)
+  await drag(page, await onScreen(page, stem), 150, 0)
+  let doc = await getDoc(page)
+  const clear = doc.items[thermometer.id] as SymbolItem
+  expect(clear.x).toBeGreaterThan(beaker.x + beaker.w)
+  expect(doc.order).toEqual([thermometer.id, beaker.id])
+  // Drag it back by its middle so that its centre lands inside the beaker's cavity.
+  const v = await page.evaluate(() => window.__pracdraw.view())
+  await drag(page, await onScreen(page, { x: clear.x, y: clear.y }), (beaker.x + 10 - clear.x) * v.zoom, 0)
+  doc = await getDoc(page)
+  const dropped = doc.items[thermometer.id] as SymbolItem
+  expect(dropped.x).toBeCloseTo(beaker.x + 10, 0)
+  const inside = scan(worldCavity(doc.items[beaker.id] as SymbolItem), dropped.y).some(([a, b]) => dropped.x > a && dropped.x < b)
+  expect(inside).toBe(true)
+  expect(doc.order).toEqual([beaker.id, thermometer.id])
+})
+
+// ---------------------------------------------------------------- phase 3: the level handle, the slider and the presets
+
+test('contents-controls', async ({ page }) => {
+  await page.goto(FILE)
+  const beaker = await addFromLibrary(page, 'Beaker')
+  const contents = page.getByRole('complementary', { name: 'Inspector' }).getByRole('group', { name: 'Contents', exact: true })
+  await contents.getByRole('button', { name: 'Water', exact: true }).click()
+  const layers = async () => ((await getDoc(page)).items[beaker.id] as SymbolItem).contents.main
+  // The level handle: a drag of 8 pointer moves is one undo step. The cavity is 118.5 u high.
+  const zoom = (await page.evaluate(() => window.__pracdraw.view())).zoom
+  const bar = (await page.locator('[data-handle="level"]').boundingBox())!
+  await drag(page, { x: bar.x + 4, y: bar.y + bar.height / 2 }, 0, -30)
+  expect((await layers())[0].amount).toBeCloseTo(0.5 + 30 / zoom / 118.5, 3)
+  await page.keyboard.press('Control+z')
+  expect((await layers())[0].amount).toBe(0.5)
+  // The amount slider: one drag is one undo step too.
+  const slider = (await contents.getByRole('slider', { name: 'Amount' }).boundingBox())!
+  await drag(page, { x: slider.x + slider.width / 2, y: slider.y + slider.height / 2 }, slider.width * 0.3, 0)
+  expect((await layers())[0].amount).toBeGreaterThan(0.7)
+  await contents.getByRole('heading', { name: 'Contents' }).click() // the focus leaves the slider, so that the key undoes
+  await page.keyboard.press('Control+z')
+  expect((await layers())[0].amount).toBe(0.5)
+  // A preset sets the kind, the colour and the cloudy flag.
+  await contents.getByRole('button', { name: 'Colour: Water' }).click()
+  await contents.getByRole('button', { name: 'Cloudy yellow (sulfur)' }).click()
+  expect(await layers()).toEqual([{ kind: 'liquid', amount: 0.5, colour: '#f1e9b0', cloudy: true }])
+  await contents.getByRole('button', { name: 'Empty', exact: true }).click()
+  expect(await layers()).toBeUndefined()
+  await expect(page.locator('[data-handle="level"]')).toHaveCount(0)
 })
