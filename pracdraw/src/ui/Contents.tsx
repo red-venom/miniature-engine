@@ -1,87 +1,98 @@
-// Contents.tsx — the inspector blocks of section 9: one for each cavity of the selected symbol (Contents, Jacket,
-// Inner tube), the quick buttons, one row for each layer, the preset list with a free colour picker, and the
-// Reading field. A slider drag is one undo step; a typed reading commits on Enter or blur.
+// Contents.tsx — the inspector blocks of section 9. One block for each cavity of the selected symbol ("Contents",
+// "Jacket", "Inner tube") with the quick buttons Empty, Water and Add layer, and one row for each layer, top layer
+// first: colour swatch, kind, remove, amount slider, bubbles, cloudy and meniscus. The swatch opens the presets and a
+// free colour picker. Then the Reading field. A slider drag is one undo step; a typed reading commits on Enter or blur.
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import type { Layer, LayerKind } from '../kernel/contents'
 import * as a from '../editor/actions'
-import { useEditor } from '../editor/store'
-import { MAX_LAYERS, PRESETS, readingMode, readingOf, setLayer, topLayerIndex, type Preset } from '../model/contents'
+import { MAX_LAYERS, PRESETS, presetOf, readingMode, readingOf, topLayerIndex, type Preset } from '../model/contents'
 import type { SymbolItem } from '../model/types'
 import { geometry } from '../symbols/registry'
-import { CheckField, NumberField, Row, SelectField, Section } from './fields'
+import { CheckField, NumberField, Row, Section, SelectField } from './fields'
 import { icons } from './icons'
 
 const TITLES: Record<string, string> = { main: 'Contents', jacket: 'Jacket', inner: 'Inner tube' }
-const KINDS: { value: LayerKind; label: string }[] = [
-  { value: 'liquid', label: 'Liquid' },
-  { value: 'powder', label: 'Powder' },
-  { value: 'lumps', label: 'Lumps' },
-  { value: 'gas', label: 'Gas' },
-]
-const BUBBLES: { value: NonNullable<Layer['bubbles']>; label: string }[] = [
-  { value: 'none', label: 'No bubbles' },
-  { value: 'few', label: 'A few bubbles' },
-  { value: 'many', label: 'Many bubbles' },
-]
-
 const cavityTitle = (id: string) => TITLES[id] ?? id.charAt(0).toUpperCase() + id.slice(1)
 
-/** The colour swatch. It opens the preset list and a free colour picker. */
-function ColourMenu({ layer, onPreset, onColour }: { layer: Layer; onPreset(p: Preset): void; onColour(c: string): void }) {
+const KINDS: { value: LayerKind; label: string; group: string }[] = [
+  { value: 'liquid', label: 'Liquid', group: 'Liquids' },
+  { value: 'powder', label: 'Powder', group: 'Powders and precipitates' },
+  { value: 'lumps', label: 'Lumps', group: 'Lumps' },
+  { value: 'gas', label: 'Gas', group: 'Gases' },
+]
+
+const BUBBLES: { value: NonNullable<Layer['bubbles']>; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'few', label: 'Few' },
+  { value: 'many', label: 'Many' },
+]
+
+/** The colour swatch of a layer. It opens the presets, grouped by kind, and a free colour picker. */
+function ColourMenu({ layer, onPreset, onColour }: { layer: Layer; onPreset(p: Preset): void; onColour(colour: string): void }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLDivElement>(null)
+  const button = useRef<HTMLButtonElement>(null)
+  const popup = useId()
   useEffect(() => {
     if (!open) return
     const away = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (!box.current?.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('pointerdown', away)
-    document.addEventListener('keydown', key)
-    return () => {
-      document.removeEventListener('pointerdown', away)
-      document.removeEventListener('keydown', key)
-    }
+    return () => document.removeEventListener('pointerdown', away)
   }, [open])
-  const preset = PRESETS.find((p) => p.kind === layer.kind && p.colour === layer.colour && !!p.cloudy === !!layer.cloudy)
+  const close = () => {
+    setOpen(false)
+    button.current?.focus()
+  }
+  // Escape closes the list and goes no further: it must not clear the selection as well.
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && open) {
+      e.stopPropagation()
+      close()
+    }
+  }
+  const current = presetOf(layer)
   return (
-    <div className="menu" ref={ref}>
+    <div className="menu" ref={box} onKeyDown={onKeyDown}>
       <button
+        ref={button}
         type="button"
         className="swatch"
-        aria-label={`Colour ${layer.colour}${preset ? `, ${preset.name}` : ''}`}
-        aria-haspopup="menu"
+        aria-label={`Colour: ${current?.name ?? layer.colour}`}
         aria-expanded={open}
-        title={preset?.name ?? layer.colour}
+        aria-controls={open ? popup : undefined}
+        title={current?.name ?? layer.colour}
         onClick={() => setOpen(!open)}
       >
         <span className="swatch-chip" style={{ background: layer.colour }} />
       </button>
       {open && (
-        <div className="popover presets" role="menu" aria-label="Presets">
-          {PRESETS.map((p) => (
-            <button
-              type="button"
-              role="menuitem"
-              key={p.name}
-              className="small preset"
-              aria-pressed={p === preset}
-              onClick={() => {
-                onPreset(p)
-                setOpen(false)
-              }}
-            >
-              <span className="swatch-chip" style={{ background: p.colour }} />
-              {p.name}
-              <span className="muted kind">{p.kind}</span>
-            </button>
+        <div id={popup} className="popover presets" role="group" aria-label="Colour presets">
+          {KINDS.map((k) => (
+            <div key={k.value} className="preset-group">
+              <h4>{k.group}</h4>
+              {PRESETS.filter((p) => p.kind === k.value).map((p) => (
+                <button
+                  key={p.name}
+                  type="button"
+                  className="preset"
+                  aria-pressed={p === current}
+                  onClick={() => {
+                    onPreset(p)
+                    close()
+                  }}
+                >
+                  <span className="swatch-chip" style={{ background: p.colour }} />
+                  <span>{p.name}</span>
+                </button>
+              ))}
+            </div>
           ))}
           <label className="colour-pick">
             Other colour
-            <input type="color" value={layer.colour} aria-label="Pick a colour" onChange={(e) => onColour(e.target.value)} />
+            <input type="color" value={layer.colour} onChange={(e) => onColour(e.target.value)} />
           </label>
         </div>
       )}
@@ -89,13 +100,19 @@ function ColourMenu({ layer, onPreset, onColour }: { layer: Layer; onPreset(p: P
   )
 }
 
-/** The amount slider, 0 to 100 %. The whole drag is one undo step. */
+/** The amount slider, 0 to 100 %. A drag is one undo step: it ends when the pointer is released anywhere. */
 function AmountSlider({ it, cavity, index, layer }: { it: SymbolItem; cavity: string; index: number; layer: Layer }) {
   const id = useId()
   const value = Math.round(layer.amount * 100)
-  const move = (v: number) => {
-    a.slider.start()
-    a.slider.move(setLayer(useEditor.getState().doc, it.id, cavity, index, { amount: v / 100 }))
+  const start = () => {
+    a.amountSlider.start()
+    const end = () => {
+      a.amountSlider.end()
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', end)
+    }
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
   }
   return (
     <div className="field">
@@ -108,12 +125,10 @@ function AmountSlider({ it, cavity, index, layer }: { it: SymbolItem; cavity: st
           max={100}
           step={1}
           value={value}
-          onPointerDown={a.slider.start}
-          onPointerUp={a.slider.end}
-          onPointerCancel={a.slider.end}
-          onKeyUp={a.slider.end}
-          onBlur={a.slider.end}
-          onChange={(e) => move(Number(e.target.value))}
+          aria-valuetext={`${value} %`}
+          onPointerDown={start}
+          onChange={(e) => a.amountSlider.set(it.id, cavity, index, Number(e.target.value) / 100)}
+          onBlur={a.amountSlider.end}
         />
         <span className="unit wide">{value} %</span>
       </span>
@@ -122,8 +137,8 @@ function AmountSlider({ it, cavity, index, layer }: { it: SymbolItem; cavity: st
 }
 
 function LayerRow({ it, cavity, index, layer, top }: { it: SymbolItem; cavity: string; index: number; layer: Layer; top: boolean }) {
-  const liquid = layer.kind === 'liquid'
   const set = (patch: Partial<Layer>) => a.layerSet(it.id, cavity, index, patch)
+  const liquid = layer.kind === 'liquid'
   return (
     <div className="layer" role="group" aria-label={`Layer ${index + 1}`}>
       <div className="layer-head">
@@ -143,10 +158,19 @@ function LayerRow({ it, cavity, index, layer, top }: { it: SymbolItem; cavity: s
           {icons.close}
         </button>
       </div>
-      {layer.kind !== 'gas' && <AmountSlider it={it} cavity={cavity} index={index} layer={layer} />}
+      {layer.kind === 'gas' ? (
+        <p className="muted">Fills the space above the other layers.</p>
+      ) : (
+        <AmountSlider it={it} cavity={cavity} index={index} layer={layer} />
+      )}
       {liquid && (
         <>
-          <SelectField label="Bubbles" value={layer.bubbles ?? 'none'} options={BUBBLES} onChange={(v) => set({ bubbles: v === 'none' ? undefined : (v as Layer['bubbles']) })} />
+          <SelectField
+            label="Bubbles"
+            value={layer.bubbles ?? 'none'}
+            options={BUBBLES}
+            onChange={(v) => set({ bubbles: v === 'none' ? undefined : (v as Layer['bubbles']) })}
+          />
           <CheckField label="Cloudy" checked={!!layer.cloudy} onChange={(v) => set({ cloudy: v || undefined })} />
           {top && <CheckField label="Meniscus" checked={!!layer.meniscus} onChange={(v) => set({ meniscus: v || undefined })} />}
         </>
@@ -158,8 +182,12 @@ function LayerRow({ it, cavity, index, layer, top }: { it: SymbolItem; cavity: s
 function CavityBlock({ it, cavity }: { it: SymbolItem; cavity: string }) {
   const layers = it.contents[cavity] ?? []
   const top = topLayerIndex(layers)
+  // Top layer first, as the layers stand in the vessel.
+  const rows = layers
+    .map((layer, i) => <LayerRow key={i} it={it} cavity={cavity} index={i} layer={layer} top={i === top && layer.kind === 'liquid'} />)
+    .reverse()
   return (
-    <Section title={cavityTitle(cavity)}>
+    <Section title={cavityTitle(cavity)} group>
       <Row>
         <button type="button" className="small" onClick={() => a.cavityEmpty(it.id, cavity)} disabled={!layers.length}>
           Empty
@@ -171,27 +199,12 @@ function CavityBlock({ it, cavity }: { it: SymbolItem; cavity: string }) {
           {icons.plus} Add layer
         </button>
       </Row>
-      {layers.map((layer, i) => (
-        <LayerRow key={i} it={it} cavity={cavity} index={i} layer={layer} top={i === top} />
-      ))}
+      {rows}
     </Section>
   )
 }
 
-/** The Reading field: puts the top surface at a reading on the scale, or moves a gas syringe's plunger. */
-export function ReadingField({ it }: { it: SymbolItem }) {
-  const mode = readingMode(it)
-  if (!mode) return null
-  const value = readingOf(it) ?? 0
-  return (
-    <Section title="Reading">
-      <NumberField label="Reading" value={value} min={mode.min} max={mode.max} step={0.1} unit={mode.unit} onCommit={(v) => a.reading(it.id, v)} />
-      {mode.kind === 'scale' && mode.upsideDown && <p className="muted">Upside down: the volume of gas above the water.</p>}
-    </Section>
-  )
-}
-
-/** One block for each cavity of the symbol. A symbol with no cavity shows nothing. */
+/** One block for each cavity of the symbol. A symbol with no cavity shows none. */
 export function ContentsBlocks({ it }: { it: SymbolItem }) {
   const cavities = geometry(it.symbol, it.w, it.h, it.params).cavities ?? []
   return (
@@ -200,5 +213,24 @@ export function ContentsBlocks({ it }: { it: SymbolItem }) {
         <CavityBlock key={c.id} it={it} cavity={c.id} />
       ))}
     </>
+  )
+}
+
+/** The Reading field: the top surface at a reading on the scale, or the plunger of a gas syringe. */
+export function ReadingField({ it }: { it: SymbolItem }) {
+  const mode = readingMode(it)
+  if (!mode) {
+    if (!geometry(it.symbol, it.w, it.h, it.params).scale) return null
+    return (
+      <Section title="Scale">
+        <p className="muted">Set the rotation to 0° and turn off Flip to type a reading.</p>
+      </Section>
+    )
+  }
+  return (
+    <Section title="Scale">
+      <NumberField label="Reading" value={readingOf(it)} min={mode.min} max={mode.max} step={0.1} unit={mode.unit} onCommit={(v) => a.reading(it.id, v)} />
+      {mode.kind === 'scale' && mode.upsideDown && <p className="muted">Upside down: the reading is the volume of gas above the water.</p>}
+    </Section>
   )
 }

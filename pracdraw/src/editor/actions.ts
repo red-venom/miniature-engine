@@ -210,21 +210,24 @@ export const layerPreset = (id: Id, cavity: string, index: number, preset: Prese
 /** A field of one layer. `merge` joins quick repeats into one undo step (the colour picker fires as the pointer moves). */
 export const layerSet = (id: Id, cavity: string, index: number, patch: Partial<Layer>, merge?: string): void =>
   commit(setLayer(state().doc, id, cavity, index, patch), merge)
+/** The Reading field: one undo step, made on Enter or when the field loses the focus. */
 export const reading = (id: Id, value: number): void => commit(setReading(state().doc, id, value))
 
 /**
- * An amount slider is one undo step: the drag is a gesture. `start` opens it (once), `move` previews the document,
- * `end` closes it. A change outside a gesture (a programmatic one) is its own step.
+ * The amount slider of a layer. A drag is one undo step: `start` on pointer down opens a gesture, each change previews
+ * the document, and `end` on pointer up closes the gesture. A change with no drag (an arrow key) commits at once, and
+ * quick repeats on the same layer join into one step.
  */
-export const slider = {
+export const amountSlider = {
   start(): void {
     const s = state()
     if (!s.gesture) s.beginGesture('slider')
   },
-  move(doc: Doc): void {
+  set(id: Id, cavity: string, index: number, amount: number): void {
     const s = state()
-    if (s.gesture?.kind === 'slider') s.preview(doc)
-    else commit(doc)
+    const next = setLayer(s.doc, id, cavity, index, { amount })
+    if (s.gesture?.kind === 'slider') s.preview(next)
+    else commit(next, `amount:${id}:${cavity}:${index}`)
   },
   end(): void {
     const s = state()
