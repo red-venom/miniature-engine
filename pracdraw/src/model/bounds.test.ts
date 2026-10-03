@@ -4,7 +4,7 @@ import { demoDoc } from '../demo'
 import { estimateBounds } from '../render/render'
 import { geometry } from '../symbols/registry'
 import { DocBuilder } from './build'
-import { boxCentre, boxesTouch, docBox, itemBox, itemsBox, labelTarget, localBox, unionBox } from './bounds'
+import { boxCentre, boxesTouch, docBox, itemBox, itemsBox, labelBox, labelTarget, localBox, unionBox } from './bounds'
 
 describe('itemBox', () => {
   it('a symbol box follows the drawing, turned', () => {
@@ -55,6 +55,15 @@ describe('itemBox', () => {
     expect(labelTarget(b.doc, plain)).toBeNull()
     b.doc.items.ghost = { ...fixed, id: 'ghost', target: { item: 'gone', lx: 0, ly: 0 } }
     expect(labelTarget(b.doc, b.doc.items.ghost as typeof fixed)).toBeNull()
+  })
+  it('labelBox is the label as drawn without its leader', () => {
+    const b = new DocBuilder()
+    const sym = b.symbol('beaker')
+    const fixed = b.label('abcd', 200, 0, [sym, 0, 0]) // the leader ends at (0, −60)
+    expect(labelBox(b.doc, fixed)).toEqual({ x0: 200, y0: -15, x1: 200 + 4 * 15 * 0.56, y1: 4.5 })
+    expect(itemBox(b.doc, fixed)).toMatchObject({ x0: -2, y0: -62 })
+    b.doc.settings.labelMode = 'blank'
+    expect(labelBox(b.doc, fixed).x1).toBe(300)
   })
   it('localBox is cached per geometry', () => {
     const g = geometry('beaker', 100, 120)

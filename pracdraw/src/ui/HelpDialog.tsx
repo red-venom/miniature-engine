@@ -7,7 +7,7 @@ import { icons } from './icons'
 const START = [
   'Pick a template from the Templates tab, or add apparatus from the Apparatus tab.',
   'Press / to search. Enter adds the first result at the centre of the view.',
-  'Drag items to move them. Use the handles to resize and turn them.',
+  'Drag items to move them: parts snap together (hold Ctrl to stop it). Use the handles to resize and turn them.',
   'The inspector on the right shows the properties of the selection.',
   'With nothing selected, the inspector shows the document settings: label mode, photocopy-safe.',
   'Copy image puts a PNG on the clipboard. Export downloads a PNG or an SVG.',

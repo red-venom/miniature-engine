@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { itemBox } from '../model/bounds'
 import { DocBuilder } from '../model/build'
 import { WATER } from '../model/contents'
 import type { Doc, SymbolItem } from '../model/types'
-import { addSymbolAt, amountSlider, cavityWater, nudge, reading, undo } from './actions'
+import { addSymbolAt, alignSelection, amountSlider, cavityWater, distributeSelection, groupSelection, nudge, reading, select, undo } from './actions'
 import { useEditor } from './store'
 
 const s = () => useEditor.getState()
@@ -53,6 +54,41 @@ describe('contents actions', () => {
     expect(amount(id)).not.toBe(0.5)
     undo()
     expect(amount(id)).toBeUndefined()
+  })
+})
+
+describe('several items: group, lock, align, distribute', () => {
+  function three(): Doc {
+    const b = new DocBuilder()
+    b.symbol('beaker', { x: 0, y: 0 })
+    b.symbol('tripod', { x: 300, y: 50 })
+    b.symbol('bunsenBurner', { x: 500, y: 100 })
+    return b.doc
+  }
+  it('items that share a group select as one; a locked item is never selected, not even with its group', () => {
+    start(three())
+    select(['beaker1', 'tripod2'])
+    groupSelection()
+    select(['tripod2'])
+    expect(s().selection).toEqual(['beaker1', 'tripod2'])
+    s().commit({ ...s().doc, items: { ...s().doc.items, beaker1: { ...s().doc.items.beaker1, locked: true } } })
+    select(['tripod2'])
+    expect(s().selection).toEqual(['tripod2'])
+    select(['beaker1'])
+    expect(s().selection).toEqual([])
+  })
+  it('align and distribute are one undo step each', () => {
+    start(three())
+    select(['beaker1', 'tripod2', 'bunsenBurner3'])
+    alignSelection('top')
+    const tops = s().selection.map((id) => itemBox(s().doc, s().doc.items[id]).y0)
+    expect(tops[1]).toBeCloseTo(tops[0], 9)
+    expect(tops[2]).toBeCloseTo(tops[0], 9)
+    distributeSelection('across')
+    expect(s().past).toHaveLength(2)
+    undo()
+    undo()
+    expect(s().doc).toEqual(three())
   })
 })
 

@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { P } from '../kernel/geom'
 import { TEMPLATES } from '../templates'
 import { DocBuilder } from './build'
-import { itemsBox, boxCentre } from './bounds'
+import { itemBox, itemsBox, boxCentre } from './bounds'
 import {
   addItem,
   addSymbol,
+  alignItems,
   cloneItems,
   deleteItems,
+  distributeItems,
   duplicateItems,
   expandGroups,
   flipItems,
@@ -175,8 +177,103 @@ describe('reorder', () => {
     expect(reorderItems(doc(), ['beaker1'], 'forward').order).toEqual(['tripod2', 'beaker1', 'gauze3', 'bung4'])
     expect(reorderItems(doc(), ['beaker1', 'tripod2'], 'forward').order).toEqual(['gauze3', 'beaker1', 'tripod2', 'bung4'])
     expect(reorderItems(doc(), ['bung4'], 'backward').order).toEqual(['beaker1', 'tripod2', 'bung4', 'gauze3'])
+    expect(reorderItems(doc(), ['tripod2', 'bung4'], 'backward').order).toEqual(['tripod2', 'beaker1', 'bung4', 'gauze3'])
     const d = doc()
     expect(reorderItems(d, ['beaker1'], 'backward')).toBe(d)
+    expect(reorderItems(d, ['bung4'], 'forward')).toBe(d)
+  })
+  it('a step passes an item drawn in the same pass: labels are drawn after every other item', () => {
+    const b = new DocBuilder()
+    const beaker = b.symbol('beaker')
+    b.label('one', 0, 0)
+    b.symbol('tripod')
+    b.label('two', 0, 0)
+    expect(b.doc.order).toEqual(['beaker1', 'label2', 'tripod3', 'label4'])
+    // The beaker steps past the tripod, not just past the label (which is drawn after both of them anyway).
+    expect(reorderItems(b.doc, [beaker.id], 'forward').order).toEqual(['label2', 'tripod3', 'beaker1', 'label4'])
+    expect(reorderItems(b.doc, ['tripod3'], 'backward').order).toEqual(['tripod3', 'beaker1', 'label2', 'label4'])
+    expect(reorderItems(b.doc, ['label2'], 'forward').order).toEqual(['beaker1', 'tripod3', 'label4', 'label2'])
+    expect(reorderItems(b.doc, ['label4'], 'backward').order).toEqual(['beaker1', 'label4', 'label2', 'tripod3'])
+    // Nothing of its own pass in front of it: no change.
+    expect(reorderItems(b.doc, ['tripod3'], 'forward')).toBe(b.doc)
+  })
+})
+
+describe('align and distribute', () => {
+  /** Three shapes: 20 × 10 at (0, 0), 40 × 20 at (100, 50), 10 × 30 at (300, 20). Their bounds have 1 u of line. */
+  function three(): Doc {
+    let doc = newDoc()
+    for (const [id, x, y, w, h] of [
+      ['a', 0, 0, 20, 10],
+      ['b', 100, 50, 40, 20],
+      ['c', 300, 20, 10, 30],
+    ] as const)
+      doc = addItem(doc, { id, type: 'shape', shape: 'rect', x, y, w, h, rot: 0, fill: 'none', dash: false })
+    return doc
+  }
+  const at = (doc: Doc, id: string) => {
+    const it = doc.items[id] as { x: number; y: number }
+    return [it.x, it.y]
+  }
+  it('aligns the edges or the centres of the drawn bounds', () => {
+    const doc = three()
+    const ids = ['a', 'b', 'c']
+    // The bounds of all three: x −11 to 306, y −6 to 61.
+    expect(itemsBox(doc, ids)).toEqual({ x0: -11, y0: -6, x1: 306, y1: 61 })
+    let next = alignItems(doc, ids, 'left')
+    expect(ids.map((id) => at(next, id))).toEqual([
+      [0, 0],
+      [10, 50],
+      [-5, 20],
+    ])
+    next = alignItems(doc, ids, 'right')
+    expect(ids.map((id) => at(next, id)[0])).toEqual([295, 285, 300])
+    next = alignItems(doc, ids, 'centre')
+    expect(ids.map((id) => at(next, id)[0])).toEqual([147.5, 147.5, 147.5])
+    next = alignItems(doc, ids, 'top')
+    expect(ids.map((id) => at(next, id)[1])).toEqual([0, 5, 10])
+    next = alignItems(doc, ids, 'bottom')
+    expect(ids.map((id) => at(next, id)[1])).toEqual([55, 50, 45])
+    next = alignItems(doc, ids, 'middle')
+    expect(ids.map((id) => at(next, id)[1])).toEqual([27.5, 27.5, 27.5])
+    // What does not move is shared; one item, or items already aligned, change nothing.
+    expect(alignItems(doc, ids, 'top').items.a).toBe(doc.items.a)
+    expect(alignItems(doc, ['a'], 'left')).toBe(doc)
+    const left = alignItems(doc, ids, 'left')
+    expect(alignItems(left, ids, 'left')).toBe(left)
+  })
+  it('a group aligns as one, and a label aligns by its text, not by its leader', () => {
+    let doc = groupItems(three(), ['a', 'b'], 'g')
+    // The group's bounds run from x −11 to 121: it moves as one, 185 to the right.
+    doc = alignItems(doc, ['a', 'b', 'c'], 'right')
+    expect(['a', 'b', 'c'].map((id) => at(doc, id)[0])).toEqual([185, 285, 300])
+    const b = new DocBuilder()
+    const beaker = b.symbol('beaker', { x: 0, y: 0 })
+    const label = b.label('beaker', 200, 0, [beaker, 40, 60]) // its text starts at x = 200; its leader ends at x = 40
+    b.symbol('tripod', { x: 400, y: 0 })
+    const next = alignItems(b.doc, [label.id, 'tripod3'], 'left')
+    expect(next.items[label.id]).toBe(b.doc.items[label.id])
+    expect(itemBox(next, next.items.tripod3).x0).toBeCloseTo(200, 9)
+  })
+  it('distributes across or down with equal gaps; the first and the last stay', () => {
+    const doc = three()
+    const ids = ['a', 'b', 'c']
+    // Across: the bounds are 22, 42 and 12 wide, from −11 to 306: two gaps of (317 − 76) ÷ 2 = 120.5.
+    let next = distributeItems(doc, ids, 'across')
+    expect(next.items.a).toBe(doc.items.a)
+    expect(next.items.c).toBe(doc.items.c)
+    expect(at(next, 'b')).toEqual([152.5, 50])
+    const boxes = ids.map((id) => itemBox(next, next.items[id]))
+    expect(boxes[1].x0 - boxes[0].x1).toBeCloseTo(boxes[2].x0 - boxes[1].x1, 9)
+    // Down, by centre: a (0), c (20), b (50). The gaps between the bounds: (61 − (−6) − 12 − 32 − 22) ÷ 2 = 0.5.
+    next = distributeItems(doc, ids, 'down')
+    expect(at(next, 'c')).toEqual([300, 22.5])
+    expect(next.items.a).toBe(doc.items.a)
+    expect(next.items.b).toBe(doc.items.b)
+    // Two units are already distributed; a group counts as one unit.
+    expect(distributeItems(doc, ['a', 'c'], 'across')).toBe(doc)
+    const grouped = groupItems(doc, ['a', 'b'], 'g')
+    expect(distributeItems(grouped, ids, 'across')).toBe(grouped)
   })
 })
 

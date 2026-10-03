@@ -4,6 +4,7 @@
 
 import { create } from 'zustand'
 import type { Box, Pt } from '../kernel/geom'
+import type { SnapGuide } from '../model/snap'
 import { newDoc, type ConnectorKind, type Doc, type Id, type Item } from '../model/types'
 
 export const HISTORY_LIMIT = 200
@@ -45,6 +46,8 @@ export interface Gesture {
   marquee?: Box
   /** The port, terminal or tip that a dragged connector point snapped to, in world units. */
   anchor?: Pt
+  /** What a move snapped to: guide lines and the points where anchors met, in world units. */
+  guides?: SnapGuide[]
 }
 
 /**

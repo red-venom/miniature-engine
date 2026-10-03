@@ -2,7 +2,7 @@
 
 import type { Tool } from './store'
 
-const SELECT = 'Click to select. Drag to move. Shift+click adds. Alt+drag duplicates. Space+drag or wheel pans, Ctrl+wheel zooms.'
+const SELECT = 'Click to select. Drag to move; parts snap, Ctrl stops it. Shift+click adds. Alt+drag duplicates. Space+drag or wheel pans, Ctrl+wheel zooms.'
 const CONNECTOR_SELECTED = 'Drag a square handle to move a point, or a round handle to add a point. Double-click a point to delete it.'
 const CONNECTORS: Partial<Record<Tool, string>> = { tube: 'Tube', wire: 'Wire', line: 'Line and arrow' }
 

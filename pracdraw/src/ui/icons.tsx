@@ -155,6 +155,69 @@ export const icons = {
       <path d="M10 4v12M5 11l5 5 5-5" />
     </>,
   ),
+  /** Align: a line on the edge or the middle, and two bars of different lengths against it. */
+  alignLeft: icon(
+    <>
+      <path d="M3 3v14" />
+      <rect x="6" y="5" width="11" height="3" rx="1" />
+      <rect x="6" y="12" width="7" height="3" rx="1" />
+    </>,
+  ),
+  alignCentre: icon(
+    <>
+      <path d="M10 2v16" />
+      <rect x="4" y="5" width="12" height="3" rx="1" />
+      <rect x="6" y="12" width="8" height="3" rx="1" />
+    </>,
+  ),
+  alignRight: icon(
+    <>
+      <path d="M17 3v14" />
+      <rect x="3" y="5" width="11" height="3" rx="1" />
+      <rect x="7" y="12" width="7" height="3" rx="1" />
+    </>,
+  ),
+  alignTop: icon(
+    <>
+      <path d="M3 3h14" />
+      <rect x="5" y="6" width="3" height="11" rx="1" />
+      <rect x="12" y="6" width="3" height="7" rx="1" />
+    </>,
+  ),
+  alignMiddle: icon(
+    <>
+      <path d="M2 10h16" />
+      <rect x="5" y="4" width="3" height="12" rx="1" />
+      <rect x="12" y="6" width="3" height="8" rx="1" />
+    </>,
+  ),
+  alignBottom: icon(
+    <>
+      <path d="M3 17h14" />
+      <rect x="5" y="3" width="3" height="11" rx="1" />
+      <rect x="12" y="7" width="3" height="7" rx="1" />
+    </>,
+  ),
+  /** Distribute: a bar between two limits, with equal room each side. */
+  distributeAcross: icon(
+    <>
+      <path d="M3 3v14M17 3v14" />
+      <rect x="7.5" y="6" width="5" height="8" rx="1" />
+    </>,
+  ),
+  distributeDown: icon(
+    <>
+      <path d="M3 3h14M3 17h14" />
+      <rect x="6" y="7.5" width="8" height="5" rx="1" />
+    </>,
+  ),
+  group: icon(
+    <>
+      <path d="M3 6V3h3M14 3h3v3M17 14v3h-3M6 17H3v-3" />
+      <rect x="6" y="6" width="5" height="5" rx="1" />
+      <rect x="9.5" y="9.5" width="4.5" height="4.5" rx="1" />
+    </>,
+  ),
   lock: icon(
     <>
       <rect x="4" y="9" width="12" height="8" rx="1.5" />

@@ -541,11 +541,16 @@ button.swatch {
 .overlay .draft-point {
   fill: var(--accent);
 }
-/* A port, terminal or tip that a connector point has snapped to. */
+/* A port, terminal or tip that a connector point has snapped to, or where two anchors met in a move. */
 .overlay .guide {
   fill: none;
   stroke: var(--guide);
   stroke-width: 2;
+}
+/* A snap guide of a move: the bounds it lined up with, or the surface, rod or centre line an anchor snapped to. */
+.overlay .guide-line {
+  stroke: var(--guide);
+  stroke-width: 1;
 }
 .overlay .handle-line {
   stroke: var(--accent);
