@@ -38,22 +38,29 @@ The empty canvas also offers three templates straight away: heating a liquid in 
 
 ### Keys
 
-| Key                            | Action                                                    |
-| ------------------------------ | --------------------------------------------------------- |
-| V, L, T, U, W, A, R, E         | Select, Label, Text, Tube, Wire, Line, Rectangle, Ellipse |
-| Ctrl+Z; Ctrl+Shift+Z or Ctrl+Y | Undo; redo                                                |
-| Ctrl+C, Ctrl+X, Ctrl+V; Ctrl+D | Copy, cut, paste; duplicate                               |
-| Delete, Backspace              | Delete                                                    |
-| Arrow keys (with Shift)        | Move 1 u (10 u)                                           |
-| Ctrl+G; Ctrl+Shift+G           | Group; ungroup                                            |
-| ] and [; Ctrl+] and Ctrl+[     | Forward, backward; front, back                            |
-| H                              | Flip                                                      |
-| + and −; 0; 1                  | Zoom in and out; 100 %; fit                               |
-| Ctrl+S; Ctrl+O; Ctrl+Shift+C   | Save; open; copy image                                    |
-| /                              | Search the library                                        |
-| ?                              | Help                                                      |
+| Key                              | Action                                                    |
+| -------------------------------- | --------------------------------------------------------- |
+| V, L, T, U, W, A, R, E           | Select, Label, Text, Tube, Wire, Line, Rectangle, Ellipse |
+| Ctrl+Z; Ctrl+Shift+Z or Ctrl+Y   | Undo; redo                                                |
+| Ctrl+C, Ctrl+X, Ctrl+V; Ctrl+D   | Copy, cut, paste; duplicate                               |
+| Delete, Backspace                | Delete                                                    |
+| Ctrl+A                           | Select all                                                |
+| Arrow keys (with Shift)          | Move 1 u (10 u)                                           |
+| Ctrl+G; Ctrl+Shift+G             | Group; ungroup                                            |
+| ] and [; Ctrl+] and Ctrl+[       | Forward, backward; front, back                            |
+| H                                | Flip                                                      |
+| + and −; 0; 1                    | Zoom in and out; 100 %; fit                               |
+| Space+drag, middle button, wheel | Pan; Ctrl+wheel zooms                                     |
+| Ctrl+S; Ctrl+O; Ctrl+Shift+C     | Save; open; copy image                                    |
+| /                                | Search the library                                        |
+| Escape                           | Cancel, leave a drawing tool, or clear the selection      |
+| ?                                | Help: how to start, and every key                         |
 
-On a Mac, Cmd replaces Ctrl. In a window narrower than 1540 px, the less-used top-bar controls (zoom, Snap, Photocopy-safe, Label all, New, Open, Save, Help) are in the **More** menu.
+On a Mac, Cmd replaces Ctrl. In a window narrower than 1540 px, the less-used top-bar controls (zoom and Fit, Snap, Photocopy-safe, Label all, New, Open, Save, Help) are in the **More** menu.
+
+Everything works from the keyboard. Tab reaches every control. Press `/`, type a name and press Enter: the part appears in the middle of the view, and the arrow keys move it at once. On the label-mode switch, the arrow keys change the mode.
+
+On a touchscreen, pinch with two fingers to zoom, and move two fingers together to pan. A double tap acts as a double-click, and the handles are easier to hit.
 
 ### Good to know
 
