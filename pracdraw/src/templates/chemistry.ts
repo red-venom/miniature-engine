@@ -177,26 +177,32 @@ const rateGasSyringe: TemplateDef = {
   refs: 'Trilogy RP 11; A-level RP 7',
   build() {
     const b = new DocBuilder('Rate of reaction: gas syringe')
+    // The stand and its clamp are made first, so that they are drawn behind the syringe and the tube, and placed once those are.
+    const stand = b.symbol('clampStand', { w: 100 })
+    const clamp = b.symbol('bossClamp', { w: 80, params: { grip: 44 } }) // the jaws open just wider than the 34 u barrel
     const flask = b.at('conicalFlask', 'base', P(0, 0), {
       contents: { main: [lumps(0.1, GRANULES), liquid(0.3, COLOURLESS, { bubbles: 'many' })] },
     })
     const bung = b.on('bung', 'plug', flask, 'mouth')
-    // The stand is to the right. Its clamp, made before the syringe so that it is drawn behind it,
-    // reaches back past the plunger and grips the barrel at its open end.
-    const stand = b.on('clampStand', 'base', flask, 'base', { dx: 330, h: 260 })
-    const clamp = b.on('bossClamp', 'sleeve', stand, 'rod', { dy: -85, w: 100, flip: true, params: { grip: 38 } })
-    const syringe = b.on('gasSyringe', 'neck', clamp, 'grip', { dx: -36, params: { plunger: 0.3 } })
-    const hole = anchorWorld(bung, 'hole1'),
-      nozzle = anchorWorld(syringe, 'nozzle')
+    const hole = anchorWorld(bung, 'hole1')
+    const syringe = b.at('gasSyringe', 'nozzle', P(hole.x + 120, hole.y - 105), { params: { plunger: 0.3 } })
+    // The clamp grips the barrel at its closed end, from the nozzle side: its stand rises left of the nozzle, behind the
+    // delivery tube, so nothing is in the plunger's path as it moves out.
+    moveAnchorTo(clamp, 'grip', toWorld(syringe, P(-78, 18)))
+    stand.h = Math.round(-(toWorld(syringe, P(0, 1)).y - 25)) // the bench is at y = 0; the rod ends 25 u above the barrel
+    standUnder(stand, clamp, 0)
+    const nozzle = anchorWorld(syringe, 'nozzle')
     // From just below the bung, up and across into the nozzle. The tube overlaps the nozzle, so that it hides the nozzle's end.
     b.connector('glassTube', [v(hole.x, hole.y + 32), v(hole.x, nozzle.y, 12), v(nozzle.x + 8, nozzle.y)])
-    const watch = b.near('stopwatch', flask, 'base', { dx: 120, dy: -33 })
-    b.label('gas syringe', 130, -282, [syringe, -80, 1])
-    b.label('clamp', 250, -282, [clamp, 10.8, 9.25])
+    const watch = b.near('stopwatch', flask, 'base', { dx: 330, dy: -33 })
+    const top = toWorld(syringe, P(0, 1)).y
+    b.label('clamp', nozzle.x - 20, top - 40, [clamp, 20, -2]) // the upper jaw, just above the barrel's top wall
+    b.label('gas syringe', nozzle.x + 110, top - 40, [syringe, -40, 1])
+    b.label('clamp stand', nozzle.x + 60, -60, [stand, -26, stand.h * 0.8])
     b.label('delivery tube', -90, -205, P(-3.5, -190))
     b.label('dilute hydrochloric acid', -90, -60, [flask, -30, 110])
     b.label('marble chips', -90, -20, [flask, -20, 143])
-    b.label('stopwatch', 160, -40, [watch, 27, 40])
+    b.label('stopwatch', 400, -40, [watch, 27, 40])
     return b.doc
   },
 }
@@ -361,7 +367,8 @@ const distillation: TemplateDef = {
     const receiver = b.on('receiverAdaptor', 'in', condenser, 'cone')
     moveAnchorTo(collect, 'base', P(anchorWorld(receiver, 'out').x, bench))
     // Water in at the lower port and out at the upper port, labelled as in the reference picture: the "water in" leader ends in an arrow.
-    b.label('water in', 245, -92, [condenser, 83, 66], { leaderEnd: 'arrow' })
+    // Left of its port: in blank mode its line (184 to 284) clears the stand's rod (x 171) and the receiving flask.
+    b.label('water in', 284, -92, [condenser, 83, 66], { leaderEnd: 'arrow' })
     b.label('water out', 130, -318, [condenser, -83, 4])
     b.label('thermometer', -90, -380, [thermo, -4.5, 40])
     b.label('round-bottomed flask', -90, -140, [flask, -53, 80])
@@ -493,7 +500,7 @@ const reflux: TemplateDef = {
     b.label('water in', -130, -240, [condenser, 83, 66], { leaderEnd: 'arrow' })
     b.label('round-bottomed flask', 120, -127, [flask, 35.5, 53])
     b.label('reaction mixture', 120, -90, [flask, 35, 89])
-    b.label('anti-bumping granules', 120, -45, [flask, 5, 145])
+    b.label('anti-bumping granules', 120, -45, [flask, 13, 145]) // the centre of the right-hand granule
     b.label('heating mantle', 120, -5, [mantle, 75, 80])
     return b.doc
   },
@@ -514,7 +521,7 @@ const separatingFunnelUse: TemplateDef = {
       params: { stopper: false },
       contents: { main: [c2Liquid(0.35, c2Preset.water), c2Liquid(0.25, c2Preset.oil)] },
     })
-    const clamp = b.on('bossClamp', 'grip', funnel, 'neck', { params: { grip: 22 } })
+    const clamp = b.on('bossClamp', 'grip', funnel, 'neck', { dy: 2, params: { grip: 22 } }) // 2 u down: its upper jaw stays inside the open mouth
     c2Behind(b.doc, clamp, funnel)
     c2Stand(stand, clamp, anchorWorld(beaker, 'base').y + c2Plate) // the beaker stands on the base plate
     // The clamp is behind the funnel, so its label points at the boss, from the left.
@@ -647,7 +654,7 @@ const phCurve: TemplateDef = {
     c2Stand(stand, clamp, anchorWorld(stirrer, 'base').y + c2Plate) // the stirrer stands on the base plate
     // The probe stands clear of the stirrer bar, at the left of the beaker.
     const probe = b.on('probe', 'tip', beaker, 'base', { dx: -28, dy: -16 })
-    const meter = b.on('instrumentBox', 'base', stand, 'base', { dx: -190 })
+    const meter = b.on('instrumentBox', 'base', stand, 'base', { dx: -190, params: { reading: '2.87' } }) // 0.1 mol/dm3 ethanoic acid, before any alkali
     const pt = anchorWorld(probe, 'top'),
       mb = anchorWorld(meter, 'base'),
       yw = pt.y - 25
@@ -721,7 +728,7 @@ const thermalDecomposition: TemplateDef = {
       out = toWorld(bung, P(0, -14)),
       lw = anchorWorld(limewater, 'mouth'),
       lb = anchorWorld(limewater, 'bottom')
-    b.connector('glassTube', [v(inside.x, inside.y), v(out.x, out.y, 12), v(lw.x, out.y, 12), v(lw.x, lb.y - 22)])
+    b.connector('glassTube', [v(inside.x, inside.y), v(out.x, out.y, 12), v(lw.x, out.y, 12), v(lw.x, lb.y - 6)]) // the outlet is below every bubble: gas leaves it and rises
     b.label('clamp', -80, -270, [clamp, -26, 11])
     b.label('boiling tube', -80, -230, [tube, -17, 120])
     b.label('copper carbonate', -80, -190, [tube, 12, 167])

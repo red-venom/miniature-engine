@@ -289,7 +289,7 @@ const densityLiquid: TemplateDef = {
     })
     const L = leftOf(balance, 20)
     b.label('measuring cylinder', L, cyl.y - 55, [cyl, -18, 40])
-    b.label('liquid', L, cyl.y + 50, [cyl, -10, 140])
+    b.label('liquid', L, cyl.y + 50, [cyl, 9, 125]) // in the clear liquid, right of the graduations
     b.label('top-pan balance', L, balance.y + 15, [balance, -84, 40])
     return b.doc
   },
