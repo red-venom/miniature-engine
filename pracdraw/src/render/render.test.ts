@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { Layer } from '../kernel/contents'
 import type { GroupNode } from '../kernel/nodes'
 import { DocBuilder } from '../model/build'
-import { symbolNode } from './render'
+import { connectorNode, symbolNode } from './render'
+import { DEFAULT_SETTINGS } from '../model/types'
 
 describe('the seed of bubbles, dots and lumps', () => {
   const layers: Layer[] = [
@@ -24,5 +25,26 @@ describe('the seed of bubbles, dots and lumps', () => {
     const one = b.symbol('beaker', { contents: { main: layers } })
     expect(inside(symbolNode({ ...one, x: 40, y: -25 }, b.doc.settings))).toBe(inside(symbolNode(one, b.doc.settings)))
     expect(inside(symbolNode({ ...one, w: 130 }, b.doc.settings))).not.toBe(inside(symbolNode(one, b.doc.settings)))
+  })
+})
+
+describe('a connector with no length', () => {
+  it('draws nothing and never throws, whatever its kind and caps', () => {
+    for (const kind of ['glassTube', 'rubberTube', 'wire', 'line'] as const) {
+      const it = {
+        id: 'c',
+        type: 'connector' as const,
+        kind,
+        points: [
+          { x: 5, y: 5 },
+          { x: 5, y: 5, r: 12 },
+          { x: 5, y: 5 },
+        ],
+        startCap: 'arrow' as const,
+        endCap: 'tick' as const,
+      }
+      const n = connectorNode(it, DEFAULT_SETTINGS) as GroupNode
+      expect(n.kids).toEqual([])
+    }
   })
 })

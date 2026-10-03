@@ -123,7 +123,9 @@ function capNode(cap: Cap, end: Pt, prev: Pt): PathNode | null {
 }
 
 export function connectorNode(it: ConnectorItem, s: DocSettings): Node {
-  if (it.points.length < 2) return { t: 'g', key: it.id, kids: [] }
+  // Fewer than two points, or every point on one spot (a file can hold that): nothing to draw. The tube kernel cannot draw it.
+  const p0 = it.points[0]
+  if (it.points.length < 2 || it.points.every((p) => Math.abs(p.x - p0.x) < 1e-6 && Math.abs(p.y - p0.y) < 1e-6)) return { t: 'g', key: it.id, kids: [] }
   if (it.kind === 'glassTube' || it.kind === 'rubberTube') {
     const t = tube(it.points, it.width ?? TUBE_WIDTH[it.kind], [it.startCap === 'closed' ? 'closed' : 'open', it.endCap === 'closed' ? 'closed' : 'open'])
     const body = it.kind === 'rubberTube' && !s.mono ? GREY : PAPER
