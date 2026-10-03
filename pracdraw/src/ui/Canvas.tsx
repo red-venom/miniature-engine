@@ -7,11 +7,14 @@ import { addSymbolAt, clearSelection, docFromText, loadDoc, select } from '../ed
 import { ROTATE_GAP, handlePoint, handlesFor, resizeWith, rotatePoint, rotationTo, snapAngle, type HandleId } from '../editor/handles'
 import { installHook } from '../editor/hook'
 import { inTextField } from '../editor/keys'
+import { filledAt, surfaces } from '../editor/level'
 import { cachedNodes } from '../editor/nodes'
 import { useEditor, type Gesture, type View } from '../editor/store'
 import { screenBox, toScreen, toWorld, zoomAt } from '../editor/view'
 import { boxCentre, boxesTouch, itemBox, itemsBox } from '../model/bounds'
 import { duplicateItems, moveItems, rotateItems, setRotation, setSize } from '../model/commands'
+import { setFilled } from '../model/contents'
+import { orderRule } from '../model/order'
 import type { Doc, Id, SymbolItem } from '../model/types'
 import { NodeView } from '../render/NodeView'
 import { hasSymbol, symbolDef } from '../symbols/registry'
@@ -19,6 +22,9 @@ import { DRAG_TYPE } from './constants'
 
 const HANDLE = 8
 const CLICK_PX = 3
+/** The level handle: a short bar at the right end of the top surface. */
+const LEVEL_W = 16
+const LEVEL_H = 5
 
 type Drag =
   | { kind: 'pan'; start: Pt; view0: View }
@@ -26,6 +32,7 @@ type Drag =
   | { kind: 'marquee'; start: Pt; keep: Id[] }
   | { kind: 'resize'; id: Id; handle: HandleId }
   | { kind: 'rotate'; ids: Id[]; centre: Pt; start: number }
+  | { kind: 'level'; id: Id; cavity: string }
 
 /** The unlocked items under a page point, topmost first. */
 function itemsAt(x: number, y: number, doc: Doc): Id[] {
@@ -104,9 +111,13 @@ export function Canvas() {
       drag.current = { kind: 'pan', start: sp, view0: s.view }
       return
     }
-    const handle = (e.target as Element).closest('[data-handle]')?.getAttribute('data-handle') as HandleId | 'rotate' | null
+    const handleEl = (e.target as Element).closest('[data-handle]')
+    const handle = handleEl?.getAttribute('data-handle') as HandleId | 'rotate' | 'level' | null
     if (handle && s.selection.length) {
-      if (handle === 'rotate') {
+      if (handle === 'level') {
+        drag.current = { kind: 'level', id: s.selection[0], cavity: handleEl?.getAttribute('data-cavity') ?? 'main' }
+        s.beginGesture('level')
+      } else if (handle === 'rotate') {
         const one = s.selection.length === 1 ? s.doc.items[s.selection[0]] : null
         const centre = one && one.type === 'symbol' ? P(one.x, one.y) : boxCentre(itemsBox(s.doc, s.selection)!)
         drag.current = { kind: 'rotate', ids: s.selection, centre, start: rotationTo(centre, wp) }
@@ -185,6 +196,13 @@ export function Canvas() {
         const one = d.ids.length === 1 ? base.items[d.ids[0]] : null
         if (one && one.type === 'symbol') s.preview(setRotation(base, one.id, snapAngle(rotationTo(d.centre, wp), e.shiftKey)))
         else s.preview(rotateItems(base, d.ids, snapAngle(rotationTo(d.centre, wp) - d.start, e.shiftKey), d.centre))
+        return
+      }
+      case 'level': {
+        const it = base.items[d.id]
+        if (!it || it.type !== 'symbol') return
+        const filled = filledAt(it, d.cavity, wp)
+        if (filled !== null) s.preview(setFilled(base, d.id, d.cavity, filled))
       }
     }
   }
@@ -195,6 +213,8 @@ export function Canvas() {
     drag.current = null
     e.currentTarget.releasePointerCapture(e.pointerId)
     const s = useEditor.getState()
+    // The order rule (section 12): a symbol dropped into a cavity comes to just above that symbol.
+    if (d.kind === 'move' && d.moving) s.preview(orderRule(s.doc, d.ids))
     s.endGesture()
     if (d.kind === 'move' && d.moving && d.alt) select(d.ids)
   }
@@ -265,6 +285,23 @@ function Handle({ id, p }: { id: HandleId; p: Pt }) {
   return <rect className="handle" data-handle={id} x={p.x - HANDLE / 2} y={p.y - HANDLE / 2} width={HANDLE} height={HANDLE} style={{ cursor: CURSORS[id] }} />
 }
 
+/** The level handle of one cavity: dragging it up or down changes the amount of the top layer that is not a gas. */
+function LevelHandle({ cavity, p }: { cavity: string; p: Pt }) {
+  return (
+    <rect
+      className="handle level"
+      data-handle="level"
+      data-cavity={cavity}
+      x={p.x - LEVEL_W / 2}
+      y={p.y - LEVEL_H / 2}
+      width={LEVEL_W}
+      height={LEVEL_H}
+      rx={1.5}
+      style={{ cursor: 'ns-resize' }}
+    />
+  )
+}
+
 function RotateHandle({ from, to }: { from: Pt; to: Pt }) {
   return (
     <>
@@ -290,6 +327,7 @@ function Overlay({ doc, selection, view, gesture }: { doc: Doc; selection: Id[];
       const def = resizeMode(one)
       for (const h of handlesFor(def?.resize ?? 'free')) kids.push(<Handle key={h} id={h} p={toScreen(view, handlePoint(one, h))} />)
       kids.push(<RotateHandle key="rotate" from={toScreen(view, handlePoint(one, 'n'))} to={toScreen(view, rotatePoint(one, ROTATE_GAP / view.zoom))} />)
+      for (const sf of surfaces(one)) kids.push(<LevelHandle key={`level-${sf.cavity}`} cavity={sf.cavity} p={toScreen(view, sf.handle)} />)
     }
   } else if (selection.length) {
     const b = itemsBox(doc, selection)

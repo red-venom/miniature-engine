@@ -1,6 +1,7 @@
 // actions.ts — what the toolbar, the inspector, the library and the keys do. Each action calls a command and
 // commits the result to the store as one undo step. No DOM here, except the clipboard through the host.
 
+import type { Layer } from '../kernel/contents'
 import { P, type Pt } from '../kernel/geom'
 import { svgDocument, translate, type Node } from '../kernel/nodes'
 import { canvasToBlob, renderCanvas } from '../export/canvas'
@@ -33,6 +34,8 @@ import {
   type Arrange,
   type SizeArgs,
 } from '../model/commands'
+import { addLayer, applyPreset, emptyCavity, fillWater, removeLayer, setLayer, setReading, type Preset } from '../model/contents'
+import { orderRule } from '../model/order'
 import { newDoc, type Doc, type DocSettings, type Id, type Item, type ParamValue, type SymbolItem } from '../model/types'
 import { docNodes, estimateBounds } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
@@ -90,7 +93,7 @@ export function addSymbolAt(symbol: string, at?: Pt): Id {
     p = P(c.x + off, c.y + off)
   }
   const it = makeSymbol(symbol, Math.round(p.x), Math.round(p.y))
-  commit(addSymbol(s.doc, symbol, it.x, it.y, it.id))
+  commit(orderRule(addSymbol(s.doc, symbol, it.x, it.y, it.id), [it.id]))
   state().select([it.id])
   remember(symbol)
   return it.id
@@ -128,7 +131,7 @@ export function duplicateSelection(dx = PASTE_OFFSET, dy = PASTE_OFFSET): void {
 
 export function nudge(dx: number, dy: number): void {
   const ids = selected()
-  if (ids.length) commit(moveItems(state().doc, ids, dx, dy), 'arrow')
+  if (ids.length) commit(orderRule(moveItems(state().doc, ids, dx, dy), ids), 'arrow')
 }
 
 export function arrange(how: Arrange): void {
@@ -195,6 +198,38 @@ export function resizeTyped(it: SymbolItem, field: 'w' | 'h', value: number): vo
   } else if (field === 'w' && mode !== 'height') w = value
   else if (field === 'h' && mode !== 'width') h = value
   resize(it.id, { w: Math.round(w * 100) / 100, h: Math.round(h * 100) / 100 })
+}
+
+// ---------------------------------------------------------------- contents (section 9)
+
+export const cavityEmpty = (id: Id, cavity: string): void => commit(emptyCavity(state().doc, id, cavity))
+export const cavityWater = (id: Id, cavity: string): void => commit(fillWater(state().doc, id, cavity))
+export const layerAdd = (id: Id, cavity: string): void => commit(addLayer(state().doc, id, cavity))
+export const layerRemove = (id: Id, cavity: string, index: number): void => commit(removeLayer(state().doc, id, cavity, index))
+export const layerPreset = (id: Id, cavity: string, index: number, preset: Preset): void => commit(applyPreset(state().doc, id, cavity, index, preset))
+/** A field of one layer. `merge` joins quick repeats into one undo step (the colour picker fires as the pointer moves). */
+export const layerSet = (id: Id, cavity: string, index: number, patch: Partial<Layer>, merge?: string): void =>
+  commit(setLayer(state().doc, id, cavity, index, patch), merge)
+export const reading = (id: Id, value: number): void => commit(setReading(state().doc, id, value))
+
+/**
+ * An amount slider is one undo step: the drag is a gesture. `start` opens it (once), `move` previews the document,
+ * `end` closes it. A change outside a gesture (a programmatic one) is its own step.
+ */
+export const slider = {
+  start(): void {
+    const s = state()
+    if (!s.gesture) s.beginGesture('slider')
+  },
+  move(doc: Doc): void {
+    const s = state()
+    if (s.gesture?.kind === 'slider') s.preview(doc)
+    else commit(doc)
+  },
+  end(): void {
+    const s = state()
+    if (s.gesture?.kind === 'slider') s.endGesture()
+  },
 }
 
 // ---------------------------------------------------------------- history, clipboard, document

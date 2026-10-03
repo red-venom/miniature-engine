@@ -238,12 +238,20 @@ test('autosave-restores', async ({ page }) => {
   await page.goto(FILE)
   const beaker = await addFromLibrary(page, 'Beaker')
   await page.getByRole('radio', { name: 'Letters' }).click()
+  await page.locator('.canvas').click({ position: { x: 10, y: 10 } }) // clear the selection: the inspector shows the settings
+  await page.getByLabel('Dot grid').uncheck() // a view preference: stored beside the document, not in it
   await page.waitForTimeout(800)
+  const stored = await page.evaluate(() => localStorage.getItem('pracdraw.autosave.v1'))
+  expect(stored).not.toBeNull()
+  const saved = JSON.parse(stored!) as { doc: Doc; prefs: { snap: boolean; grid: boolean; recent: string[] } }
+  expect(saved.doc.order).toEqual([beaker.id])
+  expect(saved.prefs).toMatchObject({ grid: false, snap: true, recent: ['beaker'] })
   await page.reload()
   const doc = await getDoc(page)
   expect(doc.order).toEqual([beaker.id])
   expect(doc.items[beaker.id]).toMatchObject({ symbol: 'beaker', x: beaker.x, y: beaker.y })
   expect(doc.settings.labelMode).toBe('letters')
+  await expect(page.getByLabel('Dot grid')).not.toBeChecked()
 })
 
 test('insert-template-twice', async ({ page }) => {
