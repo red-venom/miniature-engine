@@ -1,5 +1,7 @@
 // nodes.ts — render nodes memoised on the item object and the settings (the drag budget in section 6).
 // A label also depends on its target item and, in letters mode, on its letter.
+// An item that cannot be drawn (the kernel throws, for example for a tube whose points all coincide in a file from
+// elsewhere) is drawn as nothing, so that one bad item cannot take the whole editor down.
 
 import type { Node } from '../kernel/nodes'
 import { itemNode, labelLetters } from '../render/render'
@@ -25,7 +27,12 @@ export function cachedNode(doc: Doc, it: Item, letters: Map<string, string> | un
   const letter = letters?.get(it.id)
   const hit = cache.get(it)
   if (hit && hit.settings === doc.settings && hit.dep === dep && hit.letter === letter) return hit.node
-  const node = itemNode(doc, it, letters)
+  let node: Node
+  try {
+    node = itemNode(doc, it, letters)
+  } catch {
+    node = { t: 'g', key: it.id, kids: [] }
+  }
   cache.set(it, { settings: doc.settings, dep, letter, node })
   return node
 }

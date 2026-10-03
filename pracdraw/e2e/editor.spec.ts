@@ -1,10 +1,11 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { demoDoc } from '../src/demo.ts'
-import { bounds, scan, type Pt } from '../src/kernel/geom.ts'
+import { P, bounds, scan, type Pt } from '../src/kernel/geom.ts'
+import { DocBuilder } from '../src/model/build.ts'
 import { toWorld } from '../src/model/transform.ts'
-import type { Doc, SymbolItem } from '../src/model/types.ts'
+import type { ConnectorItem, Doc, ShapeItem, SymbolItem } from '../src/model/types.ts'
 import { geometry } from '../src/symbols/registry.ts'
 import { amountToReading } from '../src/symbols/scale.ts'
 
@@ -256,7 +257,9 @@ test('autosave-restores', async ({ page }) => {
   const beaker = await addFromLibrary(page, 'Beaker')
   await page.getByRole('radio', { name: 'Letters' }).click()
   await page.locator('.canvas').click({ position: { x: 10, y: 10 } }) // clear the selection: the inspector shows the settings
-  await page.getByLabel('Dot grid').uncheck() // a view preference: stored beside the document, not in it
+  // View preferences: stored beside the document, not in it.
+  await page.getByLabel('Dot grid', { exact: true }).uncheck()
+  await page.getByLabel('Snap', { exact: true }).uncheck()
   await page.waitForTimeout(800)
   // The one autosave slot holds the document and, beside it, the view preferences.
   const slot = async () => {
@@ -265,7 +268,7 @@ test('autosave-restores', async ({ page }) => {
     const saved = JSON.parse(stored!) as { doc: Doc; prefs: { snap: boolean; grid: boolean; recent: string[] } }
     expect(saved.doc.order).toEqual([beaker.id])
     expect(saved.doc.settings.labelMode).toBe('letters')
-    expect(saved.prefs).toMatchObject({ grid: false, snap: true, recent: ['beaker'] })
+    expect(saved.prefs).toMatchObject({ grid: false, snap: false, recent: ['beaker'] })
   }
   await slot()
   await page.reload()
@@ -273,7 +276,12 @@ test('autosave-restores', async ({ page }) => {
   expect(doc.order).toEqual([beaker.id])
   expect(doc.items[beaker.id]).toMatchObject({ symbol: 'beaker', x: beaker.x, y: beaker.y })
   expect(doc.settings.labelMode).toBe('letters')
-  await expect(page.getByLabel('Dot grid')).not.toBeChecked()
+  await expect(page.getByLabel('Dot grid', { exact: true })).not.toBeChecked()
+  await expect(page.getByLabel('Snap', { exact: true })).not.toBeChecked()
+  // The library's Recent section is back, with the beaker in it.
+  const library = page.getByRole('complementary', { name: 'Library' })
+  const recent = library.locator('section', { has: page.getByRole('heading', { name: 'Recent', exact: true }) })
+  await expect(recent.getByRole('button', { name: 'Beaker', exact: true })).toBeVisible()
   await slot()
 })
 
@@ -427,4 +435,320 @@ test('contents-controls', async ({ page }) => {
   await contents.getByRole('button', { name: 'Empty', exact: true }).click()
   expect(await layers()).toBeUndefined()
   await expect(page.locator('[data-handle="level"]')).toHaveCount(0)
+})
+
+// ---------------------------------------------------------------- phase 4 gate tests: connectors
+
+/** One path of the SVG export. */
+interface SvgPath {
+  d: string
+  fill: string | null
+  stroke: string | null
+  sw: string | null
+  dash: string | null
+}
+
+/** The paths of each item in the SVG export, in draw order. The export has no ids: each item is one group. */
+const svgItems = (page: Page): Promise<SvgPath[][]> =>
+  page.evaluate(() => {
+    const svg = new DOMParser().parseFromString(window.__pracdraw.svg(), 'image/svg+xml')
+    const top = svg.documentElement.querySelector(':scope > g')!
+    return [...top.children].map((g) =>
+      [...g.querySelectorAll('path')].map((p) => ({
+        d: p.getAttribute('d')!,
+        fill: p.getAttribute('fill'),
+        stroke: p.getAttribute('stroke'),
+        sw: p.getAttribute('stroke-width'),
+        dash: p.getAttribute('stroke-dasharray'),
+      })),
+    )
+  })
+
+/** The points of a path made of M and L commands (and Z). */
+function pathPoints(d: string): Pt[] {
+  const n = (d.match(/-?\d*\.?\d+/g) ?? []).map(Number)
+  const out: Pt[] = []
+  for (let i = 0; i + 1 < n.length; i += 2) out.push({ x: n[i], y: n[i + 1] })
+  return out
+}
+
+const near = (a: Pt, b: Pt, within = 0.02) => Math.hypot(a.x - b.x, a.y - b.y) <= within
+const xy = (c: ConnectorItem) => c.points.map((p) => [p.x, p.y])
+const pressed = (page: Page, tool: string) =>
+  expect(page.getByRole('toolbar', { name: 'Tools' }).getByRole('button', { name: tool, exact: true })).toHaveAttribute('aria-pressed', 'true')
+
+async function centreOf(l: Locator): Promise<Pt> {
+  const b = (await l.boundingBox())!
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+}
+
+/** Open the app and wait until it listens: the keys and the test hook are set up just after the first render. */
+async function open(page: Page) {
+  await page.goto(FILE)
+  await page.waitForFunction(() => !!window.__pracdraw)
+}
+
+async function clickAt(page: Page, p: Pt) {
+  const s = await onScreen(page, p)
+  await page.mouse.click(s.x, s.y)
+}
+
+async function dblclickOn(page: Page, l: Locator) {
+  const c = await centreOf(l)
+  await page.mouse.dblclick(c.x, c.y)
+}
+
+test('draw-tube-four-points', async ({ page }) => {
+  await open(page)
+  await page.keyboard.press('u')
+  await pressed(page, 'Tube')
+  // Four clicks, each a few px off level or upright: within the 5° of the snap.
+  for (const p of [P(100, 150), P(104, 350), P(300, 346), P(306, 520)]) await clickAt(page, p)
+  await page.keyboard.press('Enter')
+  const doc = await getDoc(page)
+  expect(doc.order).toHaveLength(1)
+  const tube = doc.items[doc.order[0]] as ConnectorItem
+  expect(tube).toMatchObject({ type: 'connector', kind: 'glassTube', width: 7, startCap: 'none', endCap: 'none' })
+  expect(tube.points).toHaveLength(4)
+  // Every segment snapped: exactly level or exactly upright. The two bends have the glass tube's 12 u radius.
+  for (let i = 1; i < 4; i++) {
+    const a = tube.points[i - 1],
+      b = tube.points[i]
+    expect(a.x === b.x || a.y === b.y).toBe(true)
+  }
+  expect(xy(tube)).toEqual([
+    [100, 150],
+    [100, 350],
+    [300, 350],
+    [300, 520],
+  ])
+  expect(tube.points.map((p) => p.r)).toEqual([undefined, 12, 12, undefined])
+  // The tool is back to Select, and the new tube is the selection.
+  await pressed(page, 'Select')
+  await expect(page.locator('[data-handle="point"]')).toHaveCount(4)
+  // The SVG: the tube's white body, then its two wall lines, 3.5 u either side of the first point.
+  const items = await svgItems(page)
+  expect(items).toHaveLength(1)
+  expect(items[0]).toHaveLength(2)
+  const [body, walls] = items[0]
+  expect(body).toMatchObject({ fill: '#ffffff', stroke: null })
+  expect(walls).toMatchObject({ fill: 'none', stroke: '#111111', sw: '2' })
+  const starts = [...walls.d.matchAll(/M(-?[\d.]+) (-?[\d.]+)/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }))
+  expect(starts).toHaveLength(2)
+  expect(starts.map((p) => p.x).sort((a, b) => a - b)).toEqual([96.5, 103.5])
+  expect(starts.map((p) => p.y)).toEqual([150, 150])
+})
+
+test('edit-connector-point', async ({ page }) => {
+  await open(page)
+  // A wire: across 200, then down 150.
+  const b = new DocBuilder('Wire')
+  b.connector('wire', [P(100, 100), P(300, 100), P(300, 250)])
+  await page.evaluate((d) => window.__pracdraw.load(d), b.doc)
+  const points = async () => xy((await getDoc(page)).items.wire1 as ConnectorItem)
+  // Select it by clicking its line.
+  await clickAt(page, P(150, 100))
+  const handle = (kind: 'point' | 'mid', i: number) => page.locator(`[data-handle="${kind}"][data-index="${i}"]`)
+  await expect(page.locator('[data-handle="point"]')).toHaveCount(3)
+  await expect(page.locator('[data-handle="mid"]')).toHaveCount(2)
+  const zoom = (await page.evaluate(() => window.__pracdraw.view())).zoom
+  // Drag the last square handle 60 right and 40 down: the point moves there.
+  await drag(page, await centreOf(handle('point', 2)), 60 * zoom, 40 * zoom)
+  expect(await points()).toEqual([
+    [100, 100],
+    [300, 100],
+    [360, 290],
+  ])
+  // Drag the round handle of the first segment 50 up: a point is inserted there.
+  await drag(page, await centreOf(handle('mid', 0)), 0, -50 * zoom)
+  expect(await points()).toEqual([
+    [100, 100],
+    [200, 50],
+    [300, 100],
+    [360, 290],
+  ])
+  // Double-click the new point: it is deleted.
+  await dblclickOn(page, handle('point', 1))
+  expect(await points()).toEqual([
+    [100, 100],
+    [300, 100],
+    [360, 290],
+  ])
+  // Each edit is one undo step.
+  await page.keyboard.press('Control+z')
+  expect(await points()).toHaveLength(4)
+  await page.keyboard.press('Control+z')
+  expect(await points()).toEqual([
+    [100, 100],
+    [300, 100],
+    [360, 290],
+  ])
+  await page.keyboard.press('Control+z')
+  expect(await points()).toEqual([
+    [100, 100],
+    [300, 100],
+    [300, 250],
+  ])
+  // Two points always remain.
+  await page.keyboard.press('Control+y')
+  await dblclickOn(page, handle('point', 1))
+  await dblclickOn(page, handle('point', 1))
+  expect(await points()).toEqual([
+    [100, 100],
+    [360, 290],
+  ])
+})
+
+test('arrow-and-dimension-caps', async ({ page }) => {
+  await open(page)
+  const library = page.getByRole('complementary', { name: 'Library' })
+  await library.getByRole('button', { name: 'Arrow', exact: true }).click()
+  await library.getByRole('button', { name: 'Dimension line', exact: true }).click()
+  let doc = await getDoc(page)
+  const [arrow, dim] = doc.order.map((id) => doc.items[id] as ConnectorItem)
+  expect(arrow).toMatchObject({ type: 'connector', kind: 'line', startCap: 'none', endCap: 'arrow' })
+  expect(dim).toMatchObject({ type: 'connector', kind: 'line', startCap: 'tick', endCap: 'tick' })
+  const [a0, a1] = arrow.points,
+    [d0, d1] = dim.points
+  expect(Math.hypot(a1.x - a0.x, a1.y - a0.y)).toBe(80)
+  expect(Math.hypot(d1.x - d0.x, d1.y - d0.y)).toBe(120)
+  /** A filled arrow head: its tip on `tip`, its two other corners behind it, towards `from`. */
+  const isHead = (p: SvgPath, tip: Pt, from: Pt) => {
+    const [c1, t, c2] = pathPoints(p.d)
+    const behind = (c: Pt) => (c.x - t.x) * (from.x - tip.x) + (c.y - t.y) * (from.y - tip.y) > 0
+    return p.fill === '#111111' && !p.stroke && near(t, tip) && behind(c1) && behind(c2)
+  }
+  /** A tick: a short stroke across the line, centred on `end`. */
+  const isTick = (p: SvgPath, end: Pt, from: Pt) => {
+    const [s, e] = pathPoints(p.d)
+    const across = Math.abs((e.x - s.x) * (from.x - end.x) + (e.y - s.y) * (from.y - end.y)) < 0.01
+    return !!p.stroke && p.fill === 'none' && near({ x: (s.x + e.x) / 2, y: (s.y + e.y) / 2 }, end) && across && Math.hypot(e.x - s.x, e.y - s.y) > 6
+  }
+  // The SVG: the arrow is its line and a filled head at its end; the dimension line has a tick across each end.
+  let items = await svgItems(page)
+  expect(items).toHaveLength(2)
+  expect(items[0]).toHaveLength(2)
+  const [line, head] = items[0]
+  expect(line).toMatchObject({ fill: 'none', stroke: '#111111', sw: '1.25' })
+  expect(isHead(head, a1, a0)).toBe(true)
+  expect(items[1]).toHaveLength(3)
+  expect(isTick(items[1][1], d0, d1)).toBe(true)
+  expect(isTick(items[1][2], d1, d0)).toBe(true)
+  // Change a cap in the inspector: the dimension line (the selection) gets an arrow head at its start.
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await inspector.getByLabel('Start cap', { exact: true }).selectOption('arrow')
+  doc = await getDoc(page)
+  expect(doc.items[dim.id]).toMatchObject({ startCap: 'arrow', endCap: 'tick' })
+  items = await svgItems(page)
+  expect(items[1]).toHaveLength(3)
+  expect(isHead(items[1][1], d0, d1)).toBe(true)
+  expect(isTick(items[1][2], d1, d0)).toBe(true)
+  // Select the arrow and give it a dot instead of its head.
+  await clickAt(page, P((a0.x + a1.x) / 2 - 20, a0.y))
+  await inspector.getByLabel('End cap', { exact: true }).selectOption('dot')
+  expect((await getDoc(page)).items[arrow.id]).toMatchObject({ endCap: 'dot' })
+  items = await svgItems(page)
+  expect(items[0]).toHaveLength(2)
+  expect(items[0][1]).toMatchObject({ fill: '#111111', stroke: null })
+  expect(items[0][1].d).toContain('a2.5 2.5')
+})
+
+// ---------------------------------------------------------------- phase 4: the tools at work
+
+test('connector-tools', async ({ page }) => {
+  await open(page)
+  // Wire: a press, drag and release makes a two-point wire in one gesture. It snaps level.
+  await page.keyboard.press('w')
+  await drag(page, await onScreen(page, P(100, 100)), 200, 4)
+  let doc = await getDoc(page)
+  const wire = doc.items[doc.order[0]] as ConnectorItem
+  expect(wire.kind).toBe('wire')
+  expect(xy(wire)).toEqual([
+    [100, 100],
+    [300, 100],
+  ])
+  await pressed(page, 'Select')
+  // Line and arrow: Backspace takes back the last point; Escape cancels the line and keeps the tool.
+  await page.keyboard.press('a')
+  await pressed(page, 'Line and arrow')
+  await clickAt(page, P(100, 200))
+  await clickAt(page, P(200, 260))
+  await page.keyboard.press('Backspace')
+  await page.keyboard.press('Escape')
+  expect((await getDoc(page)).order).toEqual([wire.id])
+  await pressed(page, 'Line and arrow')
+  // Shift gives 45° steps. A double-click finishes, and places its point once.
+  await clickAt(page, P(100, 200))
+  await page.keyboard.down('Shift')
+  await clickAt(page, P(190, 285))
+  await page.keyboard.up('Shift')
+  const end = await onScreen(page, P(300, 291))
+  await page.mouse.dblclick(end.x, end.y)
+  doc = await getDoc(page)
+  expect(doc.order).toHaveLength(2)
+  const line = doc.items[doc.order[1]] as ConnectorItem
+  expect(line.kind).toBe('line')
+  expect(xy(line)).toEqual([
+    [100, 200],
+    [188, 288],
+    [300, 288],
+  ])
+  await pressed(page, 'Select')
+  // A connector moves like any item: the arrow keys, a drag, duplicate, delete and the marquee.
+  await page.keyboard.press('ArrowRight')
+  expect(xy((await getDoc(page)).items[line.id] as ConnectorItem)[0]).toEqual([101, 200])
+  await drag(page, await onScreen(page, P(200, 100)), 0, 30)
+  expect(xy((await getDoc(page)).items[wire.id] as ConnectorItem)).toEqual([
+    [100, 130],
+    [300, 130],
+  ])
+  await page.keyboard.press('Control+d')
+  doc = await getDoc(page)
+  expect(doc.order).toHaveLength(3)
+  expect(xy(doc.items[doc.order[2]] as ConnectorItem)).toEqual([
+    [120, 150],
+    [320, 150],
+  ])
+  await page.keyboard.press('Delete')
+  expect((await getDoc(page)).order).toEqual([wire.id, line.id])
+  await drag(page, await onScreen(page, P(80, 180)), 250, 130)
+  await expect(page.locator('[data-handle="point"]')).toHaveCount(3)
+})
+
+test('shape-tools', async ({ page }) => {
+  await open(page)
+  // Rectangle: a drag draws it, with no fill and no dash, and it becomes the selection.
+  await page.keyboard.press('r')
+  await drag(page, await onScreen(page, P(100, 100)), 120, 60)
+  let doc = await getDoc(page)
+  const rect = doc.items[doc.order[0]] as ShapeItem
+  expect(rect).toMatchObject({ type: 'shape', shape: 'rect', x: 160, y: 130, w: 120, h: 60, rot: 0, fill: 'none', dash: false })
+  await pressed(page, 'Select')
+  // It has the handles of a free symbol: eight to resize and one to rotate.
+  for (const h of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw', 'rotate']) await expect(page.locator(`[data-handle="${h}"]`)).toHaveCount(1)
+  const zoom = (await page.evaluate(() => window.__pracdraw.view())).zoom
+  await drag(page, await centreOf(page.locator('[data-handle="se"]')), 40 * zoom, 20 * zoom)
+  expect((await getDoc(page)).items[rect.id]).toMatchObject({ x: 180, y: 140, w: 160, h: 80 })
+  // The inspector: fill and dash.
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await inspector.getByLabel('Fill', { exact: true }).selectOption('grey')
+  await inspector.getByLabel('Dashed', { exact: true }).check()
+  expect((await getDoc(page)).items[rect.id]).toMatchObject({ fill: 'grey', dash: true })
+  expect((await svgItems(page))[0][0]).toMatchObject({ fill: '#c9c9c9', stroke: '#111111', sw: '2', dash: '6 4' })
+  // Ellipse with Shift: a circle. Each shape is one undo step. (The focus is in the inspector, where keys do nothing:
+  // the tool comes from its button.)
+  await page.getByRole('toolbar', { name: 'Tools' }).getByRole('button', { name: 'Ellipse', exact: true }).click()
+  await pressed(page, 'Ellipse')
+  await page.keyboard.down('Shift')
+  await drag(page, await onScreen(page, P(300, 300)), 80, 50)
+  await page.keyboard.up('Shift')
+  doc = await getDoc(page)
+  expect(doc.items[doc.order[1]]).toMatchObject({ shape: 'ellipse', w: 80, h: 80 })
+  await page.keyboard.press('Control+z')
+  expect((await getDoc(page)).order).toEqual([rect.id])
+  // A click with a shape tool draws nothing, and the tool stays.
+  await page.keyboard.press('e')
+  await clickAt(page, P(400, 400))
+  expect((await getDoc(page)).order).toEqual([rect.id])
+  await pressed(page, 'Ellipse')
 })

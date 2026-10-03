@@ -1,8 +1,11 @@
 // Inspector.tsx — the right panel: the properties of the selection, or the document settings.
 
 import * as a from '../editor/actions'
+import { itemName } from '../editor/names'
 import { useEditor } from '../editor/store'
-import type { ConnectorItem, Doc, DocSettings, Item, LabelItem, ShapeItem, SymbolItem } from '../model/types'
+import { RADIUS_RANGE, WIDTH_RANGE, capsFor, connectorRadius, connectorWidth, isTube, type ConnectorPatch } from '../model/connectors'
+import { SHAPE_FILLS, type ShapeFill, type ShapePatch } from '../model/shapes'
+import type { Cap, ConnectorItem, ConnectorKind, Doc, DocSettings, Item, LabelItem, ShapeItem, SymbolItem } from '../model/types'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { ParamDef } from '../symbols/types'
 import { ContentsBlocks, ReadingField } from './Contents'
@@ -30,17 +33,22 @@ function Arrange() {
   )
 }
 
-function ItemButtons({ items }: { items: Item[] }) {
+/** Lock, Duplicate and Delete. A connector and a shape have Delete only (section 12). */
+function ItemButtons({ items, deleteOnly }: { items: Item[]; deleteOnly?: boolean }) {
   const locked = items.every((it) => it.locked)
   return (
     <Section title="Item">
       <Row>
-        <button type="button" className="small" onClick={() => a.lockSelection(!locked)} aria-pressed={locked}>
-          {icons.lock} Lock
-        </button>
-        <button type="button" className="small" onClick={() => a.duplicateSelection()} title="Duplicate (Ctrl+D)">
-          {icons.duplicate} Duplicate
-        </button>
+        {!deleteOnly && (
+          <button type="button" className="small" onClick={() => a.lockSelection(!locked)} aria-pressed={locked}>
+            {icons.lock} Lock
+          </button>
+        )}
+        {!deleteOnly && (
+          <button type="button" className="small" onClick={() => a.duplicateSelection()} title="Duplicate (Ctrl+D)">
+            {icons.duplicate} Duplicate
+          </button>
+        )}
         <button type="button" className="small danger" onClick={() => a.deleteSelection()} title="Delete">
           {icons.trash} Delete
         </button>
@@ -123,30 +131,76 @@ function LabelFields({ it }: { it: LabelItem }) {
   )
 }
 
+const KINDS: { value: ConnectorKind; label: string }[] = [
+  { value: 'glassTube', label: 'Glass tube' },
+  { value: 'rubberTube', label: 'Rubber tube' },
+  { value: 'wire', label: 'Wire' },
+  { value: 'line', label: 'Line' },
+]
+
+const CAP_NAMES: Record<Cap, string> = { none: 'None', arrow: 'Arrow', dot: 'Dot', tick: 'Tick', closed: 'Closed' }
+
+/** The caps a kind can have. A tube's end with no cap is open. */
+const capOptions = (kind: ConnectorKind) => capsFor(kind).map((c) => ({ value: c, label: c === 'none' && isTube(kind) ? 'Open' : CAP_NAMES[c] }))
+
+/** Section 10: kind, width (tubes), bend radius (every bend at once), dash (wires and lines), the two caps. */
 function ConnectorFields({ it }: { it: ConnectorItem }) {
+  const tube = isTube(it.kind)
+  const caps = capOptions(it.kind)
+  const set = (patch: ConnectorPatch) => a.connectorFields(it.id, patch)
   return (
     <>
-      <Section title="Connector">
-        <p className="muted">
-          {it.kind}, {it.points.length} points
-        </p>
+      <Section title={itemName(it)}>
+        <SelectField label="Kind" value={it.kind} options={KINDS} onChange={(v) => set({ kind: v as ConnectorKind })} />
+        {tube && (
+          <NumberField
+            label="Width"
+            value={connectorWidth(it) ?? 0}
+            min={WIDTH_RANGE.min}
+            max={WIDTH_RANGE.max}
+            step={1}
+            unit="u"
+            onCommit={(v) => set({ width: v })}
+          />
+        )}
+        <NumberField
+          label="Bend radius"
+          value={connectorRadius(it)}
+          min={RADIUS_RANGE.min}
+          max={RADIUS_RANGE.max}
+          step={1}
+          unit="u"
+          disabled={it.points.length < 3}
+          onCommit={(v) => set({ radius: v })}
+        />
+        {!tube && <CheckField label="Dashed" checked={!!it.dash} onChange={(v) => set({ dash: v })} />}
+        <SelectField label="Start cap" value={it.startCap} options={caps} onChange={(v) => set({ startCap: v as Cap })} />
+        <SelectField label="End cap" value={it.endCap} options={caps} onChange={(v) => set({ endCap: v as Cap })} />
+        <p className="muted">{it.points.length} points</p>
       </Section>
       <Arrange />
-      <ItemButtons items={[it]} />
+      <ItemButtons items={[it]} deleteOnly />
     </>
   )
 }
 
+const FILL_NAMES: Record<ShapeFill, string> = { none: 'None', paper: 'Paper (white)', grey: 'Grey' }
+const FILLS = SHAPE_FILLS.map((f) => ({ value: f, label: FILL_NAMES[f] }))
+
+/** Section 12: fill, dash, width, height, rotation. */
 function ShapeFields({ it }: { it: ShapeItem }) {
+  const set = (patch: ShapePatch) => a.shapeFields(it.id, patch)
   return (
     <>
-      <Section title={it.shape === 'rect' ? 'Rectangle' : 'Ellipse'}>
-        <NumberField label="Width" value={it.w} min={1} unit="u" onCommit={(v) => a.resize(it.id, { w: v, h: it.h })} />
-        <NumberField label="Height" value={it.h} min={1} unit="u" onCommit={(v) => a.resize(it.id, { w: it.w, h: v })} />
-        <NumberField label="Rotation" value={it.rot} unit="°" onCommit={(v) => a.rotateTo(it.id, v)} />
+      <Section title={itemName(it)}>
+        <SelectField label="Fill" value={it.fill} options={FILLS} onChange={(v) => set({ fill: v as ShapeFill })} />
+        <CheckField label="Dashed" checked={it.dash} onChange={(v) => set({ dash: v })} />
+        <NumberField label="Width" value={it.w} min={1} unit="u" onCommit={(v) => set({ w: v })} />
+        <NumberField label="Height" value={it.h} min={1} unit="u" onCommit={(v) => set({ h: v })} />
+        <NumberField label="Rotation" value={it.rot} step={1} unit="°" onCommit={(v) => set({ rot: v })} />
       </Section>
       <Arrange />
-      <ItemButtons items={[it]} />
+      <ItemButtons items={[it]} deleteOnly />
     </>
   )
 }

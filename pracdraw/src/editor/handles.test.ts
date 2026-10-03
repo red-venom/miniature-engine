@@ -60,6 +60,13 @@ describe('handles', () => {
     expect(r.x).toBeCloseTo(100)
     expect(r.y).toBeCloseTo(125)
   })
+  it('a shape has a frame with no flip: the handles of a free symbol', () => {
+    const shape = { x: 100, y: 50, w: 80, h: 40, rot: 90 }
+    expect(handlePoint(shape, 'se').x).toBeCloseTo(80)
+    expect(handlePoint(shape, 'se').y).toBeCloseTo(90)
+    const r = resizeWith({ ...shape, rot: 0 }, 'free', undefined, 'e', P(180, 0), false)
+    expect(r).toMatchObject({ w: 120, h: 40, x: 120, y: 50 })
+  })
   it('rotation and snapping', () => {
     expect(rotationTo(P(0, 0), P(0, -10))).toBeCloseTo(0)
     expect(rotationTo(P(0, 0), P(10, 0))).toBeCloseTo(90)

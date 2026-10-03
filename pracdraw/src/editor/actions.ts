@@ -2,12 +2,13 @@
 // commits the result to the store as one undo step. No DOM here, except the clipboard through the host.
 
 import type { Layer } from '../kernel/contents'
-import { P, type Pt } from '../kernel/geom'
+import { P, dist, type Pt } from '../kernel/geom'
 import { svgDocument, translate, type Node } from '../kernel/nodes'
 import { canvasToBlob, renderCanvas } from '../export/canvas'
 import type { Host } from '../host/host'
 import { boxCentre, docBox, itemsBox } from '../model/bounds'
 import {
+  addItem,
   addSymbol,
   cloneItems,
   deleteItems,
@@ -34,13 +35,15 @@ import {
   type Arrange,
   type SizeArgs,
 } from '../model/commands'
+import { deletePoint, isDrawable, makeConnector, presetConnector, setConnector, type ConnectorPatch, type ConnectorPreset } from '../model/connectors'
 import { addLayer, applyPreset, emptyCavity, fillWater, removeLayer, setLayer, setReading, type Preset } from '../model/contents'
 import { orderRule } from '../model/order'
+import { setShape, type ShapePatch } from '../model/shapes'
 import { newDoc, type Doc, type DocSettings, type Id, type Item, type ParamValue, type SymbolItem } from '../model/types'
 import { docNodes, estimateBounds } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { TemplateDef } from '../templates/types'
-import { useEditor, type Prefs } from './store'
+import { useEditor, type Prefs, type Tool } from './store'
 import { fitView, viewCentre, zoom100, zoomAt } from './view'
 
 const state = () => useEditor.getState()
@@ -83,19 +86,39 @@ function remember(symbol: string): void {
   s.setPrefs({ recent: [symbol, ...s.prefs.recent.filter((id) => id !== symbol)].slice(0, 8) })
 }
 
+/** The centre of the view, for a click on a library tile. Each further add since the view last changed is 20 u further on. */
+function addPoint(): Pt {
+  const s = state()
+  const off = s.nextAdd()
+  const c = viewCentre(s.view, s.canvas)
+  return P(c.x + off, c.y + off)
+}
+
+/**
+ * An add from the library returns the tool to Select, so that the new selection shows its handles. A connector that is
+ * half drawn keeps its tool and its points.
+ */
+function backToSelect(): void {
+  if (!state().draft?.points.length) state().setTool('select')
+}
+
 /** Add a symbol at a world point, or at the centre of the view (each further add is 20 u further). */
 export function addSymbolAt(symbol: string, at?: Pt): Id {
-  const s = state()
-  let p = at
-  if (!p) {
-    const off = s.nextAdd()
-    const c = viewCentre(s.view, s.canvas)
-    p = P(c.x + off, c.y + off)
-  }
+  const p = at ?? addPoint()
   const it = makeSymbol(symbol, Math.round(p.x), Math.round(p.y))
-  commit(orderRule(addSymbol(s.doc, symbol, it.x, it.y, it.id), [it.id]))
+  commit(orderRule(addSymbol(state().doc, symbol, it.x, it.y, it.id), [it.id]))
+  backToSelect()
   state().select([it.id])
   remember(symbol)
+  return it.id
+}
+
+/** Add a "Tubes and lines" preset (section 10) at a world point, or at the centre of the view as a symbol is added. */
+export function addPresetAt(preset: ConnectorPreset, at?: Pt): Id {
+  const it = presetConnector(preset, at ?? addPoint())
+  commit(addItem(state().doc, it))
+  backToSelect()
+  state().select([it.id])
   return it.id
 }
 
@@ -105,9 +128,78 @@ export function insertTemplateAt(tpl: TemplateDef, at?: Pt): void {
   const before = s.doc.order.length
   const next = insertTemplate(s.doc, tpl.build(), at ?? viewCentre(s.view, s.canvas))
   commit(next)
+  backToSelect()
   const fresh = before === 0 ? [] : next.order.slice(before)
   state().select(fresh)
   if (before === 0) fit()
+}
+
+// ---------------------------------------------------------------- tools (section 12)
+
+/** Choose a tool. A connector tool starts with no points; leaving it drops a connector that is half drawn. */
+export const setTool = (tool: Tool): void => state().setTool(tool)
+
+/** After a connector or a shape is finished, the tool returns to Select and the new item becomes the selection. */
+export function toolDone(id: Id): void {
+  state().setTool('select')
+  state().select([id])
+}
+
+// ---------------------------------------------------------------- drawing a connector (section 10)
+
+/**
+ * Place a point of the connector being drawn; the first one starts it. A point closer than `gap` units to the last one
+ * is not placed (the second click of a double-click adds its point once), and neither is the last point again.
+ * Returns true when the point was placed.
+ */
+export function draftAdd(p: Pt, gap = 0): boolean {
+  const s = state(),
+    d = s.draft
+  if (!d) return false
+  const last = d.points[d.points.length - 1]
+  if (last && (dist(last, p) < gap || (last.x === p.x && last.y === p.y))) return false
+  s.setDraft({ ...d, points: [...d.points, p], pointer: p })
+  return true
+}
+
+/** The end of the rubber band follows the pointer. `anchor` is true when it is on a port, terminal or tip. */
+export function draftHover(pointer: Pt | undefined, anchor = false): void {
+  const s = state(),
+    d = s.draft
+  if (!d || (d.pointer?.x === pointer?.x && d.pointer?.y === pointer?.y && !!d.anchor === anchor)) return
+  s.setDraft({ ...d, pointer, anchor })
+}
+
+/** Backspace: the last point goes. */
+export function draftBack(): void {
+  const s = state(),
+    d = s.draft
+  if (d?.points.length) s.setDraft({ ...d, points: d.points.slice(0, -1) })
+}
+
+/** Escape: the connector being drawn goes. The tool stays. */
+export function draftCancel(): void {
+  const s = state(),
+    d = s.draft
+  if (d?.points.length) s.setDraft({ ...d, points: [] })
+}
+
+/**
+ * Double-click or Enter: the connector goes into the document on top, as one undo step. The tool returns to Select and
+ * the connector becomes the selection. Points that make no line (one point) are dropped.
+ */
+export function draftFinish(): Id | null {
+  const s = state(),
+    d = s.draft
+  if (!d?.points.length) return null
+  if (!isDrawable(d.points)) {
+    draftCancel()
+    return null
+  }
+  const it = makeConnector(d.kind, d.points)
+  commit(addItem(s.doc, it))
+  toolDone(it.id)
+  return it.id
 }
 
 // ---------------------------------------------------------------- edit the selection
@@ -183,6 +275,12 @@ export const patchItem = <T extends Item>(id: Id, patch: Partial<Omit<T, 'id' | 
 export const settings = (patch: Partial<DocSettings>): void => commit(setSettings(state().doc, patch))
 export const rename = (title: string): void => commit(setTitle(state().doc, title))
 export const prefs = (patch: Partial<Prefs>): void => state().setPrefs(patch)
+/** The connector inspector: kind, width, bend radius, dash, caps. */
+export const connectorFields = (id: Id, patch: ConnectorPatch): void => commit(setConnector(state().doc, id, patch))
+/** A double-click on a connector point deletes it. Two points always remain. */
+export const removePoint = (id: Id, index: number): void => commit(deletePoint(state().doc, id, index))
+/** The shape inspector: fill, dash, width, height, rotation. */
+export const shapeFields = (id: Id, patch: ShapePatch): void => commit(setShape(state().doc, id, patch))
 
 /** The size of a symbol as typed in the inspector, keeping its resize mode. */
 export function resizeTyped(it: SymbolItem, field: 'w' | 'h', value: number): void {

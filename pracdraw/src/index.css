@@ -494,6 +494,9 @@ button.swatch {
   min-width: 0;
   min-height: 0;
 }
+.canvas.drawing {
+  cursor: crosshair;
+}
 .canvas.panning {
   cursor: grab;
 }
@@ -514,6 +517,35 @@ button.swatch {
 }
 .overlay .handle.level {
   cursor: ns-resize;
+}
+.overlay .handle.point,
+.overlay .handle.mid {
+  cursor: move;
+}
+.overlay .handle.mid {
+  fill: var(--accent-soft);
+}
+/* A selected connector: its points joined by a thin line, under its handles. */
+.overlay .path-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+/* The connector being drawn: a rubber band from its last point to the pointer, and a mark on each point. */
+.overlay .rubber {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+.overlay .draft-point {
+  fill: var(--accent);
+}
+/* A port, terminal or tip that a connector point has snapped to. */
+.overlay .guide {
+  fill: none;
+  stroke: var(--guide);
+  stroke-width: 2;
 }
 .overlay .handle-line {
   stroke: var(--accent);
@@ -618,11 +650,30 @@ kbd {
 /* ---- narrow windows: the panels become drawers */
 
 .app.narrow {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     'top'
     'canvas'
     'status';
+}
+/* The top bar of a narrow window: tighter tools and gaps, and a title that gives way first, so that the bar fits. */
+.app.narrow .topbar {
+  gap: 6px;
+}
+.app.narrow .topbar [role='toolbar'] {
+  gap: 2px;
+}
+.app.narrow .topbar [role='toolbar'] .icon-button {
+  width: 28px;
+}
+.app.narrow .topbar .switch button {
+  padding: 0 6px;
+}
+.app.narrow .title {
+  min-width: 48px;
+}
+.app.narrow .topbar > .icon-button {
+  flex: none;
 }
 .app.narrow .panel {
   position: fixed;

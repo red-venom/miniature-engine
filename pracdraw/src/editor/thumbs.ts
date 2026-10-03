@@ -1,9 +1,11 @@
 // thumbs.ts — render nodes and view boxes for library thumbnails. Pure; the components draw them.
 
+import { P } from '../kernel/geom'
 import type { Node } from '../kernel/nodes'
 import { docBox, localBox } from '../model/bounds'
+import { connectorWidth, presetConnector, type ConnectorPreset } from '../model/connectors'
 import { DEFAULT_SETTINGS, type Doc } from '../model/types'
-import { docNodes, symbolNode } from '../render/render'
+import { connectorNode, docNodes, symbolNode } from '../render/render'
 import { geometry } from '../symbols/registry'
 import type { SymbolDef } from '../symbols/types'
 
@@ -28,6 +30,26 @@ export function symbolThumb(def: SymbolDef): Thumb {
     viewBox: `${cx - size / 2} ${cy - size / 2} ${size} ${size}`,
   }
   symbolThumbs.set(def.id, t)
+  return t
+}
+
+const presetThumbs = new Map<string, Thumb>()
+
+/** A "Tubes and lines" preset in a square view box round its points, with room for the walls and the caps. Cached by id. */
+export function presetThumb(preset: ConnectorPreset): Thumb {
+  let t = presetThumbs.get(preset.id)
+  if (t) return t
+  const it = presetConnector(preset, P(0, 0), preset.id)
+  const xs = it.points.map((p) => p.x),
+    ys = it.points.map((p) => p.y)
+  const m = (connectorWidth(it) ?? 0) / 2 + 8
+  const x0 = Math.min(...xs) - m,
+    x1 = Math.max(...xs) + m,
+    y0 = Math.min(...ys) - m,
+    y1 = Math.max(...ys) + m
+  const size = Math.max(x1 - x0, y1 - y0)
+  t = { nodes: [connectorNode(it, DEFAULT_SETTINGS)], viewBox: `${(x0 + x1 - size) / 2} ${(y0 + y1 - size) / 2} ${size} ${size}` }
+  presetThumbs.set(preset.id, t)
   return t
 }
 

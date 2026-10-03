@@ -1,5 +1,6 @@
 // handles.ts — the maths of the resize and rotate handles. Pure, so it is unit-tested.
 // The "frame" of a symbol is its box centred on the item, turned by `rot` and mirrored by `flip`: world = centre + R·F·c.
+// A shape (rectangle or ellipse) has a frame too, with no flip: it gets the handles of a free symbol.
 
 import { P, type Pt } from '../kernel/geom'
 import { FLIP_X, mul, rotate, type Mat } from '../kernel/nodes'
@@ -9,6 +10,9 @@ import type { SymbolItem } from '../model/types'
 import type { ResizeMode } from '../symbols/types'
 
 export type HandleId = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
+
+/** A box that turns about its centre: a symbol, or a shape, which has no flip. */
+export type Frame = Pick<SymbolItem, 'x' | 'y' | 'w' | 'h' | 'rot'> & { flip?: boolean }
 
 export const ROTATE_GAP = 24
 export const SNAP_STEP = 15
@@ -36,17 +40,17 @@ export function handleDir(h: HandleId): { hx: -1 | 0 | 1; hy: -1 | 0 | 1 } {
 }
 
 /** R·F for an item: frame direction → world direction. */
-export function frameMatrix(it: Pick<SymbolItem, 'rot' | 'flip'>): Mat {
+export function frameMatrix(it: Pick<Frame, 'rot' | 'flip'>): Mat {
   const m = rotate(it.rot)
   return it.flip ? mul(m, FLIP_X) : m
 }
 
-export const fromFrame = (it: Pick<SymbolItem, 'x' | 'y' | 'rot' | 'flip'>, c: Pt): Pt => {
+export const fromFrame = (it: Pick<Frame, 'x' | 'y' | 'rot' | 'flip'>, c: Pt): Pt => {
   const p = applyMat(frameMatrix(it), c)
   return P(it.x + p.x, it.y + p.y)
 }
 
-export function toFrame(it: Pick<SymbolItem, 'x' | 'y' | 'rot' | 'flip'>, p: Pt): Pt {
+export function toFrame(it: Pick<Frame, 'x' | 'y' | 'rot' | 'flip'>, p: Pt): Pt {
   const [a, b, c, d] = frameMatrix(it)
   const det = a * d - b * c,
     x = p.x - it.x,
@@ -55,26 +59,19 @@ export function toFrame(it: Pick<SymbolItem, 'x' | 'y' | 'rot' | 'flip'>, p: Pt)
 }
 
 /** Where a handle sits in the world. */
-export const handlePoint = (it: SymbolItem, h: HandleId): Pt => {
+export const handlePoint = (it: Frame, h: HandleId): Pt => {
   const { hx, hy } = handleDir(h)
   return fromFrame(it, P((hx * it.w) / 2, (hy * it.h) / 2))
 }
 
 /** The rotate handle: `gap` world units above the top centre of the frame. */
-export const rotatePoint = (it: SymbolItem, gap: number): Pt => fromFrame(it, P(0, -it.h / 2 - gap))
+export const rotatePoint = (it: Frame, gap: number): Pt => fromFrame(it, P(0, -it.h / 2 - gap))
 
 /**
  * The size and centre after a resize drag. The opposite side or corner stays where it is, in the frame.
  * `uniform` keeps the aspect, and so does Shift on a corner of a `free` symbol. The size never goes below `min`.
  */
-export function resizeWith(
-  it: SymbolItem,
-  mode: ResizeMode,
-  min: { w: number; h: number } | undefined,
-  handle: HandleId,
-  pointer: Pt,
-  shift: boolean,
-): SizeArgs {
+export function resizeWith(it: Frame, mode: ResizeMode, min: { w: number; h: number } | undefined, handle: HandleId, pointer: Pt, shift: boolean): SizeArgs {
   const { hx, hy } = handleDir(handle)
   const p = toFrame(it, pointer)
   const fixed = P((-hx * it.w) / 2, (-hy * it.h) / 2)
