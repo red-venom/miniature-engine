@@ -1,8 +1,10 @@
-// thumbs.ts — render nodes and view boxes for library thumbnails. Pure; the components draw them.
+// thumbs.ts — render nodes and view boxes for library thumbnails. Pure apart from measuring label text (`measureText`,
+// the estimate without a DOM); the components draw them.
 
 import { P } from '../kernel/geom'
 import type { Node } from '../kernel/nodes'
 import { docBox, localBox } from '../model/bounds'
+import { measureText } from './measure'
 import { connectorWidth, presetConnector, type ConnectorPreset } from '../model/connectors'
 import { DEFAULT_SETTINGS, type Doc } from '../model/types'
 import { connectorNode, docNodes, symbolNode } from '../render/render'
@@ -55,7 +57,7 @@ export function presetThumb(preset: ConnectorPreset): Thumb {
 
 /** A whole document in a view box of the given aspect ratio, centred on the drawing. */
 export function docThumb(doc: Doc, aspect: number): Thumb {
-  const b = docBox(doc) ?? { x0: 0, y0: 0, x1: 100, y1: 100 }
+  const b = docBox(doc, measureText) ?? { x0: 0, y0: 0, x1: 100, y1: 100 }
   let w = b.x1 - b.x0 + 16,
     h = b.y1 - b.y0 + 16
   if (w / h < aspect) w = h * aspect

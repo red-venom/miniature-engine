@@ -1,15 +1,27 @@
-// bounds.ts — upright world boxes of items. The editor uses them for the selection box, the marquee and Fit.
-// Pure: no DOM. Text width comes from `measure`; the default is the Node estimate (0.56 × size for each character).
+// bounds.ts — upright world boxes of items. The editor uses them for the selection box, the marquee, align and
+// distribute, the snap guides and Fit. Pure: no DOM. Text width comes from `measure`: in the browser canvas
+// measureText (src/editor/measure.ts), and in Node the estimate below.
 
 import { P, pathBounds, type Box, type Pt } from '../kernel/geom'
+import { SCRIPT } from '../kernel/nodes'
+import { parseMarkup, smartChem } from '../kernel/text'
 import { geometry } from '../symbols/registry'
 import type { Geometry } from '../symbols/types'
 import { toWorld } from './transform'
 import type { Doc, Id, Item, LabelItem } from './types'
 
+/**
+ * The width of one line of label text as drawn, at a size. The text is markup (`parseMarkup`), with smart text already
+ * applied when it is on, as the renderer draws it; subscripts and superscripts are drawn at 0.7 size.
+ */
 export type Measure = (text: string, size: number) => number
 
-export const estimateWidth: Measure = (text, size) => text.length * size * 0.56
+/**
+ * The Node stand-in for canvas measureText (`estimateWidth` in src/render/render.ts): 0.56 × the size for each
+ * character that is drawn. A subscript or superscript counts at 0.7 size, and the markup characters are not drawn.
+ */
+export const estimateWidth: Measure = (text, size) =>
+  parseMarkup(text).reduce((w, r) => w + r.text.length * size * 0.56 * (r.script === 'normal' ? 1 : SCRIPT.scale), 0)
 
 export const BLANK_RULE = 100
 const TUBE_WIDTH = { glassTube: 7, rubberTube: 10 }
@@ -94,12 +106,13 @@ export function itemBox(doc: Doc, it: Item, measure: Measure = estimateWidth): B
 
 /**
  * A label as it is drawn, without its leader: the text box, the 100 u line in blank mode, or the letter in letters
- * mode. Plain text is always its text box.
+ * mode. Plain text is always its text box. Each line is measured as it is drawn: after smart text, when that is on.
  */
 export function labelBox(doc: Doc, it: LabelItem, measure: Measure = estimateWidth): Box {
   const size = it.size ?? doc.settings.labelSize
   const mode = labelTarget(doc, it) ? doc.settings.labelMode : 'text'
-  const lines = mode === 'text' ? it.text.split('\n') : mode === 'letters' ? ['A'] : []
+  const smart = it.smart ?? doc.settings.smartText
+  const lines = mode === 'text' ? it.text.split('\n').map((l) => (smart ? smartChem(l) : l)) : mode === 'letters' ? ['A'] : []
   const width = mode === 'blank' ? BLANK_RULE : Math.max(8, ...lines.map((l) => measure(l, size)))
   const b = grow(null, P(it.side === 'left' ? it.x - width : it.x, it.y - size))
   return grow(b, P(it.side === 'left' ? it.x : it.x + width, it.y + Math.max(0, lines.length - 1) * size * 1.25 + size * 0.3))

@@ -8,7 +8,7 @@ export function itemName(it: Item): string {
     case 'symbol':
       return hasSymbol(it.symbol) ? symbolDef(it.symbol).name : it.symbol
     case 'label':
-      return `Label "${it.text.split('\n')[0]}"`
+      return `${it.target ? 'Label' : 'Text'} "${it.text.split('\n')[0]}"`
     case 'connector':
       return { glassTube: 'Glass tube', rubberTube: 'Rubber tube', wire: 'Wire', line: 'Line' }[it.kind]
     default:

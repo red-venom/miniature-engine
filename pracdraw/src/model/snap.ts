@@ -8,12 +8,14 @@
 // wins. The threshold T is 8 screen px. A snap leaves no lasting link: the result is only a move and maybe a width.
 //
 // What a drag needs is worked out once for each document and set of moving items (`snapContext`): the anchors and the
-// bounds of every item. A pointer move then only compares numbers (the drag budget in section 6).
+// bounds of every item. A pointer move then only compares numbers (the drag budget in section 6). A label's bounds are
+// its text as drawn, without its leader (`labelBox`), measured with the `measure` it is given: canvas measureText in
+// the browser, the estimate in Node.
 
 import { P, dist, type Box, type Pt } from '../kernel/geom'
 import { geometry, hasSymbol, symbolDef } from '../symbols/registry'
 import type { Anchor, AnchorKind } from '../symbols/types'
-import { itemBox, unionBox } from './bounds'
+import { estimateWidth, itemBox, labelBox, unionBox, type Measure } from './bounds'
 import { moveItems, setSize } from './commands'
 import { localMatrix, toWorld } from './transform'
 import type { Doc, Id, SymbolItem } from './types'
@@ -85,7 +87,7 @@ export interface SnapContext {
   moving: WorldAnchor[]
   /** The anchors of every other symbol that something snaps to, by kind. */
   targets: Map<AnchorKind, WorldAnchor[]>
-  /** The drawn bounds of the moving items, or null when nothing but labels moves. */
+  /** The drawn bounds of the moving items (a label without its leader), or null when none has bounds. */
   box: Box | null
   /** The drawn bounds of every other item. */
   boxes: Box[]
@@ -123,7 +125,7 @@ function worldAnchors(it: SymbolItem): WorldAnchor[] {
   })
 }
 
-function buildContext(doc: Doc, ids: readonly Id[]): SnapContext {
+function buildContext(doc: Doc, ids: readonly Id[], measure: Measure): SnapContext {
   const mine = new Set(ids)
   const c: SnapContext = { moving: [], targets: new Map(), box: null, boxes: [] }
   for (const id of doc.order) {
@@ -140,31 +142,35 @@ function buildContext(doc: Doc, ids: readonly Id[]): SnapContext {
         }
       }
     }
-    // A label's drawn width depends on the font, which pure code can only estimate: labels take no part in the guides.
-    if (it.type === 'label') continue
-    const b = itemBox(doc, it)
+    // A label takes part with its text as drawn. Its leader is left out: it ends on another item, which may stay.
+    const b = it.type === 'label' ? labelBox(doc, it, measure) : itemBox(doc, it, measure)
     if (mine.has(id)) c.box = unionBox(c.box, b)
     else c.boxes.push(b)
   }
   return c
 }
 
-const contexts = new WeakMap<Doc, Map<string, SnapContext>>()
+const contexts = new WeakMap<Measure, WeakMap<Doc, Map<string, SnapContext>>>()
 
 /**
- * The anchors and bounds that a drag of `moving` in `doc` snaps with. Worked out once for each document object and set
- * of ids: a drag passes the document from its start on every pointer move, so the work is done at the start.
+ * The anchors and bounds that a drag of `moving` in `doc` snaps with. Worked out once for each document object, set of
+ * ids and measure: a drag passes the document from its start on every pointer move, so the work is done at the start.
  */
-export function snapContext(doc: Doc, moving: readonly Id[]): SnapContext {
+export function snapContext(doc: Doc, moving: readonly Id[], measure: Measure = estimateWidth): SnapContext {
   const key = moving.join(' ')
-  let byIds = contexts.get(doc)
+  let byDoc = contexts.get(measure)
+  if (!byDoc) {
+    byDoc = new WeakMap()
+    contexts.set(measure, byDoc)
+  }
+  let byIds = byDoc.get(doc)
   if (!byIds) {
     byIds = new Map()
-    contexts.set(doc, byIds)
+    byDoc.set(doc, byIds)
   }
   let c = byIds.get(key)
   if (!c) {
-    c = buildContext(doc, moving)
+    c = buildContext(doc, moving, measure)
     byIds.set(key, c)
   }
   return c
@@ -387,11 +393,12 @@ function guideSnap(c: SnapContext, dx: number, dy: number, T: number): SnapResul
 
 /**
  * Snap a drag of the items `moving` by (dx, dy) units, at a zoom (T = 8 ÷ zoom units). `on` is false when snapping is
- * off: the Snap view preference, or Ctrl or Cmd held during the drag. Then the drag is returned as it is.
+ * off: the Snap view preference, or Ctrl or Cmd held during the drag. Then the drag is returned as it is. `measure`
+ * gives the drawn width of a label's text, for the guides.
  */
-export function snap(doc: Doc, moving: readonly Id[], dx: number, dy: number, zoom: number, on = true): SnapResult {
+export function snap(doc: Doc, moving: readonly Id[], dx: number, dy: number, zoom: number, on = true, measure: Measure = estimateWidth): SnapResult {
   if (!on || !moving.length || !(zoom > 0)) return { dx, dy, guides: [] }
-  const c = snapContext(doc, moving)
+  const c = snapContext(doc, moving, measure)
   const T = SNAP_PX / zoom
   return anchorSnap(c, dx, dy, T) ?? guideSnap(c, dx, dy, T)
 }

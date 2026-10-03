@@ -114,17 +114,19 @@ export function SelectField({
   value,
   options,
   onChange,
+  disabled,
 }: {
   label: string
   value: string
   options: { value: string; label: string }[]
   onChange(v: string): void
+  disabled?: boolean
 }) {
   const id = useId()
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
+      <select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

@@ -1,6 +1,7 @@
 // Canvas.tsx — the drawing surface: the diagram, the pointer state machine of the tools, and the overlay (selection
-// box, handles, marquee, snap guides, the connector being drawn) in a separate SVG layer above the diagram. Hits come
-// from the DOM. A move snaps with `snap` from src/model/snap.ts.
+// box, handles, marquee, snap guides, the connector being drawn, the leader of a label being made) in a separate SVG
+// layer above the diagram, and the text box of a label. Hits come from the DOM. A move snaps with `snap` from
+// src/model/snap.ts.
 
 import { useEffect, useRef, type DragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { P, type Box, type Pt } from '../kernel/geom'
@@ -8,13 +9,16 @@ import {
   addPresetAt,
   addSymbolAt,
   clearSelection,
+  commitText,
   docFromText,
   draftAdd,
   draftFinish,
   draftHover,
+  editLabel,
   loadDoc,
   removePoint,
   select,
+  startLabel,
   toolDone,
 } from '../editor/actions'
 import { CLICK_PX, pointFor, snapping } from '../editor/connect'
@@ -22,22 +26,25 @@ import { ROTATE_GAP, handlePoint, handlesFor, resizeWith, rotatePoint, rotationT
 import { installHook } from '../editor/hook'
 import { controlKey, inTextField } from '../editor/keys'
 import { filledAt, surfaces } from '../editor/level'
+import { measureText } from '../editor/measure'
 import { cachedNodes } from '../editor/nodes'
-import { useEditor, type Draft, type Gesture, type Tool, type View } from '../editor/store'
+import { useEditor, type Draft, type Gesture, type TextEdit, type Tool, type View } from '../editor/store'
 import { screenBox, toScreen, toWorld, zoomAt } from '../editor/view'
-import { boxCentre, boxesTouch, itemBox, itemsBox } from '../model/bounds'
+import { boxCentre, boxesTouch, itemBox, itemsBox, labelBox, labelTarget } from '../model/bounds'
 import { duplicateItems, newId, rotateItems, setRotation, setSize } from '../model/commands'
 import { CONNECTOR_PRESETS, insertPoint, isDrawable, makeConnector, movePoint } from '../model/connectors'
 import { setFilled } from '../model/contents'
+import { gestureLabel, setTargetAt } from '../model/labels'
 import { orderRule } from '../model/order'
 import { addShape, dragBox, type ShapeKind } from '../model/shapes'
 import { moveSnapped, snap, snapContext, type SnapGuide } from '../model/snap'
-import type { ConnectorItem, Doc, DocSettings, Id, Item } from '../model/types'
+import type { ConnectorItem, Doc, DocSettings, Id, Item, LabelItem } from '../model/types'
 import { NodeView } from '../render/NodeView'
-import { connectorNode } from '../render/render'
+import { connectorNode, labelNode } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { ResizeMode } from '../symbols/types'
 import { DRAG_TYPE, PRESET_DRAG_TYPE } from './constants'
+import { TextBox } from './TextBox'
 
 const HANDLE = 8
 /** A move of the Select tool starts after this many screen px. */
@@ -67,6 +74,13 @@ type Drag =
   | { kind: 'point'; id: Id; index: number; insert: boolean; start: Pt; moved: boolean }
   /** A drag with the Rectangle or Ellipse tool, from the world point `from`. */
   | { kind: 'shape'; shape: ShapeKind; from: Pt; start: Pt; id: Id; moved: boolean }
+  /**
+   * A press with the Label or Text tool (section 11), at the world point `press`, on the symbol `on` (or not). `plain`
+   * for the Text tool: it makes plain text however far the pointer goes.
+   */
+  | { kind: 'label'; start: Pt; press: Pt; on: Id | null; plain: boolean }
+  /** The round handle on the leader end of a selected label. */
+  | { kind: 'target'; id: Id; start: Pt; moved: boolean }
 
 /** The unlocked items under a page point, topmost first. */
 function itemsAt(x: number, y: number, doc: Doc): Id[] {
@@ -76,6 +90,29 @@ function itemsAt(x: number, y: number, doc: Doc): Id[] {
     if (id && !out.includes(id) && doc.items[id] && !doc.items[id].locked) out.push(id)
   }
   return out
+}
+
+/**
+ * The symbol that a leader pressed or dropped at a page point ends on: the topmost item there that is not a label, if
+ * it is a symbol (locked or not). A connector or a shape on top gives none: the leader end is then a free point.
+ */
+function symbolAt(x: number, y: number, doc: Doc): Id | null {
+  for (const el of document.elementsFromPoint(x, y)) {
+    const id = el.closest('[data-id]')?.getAttribute('data-id')
+    const it = id ? doc.items[id] : undefined
+    if (it && it.type !== 'label') return it.type === 'symbol' ? it.id : null
+  }
+  return null
+}
+
+/** The topmost item under a page point, if it is a label that is not locked: a double-click there edits its text. */
+function labelAt(x: number, y: number, doc: Doc): Id | null {
+  for (const el of document.elementsFromPoint(x, y)) {
+    const id = el.closest('[data-id]')?.getAttribute('data-id')
+    const it = id ? doc.items[id] : undefined
+    if (it) return it.type === 'label' && !it.locked ? it.id : null
+  }
+  return null
 }
 
 /** How a symbol or a shape resizes. A shape has the handles of a free symbol. Null for any other item. */
@@ -105,6 +142,7 @@ export function Canvas() {
   const gesture = useEditor((s) => s.gesture)
   const grid = useEditor((s) => s.prefs.grid)
   const tool = useEditor((s) => s.tool)
+  const textEdit = useEditor((s) => s.textEdit)
 
   // Size, the test hook, the wheel listener (passive: false, so that it can stop the page zoom), the Space key.
   useEffect(() => {
@@ -160,6 +198,9 @@ export function Canvas() {
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.button !== 1) return
+    // A press outside the text box finishes the text (the box's own presses do not reach the canvas). The tool is then
+    // Select, and the press goes on as a press of the Select tool.
+    if (useEditor.getState().textEdit) commitText()
     const s = useEditor.getState()
     if (s.gesture) return
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -185,11 +226,23 @@ export function Canvas() {
       e.preventDefault()
       return
     }
+    // The Label tool: press where the leader must end, drag to where the text goes, release (section 11). The Text
+    // tool: a press and release make plain text.
+    if (s.tool === 'label' || s.tool === 'text') {
+      const plain = s.tool === 'text'
+      drag.current = { kind: 'label', start: sp, press: wp, on: plain ? null : symbolAt(e.clientX, e.clientY, s.doc), plain }
+      s.beginGesture('label')
+      e.preventDefault()
+      return
+    }
     if (s.tool !== 'select') return
     const handleEl = (e.target as Element).closest('[data-handle]')
-    const handle = handleEl?.getAttribute('data-handle') as HandleId | 'rotate' | 'level' | 'point' | 'mid' | null
+    const handle = handleEl?.getAttribute('data-handle') as HandleId | 'rotate' | 'level' | 'point' | 'mid' | 'target' | null
     if (handle && s.selection.length) {
-      if (handle === 'point' || handle === 'mid') {
+      if (handle === 'target') {
+        drag.current = { kind: 'target', id: s.selection[0], start: sp, moved: false }
+        s.beginGesture('target')
+      } else if (handle === 'point' || handle === 'mid') {
         const index = Number(handleEl?.getAttribute('data-index'))
         drag.current = { kind: 'point', id: s.selection[0], index: handle === 'mid' ? index + 1 : index, insert: handle === 'mid', start: sp, moved: false }
         s.beginGesture('point')
@@ -201,7 +254,7 @@ export function Canvas() {
         s.beginGesture('level')
       } else if (handle === 'rotate') {
         const one = s.selection.length === 1 ? s.doc.items[s.selection[0]] : null
-        const centre = one && (one.type === 'symbol' || one.type === 'shape') ? P(one.x, one.y) : boxCentre(itemsBox(s.doc, s.selection)!)
+        const centre = one && (one.type === 'symbol' || one.type === 'shape') ? P(one.x, one.y) : boxCentre(itemsBox(s.doc, s.selection, measureText)!)
         drag.current = { kind: 'rotate', ids: s.selection, centre, start: rotationTo(centre, wp) }
         s.beginGesture('rotate')
       } else {
@@ -262,12 +315,16 @@ export function Canvas() {
             const dup = duplicateItems(base, d.ids, 0, 0)
             d.base = dup
             d.ids = dup.order.slice(base.order.length)
+            // The copy is what moves, so it is the selection from the start: the original is no longer selected, and
+            // it is a snap target like any other item (section 12).
+            s.preview(dup)
+            s.select(d.ids)
           } else d.base = base
           // The anchors and bounds to snap to are collected once, here, not on every pointer move (section 6).
-          if (s.prefs.snap) snapContext(d.base, d.ids)
+          if (s.prefs.snap) snapContext(d.base, d.ids, measureText)
         }
         // Whole units, then the snap (section 12). Ctrl or Cmd turns it off for the drag; so does the Snap preference.
-        const r = snap(d.base, d.ids, Math.round(dx), Math.round(dy), s.view.zoom, snapping(s.prefs.snap, e))
+        const r = snap(d.base, d.ids, Math.round(dx), Math.round(dy), s.view.zoom, snapping(s.prefs.snap, e), measureText)
         const key = `${r.dx} ${r.dy} ${r.resize?.w ?? ''} ${r.guides.length}`
         if (key === d.last) return
         d.last = key
@@ -279,7 +336,7 @@ export function Canvas() {
       case 'marquee': {
         const box: Box = { x0: Math.min(d.start.x, wp.x), y0: Math.min(d.start.y, wp.y), x1: Math.max(d.start.x, wp.x), y1: Math.max(d.start.y, wp.y) }
         s.updateGesture({ marquee: box })
-        const hit = s.doc.order.filter((id) => !s.doc.items[id].locked && boxesTouch(box, itemBox(s.doc, s.doc.items[id])))
+        const hit = s.doc.order.filter((id) => !s.doc.items[id].locked && boxesTouch(box, itemBox(s.doc, s.doc.items[id], measureText)))
         select([...d.keep, ...hit])
         return
       }
@@ -327,6 +384,18 @@ export function Canvas() {
         s.preview(addShape(base, d.shape, dragBox(d.from, round(wp), e.shiftKey), d.id))
         return
       }
+      case 'label':
+        // The leader follows the pointer from where it will end. Plain text has none.
+        if (!d.plain && s.gesture?.kind === 'label') s.updateGesture({ leader: { from: d.press, to: wp } })
+        return
+      case 'target':
+        // The leader end follows the pointer as a free point; the release fixes it to the symbol under it, if any.
+        if (!d.moved) {
+          if (!moved(sp, d.start, CLICK_PX)) return
+          d.moved = true
+        }
+        s.preview(setTargetAt(base, d.id, wp))
+        return
     }
   }
 
@@ -375,6 +444,21 @@ export function Canvas() {
         s.endGesture()
         if (d.moving && d.alt) select(d.ids)
         return
+      case 'label': {
+        if (s.gesture?.kind !== 'label') return // Escape cancelled it
+        s.endGesture()
+        // A drag makes a label with a leader; a click, or the Text tool, makes plain text. The text box opens at the
+        // release point.
+        const sp = screenPt(e)
+        startLabel(gestureLabel(s.doc, d.press, toWorld(s.view, sp), !d.plain && moved(sp, d.start, CLICK_PX), d.on))
+        return
+      }
+      case 'target':
+        if (s.gesture?.kind !== 'target') return // Escape cancelled it
+        // Dropped on a symbol, the leader end is fixed to it; elsewhere it is a free point. A click changes nothing.
+        if (d.moved) s.preview(setTargetAt(s.gesture.base, d.id, toWorld(s.view, screenPt(e)), symbolAt(e.clientX, e.clientY, s.doc)))
+        s.endGesture()
+        return
       default:
         s.endGesture()
     }
@@ -389,11 +473,17 @@ export function Canvas() {
       released.current = false
       return
     }
-    if (s.tool !== 'select' || s.selection.length !== 1) return
+    if (s.tool !== 'select' || s.textEdit) return
     // A double-click on a square handle deletes that point. The event can be aimed at the canvas, which captured the
     // pointer, so the handle is found under the pointer.
     const el = document.elementsFromPoint(e.clientX, e.clientY).find((q) => q.getAttribute('data-handle') === 'point')
-    if (el) removePoint(s.selection[0], Number(el.getAttribute('data-index')))
+    if (el && s.selection.length === 1) {
+      removePoint(s.selection[0], Number(el.getAttribute('data-index')))
+      return
+    }
+    // A double-click on a label edits its text (section 11).
+    const label = labelAt(e.clientX, e.clientY, s.doc)
+    if (label) editLabel(label)
   }
 
   const onPointerLeave = () => {
@@ -424,6 +514,8 @@ export function Canvas() {
   }
 
   const nodes = cachedNodes(doc)
+  // A label whose text is in the box is not drawn: the box shows its text as typed, and the overlay its leader.
+  const hidden = textEdit && !textEdit.fresh ? textEdit.label.id : null
   const showGrid = grid && view.zoom >= 0.5
   const style = showGrid
     ? {
@@ -435,7 +527,7 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className={tool === 'select' ? 'canvas' : 'canvas drawing'}
+      className={tool === 'select' ? 'canvas' : tool === 'text' ? 'canvas typing' : 'canvas drawing'}
       style={style}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -448,12 +540,11 @@ export function Canvas() {
     >
       <svg id="stage" className="stage" width="100%" height="100%">
         <g transform={`matrix(${view.zoom} 0 0 ${view.zoom} ${view.x} ${view.y})`}>
-          {nodes.map(({ id, node }) => (
-            <NodeView key={id} n={node} itemId={id} />
-          ))}
+          {nodes.map(({ id, node }) => (id === hidden ? null : <NodeView key={id} n={node} itemId={id} />))}
         </g>
       </svg>
-      <Overlay doc={doc} selection={selection} view={view} gesture={gesture} tool={tool} />
+      <Overlay doc={doc} selection={selection} view={view} gesture={gesture} tool={tool} textEdit={textEdit} />
+      {textEdit && <TextBox edit={textEdit} view={view} doc={doc} />}
     </div>
   )
 }
@@ -581,8 +672,60 @@ function DraftView({ draft, view, settings }: { draft: Draft; view: View; settin
   return <>{kids}</>
 }
 
-/** The selection box, the handles, the marquee and the connector being drawn, in screen px. Never part of the render tree. */
-function Overlay({ doc, selection, view, gesture, tool }: { doc: Doc; selection: Id[]; view: View; gesture: Gesture | null; tool: Tool }) {
+/** The round handle on the leader end of a selected label (screen px): drag it to move the leader end. */
+function TargetHandle({ p }: { p: Pt }) {
+  return (
+    <circle className="handle target" data-handle="target" cx={p.x} cy={p.y} r={HANDLE / 2 + 1}>
+      <title>Drag to move the leader end. Drop it on a part to fix it there.</title>
+    </circle>
+  )
+}
+
+/**
+ * The leader of the label whose text is in the box, drawn as it will be: the label is either not in the document yet,
+ * or not drawn while its text is typed. Its text is the box.
+ */
+function EditLeader({ label, doc, view }: { label: LabelItem; doc: Doc; view: View }) {
+  if (!label.target) return null
+  const node = labelNode({ ...doc, settings: { ...doc.settings, labelMode: 'text' } }, { ...label, text: '' })
+  return (
+    <g transform={`matrix(${view.zoom} 0 0 ${view.zoom} ${view.x} ${view.y})`}>
+      <NodeView n={node} />
+    </g>
+  )
+}
+
+/** The leader of a drag of the Label tool: from where it will end (a dot) to the pointer. */
+function LeaderBand({ from, to, view }: { from: Pt; to: Pt; view: View }) {
+  const a = toScreen(view, from),
+    b = toScreen(view, to)
+  return (
+    <>
+      <line className="rubber" x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+      <circle className="leader-end" cx={a.x} cy={a.y} r={3} />
+    </>
+  )
+}
+
+/**
+ * The selection box, the handles, the marquee, the connector being drawn and the leader of a label being made, in
+ * screen px. Never part of the render tree.
+ */
+function Overlay({
+  doc,
+  selection,
+  view,
+  gesture,
+  tool,
+  textEdit,
+}: {
+  doc: Doc
+  selection: Id[]
+  view: View
+  gesture: Gesture | null
+  tool: Tool
+  textEdit: TextEdit | null
+}) {
   const draft = useEditor((s) => s.draft)
   const kids = []
   if (gesture?.marquee) {
@@ -590,8 +733,9 @@ function Overlay({ doc, selection, view, gesture, tool }: { doc: Doc; selection:
     kids.push(<rect key="marquee" className="marquee" x={m.x0} y={m.y0} width={m.x1 - m.x0} height={m.y1 - m.y0} />)
   }
   const one = selection.length === 1 ? doc.items[selection[0]] : null
-  // While another tool is chosen, the selection shows no handles: a press belongs to the tool.
-  const busy = tool !== 'select' || gesture?.kind === 'move' || gesture?.kind === 'marquee'
+  // While another tool is chosen, the selection shows no handles: a press belongs to the tool. Nor while a label's
+  // text is typed.
+  const busy = tool !== 'select' || !!textEdit || gesture?.kind === 'move' || gesture?.kind === 'marquee'
   const how = resizeOf(one)
   if (one && how && (one.type === 'symbol' || one.type === 'shape')) {
     const corners = (['nw', 'ne', 'se', 'sw'] as const).map((h) => toScreen(view, handlePoint(one, h)))
@@ -605,8 +749,17 @@ function Overlay({ doc, selection, view, gesture, tool }: { doc: Doc; selection:
     }
   } else if (one && one.type === 'connector') {
     kids.push(<ConnectorHandles key="connector" it={one} view={view} busy={busy} />)
+  } else if (one && one.type === 'label') {
+    // One label: a box round what is drawn at its text anchor, and a round handle on its leader end. A label does not
+    // turn, so it has no rotate handle.
+    if (one.id !== textEdit?.label.id) {
+      const s = screenBox(view, labelBox(doc, one, measureText))
+      kids.push(<rect key="box" className="selection" x={s.x0} y={s.y0} width={s.x1 - s.x0} height={s.y1 - s.y0} />)
+      const t = labelTarget(doc, one)
+      if (t && !busy) kids.push(<TargetHandle key="target" p={toScreen(view, t)} />)
+    }
   } else if (selection.length) {
-    const b = itemsBox(doc, selection)
+    const b = itemsBox(doc, selection, measureText)
     if (b) {
       const s = screenBox(view, b)
       kids.push(<rect key="box" className="selection" x={s.x0} y={s.y0} width={s.x1 - s.x0} height={s.y1 - s.y0} />)
@@ -615,6 +768,8 @@ function Overlay({ doc, selection, view, gesture, tool }: { doc: Doc; selection:
   }
   if (gesture?.anchor) kids.push(<Guide key="anchor" p={toScreen(view, gesture.anchor)} />)
   if (gesture?.guides) kids.push(<SnapGuides key="guides" guides={gesture.guides} view={view} />)
+  if (gesture?.leader) kids.push(<LeaderBand key="leader" from={gesture.leader.from} to={gesture.leader.to} view={view} />)
+  if (textEdit) kids.push(<EditLeader key="edit" label={textEdit.label} doc={doc} view={view} />)
   if (draft) kids.push(<DraftView key="draft" draft={draft} view={view} settings={doc.settings} />)
   return (
     <svg className="overlay" width="100%" height="100%" aria-hidden="true">

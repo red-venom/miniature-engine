@@ -11,11 +11,13 @@ export function StatusBar() {
   const status = useEditor((s) => s.status)
   const tool = useEditor((s) => s.tool)
   const drawing = useEditor((s) => !!s.draft?.points.length)
+  const editing = useEditor((s) => !!s.textEdit)
   const items = selection.map((id) => doc.items[id]).filter((it): it is Item => !!it)
   const selected = items.length === 0 ? '' : items.length === 1 ? itemName(items[0]) : `${items.length} items`
+  const one = items.length === 1 ? items[0].type : null
   return (
     <footer className="statusbar">
-      <span className="hint">{toolHint(tool, drawing, items.length === 1 && items[0].type === 'connector')}</span>
+      <span className="hint">{toolHint(tool, { drawing, editing, connector: one === 'connector', label: one === 'label' })}</span>
       <span className="spacer" />
       <span className="selected" aria-live="polite">
         {selected}

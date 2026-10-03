@@ -192,14 +192,18 @@ describe('the "Tubes and lines" presets', () => {
 })
 
 describe('toolHint', () => {
-  it('has a hint for each tool, and one for a selected connector', () => {
+  it('has a hint for each tool, one for a selected connector or label, and one for the text box', () => {
     expect(toolHint('select')).toMatch(/^Click to select/)
-    expect(toolHint('select', false, true)).toMatch(/square handle/)
+    expect(toolHint('select', { connector: true })).toMatch(/square handle/)
+    expect(toolHint('select', { label: true })).toMatch(/leader end/)
     expect(toolHint('tube')).toMatch(/^Tube: click to place each point/)
-    expect(toolHint('tube', true)).toMatch(/Double-click or Enter finishes/)
-    expect(toolHint('wire', true)).toMatch(/^Wire: /)
+    expect(toolHint('tube', { drawing: true })).toMatch(/Double-click or Enter finishes/)
+    expect(toolHint('wire', { drawing: true })).toMatch(/^Wire: /)
     expect(toolHint('line')).toMatch(/^Line and arrow: /)
     expect(toolHint('rect')).toMatch(/^Rectangle: drag/)
     expect(toolHint('ellipse')).toMatch(/^Ellipse: drag/)
+    expect(toolHint('label')).toMatch(/^Label: press on the part/)
+    expect(toolHint('text')).toMatch(/^Text: click/)
+    expect(toolHint('label', { editing: true })).toMatch(/Enter finishes, Shift\+Enter starts a new line, Escape cancels/)
   })
 })

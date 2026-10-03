@@ -4,8 +4,8 @@ import type { Host } from '../host/host'
 import * as a from './actions'
 import { useEditor, type Tool } from './store'
 
-/** The tool keys of section 12 (Label and Text come with phase 6). */
-export const TOOL_KEYS: Readonly<Record<string, Tool>> = { v: 'select', u: 'tube', w: 'wire', a: 'line', r: 'rect', e: 'ellipse' }
+/** The tool keys of section 12. */
+export const TOOL_KEYS: Readonly<Record<string, Tool>> = { v: 'select', l: 'label', t: 'text', u: 'tube', w: 'wire', a: 'line', r: 'rect', e: 'ellipse' }
 
 export interface KeyContext {
   host: Host
@@ -119,11 +119,15 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
     return true
   }
   switch (key) {
-    case 'Enter':
-      // Finish the connector being drawn.
-      if (!drawing) return false
-      a.draftFinish()
-      return true
+    case 'Enter': {
+      // Finish the connector being drawn, or edit the text of the one selected label.
+      if (drawing) {
+        a.draftFinish()
+        return true
+      }
+      const one = s.selection.length === 1 ? s.doc.items[s.selection[0]] : undefined
+      return s.tool === 'select' && one?.type === 'label' && a.editLabel(one.id)
+    }
     case 'Delete':
     case 'Backspace':
       // While a connector is drawn, Backspace takes back its last point.
@@ -169,8 +173,10 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
       ctx.toggleHelp()
       return true
     case 'Escape':
-      // Cancel the connector being drawn, or the gesture; else leave a drawing tool; else clear the selection.
-      if (drawing) a.draftCancel()
+      // Cancel the text box, the connector being drawn, or the gesture; else leave a drawing tool; else clear the
+      // selection.
+      if (s.textEdit) a.cancelText()
+      else if (drawing) a.draftCancel()
       else if (s.gesture) s.cancelGesture()
       else if (s.tool !== 'select') a.setTool('select')
       else a.clearSelection()
@@ -181,8 +187,10 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
 
 /** The key table for the help dialog. */
 export const KEY_TABLE: [string, string][] = [
-  ['V, U, W, A, R, E', 'Tools: Select, Tube, Wire, Line and arrow, Rectangle, Ellipse'],
+  ['V, L, T, U, W, A, R, E', 'Tools: Select, Label, Text, Tube, Wire, Line and arrow, Rectangle, Ellipse'],
   ['Double-click or Enter; Backspace', 'Finish a connector; take back its last point'],
+  ['Double-click a label, or Enter', 'Edit the text of the label'],
+  ['In the text box: Enter, Shift+Enter, Escape', 'Finish the label, start a new line, cancel. An empty box deletes the label'],
   ['Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y', 'Undo, redo'],
   ['Ctrl+C, Ctrl+X, Ctrl+V', 'Copy, cut, paste items'],
   ['Ctrl+D', 'Duplicate'],

@@ -76,4 +76,28 @@ describe('handleKey', () => {
     expect(press('a', el('INPUT', { type: 'range' }), { ctrlKey: true })).toBe(true)
     expect(press('a', el('INPUT', { type: 'number' }), { ctrlKey: true })).toBe(false)
   })
+
+  it('L and T choose the Label and Text tools; Enter edits the one selected label; Escape closes the text box', () => {
+    const body = el('BODY')
+    expect(press('l', body)).toBe(true)
+    expect(s().tool).toBe('label')
+    expect(press('t', body)).toBe(true)
+    expect(s().tool).toBe('text')
+    expect(press('v', body)).toBe(true)
+    // Enter does nothing with a symbol selected; with one label selected it opens the text box on it.
+    expect(press('Enter', body)).toBe(false)
+    const b = new DocBuilder()
+    const beaker = b.symbol('beaker', { x: 0, y: 0 })
+    b.label('beaker', 100, 0, [beaker, 50, 60])
+    s().replace(b.doc)
+    s().select(['label2'])
+    expect(press('Enter', body)).toBe(true)
+    expect(s().textEdit).toMatchObject({ fresh: false, text: 'beaker', label: { id: 'label2' } })
+    // In the box itself (a text field) the keys do nothing; Escape elsewhere closes it, and the label keeps its text.
+    expect(press('Escape', el('TEXTAREA'))).toBe(false)
+    expect(s().textEdit).not.toBeNull()
+    expect(press('Escape', body)).toBe(true)
+    expect(s().textEdit).toBeNull()
+    expect((s().doc.items.label2 as { text: string }).text).toBe('beaker')
+  })
 })

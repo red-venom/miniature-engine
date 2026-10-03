@@ -27,6 +27,20 @@ export const icons = {
       <path d="M4 3l12 7-5 1.5L8.5 17z" />
     </>,
   ),
+  /** A label: a leader from a dot on a part to three lines of text. */
+  label: icon(
+    <>
+      <circle cx="3.75" cy="16.25" r="1.75" fill="currentColor" stroke="none" />
+      <path d="M5 15l4.5-4.5" />
+      <path d="M11 6.5h6.5M11 10.5h6.5M11 14.5h4" />
+    </>,
+  ),
+  /** Text: a letter T. */
+  text: icon(
+    <>
+      <path d="M4.5 6V4h11v2M10 4v12M7.5 16h5" />
+    </>,
+  ),
   /** A bent tube: two walls. */
   tube: icon(
     <>

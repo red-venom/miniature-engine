@@ -10,9 +10,11 @@ import type { Host } from '../host/host'
 import type { DocSettings } from '../model/types'
 import { icons } from './icons'
 
-/** The tools of section 12 that are built so far, in the order of its table. */
+/** The tools of section 12, in the order of its table. */
 const TOOLS: { tool: Tool; label: string; icon: ReactNode }[] = [
   { tool: 'select', label: 'Select', icon: icons.select },
+  { tool: 'label', label: 'Label', icon: icons.label },
+  { tool: 'text', label: 'Text', icon: icons.text },
   { tool: 'tube', label: 'Tube', icon: icons.tube },
   { tool: 'wire', label: 'Wire', icon: icons.wire },
   { tool: 'line', label: 'Line and arrow', icon: icons.line },
@@ -158,6 +160,11 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
       {icons.help}
     </button>
   )
+  const labelAll = (
+    <button type="button" onClick={a.labelAll} title="Add a label for every part that has none">
+      Label all
+    </button>
+  )
 
   return (
     <header className="topbar">
@@ -199,6 +206,7 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
           </button>
         ))}
       </div>
+      {!compact && labelAll}
       <span className="spacer" />
       {!compact && <div className="group">{files}</div>}
       <button type="button" className="primary" onClick={() => void a.copyImage(host)} title="Copy image (Ctrl+Shift+C)">
@@ -217,6 +225,7 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
         <Menu label="More" align="right">
           <div className="menu-row">{zoomControls}</div>
           <div className="menu-row">{toggles}</div>
+          <div className="menu-row">{labelAll}</div>
           <div className="menu-row">{files}</div>
           <div className="menu-row">{help}</div>
         </Menu>

@@ -39,14 +39,17 @@ import {
   type Distribute,
   type SizeArgs,
 } from '../model/commands'
+import { autoLabel } from '../model/autoLabel'
 import { deletePoint, isDrawable, makeConnector, presetConnector, setConnector, type ConnectorPatch, type ConnectorPreset } from '../model/connectors'
+import { addLabel, freeTarget, setLabel, setLabelText, type LabelPatch } from '../model/labels'
 import { addLayer, applyPreset, emptyCavity, fillWater, removeLayer, setLayer, setReading, type Preset } from '../model/contents'
 import { orderRule } from '../model/order'
 import { setShape, type ShapePatch } from '../model/shapes'
-import { newDoc, type Doc, type DocSettings, type Id, type Item, type ParamValue, type SymbolItem } from '../model/types'
+import { newDoc, type Doc, type DocSettings, type Id, type Item, type LabelItem, type ParamValue, type SymbolItem } from '../model/types'
 import { docNodes, estimateBounds } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { TemplateDef } from '../templates/types'
+import { measureText } from './measure'
 import { useEditor, type Prefs, type Tool } from './store'
 import { fitView, viewCentre, zoom100, zoomAt } from './view'
 
@@ -134,7 +137,7 @@ export function addPresetAt(preset: ConnectorPreset, at?: Pt): Id {
 export function insertTemplateAt(tpl: TemplateDef, at?: Pt): void {
   const s = state()
   const before = s.doc.order.length
-  const next = insertTemplate(s.doc, tpl.build(), at ?? viewCentre(s.view, s.canvas))
+  const next = insertTemplate(s.doc, tpl.build(), at ?? viewCentre(s.view, s.canvas), undefined, measureText)
   commit(next)
   backToSelect()
   const fresh = before === 0 ? [] : next.order.slice(before)
@@ -215,6 +218,84 @@ export function draftFinish(dropLast = false): Id | null {
   return it.id
 }
 
+// ---------------------------------------------------------------- labels and text (section 11)
+
+/**
+ * Open the text box for a new label that a gesture of the Label or Text tool made (`gestureLabel`). It holds the
+ * label's text (a symbol's label text, or nothing), selected. The label goes into the document when the text is
+ * committed.
+ */
+export function startLabel(label: LabelItem): void {
+  state().setTextEdit({ label, fresh: true, text: label.text })
+}
+
+/** Open the text box on a label of the document (a double-click, or Enter), holding its text. Locked labels stay shut. */
+export function editLabel(id: Id): boolean {
+  const s = state()
+  const it = s.doc.items[id]
+  if (it?.type !== 'label' || it.locked) return false
+  if (s.textEdit) commitText()
+  if (!state().selection.includes(id)) state().select([id])
+  state().setTextEdit({ label: it, fresh: false, text: it.text })
+  return true
+}
+
+/** The text in the box changes as it is typed. Nothing reaches the document until it is committed. */
+export function typeText(text: string): void {
+  const e = state().textEdit
+  if (e && e.text !== text) state().setTextEdit({ ...e, text })
+}
+
+/**
+ * Enter, or a click outside the box: a new label goes into the document with the typed text, or an old label takes it,
+ * as one undo step. An empty box deletes the label (a new one is not added). The tool returns to Select, and the label
+ * becomes the selection.
+ */
+export function commitText(): void {
+  const s = state(),
+    e = s.textEdit
+  if (!e) return
+  s.setTextEdit(null)
+  const next = e.fresh ? addLabel(s.doc, e.label, e.text) : setLabelText(s.doc, e.label.id, e.text)
+  commit(next)
+  state().setTool('select')
+  if (next.items[e.label.id]) {
+    if (e.fresh || !state().selection.includes(e.label.id)) state().select([e.label.id])
+  } else if (!e.fresh) state().setStatus('Label deleted')
+}
+
+/** Escape: a new label is dropped, and an old label keeps its text. The tool returns to Select. */
+export function cancelText(): void {
+  const s = state()
+  if (!s.textEdit) return
+  s.setTextEdit(null)
+  s.setTool('select')
+}
+
+/**
+ * "Label all" (section 11): a label for every symbol that has none, as one undo step. The new labels become the
+ * selection, so that they can be moved or deleted together.
+ */
+export function labelAll(): void {
+  const s = state()
+  if (s.textEdit) commitText()
+  const doc = state().doc
+  const next = autoLabel(doc)
+  if (next === doc) {
+    state().setStatus('Every part has a label')
+    return
+  }
+  commit(next)
+  const fresh = next.order.slice(doc.order.length)
+  state().select(fresh)
+  state().setStatus(fresh.length === 1 ? '1 label added' : `${fresh.length} labels added`)
+}
+
+/** The label inspector: text (an empty text deletes the label), size, side, leader end, smart text. */
+export const labelFields = (id: Id, patch: LabelPatch): void => commit(setLabel(state().doc, id, patch))
+/** The leader end stops following its item: it stays where it is, as a free point. */
+export const freeLabel = (id: Id): void => commit(freeTarget(state().doc, id))
+
 // ---------------------------------------------------------------- edit the selection
 
 export function deleteSelection(): void {
@@ -244,16 +325,19 @@ export function arrange(how: Arrange): void {
   if (ids.length) commit(reorderItems(state().doc, ids, how))
 }
 
-/** Align the selection: left, centre, right, top, middle or bottom. A group aligns as one. Then the order rule runs. */
+/**
+ * Align the selection: left, centre, right, top, middle or bottom. A group aligns as one. A label counts as its text is
+ * drawn (`measureText`). Then the order rule runs.
+ */
 export function alignSelection(how: Align): void {
   const ids = selected()
-  if (ids.length > 1) commit(orderRule(alignItems(state().doc, ids, how), ids))
+  if (ids.length > 1) commit(orderRule(alignItems(state().doc, ids, how, measureText), ids))
 }
 
 /** Distribute the selection across or down, with equal gaps. A group counts as one. Then the order rule runs. */
 export function distributeSelection(how: Distribute): void {
   const ids = selected()
-  if (ids.length > 2) commit(orderRule(distributeItems(state().doc, ids, how), ids))
+  if (ids.length > 2) commit(orderRule(distributeItems(state().doc, ids, how, measureText), ids))
 }
 
 /** Mirror the selection left to right about its centre. One symbol flips in place. */
@@ -266,7 +350,7 @@ export function flipSelection(): void {
     commit(setFlip(s.doc, it.id, !it.flip))
     return
   }
-  const box = itemsBox(s.doc, ids)
+  const box = itemsBox(s.doc, ids, measureText)
   if (box) commit(flipItems(s.doc, ids, boxCentre(box).x))
 }
 
@@ -391,14 +475,16 @@ export function paste(): void {
   )
 }
 
-/** New clears the diagram. It can be undone. There is no confirmation. */
+/** New clears the diagram. It can be undone. There is no confirmation. A text box that is open closes. */
 export function newDiagram(): void {
+  state().setTextEdit(null)
   commit(newDoc())
   state().select([])
 }
 
-/** Replace the document as one undo step (Open, the test hook). */
+/** Replace the document as one undo step (Open, the test hook). A text box that is open closes. */
 export function loadDoc(doc: Doc): void {
+  state().setTextEdit(null)
   commit(doc)
   state().select([])
 }
@@ -407,7 +493,7 @@ export function loadDoc(doc: Doc): void {
 
 export function fit(): void {
   const s = state()
-  s.setView(fitView(docBox(s.doc), s.canvas))
+  s.setView(fitView(docBox(s.doc, measureText), s.canvas))
 }
 
 export function zoomStep(dir: 1 | -1): void {
