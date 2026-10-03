@@ -6,6 +6,7 @@ import { itemName } from '../editor/names'
 import { useEditor } from '../editor/store'
 import type { Align } from '../model/commands'
 import { RADIUS_RANGE, WIDTH_RANGE, capsFor, connectorRadius, connectorWidth, isTube, type ConnectorPatch } from '../model/connectors'
+import { LABEL_SIZE_RANGE, LEADER_ENDS, isFixed, labelSize, type LabelPatch } from '../model/labels'
 import { SHAPE_FILLS, type ShapeFill, type ShapePatch } from '../model/shapes'
 import type { Cap, ConnectorItem, ConnectorKind, Doc, DocSettings, Item, LabelItem, ShapeItem, SymbolItem } from '../model/types'
 import { hasSymbol, symbolDef } from '../symbols/registry'
@@ -111,25 +112,57 @@ function SymbolFields({ it }: { it: SymbolItem }) {
   )
 }
 
-function LabelFields({ it }: { it: LabelItem }) {
-  const fixed = !!it.target && 'item' in it.target
+const SIDES: { value: LabelItem['side']; label: string }[] = [
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+]
+
+const LEADER_END_NAMES: Record<LabelItem['leaderEnd'], string> = { none: 'None', arrow: 'Arrow', dot: 'Dot' }
+const LEADER_END_OPTIONS = LEADER_ENDS.map((v) => ({ value: v, label: LEADER_END_NAMES[v] }))
+
+/**
+ * Section 12: text (Enter commits, Shift+Enter starts a new line, an empty text deletes the label), size, side, leader
+ * end, smart text, and what the leader end is on: fixed to an item, with a button to free it, or a free point. Plain
+ * text has no leader. Then Arrange (the draw order sets the letters) and Delete.
+ */
+function LabelFields({ it, doc }: { it: LabelItem; doc: Doc }) {
+  const set = (patch: LabelPatch) => a.labelFields(it.id, patch)
+  const owner = isFixed(it) ? doc.items[it.target.item] : undefined
   return (
     <>
-      <Section title="Label">
-        <TextField label="Text" value={it.text} multiline onCommit={(v) => a.patchItem<LabelItem>(it.id, { text: v })} />
-        <SelectField
-          label="Side"
-          value={it.side}
-          options={[
-            { value: 'left', label: 'Left' },
-            { value: 'right', label: 'Right' },
-          ]}
-          onChange={(v) => a.patchItem<LabelItem>(it.id, { side: v as LabelItem['side'] })}
+      <Section title={it.target ? 'Label' : 'Text'}>
+        <TextField label="Text" value={it.text} multiline onCommit={(v) => set({ text: v })} />
+        <NumberField
+          label="Size"
+          value={labelSize(doc, it)}
+          min={LABEL_SIZE_RANGE.min}
+          max={LABEL_SIZE_RANGE.max}
+          step={1}
+          unit="u"
+          onCommit={(v) => set({ size: v })}
         />
-        <p className="muted">{it.target ? (fixed ? 'Fixed to an item' : 'Free leader') : 'Plain text'}</p>
+        <SelectField label="Side" value={it.side} options={SIDES} onChange={(v) => set({ side: v as LabelItem['side'] })} />
+        <SelectField
+          label="Leader end"
+          value={it.leaderEnd}
+          options={LEADER_END_OPTIONS}
+          disabled={!it.target}
+          onChange={(v) => set({ leaderEnd: v as LabelItem['leaderEnd'] })}
+        />
+        <CheckField label="Smart text" checked={it.smart ?? doc.settings.smartText} onChange={(v) => set({ smart: v })} />
+      </Section>
+      <Section title="Leader">
+        <p className="muted">{owner ? `Fixed to ${itemName(owner)}: it follows the item.` : it.target ? 'A free point.' : 'None: plain text.'}</p>
+        {owner && (
+          <Row>
+            <button type="button" className="small" onClick={() => a.freeLabel(it.id)} title="The leader end stays where it is, and no longer follows the item">
+              Free the leader end
+            </button>
+          </Row>
+        )}
       </Section>
       <Arrange />
-      <ItemButtons items={[it]} />
+      <ItemButtons items={[it]} deleteOnly />
     </>
   )
 }
@@ -333,7 +366,7 @@ export function Inspector({ open, onClose }: { open: boolean; onClose(): void })
       it.type === 'symbol' ? (
         <SymbolFields it={it} />
       ) : it.type === 'label' ? (
-        <LabelFields it={it} />
+        <LabelFields it={it} doc={doc} />
       ) : it.type === 'connector' ? (
         <ConnectorFields it={it} />
       ) : (

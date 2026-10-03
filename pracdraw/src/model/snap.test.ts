@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { P, type Pt } from '../kernel/geom'
+import { itemBox } from './bounds'
 import { anchorOf, anchorWorld, DocBuilder } from './build'
 import { DIR_WITHIN, SNAP_PX, TIP_REACH, facing, fitWidth, moveSnapped, snap, snapContext, type SnapResult } from './snap'
 import type { Doc, SymbolItem } from './types'
@@ -258,6 +259,29 @@ describe('snap rules', () => {
     expect(snap(b.doc, [beaker.id], -100, -100, 1)).toEqual({ dx: -100, dy: -100, guides: [] })
   })
 
+  it('labels take part in the guides, as targets and as moving items, with their text as measured and not their leader', () => {
+    const b = new DocBuilder()
+    const beaker = b.symbol('beaker', { x: 0, y: 0 })
+    const label = b.label('beaker', 300, -200, [beaker, 40, 60]) // its text starts at x = 300; its leader ends on the beaker
+    const flask = b.symbol('conicalFlask', { x: 600, y: 300 })
+    // In the browser the text is measured as drawn: here 6 u for each character, so the text runs from x 300 to 336.
+    const measure = (text: string, size: number) => text.length * size * 0.4
+    const fb = itemBox(b.doc, flask)
+    // The flask's left edge dragged to 3 u right of the text's left edge: it snaps onto it, with a guide line.
+    let r = snap(b.doc, [flask.id], 300 + 3 - fb.x0, 0, 1, true, measure)
+    expect(r.dx).toBeCloseTo(300 - fb.x0, 9)
+    expect(r.guides).toHaveLength(1)
+    // With the estimate the text is wider (0.56 × the size for each character): its right edge is elsewhere.
+    r = snap(b.doc, [flask.id], 336 + 2 - fb.x0, 0, 1, true, measure)
+    expect(r.dx).toBeCloseTo(336 - fb.x0, 9)
+    expect(snap(b.doc, [flask.id], 336 + 2 - fb.x0, 0, 1).dx).toBe(336 + 2 - fb.x0)
+    // The label moves: the centre of its text goes to the centre of the flask's bounds when within T.
+    const centre = (fb.x0 + fb.x1) / 2
+    r = snap(b.doc, [label.id], centre - 318 + 2, 0, 1, true, measure)
+    expect(r.dx).toBeCloseTo(centre - 318, 9)
+    expect(r.guides.map((g) => g.kind)).toEqual(['line'])
+  })
+
   it('an anchor snap wins over a guide; the nearest candidate wins', () => {
     const b = new DocBuilder()
     const gauze = b.symbol('gauze', { x: 0, y: 0 })
@@ -339,10 +363,12 @@ describe('snap rules', () => {
     expect(snapContext(doc, [bung.id])).toBe(c)
     expect(snapContext(doc, [flask.id])).not.toBe(c)
     expect(snapContext(structuredClone(doc), [bung.id])).not.toBe(c)
-    // The bung's plug takes part (its port does not); the flask's mouth and neck are targets; the label has no bounds here.
+    // The bung's plug takes part (its port does not); the flask's mouth and neck are targets; the flask and the label's
+    // text are guide targets.
     expect(c.moving.map((m) => m.a.id)).toEqual(['plug'])
     expect([...c.targets.keys()].sort()).toEqual(['mouth', 'neck'])
-    expect(c.boxes).toHaveLength(1)
+    expect(c.boxes).toHaveLength(2)
+    expect(snapContext(doc, [bung.id], () => 1)).not.toBe(c)
     const [dx, dy] = toward(bung, 'plug', anchorWorld(flask, 'mouth'))
     moveSnapped(doc, [bung.id], snap(doc, [bung.id], dx, dy, 1))
     expect(doc).toEqual(before)

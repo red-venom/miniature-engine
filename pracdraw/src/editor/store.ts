@@ -5,7 +5,7 @@
 import { create } from 'zustand'
 import type { Box, Pt } from '../kernel/geom'
 import type { SnapGuide } from '../model/snap'
-import { newDoc, type ConnectorKind, type Doc, type Id, type Item } from '../model/types'
+import { newDoc, type ConnectorKind, type Doc, type Id, type Item, type LabelItem } from '../model/types'
 
 export const HISTORY_LIMIT = 200
 /** Changes with the same merge key that are closer than this are one undo step (arrow-key moves). */
@@ -34,20 +34,39 @@ export const CONNECTOR_TOOLS: Partial<Record<Tool, ConnectorKind>> = { tube: 'gl
 
 /**
  * `level` is the level handle on the canvas; `slider` is an amount slider in the inspector; `point` moves or inserts a
- * connector point; `shape` draws a rectangle or an ellipse. Each drag is one undo step.
+ * connector point; `shape` draws a rectangle or an ellipse; `target` drags the leader end of a label. Each drag is one
+ * undo step. `label` is the press, drag and release of the Label or Text tool: it changes nothing until the text is
+ * typed, and Escape cancels it.
  */
-export type GestureKind = 'move' | 'resize' | 'rotate' | 'marquee' | 'pan' | 'level' | 'slider' | 'point' | 'shape'
+export type GestureKind = 'move' | 'resize' | 'rotate' | 'marquee' | 'pan' | 'level' | 'slider' | 'point' | 'shape' | 'label' | 'target'
 
 export interface Gesture {
   kind: GestureKind
   /** The document when the gesture began. It becomes the undo entry when the gesture ends. */
   base: Doc
+  /** The selection when the gesture began. A cancelled gesture brings it back (an Alt+drag selects its copy). */
+  selection: Id[]
   /** The marquee rectangle in world units, while one is drawn. */
   marquee?: Box
   /** The port, terminal or tip that a dragged connector point snapped to, in world units. */
   anchor?: Pt
   /** What a move snapped to: guide lines and the points where anchors met, in world units. */
   guides?: SnapGuide[]
+  /** The leader that a drag of the Label tool makes: from the press (where it will end) to the pointer, in world units. */
+  leader?: { from: Pt; to: Pt }
+}
+
+/**
+ * The text box over the canvas (section 11): the label whose text is typed. A new label is not in the document until
+ * its text is committed, so it is not in the history; an old label is in the document and keeps its text until then.
+ */
+export interface TextEdit {
+  /** The new label, or the old label as it was when the box opened. */
+  label: LabelItem
+  /** True for a new label: Escape drops it, and an empty box adds nothing. */
+  fresh: boolean
+  /** The text in the box, as typed. */
+  text: string
 }
 
 /**
@@ -76,6 +95,8 @@ export interface EditorState {
   gesture: Gesture | null
   /** The connector being drawn, while a connector tool is the tool. */
   draft: Draft | null
+  /** The label whose text is being typed in the text box, or null when the box is closed. */
+  textEdit: TextEdit | null
   /** Copy, cut and paste use this clipboard in memory, not the system clipboard. */
   clipboard: Item[]
   /** Size of the canvas region in CSS px. The canvas component keeps it current. */
@@ -102,6 +123,8 @@ export interface EditorState {
   /** Choose a tool. A connector tool starts an empty draft; a change to another tool drops the draft. The same tool changes nothing. */
   setTool(tool: Tool): void
   setDraft(draft: Draft | null): void
+  /** Open the text box, change its text, or close it (null). */
+  setTextEdit(edit: TextEdit | null): void
   setView(view: Partial<View>): void
   setPrefs(patch: Partial<Prefs>): void
   setCanvas(w: number, h: number): void
@@ -126,6 +149,7 @@ export function createEditorStore() {
     prefs: { ...DEFAULT_PREFS },
     gesture: null,
     draft: null,
+    textEdit: null,
     clipboard: [],
     canvas: { w: 800, h: 600 },
     status: '',
@@ -140,10 +164,10 @@ export function createEditorStore() {
       set({ doc, past, future: [], selection: keep(doc, s.selection), lastCommit: merge ? { key: merge, at } : null })
     },
     replace(doc) {
-      set({ doc, past: [], future: [], selection: [], gesture: null, lastCommit: null })
+      set({ doc, past: [], future: [], selection: [], gesture: null, textEdit: null, lastCommit: null })
     },
     beginGesture(kind) {
-      set({ gesture: { kind, base: get().doc } })
+      set({ gesture: { kind, base: get().doc, selection: get().selection } })
     },
     updateGesture(patch) {
       const g = get().gesture
@@ -161,7 +185,7 @@ export function createEditorStore() {
     },
     cancelGesture() {
       const s = get()
-      if (s.gesture) set({ gesture: null, doc: s.gesture.base, selection: keep(s.gesture.base, s.selection) })
+      if (s.gesture) set({ gesture: null, doc: s.gesture.base, selection: keep(s.gesture.base, s.gesture.selection) })
     },
     undo() {
       const s = get()
@@ -185,6 +209,9 @@ export function createEditorStore() {
     },
     setDraft(draft) {
       set({ draft })
+    },
+    setTextEdit(textEdit) {
+      set({ textEdit })
     },
     setView(view) {
       const v = { ...get().view, ...view }

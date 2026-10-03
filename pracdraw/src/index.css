@@ -17,6 +17,7 @@
   --dot: #cfd3d9;
   --swatch-edge: #8a919c;
   --canvas: #ffffff;
+  --ink: #111111;
   --radius: 6px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-family: var(--font);
@@ -120,11 +121,13 @@ button.danger {
 
 /* ---- top bar */
 
+/* Every control of section 12 must fit from 1300 px wide, so the bar is tight: 28 px icon buttons, tools 2 px apart,
+   6 px between groups and inside text buttons. The title gives way first. */
 .topbar {
   grid-area: top;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0 8px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -132,6 +135,19 @@ button.danger {
 .topbar .group {
   display: flex;
   gap: 4px;
+}
+.topbar button:not(.icon-button) {
+  padding: 0 6px;
+}
+.topbar button.icon-button {
+  width: 28px;
+  flex: none;
+}
+.topbar [role='toolbar'] {
+  gap: 2px;
+}
+.topbar .title {
+  min-width: 48px;
 }
 .topbar .switch {
   gap: 0;
@@ -167,7 +183,7 @@ button.danger {
   width: 220px;
 }
 .zoom {
-  min-width: 56px;
+  min-width: 48px;
   justify-content: center;
 }
 .menu {
@@ -497,6 +513,26 @@ button.swatch {
 .canvas.drawing {
   cursor: crosshair;
 }
+.canvas.typing {
+  cursor: text;
+}
+/* The text box of a label: the text as typed, in the label's font and size, over the canvas at its text anchor. */
+.canvas .text-box {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--canvas);
+  color: var(--ink);
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  user-select: text;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 .canvas.panning {
   cursor: grab;
 }
@@ -524,6 +560,15 @@ button.swatch {
 }
 .overlay .handle.mid {
   fill: var(--accent-soft);
+}
+/* The leader end of a selected label: drag it to move the end, onto a part to fix it there. */
+.overlay .handle.target {
+  cursor: move;
+  fill: var(--accent-soft);
+}
+/* Where the leader of a label being made will end. */
+.overlay .leader-end {
+  fill: var(--accent);
 }
 /* A selected connector: its points joined by a thin line, under its handles. */
 .overlay .path-line {
@@ -660,25 +705,6 @@ kbd {
     'top'
     'canvas'
     'status';
-}
-/* The top bar of a narrow window: tighter tools and gaps, and a title that gives way first, so that the bar fits. */
-.app.narrow .topbar {
-  gap: 6px;
-}
-.app.narrow .topbar [role='toolbar'] {
-  gap: 2px;
-}
-.app.narrow .topbar [role='toolbar'] .icon-button {
-  width: 28px;
-}
-.app.narrow .topbar .switch button {
-  padding: 0 6px;
-}
-.app.narrow .title {
-  min-width: 48px;
-}
-.app.narrow .topbar > .icon-button {
-  flex: none;
 }
 .app.narrow .panel {
   position: fixed;

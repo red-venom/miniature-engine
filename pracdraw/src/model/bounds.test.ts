@@ -4,7 +4,7 @@ import { demoDoc } from '../demo'
 import { estimateBounds } from '../render/render'
 import { geometry } from '../symbols/registry'
 import { DocBuilder } from './build'
-import { boxCentre, boxesTouch, docBox, itemBox, itemsBox, labelBox, labelTarget, localBox, unionBox } from './bounds'
+import { boxCentre, boxesTouch, docBox, estimateWidth, itemBox, itemsBox, labelBox, labelTarget, localBox, unionBox } from './bounds'
 
 describe('itemBox', () => {
   it('a symbol box follows the drawing, turned', () => {
@@ -64,6 +64,23 @@ describe('itemBox', () => {
     expect(itemBox(b.doc, fixed)).toMatchObject({ x0: -2, y0: -62 })
     b.doc.settings.labelMode = 'blank'
     expect(labelBox(b.doc, fixed).x1).toBe(300)
+  })
+  it('a label is measured as drawn: smart text first, then the measure, which counts scripts at 0.7 size', () => {
+    const b = new DocBuilder()
+    const co2 = b.label('CO2 gas', 0, 0)
+    // The estimate counts what is drawn: "CO", a subscript 2 at 0.7 size, " gas".
+    expect(estimateWidth('CO_{2} gas', 10)).toBeCloseTo((6 + 0.7) * 10 * 0.56, 9)
+    expect(estimateWidth('a\\_b', 10)).toBeCloseTo(3 * 10 * 0.56, 9)
+    expect(labelBox(b.doc, co2).x1).toBeCloseTo((6 + 0.7) * 15 * 0.56, 9)
+    const seen: string[] = []
+    labelBox(b.doc, co2, (text, size) => {
+      seen.push(text)
+      return text.length * size
+    })
+    expect(seen).toEqual(['CO_{2} gas'])
+    // Smart text off, for the label or for the document: the text is measured as typed.
+    b.doc.items[co2.id] = { ...co2, smart: false }
+    expect(labelBox(b.doc, b.doc.items[co2.id] as typeof co2).x1).toBeCloseTo(7 * 15 * 0.56, 9)
   })
   it('localBox is cached per geometry', () => {
     const g = geometry('beaker', 100, 120)

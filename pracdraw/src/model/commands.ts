@@ -4,7 +4,7 @@
 
 import { P, type Box, type Pt } from '../kernel/geom'
 import { defaultParams, hasSymbol, symbolDef } from '../symbols/registry'
-import { boxCentre, itemBox, itemsBox, labelBox, unionBox } from './bounds'
+import { boxCentre, estimateWidth, itemBox, itemsBox, labelBox, unionBox, type Measure } from './bounds'
 import { toWorld } from './transform'
 import type { Doc, DocSettings, Id, Item, LabelItem, ParamValue, SymbolItem } from './types'
 
@@ -93,12 +93,12 @@ export function insertItems(doc: Doc, items: readonly Item[], dx = 0, dy = 0): D
 
 /**
  * Insert a template. Into an empty diagram it becomes the whole diagram and keeps its ids and title.
- * Otherwise its items get new ids and are centred on `at`.
+ * Otherwise its items get new ids and the box of its drawing (labels measured with `measure`) is centred on `at`.
  */
-export function insertTemplate(doc: Doc, tpl: Doc, at: Pt, gen: IdGen = newId): Doc {
+export function insertTemplate(doc: Doc, tpl: Doc, at: Pt, gen: IdGen = newId, measure: Measure = estimateWidth): Doc {
   if (doc.order.length === 0) return { ...tpl, settings: { ...tpl.settings } }
   const copies = cloneItems(live(tpl, tpl.order), gen)
-  const box = itemsBox(tpl, tpl.order)
+  const box = itemsBox(tpl, tpl.order, measure)
   const c = box ? boxCentre(box) : P(0, 0)
   return insertItems(doc, copies, at.x - c.x, at.y - c.y)
 }
@@ -193,15 +193,18 @@ export interface Unit {
   box: Box
 }
 
-/** The items as units, in draw order of the first item of each. */
-export function arrangeUnits(doc: Doc, ids: readonly Id[]): Unit[] {
+/**
+ * The items as units, in draw order of the first item of each. A label's text is measured with `measure`: as drawn
+ * (canvas measureText) in the browser, the estimate in Node.
+ */
+export function arrangeUnits(doc: Doc, ids: readonly Id[], measure: Measure = estimateWidth): Unit[] {
   const set = new Set(ids)
   const units = new Map<string, Unit>()
   for (const id of doc.order) {
     const it = doc.items[id]
     if (!it || !set.has(id)) continue
     const key = it.group ? `group ${it.group}` : `item ${id}`
-    const box = it.type === 'label' ? labelBox(doc, it) : itemBox(doc, it)
+    const box = it.type === 'label' ? labelBox(doc, it, measure) : itemBox(doc, it, measure)
     const u = units.get(key)
     if (u) {
       u.ids.push(id)
@@ -224,10 +227,10 @@ function moveUnits(doc: Doc, moves: { unit: Unit; dx: number; dy: number }[]): D
 
 /**
  * Align several items (section 12): the left, centre or right, or the top, middle or bottom of their drawn bounds go
- * to that of the bounds of them all. A group moves as one.
+ * to that of the bounds of them all. A group moves as one. `measure` gives the drawn width of a label's text.
  */
-export function alignItems(doc: Doc, ids: readonly Id[], how: Align): Doc {
-  const units = arrangeUnits(doc, ids)
+export function alignItems(doc: Doc, ids: readonly Id[], how: Align, measure: Measure = estimateWidth): Doc {
+  const units = arrangeUnits(doc, ids, measure)
   if (units.length < 2) return doc
   const all = units.reduce<Box>((b, u) => unionBox(b, u.box)!, units[0].box)
   const to = (b: Box): Pt => {
@@ -254,10 +257,11 @@ export function alignItems(doc: Doc, ids: readonly Id[], how: Align): Doc {
 
 /**
  * Distribute several items (section 12), across or down: equal gaps between their drawn bounds. The first and the
- * last, by centre, stay where they are. A group moves as one. It takes three units or more.
+ * last, by centre, stay where they are. A group moves as one. It takes three units or more. `measure` gives the drawn
+ * width of a label's text.
  */
-export function distributeItems(doc: Doc, ids: readonly Id[], how: Distribute): Doc {
-  const units = arrangeUnits(doc, ids)
+export function distributeItems(doc: Doc, ids: readonly Id[], how: Distribute, measure: Measure = estimateWidth): Doc {
+  const units = arrangeUnits(doc, ids, measure)
   if (units.length < 3) return doc
   const lo = (b: Box) => (how === 'across' ? b.x0 : b.y0),
     hi = (b: Box) => (how === 'across' ? b.x1 : b.y1)

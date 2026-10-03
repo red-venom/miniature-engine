@@ -115,6 +115,16 @@ describe('add and insert', () => {
     expect(next.order).toEqual(tpl.order)
     expect(next.title).toBe(tpl.title)
   })
+  it('a template is centred by the box of its drawing, with its labels measured by the measure it is given', () => {
+    const doc = addSymbol(newDoc(), 'beaker', 0, 0, 'b')
+    const tpl = new DocBuilder()
+    tpl.symbol('beaker', { x: 0, y: 0 })
+    tpl.label('beaker', 60, 0) // plain text from x = 60: its width is what the measure says
+    const narrow = insertTemplate(doc, tpl.doc, P(0, 0), gen(), () => 0)
+    const wide = insertTemplate(doc, tpl.doc, P(0, 0), gen(), (text) => text.length * 100)
+    // The wider the text, the further left the whole template goes, so that its box stays centred on the point.
+    expect((wide.items.new1 as SymbolItem).x).toBeLessThan((narrow.items.new1 as SymbolItem).x - 200)
+  })
   it('a template into a diagram gets new ids, centred on the point, with labels fixed to the new copy', () => {
     const tpl = heatingBeaker()
     const first = insertTemplate(newDoc(), tpl, P(0, 0))
@@ -254,6 +264,34 @@ describe('align and distribute', () => {
     const next = alignItems(b.doc, [label.id, 'tripod3'], 'left')
     expect(next.items[label.id]).toBe(b.doc.items[label.id])
     expect(itemBox(next, next.items.tripod3).x0).toBeCloseTo(200, 9)
+  })
+  it('a label aligns and distributes by its text as measured: the measure that is given, smart text applied', () => {
+    const b = new DocBuilder()
+    const beaker = b.symbol('beaker', { x: 0, y: 0 })
+    const label = b.label('conical flask', 200, 0, [beaker, 40, 60])
+    const tripod = b.symbol('tripod', { x: 400, y: 100 })
+    // In the browser the text is measured as drawn: here, 6 u for each character that is drawn.
+    const measure = (text: string, size: number) => text.length * size * 0.4
+    const right = alignItems(b.doc, [label.id, tripod.id], 'right', measure)
+    const box = itemBox(right, right.items[tripod.id])
+    expect((right.items[label.id] as LabelItem).x + 13 * 6).toBeCloseTo(box.x1, 9)
+    const centre = alignItems(b.doc, [label.id, tripod.id], 'centre', measure)
+    const cb = itemBox(centre, centre.items[tripod.id])
+    expect((centre.items[label.id] as LabelItem).x + (13 * 6) / 2).toBeCloseTo((cb.x0 + cb.x1) / 2, 9)
+    // Smart text: "CO2" is drawn as CO₂, whose markup "CO_{2}" is what is measured.
+    const seen: string[] = []
+    const co2 = b.label('CO2', 0, 300)
+    alignItems(b.doc, [co2.id, tripod.id], 'left', (text, size) => {
+      seen.push(text)
+      return text.length * size
+    })
+    expect(seen).toContain('CO_{2}')
+    // Distribute uses the same widths: three items across, equal gaps between the text and the bounds.
+    const flask = b.symbol('conicalFlask', { x: 900, y: 300 })
+    const spread = distributeItems(b.doc, [label.id, tripod.id, flask.id], 'across', measure)
+    const l = spread.items[label.id] as LabelItem
+    const boxes = [{ x0: l.x, x1: l.x + 13 * 6 }, itemBox(spread, spread.items[tripod.id]), itemBox(spread, spread.items[flask.id])].sort((p, q) => p.x0 - q.x0)
+    expect(boxes[1].x0 - boxes[0].x1).toBeCloseTo(boxes[2].x0 - boxes[1].x1, 9)
   })
   it('distributes across or down with equal gaps; the first and the last stay', () => {
     const doc = three()

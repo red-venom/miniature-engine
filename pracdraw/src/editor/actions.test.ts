@@ -2,8 +2,30 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { itemBox } from '../model/bounds'
 import { DocBuilder } from '../model/build'
 import { WATER } from '../model/contents'
-import type { Doc, SymbolItem } from '../model/types'
-import { addSymbolAt, alignSelection, amountSlider, cavityWater, distributeSelection, groupSelection, nudge, reading, select, undo } from './actions'
+import { makeLabel } from '../model/labels'
+import type { Doc, LabelItem, SymbolItem } from '../model/types'
+import {
+  addSymbolAt,
+  alignSelection,
+  amountSlider,
+  cancelText,
+  cavityWater,
+  commitText,
+  distributeSelection,
+  editLabel,
+  freeLabel,
+  groupSelection,
+  labelAll,
+  labelFields,
+  loadDoc,
+  nudge,
+  reading,
+  select,
+  startLabel,
+  typeText,
+  undo,
+} from './actions'
+import { measureText } from './measure'
 import { useEditor } from './store'
 
 const s = () => useEditor.getState()
@@ -89,6 +111,120 @@ describe('several items: group, lock, align, distribute', () => {
     undo()
     undo()
     expect(s().doc).toEqual(three())
+  })
+})
+
+describe('labels and text (section 11)', () => {
+  function sample(): Doc {
+    const b = new DocBuilder()
+    const beaker = b.symbol('beaker', { x: 0, y: 0 })
+    b.label('beaker', 100, 0, [beaker, 50, 60])
+    return b.doc
+  }
+  const fresh = () => makeLabel({ x: 200, y: 50, side: 'right', target: { item: 'beaker1', lx: 50, ly: 60 }, text: 'beaker' }, 'new1')
+
+  it('a new label goes into the document when its text is committed: one undo step, then the Select tool', () => {
+    start(sample())
+    s().setTool('label')
+    startLabel(fresh())
+    expect(s().textEdit).toEqual({ label: fresh(), fresh: true, text: 'beaker' })
+    expect(s().doc.items.new1).toBeUndefined()
+    typeText('250 cm3 beaker')
+    expect(s().past).toHaveLength(0)
+    commitText()
+    expect(s().textEdit).toBeNull()
+    expect(s().tool).toBe('select')
+    expect(s().selection).toEqual(['new1'])
+    expect(s().doc.items.new1).toEqual({ ...fresh(), text: '250 cm3 beaker' })
+    expect(s().past).toHaveLength(1)
+    commitText() // nothing is open: nothing happens
+    expect(s().past).toHaveLength(1)
+    undo()
+    expect(s().doc.items.new1).toBeUndefined()
+  })
+
+  it('Escape drops a new label; an empty box adds nothing', () => {
+    start(sample())
+    s().setTool('label')
+    startLabel(fresh())
+    cancelText()
+    expect(s().textEdit).toBeNull()
+    expect(s().tool).toBe('select')
+    expect(s().doc).toEqual(sample())
+    startLabel(fresh())
+    typeText('   ')
+    commitText()
+    expect(s().doc.order).toEqual(['beaker1', 'label2'])
+    expect(s().past).toHaveLength(0)
+  })
+
+  it('an old label takes the typed text, keeps its text on Escape, and is deleted by an empty box', () => {
+    start(sample())
+    expect(editLabel('label2')).toBe(true)
+    expect(s().selection).toEqual(['label2'])
+    typeText('glass')
+    cancelText()
+    expect((s().doc.items.label2 as LabelItem).text).toBe('beaker')
+    editLabel('label2')
+    typeText('glass beaker')
+    commitText()
+    expect((s().doc.items.label2 as LabelItem).text).toBe('glass beaker')
+    editLabel('label2')
+    typeText('')
+    commitText()
+    expect(s().doc.items.label2).toBeUndefined()
+    expect(s().status).toBe('Label deleted')
+    undo()
+    expect((s().doc.items.label2 as LabelItem).text).toBe('glass beaker')
+    // A symbol, a missing item and a locked label have no text box.
+    expect(editLabel('beaker1')).toBe(false)
+    expect(editLabel('nothing')).toBe(false)
+    s().commit({ ...s().doc, items: { ...s().doc.items, label2: { ...s().doc.items.label2, locked: true } } })
+    expect(editLabel('label2')).toBe(false)
+    expect(s().textEdit).toBeNull()
+  })
+
+  it('Label all is one undo step; the new labels become the selection', () => {
+    const b = new DocBuilder()
+    b.symbol('beaker', { x: 0, y: 0 })
+    b.symbol('tripod', { x: 300, y: 50 })
+    start(b.doc)
+    labelAll()
+    expect(s().past).toHaveLength(1)
+    expect(s().selection).toHaveLength(2)
+    expect(
+      s()
+        .selection.map((id) => (s().doc.items[id] as LabelItem).text)
+        .sort(),
+    ).toEqual(['beaker', 'tripod'])
+    expect(s().status).toBe('2 labels added')
+    labelAll()
+    expect(s().past).toHaveLength(1)
+    expect(s().status).toBe('Every part has a label')
+    undo()
+    expect(s().doc).toEqual(b.doc)
+  })
+
+  it('the label inspector: fields, and freeing the leader end, one undo step each', () => {
+    start(sample())
+    labelFields('label2', { size: 20, side: 'left' })
+    freeLabel('label2')
+    expect(s().doc.items.label2).toMatchObject({ size: 20, side: 'left', target: { x: 50, y: 0 } })
+    expect(s().past).toHaveLength(2)
+  })
+
+  it('loading a document closes the text box', () => {
+    start(sample())
+    startLabel(fresh())
+    loadDoc(sample())
+    expect(s().textEdit).toBeNull()
+  })
+})
+
+describe('measureText', () => {
+  it('is the estimate without a DOM: 0.56 × the size for each character drawn, scripts at 0.7', () => {
+    expect(measureText('abcd', 15)).toBeCloseTo(4 * 15 * 0.56, 9)
+    expect(measureText('CO_{2}', 10)).toBeCloseTo((2 + 0.7) * 10 * 0.56, 9)
   })
 })
 

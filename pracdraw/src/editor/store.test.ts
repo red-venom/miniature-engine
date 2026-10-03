@@ -71,6 +71,18 @@ describe('gestures', () => {
     s.getState().preview(addSymbol(s.getState().doc, 'beaker', 0, 0, 'x'))
     expect(s.getState().doc.order).toEqual([])
   })
+  it('a cancelled gesture brings back the selection it began with (an Alt+drag selects its copy)', () => {
+    const s = createEditorStore()
+    s.getState().commit(addSymbol(s.getState().doc, 'beaker', 0, 0, 'a'))
+    s.getState().select(['a'])
+    s.getState().beginGesture('move')
+    s.getState().preview(addSymbol(s.getState().doc, 'beaker', 20, 0, 'copy'))
+    s.getState().select(['copy'])
+    expect(s.getState().selection).toEqual(['copy'])
+    s.getState().cancelGesture()
+    expect(s.getState().selection).toEqual(['a'])
+    expect(s.getState().doc.order).toEqual(['a'])
+  })
 })
 
 describe('view and preferences', () => {
