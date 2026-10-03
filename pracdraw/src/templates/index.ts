@@ -3,8 +3,9 @@
 
 import { biology } from './biology'
 import { chemistry } from './chemistry'
+import { chemistry2 } from './chemistry2'
 import { general } from './general'
 import { physics } from './physics'
 import type { TemplateDef } from './types'
 
-export const TEMPLATES: TemplateDef[] = [...general, ...chemistry, ...biology, ...physics]
+export const TEMPLATES: TemplateDef[] = [...general, ...chemistry, ...chemistry2, ...biology, ...physics]
