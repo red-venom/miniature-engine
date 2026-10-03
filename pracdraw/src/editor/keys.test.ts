@@ -100,4 +100,32 @@ describe('handleKey', () => {
     expect(s().textEdit).toBeNull()
     expect((s().doc.items.label2 as { text: string }).text).toBe('beaker')
   })
+
+  it("Enter on a focused button, radio button, select or link is the control's: it opens no text box", () => {
+    const b = new DocBuilder()
+    const beaker = b.symbol('beaker', { x: 0, y: 0 })
+    b.label('beaker', 100, 0, [beaker, 50, 60])
+    s().replace(b.doc)
+    s().select(['label2'])
+    const controls = [
+      el('BUTTON', { type: 'button' }), // Copy image, the inspector's Back
+      el('BUTTON', { type: 'button', role: 'radio' }), // a label-mode radio
+      el('INPUT', { type: 'radio' }),
+      el('INPUT', { type: 'checkbox' }),
+      el('SELECT', { type: 'select-one' }),
+      el('A'),
+      el('SUMMARY'),
+    ]
+    for (const target of controls) {
+      expect(controlKey(target, 'Enter')).toBe(true)
+      expect(press('Enter', target)).toBe(false)
+      expect(s().textEdit).toBeNull()
+    }
+    // On the page or the canvas, Enter edits the selected label.
+    expect(controlKey(el('BODY'), 'Enter')).toBe(false)
+    expect(controlKey(el('DIV', { classList: { contains: (c: string) => c === 'canvas' } }), 'Enter')).toBe(false)
+    expect(controlKey(null, 'Enter')).toBe(false)
+    expect(press('Enter', el('DIV', { classList: { contains: (c: string) => c === 'canvas' } }))).toBe(true)
+    expect(s().textEdit).toMatchObject({ label: { id: 'label2' } })
+  })
 })

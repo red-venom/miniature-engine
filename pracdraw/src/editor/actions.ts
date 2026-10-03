@@ -1,11 +1,8 @@
 // actions.ts — what the toolbar, the inspector, the library and the keys do. Each action calls a command and
-// commits the result to the store as one undo step. No DOM here, except the clipboard through the host.
+// commits the result to the store as one undo step. No DOM here. Files, export and the clipboard are in files.ts.
 
 import type { Layer } from '../kernel/contents'
 import { P, dist, type Pt } from '../kernel/geom'
-import { svgDocument, translate, type Node } from '../kernel/nodes'
-import { canvasToBlob, renderCanvas } from '../export/canvas'
-import type { Host } from '../host/host'
 import { boxCentre, docBox, itemsBox } from '../model/bounds'
 import {
   addItem,
@@ -46,7 +43,6 @@ import { addLayer, applyPreset, emptyCavity, fillWater, removeLayer, setLayer, s
 import { orderRule } from '../model/order'
 import { setShape, type ShapePatch } from '../model/shapes'
 import { newDoc, type Doc, type DocSettings, type Id, type Item, type LabelItem, type ParamValue, type SymbolItem } from '../model/types'
-import { docNodes, estimateBounds } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { TemplateDef } from '../templates/types'
 import { measureText } from './measure'
@@ -475,9 +471,10 @@ export function paste(): void {
   )
 }
 
-/** New clears the diagram. It can be undone. There is no confirmation. A text box that is open closes. */
+/** New clears the diagram. It can be undone. There is no confirmation. A text box that is open closes, and so does the banner. */
 export function newDiagram(): void {
   state().setTextEdit(null)
+  state().setBanner(null)
   commit(newDoc())
   state().select([])
 }
@@ -509,100 +506,4 @@ export function zoomTo(zoom: number): void {
 export function zoomReset(): void {
   const s = state()
   s.setView(zoom100(s.view, s.canvas))
-}
-
-// ---------------------------------------------------------------- export (the default export; phase 7 adds the dialog)
-
-export interface Picture {
-  nodes: Node[]
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
-/** The diagram cropped to its bounds plus 16 u, on whole units so that screen and export pixels line up. */
-export function picture(doc: Doc): Picture {
-  const b = estimateBounds(doc)
-  const x = Math.floor(b.x),
-    y = Math.floor(b.y)
-  const w = Math.max(1, Math.ceil(b.x + b.w) - x),
-    h = Math.max(1, Math.ceil(b.y + b.h) - y)
-  return { nodes: [{ t: 'g', m: translate(-x, -y), kids: docNodes(doc) }], x, y, w, h }
-}
-
-export function pngDataUrl(doc: Doc, scale: number): string {
-  const p = picture(doc)
-  return renderCanvas(p.nodes, p.w, p.h, scale, '#ffffff').toDataURL('image/png')
-}
-
-export const pngBlob = (doc: Doc, scale: number): Promise<Blob> => {
-  const p = picture(doc)
-  return canvasToBlob(renderCanvas(p.nodes, p.w, p.h, scale, '#ffffff'))
-}
-
-/** The SVG file: plain SVG with the document as metadata, so that it can be opened again. */
-export function svgText(doc: Doc): string {
-  const p = picture(doc)
-  return svgDocument(p.nodes, p.w, p.h, '#ffffff', JSON.stringify(doc))
-}
-
-/** A safe file name: `<title>` with the forbidden characters replaced (section 7). */
-export function fileName(title: string, ext: string): string {
-  const safe = [...title.replace(/[\\/:*?"<>|]/g, '-')]
-    .map((c) => (c.charCodeAt(0) < 32 ? '-' : c))
-    .join('')
-    .trim()
-  return `${safe || 'diagram'}${ext}`
-}
-
-export async function copyImage(host: Host): Promise<void> {
-  const s = state()
-  const ok = await host.copyImage(pngBlob(s.doc, 2))
-  state().setStatus(ok ? 'Copied' : 'Copy failed')
-}
-
-export async function savePng(host: Host): Promise<void> {
-  const s = state()
-  const r = await host.saveFile(fileName(s.doc.title, '.png'), await pngBlob(s.doc, 2))
-  state().setStatus(r === 'saved' ? 'PNG saved' : r === 'cancelled' ? '' : 'Save failed')
-}
-
-export async function saveSvg(host: Host): Promise<void> {
-  const s = state()
-  const r = await host.saveFile(fileName(s.doc.title, '.svg'), new Blob([svgText(s.doc)], { type: 'image/svg+xml' }))
-  state().setStatus(r === 'saved' ? 'SVG saved' : r === 'cancelled' ? '' : 'Save failed')
-}
-
-export async function saveJson(host: Host): Promise<void> {
-  const s = state()
-  const r = await host.saveFile(fileName(s.doc.title, '.pracdraw.json'), new Blob([JSON.stringify(s.doc, null, 2)], { type: 'application/json' }))
-  state().setStatus(r === 'saved' ? 'Saved' : r === 'cancelled' ? '' : 'Save failed')
-}
-
-/** A light check of a document from storage or a file. Phase 7 replaces it with `parseDoc`. */
-export function looksLikeDoc(value: unknown): value is Doc {
-  if (!value || typeof value !== 'object') return false
-  const d = value as Partial<Doc>
-  return d.app === 'pracdraw' && d.version === 1 && typeof d.title === 'string' && !!d.items && Array.isArray(d.order) && !!d.settings
-}
-
-/** The document inside a file: `.pracdraw.json`, or an SVG that PracDraw exported. */
-export function docFromText(text: string): Doc | null {
-  let json = text
-  if (/^\s*</.test(text)) {
-    const m = /<metadata>([\s\S]*?)<\/metadata>/.exec(text)
-    if (!m) return null
-    json = m[1]
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-  }
-  try {
-    const value: unknown = JSON.parse(json)
-    return looksLikeDoc(value) ? value : null
-  } catch {
-    return null
-  }
 }

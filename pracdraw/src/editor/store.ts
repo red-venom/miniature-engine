@@ -84,6 +84,22 @@ export interface Draft {
   anchor?: boolean
 }
 
+/**
+ * The fallback dialog (section 13): what a copy or a download that failed would have given, for the user to take by
+ * hand. `why` says which failed: a copy, or a download (also "Download did not start?").
+ */
+export type Fallback =
+  /** A PNG, shown as a picture to right-click and copy. `url` is a data: URL. */
+  | { kind: 'png'; why: 'copy' | 'download'; name: string; url: string }
+  /** An SVG or a saved file, shown as text with a Select all button. */
+  | { kind: 'text'; why: 'copy' | 'download'; name: string; text: string }
+
+/** The banner over the canvas (section 7, rule 5): what Open could not read, or had to change. It never blocks. */
+export interface Banner {
+  title: string
+  problems: string[]
+}
+
 export interface EditorState {
   doc: Doc
   past: Doc[]
@@ -103,6 +119,12 @@ export interface EditorState {
   canvas: { w: number; h: number }
   /** The message in the status bar. */
   status: string
+  /** After a download from Save: what the status bar's "Download did not start?" opens. A new message clears it. */
+  retry: Fallback | null
+  /** The fallback dialog, or null when it is shut. */
+  fallback: Fallback | null
+  /** The banner over the canvas, or null when it is shut. */
+  banner: Banner | null
   /** Adds since the view last changed: each one is offset by 20 u. */
   adds: number
   lastCommit: { key: string; at: number } | null
@@ -128,7 +150,10 @@ export interface EditorState {
   setView(view: Partial<View>): void
   setPrefs(patch: Partial<Prefs>): void
   setCanvas(w: number, h: number): void
-  setStatus(status: string): void
+  /** A message for the status bar, with what "Download did not start?" opens after a download. */
+  setStatus(status: string, retry?: Fallback | null): void
+  setFallback(fallback: Fallback | null): void
+  setBanner(banner: Banner | null): void
   setClipboard(items: Item[]): void
   /** Count one add at the view centre and give its offset in units. */
   nextAdd(): number
@@ -153,6 +178,9 @@ export function createEditorStore() {
     clipboard: [],
     canvas: { w: 800, h: 600 },
     status: '',
+    retry: null,
+    fallback: null,
+    banner: null,
     adds: 0,
     lastCommit: null,
 
@@ -225,8 +253,14 @@ export function createEditorStore() {
       const c = get().canvas
       if (c.w !== w || c.h !== h) set({ canvas: { w, h } })
     },
-    setStatus(status) {
-      set({ status })
+    setStatus(status, retry = null) {
+      set({ status, retry })
+    },
+    setFallback(fallback) {
+      set({ fallback })
+    },
+    setBanner(banner) {
+      set({ banner })
     },
     setClipboard(clipboard) {
       set({ clipboard })

@@ -10,18 +10,17 @@ import {
   addSymbolAt,
   clearSelection,
   commitText,
-  docFromText,
   draftAdd,
   draftFinish,
   draftHover,
   editLabel,
-  loadDoc,
   removePoint,
   select,
   startLabel,
   toolDone,
 } from '../editor/actions'
 import { CLICK_PX, pointFor, snapping } from '../editor/connect'
+import { openFile } from '../editor/files'
 import { ROTATE_GAP, handlePoint, handlesFor, resizeWith, rotatePoint, rotationTo, snapAngle, type HandleId } from '../editor/handles'
 import { installHook } from '../editor/hook'
 import { controlKey, inTextField } from '../editor/keys'
@@ -503,14 +502,9 @@ export function Canvas() {
       addPresetAt(preset, at)
       return
     }
+    // A .pracdraw.json or a PracDraw SVG dropped on the canvas opens, as Open does (section 13).
     const file = e.dataTransfer.files[0]
-    if (file) {
-      void file.text().then((text) => {
-        const d = docFromText(text)
-        if (d) loadDoc(d)
-        else useEditor.getState().setStatus('Not a PracDraw file')
-      })
-    }
+    if (file) void openFile(file)
   }
 
   const nodes = cachedNodes(doc)

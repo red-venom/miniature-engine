@@ -2,6 +2,7 @@
 
 import type { Host } from '../host/host'
 import * as a from './actions'
+import { copyImage, save } from './files'
 import { useEditor, type Tool } from './store'
 
 /** The tool keys of section 12. */
@@ -51,14 +52,28 @@ export function inTextField(target: EventTarget | null): boolean {
 
 /**
  * True when the control with the focus uses this key (with no Ctrl, Cmd or Alt) itself: Space presses a button, ticks a
- * checkbox or opens a select; the arrow keys move a slider, a radio button or a select. The editor leaves those keys to
- * the control, so that the inspector still works from the keyboard.
+ * checkbox or opens a select; the arrow keys move a slider, a radio button or a select; Enter presses a button, a radio
+ * button or a link, and belongs to whatever has the focus unless that is the page or the canvas (`onPage`). The editor
+ * leaves those keys to the control, so that the inspector and the top bar still work from the keyboard.
  */
 export function controlKey(target: EventTarget | null, key: string): boolean {
   const tag = tagOf(target)
   if (key === ' ') return tag === 'BUTTON' || tag === 'SELECT' || tag === 'SUMMARY' || (tag === 'INPUT' && SPACE_INPUTS.has(inputType(target)))
   if (ARROW_KEYS.has(key)) return tag === 'SELECT' || (tag === 'INPUT' && (inputType(target) === 'range' || inputType(target) === 'radio'))
+  if (key === 'Enter') return !onPage(target)
   return false
+}
+
+/**
+ * True when the focus is on the page itself or on the canvas, not on a control. Enter is the editor's key (finish a
+ * connector, edit the selected label) only there: on a button, a radio button, a select, a link or a field, Enter is
+ * the control's own, so that it presses the button.
+ */
+export function onPage(target: EventTarget | null): boolean {
+  const tag = tagOf(target)
+  if (tag === '' || tag === 'BODY' || tag === 'HTML') return true
+  const classes = (target as { classList?: { contains?: (c: string) => boolean } } | null)?.classList
+  return typeof classes?.contains === 'function' && classes.contains('canvas')
 }
 
 /** Handle a key. Returns true when the key did something (the event is then consumed). */
@@ -78,7 +93,7 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
         a.redo()
         return true
       case 'c':
-        if (e.shiftKey) void a.copyImage(ctx.host)
+        if (e.shiftKey) void copyImage(ctx.host)
         else a.copySelection()
         return true
       case 'x':
@@ -104,7 +119,7 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
         a.arrange('back')
         return true
       case 's':
-        void a.saveJson(ctx.host)
+        void save(ctx.host)
         return true
       case 'o':
         ctx.openFile()

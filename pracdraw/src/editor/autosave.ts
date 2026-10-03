@@ -2,7 +2,7 @@
 // On start they come back. Every storage call is inside the host's try/catch.
 
 import type { Host } from '../host/host'
-import { looksLikeDoc } from './actions'
+import { parseDoc } from '../model/parse'
 import { DEFAULT_PREFS, useEditor, type Prefs } from './store'
 
 export const AUTOSAVE_KEY = 'pracdraw.autosave.v1'
@@ -13,21 +13,26 @@ interface Saved {
   prefs?: Partial<Prefs>
 }
 
-/** Restore the last autosave. Returns true when there was one. */
+/**
+ * Restore the last autosave. Returns true when there was one. The document is checked as a file is (`parseDoc`): one
+ * that cannot be read is not restored, and what had to change goes to the banner.
+ */
 export function restoreAutosave(host: Host): boolean {
   const text = host.load(AUTOSAVE_KEY)
   if (!text) return false
   try {
     const saved = JSON.parse(text) as Saved
-    if (!looksLikeDoc(saved.doc)) return false
+    const r = parseDoc(saved?.doc)
+    if (!r.ok) return false
     const p = saved.prefs ?? {}
     const prefs: Prefs = {
       snap: typeof p.snap === 'boolean' ? p.snap : DEFAULT_PREFS.snap,
       grid: typeof p.grid === 'boolean' ? p.grid : DEFAULT_PREFS.grid,
       recent: Array.isArray(p.recent) ? p.recent.filter((id): id is string => typeof id === 'string').slice(0, 8) : [],
     }
-    useEditor.getState().replace(saved.doc)
+    useEditor.getState().replace(r.doc)
     useEditor.getState().setPrefs(prefs)
+    if (r.problems.length) useEditor.getState().setBanner({ title: 'The last diagram came back with changes', problems: r.problems })
     return true
   } catch {
     return false
