@@ -1,15 +1,16 @@
 // Library.tsx — the left panel: Apparatus (search, Recent, one section for each pack) and Templates.
 
 import { useMemo, useState, type DragEvent } from 'react'
-import { addSymbolAt, insertTemplateAt } from '../editor/actions'
-import { PACKS, searchSymbols } from '../editor/search'
+import { addPresetAt, addSymbolAt, insertTemplateAt } from '../editor/actions'
+import { PACKS, PRESET_GROUP, searchPresets, searchSymbols } from '../editor/search'
 import { useEditor } from '../editor/store'
+import { CONNECTOR_PRESETS, type ConnectorPreset } from '../model/connectors'
 import { SYMBOLS, symbolDef } from '../symbols/registry'
 import type { SymbolDef } from '../symbols/types'
 import { TEMPLATES } from '../templates'
 import type { TemplateDef } from '../templates/types'
-import { DocThumbnail, SymbolThumbnail } from './Thumbnail'
-import { DRAG_TYPE, SEARCH_ID } from './constants'
+import { DocThumbnail, PresetThumbnail, SymbolThumbnail } from './Thumbnail'
+import { DRAG_TYPE, PRESET_DRAG_TYPE, SEARCH_ID } from './constants'
 import { icons } from './icons'
 
 function Tile({ def }: { def: SymbolDef }) {
@@ -25,11 +26,28 @@ function Tile({ def }: { def: SymbolDef }) {
   )
 }
 
-function Tiles({ defs }: { defs: SymbolDef[] }) {
+/** A "Tubes and lines" preset (section 10): a click adds the connector at the centre of the view; a drag, at the pointer. */
+function PresetTile({ preset }: { preset: ConnectorPreset }) {
+  const onDragStart = (e: DragEvent) => {
+    e.dataTransfer.setData(PRESET_DRAG_TYPE, preset.id)
+    e.dataTransfer.effectAllowed = 'copy'
+  }
+  return (
+    <button type="button" className="tile" title={preset.name} draggable onDragStart={onDragStart} onClick={() => addPresetAt(preset)}>
+      <PresetThumbnail preset={preset} />
+      <span className="tile-name">{preset.name}</span>
+    </button>
+  )
+}
+
+function Tiles({ defs, presets = [] }: { defs: SymbolDef[]; presets?: readonly ConnectorPreset[] }) {
   return (
     <div className="tiles">
       {defs.map((d) => (
         <Tile key={d.id} def={d} />
+      ))}
+      {presets.map((p) => (
+        <PresetTile key={p.id} preset={p} />
       ))}
     </div>
   )
@@ -39,6 +57,7 @@ function Apparatus() {
   const [query, setQuery] = useState('')
   const recent = useEditor((s) => s.prefs.recent)
   const results = useMemo(() => searchSymbols(query), [query])
+  const presets = useMemo(() => searchPresets(query), [query])
   const searching = query.trim() !== ''
   const recentDefs = recent.filter((id) => SYMBOLS.some((d) => d.id === id)).map((id) => symbolDef(id))
   return (
@@ -53,8 +72,9 @@ function Apparatus() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && results.length) {
-              addSymbolAt(results[0].id)
+            if (e.key === 'Enter' && (results.length || presets.length)) {
+              if (results.length) addSymbolAt(results[0].id)
+              else addPresetAt(presets[0])
               e.preventDefault()
             }
             if (e.key === 'Escape') {
@@ -67,8 +87,8 @@ function Apparatus() {
       </div>
       <div className="panel-scroll">
         {searching ? (
-          results.length ? (
-            <Tiles defs={results} />
+          results.length || presets.length ? (
+            <Tiles defs={results} presets={presets} />
           ) : (
             <p className="muted">Nothing matches "{query}".</p>
           )
@@ -90,6 +110,10 @@ function Apparatus() {
                 </section>
               )
             })}
+            <section className="section">
+              <h3>{PRESET_GROUP}</h3>
+              <Tiles defs={[]} presets={CONNECTOR_PRESETS} />
+            </section>
           </>
         )}
       </div>

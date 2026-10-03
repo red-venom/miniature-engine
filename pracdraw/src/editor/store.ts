@@ -3,8 +3,8 @@
 // A gesture changes `doc` without history until it ends; then the whole gesture is one undo step.
 
 import { create } from 'zustand'
-import type { Box } from '../kernel/geom'
-import { newDoc, type Doc, type Id, type Item } from '../model/types'
+import type { Box, Pt } from '../kernel/geom'
+import { newDoc, type ConnectorKind, type Doc, type Id, type Item } from '../model/types'
 
 export const HISTORY_LIMIT = 200
 /** Changes with the same merge key that are closer than this are one undo step (arrow-key moves). */
@@ -28,8 +28,14 @@ export interface Prefs {
 
 export type Tool = 'select' | 'label' | 'text' | 'tube' | 'wire' | 'line' | 'rect' | 'ellipse'
 
-/** `level` is the level handle on the canvas; `slider` is an amount slider in the inspector. Each drag is one undo step. */
-export type GestureKind = 'move' | 'resize' | 'rotate' | 'marquee' | 'pan' | 'level' | 'slider'
+/** The connector kind that each connector tool draws (section 10). The Tube tool draws a glass tube. */
+export const CONNECTOR_TOOLS: Partial<Record<Tool, ConnectorKind>> = { tube: 'glassTube', wire: 'wire', line: 'line' }
+
+/**
+ * `level` is the level handle on the canvas; `slider` is an amount slider in the inspector; `point` moves or inserts a
+ * connector point; `shape` draws a rectangle or an ellipse. Each drag is one undo step.
+ */
+export type GestureKind = 'move' | 'resize' | 'rotate' | 'marquee' | 'pan' | 'level' | 'slider' | 'point' | 'shape'
 
 export interface Gesture {
   kind: GestureKind
@@ -37,6 +43,23 @@ export interface Gesture {
   base: Doc
   /** The marquee rectangle in world units, while one is drawn. */
   marquee?: Box
+  /** The port, terminal or tip that a dragged connector point snapped to, in world units. */
+  anchor?: Pt
+}
+
+/**
+ * The connector that the Tube, Wire or Line tool is drawing (section 10). It is not in the document until it is
+ * finished, so it is not in the history, and other actions can run while it is drawn. It exists while a connector tool
+ * is the tool; it has no points until the first press.
+ */
+export interface Draft {
+  kind: ConnectorKind
+  /** The points placed so far, in world units. */
+  points: Pt[]
+  /** Where the next point would go: the end of the rubber band. */
+  pointer?: Pt
+  /** True when `pointer` is on a port, terminal or tip. */
+  anchor?: boolean
 }
 
 export interface EditorState {
@@ -48,6 +71,8 @@ export interface EditorState {
   view: View
   prefs: Prefs
   gesture: Gesture | null
+  /** The connector being drawn, while a connector tool is the tool. */
+  draft: Draft | null
   /** Copy, cut and paste use this clipboard in memory, not the system clipboard. */
   clipboard: Item[]
   /** Size of the canvas region in CSS px. The canvas component keeps it current. */
@@ -71,7 +96,9 @@ export interface EditorState {
   undo(): void
   redo(): void
   select(ids: Id[]): void
+  /** Choose a tool. A connector tool starts an empty draft; a change to another tool drops the draft. The same tool changes nothing. */
   setTool(tool: Tool): void
+  setDraft(draft: Draft | null): void
   setView(view: Partial<View>): void
   setPrefs(patch: Partial<Prefs>): void
   setCanvas(w: number, h: number): void
@@ -95,6 +122,7 @@ export function createEditorStore() {
     view: { x: 0, y: 0, zoom: 1 },
     prefs: { ...DEFAULT_PREFS },
     gesture: null,
+    draft: null,
     clipboard: [],
     canvas: { w: 800, h: 600 },
     status: '',
@@ -148,7 +176,12 @@ export function createEditorStore() {
       set({ selection: keep(get().doc, [...new Set(ids)]) })
     },
     setTool(tool) {
-      set({ tool })
+      if (tool === get().tool) return
+      const kind = CONNECTOR_TOOLS[tool]
+      set({ tool, draft: kind ? { kind, points: [] } : null })
+    },
+    setDraft(draft) {
+      set({ draft })
     },
     setView(view) {
       const v = { ...get().view, ...view }

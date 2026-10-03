@@ -2,7 +2,10 @@
 
 import type { Host } from '../host/host'
 import * as a from './actions'
-import { useEditor } from './store'
+import { useEditor, type Tool } from './store'
+
+/** The tool keys of section 12 (Label and Text come with phase 6). */
+export const TOOL_KEYS: Readonly<Record<string, Tool>> = { v: 'select', u: 'tube', w: 'wire', a: 'line', r: 'rect', e: 'ellipse' }
 
 export interface KeyContext {
   host: Host
@@ -71,10 +74,22 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
     return false
   }
   if (e.altKey) return false
+  const drawing = !!s.draft?.points.length
+  if (Object.hasOwn(TOOL_KEYS, key)) {
+    a.setTool(TOOL_KEYS[key])
+    return true
+  }
   switch (key) {
+    case 'Enter':
+      // Finish the connector being drawn.
+      if (!drawing) return false
+      a.draftFinish()
+      return true
     case 'Delete':
     case 'Backspace':
-      a.deleteSelection()
+      // While a connector is drawn, Backspace takes back its last point.
+      if (drawing) a.draftBack()
+      else a.deleteSelection()
       return true
     case 'ArrowLeft':
     case 'ArrowRight':
@@ -93,9 +108,6 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
       return true
     case 'h':
       a.flipSelection()
-      return true
-    case 'v':
-      s.setTool('select')
       return true
     case '+':
     case '=':
@@ -118,7 +130,10 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
       ctx.toggleHelp()
       return true
     case 'Escape':
-      if (s.gesture) s.cancelGesture()
+      // Cancel the connector being drawn, or the gesture; else leave a drawing tool; else clear the selection.
+      if (drawing) a.draftCancel()
+      else if (s.gesture) s.cancelGesture()
+      else if (s.tool !== 'select') a.setTool('select')
       else a.clearSelection()
       return true
   }
@@ -127,6 +142,8 @@ export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
 
 /** The key table for the help dialog. */
 export const KEY_TABLE: [string, string][] = [
+  ['V, U, W, A, R, E', 'Tools: Select, Tube, Wire, Line and arrow, Rectangle, Ellipse'],
+  ['Double-click or Enter; Backspace', 'Finish a connector; take back its last point'],
   ['Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y', 'Undo, redo'],
   ['Ctrl+C, Ctrl+X, Ctrl+V', 'Copy, cut, paste items'],
   ['Ctrl+D', 'Duplicate'],
@@ -141,6 +158,6 @@ export const KEY_TABLE: [string, string][] = [
   ['+ and −, 0, 1', 'Zoom in and out, 100 %, fit'],
   ['/', 'Search the library'],
   ['Space+drag, middle button, wheel', 'Pan. Ctrl+wheel zooms'],
-  ['Escape', 'Cancel the gesture, or clear the selection'],
+  ['Escape', 'Cancel the connector being drawn or the gesture, leave a drawing tool, or clear the selection'],
   ['?', 'Help'],
 ]

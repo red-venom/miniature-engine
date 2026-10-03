@@ -4,10 +4,24 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useMedia } from './useMedia'
 import * as a from '../editor/actions'
-import { useEditor } from '../editor/store'
+import { TOOL_KEYS } from '../editor/keys'
+import { useEditor, type Tool } from '../editor/store'
 import type { Host } from '../host/host'
 import type { DocSettings } from '../model/types'
 import { icons } from './icons'
+
+/** The tools of section 12 that are built so far, in the order of its table. */
+const TOOLS: { tool: Tool; label: string; icon: ReactNode }[] = [
+  { tool: 'select', label: 'Select', icon: icons.select },
+  { tool: 'tube', label: 'Tube', icon: icons.tube },
+  { tool: 'wire', label: 'Wire', icon: icons.wire },
+  { tool: 'line', label: 'Line and arrow', icon: icons.line },
+  { tool: 'rect', label: 'Rectangle', icon: icons.rect },
+  { tool: 'ellipse', label: 'Ellipse', icon: icons.ellipse },
+]
+
+/** A tool's key, for its tooltip. */
+const keyOf = (tool: Tool): string => (Object.keys(TOOL_KEYS).find((k) => TOOL_KEYS[k] === tool) ?? '').toUpperCase()
 
 const MODES: { value: DocSettings['labelMode']; label: string }[] = [
   { value: 'text', label: 'Text' },
@@ -154,16 +168,19 @@ export function TopBar({ host, narrow, onLibrary, onInspector, onHelp, onOpen }:
       )}
       <Title />
       <div className="group" role="toolbar" aria-label="Tools">
-        <button
-          type="button"
-          className="icon-button"
-          aria-label="Select"
-          aria-pressed={tool === 'select'}
-          title="Select (V)"
-          onClick={() => useEditor.getState().setTool('select')}
-        >
-          {icons.select}
-        </button>
+        {TOOLS.map((t) => (
+          <button
+            key={t.tool}
+            type="button"
+            className="icon-button"
+            aria-label={t.label}
+            aria-pressed={tool === t.tool}
+            title={`${t.label} (${keyOf(t.tool)})`}
+            onClick={() => a.setTool(t.tool)}
+          >
+            {t.icon}
+          </button>
+        ))}
       </div>
       <div className="group">
         <button type="button" className="icon-button" aria-label="Undo" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={a.undo}>

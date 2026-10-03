@@ -1,27 +1,46 @@
-// Canvas.tsx — the drawing surface: the diagram, the pointer state machine of the Select tool, and the overlay
-// (selection box, handles, marquee) in a separate SVG layer above the diagram. Hits come from the DOM.
+// Canvas.tsx — the drawing surface: the diagram, the pointer state machine of the tools, and the overlay (selection
+// box, handles, marquee, guides, the connector being drawn) in a separate SVG layer above the diagram. Hits come from
+// the DOM.
 
-import { useEffect, useRef, type DragEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, type DragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { P, type Box, type Pt } from '../kernel/geom'
-import { addSymbolAt, clearSelection, docFromText, loadDoc, select } from '../editor/actions'
+import {
+  addPresetAt,
+  addSymbolAt,
+  clearSelection,
+  docFromText,
+  draftAdd,
+  draftFinish,
+  draftHover,
+  loadDoc,
+  removePoint,
+  select,
+  toolDone,
+} from '../editor/actions'
+import { CLICK_PX, pointFor } from '../editor/connect'
 import { ROTATE_GAP, handlePoint, handlesFor, resizeWith, rotatePoint, rotationTo, snapAngle, type HandleId } from '../editor/handles'
 import { installHook } from '../editor/hook'
 import { inTextField } from '../editor/keys'
 import { filledAt, surfaces } from '../editor/level'
 import { cachedNodes } from '../editor/nodes'
-import { useEditor, type Gesture, type View } from '../editor/store'
+import { useEditor, type Draft, type Gesture, type Tool, type View } from '../editor/store'
 import { screenBox, toScreen, toWorld, zoomAt } from '../editor/view'
 import { boxCentre, boxesTouch, itemBox, itemsBox } from '../model/bounds'
-import { duplicateItems, moveItems, rotateItems, setRotation, setSize } from '../model/commands'
+import { duplicateItems, moveItems, newId, rotateItems, setRotation, setSize } from '../model/commands'
+import { CONNECTOR_PRESETS, insertPoint, isDrawable, makeConnector, movePoint } from '../model/connectors'
 import { setFilled } from '../model/contents'
 import { orderRule } from '../model/order'
-import type { Doc, Id, SymbolItem } from '../model/types'
+import { addShape, dragBox, type ShapeKind } from '../model/shapes'
+import type { ConnectorItem, Doc, DocSettings, Id, Item } from '../model/types'
 import { NodeView } from '../render/NodeView'
+import { connectorNode } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
-import { DRAG_TYPE } from './constants'
+import type { ResizeMode } from '../symbols/types'
+import { DRAG_TYPE, PRESET_DRAG_TYPE } from './constants'
 
 const HANDLE = 8
-const CLICK_PX = 3
+/** A move of the Select tool starts after this many screen px. */
+const MOVE_PX = 3
 /** The level handle (section 9): a short bar that lies on the top surface and ends at its right end. Screen px. */
 const LEVEL = { w: 18, h: 6 }
 
@@ -32,6 +51,16 @@ type Drag =
   | { kind: 'resize'; id: Id; handle: HandleId }
   | { kind: 'rotate'; ids: Id[]; centre: Pt; start: number }
   | { kind: 'level'; id: Id; cavity: string; dy: number } // dy: from the pointer to the surface, so that the surface does not jump
+  /**
+   * A press with a connector tool (section 10). `p` is where a click puts its point; `fresh` is true when the press
+   * started the connector. `first` is the connector's first point at the press: if a key cancels or finishes the
+   * connector while the button is down, the release does nothing.
+   */
+  | { kind: 'draw'; start: Pt; p: Pt; fresh: boolean; first: Pt | undefined }
+  /** A square handle moves point `index`; a round handle inserts point `index`. */
+  | { kind: 'point'; id: Id; index: number; insert: boolean; start: Pt; moved: boolean }
+  /** A drag with the Rectangle or Ellipse tool, from the world point `from`. */
+  | { kind: 'shape'; shape: ShapeKind; from: Pt; start: Pt; id: Id; moved: boolean }
 
 /** The unlocked items under a page point, topmost first. */
 function itemsAt(x: number, y: number, doc: Doc): Id[] {
@@ -43,17 +72,33 @@ function itemsAt(x: number, y: number, doc: Doc): Id[] {
   return out
 }
 
-const resizeMode = (it: SymbolItem) => (hasSymbol(it.symbol) ? symbolDef(it.symbol) : null)
+/** How a symbol or a shape resizes. A shape has the handles of a free symbol. Null for any other item. */
+function resizeOf(it: Item | null | undefined): { mode: ResizeMode; min?: { w: number; h: number } } | null {
+  if (it?.type === 'shape') return { mode: 'free' }
+  if (it?.type !== 'symbol') return null
+  const def = hasSymbol(it.symbol) ? symbolDef(it.symbol) : null
+  return { mode: def?.resize ?? 'free', min: def?.min }
+}
+
+const lastPoint = (d: Draft): Pt | undefined => d.points[d.points.length - 1]
+const moved = (a: Pt, b: Pt, px: number) => Math.hypot(a.x - b.x, a.y - b.y) >= px
+const round = (p: Pt): Pt => P(Math.round(p.x), Math.round(p.y))
 
 export function Canvas() {
   const ref = useRef<HTMLDivElement>(null)
   const drag = useRef<Drag | null>(null)
   const space = useRef(false)
+  /**
+   * True when the last release with a connector tool placed a point. When that release is the second click of a
+   * double-click, the point goes again: the double-click adds its point once (section 10).
+   */
+  const released = useRef(false)
   const doc = useEditor((s) => s.doc)
   const view = useEditor((s) => s.view)
   const selection = useEditor((s) => s.selection)
   const gesture = useEditor((s) => s.gesture)
   const grid = useEditor((s) => s.prefs.grid)
+  const tool = useEditor((s) => s.tool)
 
   // Size, the test hook, the wheel listener (passive: false, so that it can stop the page zoom), the Space key.
   useEffect(() => {
@@ -99,6 +144,13 @@ export function Canvas() {
     return P(e.clientX - r.left, e.clientY - r.top)
   }
 
+  /** Where the connector being drawn would put its next point for a pointer at a world point. */
+  const nextPoint = (draft: Draft, wp: Pt, e: ReactPointerEvent) => {
+    const s = useEditor.getState()
+    const prev = lastPoint(draft)
+    return pointFor(s.doc, wp, prev ? [prev] : [], s.view.zoom, s.prefs.snap, e)
+  }
+
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.button !== 1) return
     const s = useEditor.getState()
@@ -110,10 +162,31 @@ export function Canvas() {
       drag.current = { kind: 'pan', start: sp, view0: s.view }
       return
     }
+    // A connector tool: the first press starts the connector, and each click places a point (section 10).
+    if (s.draft) {
+      const place = nextPoint(s.draft, wp, e)
+      const fresh = !s.draft.points.length
+      if (fresh) draftAdd(place.p)
+      drag.current = { kind: 'draw', start: sp, p: place.p, fresh, first: useEditor.getState().draft?.points[0] }
+      e.preventDefault()
+      return
+    }
+    // The Rectangle and Ellipse tools: a drag draws the shape, as one undo step.
+    if (s.tool === 'rect' || s.tool === 'ellipse') {
+      drag.current = { kind: 'shape', shape: s.tool, from: round(wp), start: sp, id: newId(), moved: false }
+      s.beginGesture('shape')
+      e.preventDefault()
+      return
+    }
+    if (s.tool !== 'select') return
     const handleEl = (e.target as Element).closest('[data-handle]')
-    const handle = handleEl?.getAttribute('data-handle') as HandleId | 'rotate' | 'level' | null
+    const handle = handleEl?.getAttribute('data-handle') as HandleId | 'rotate' | 'level' | 'point' | 'mid' | null
     if (handle && s.selection.length) {
-      if (handle === 'level') {
+      if (handle === 'point' || handle === 'mid') {
+        const index = Number(handleEl?.getAttribute('data-index'))
+        drag.current = { kind: 'point', id: s.selection[0], index: handle === 'mid' ? index + 1 : index, insert: handle === 'mid', start: sp, moved: false }
+        s.beginGesture('point')
+      } else if (handle === 'level') {
         const cavity = handleEl?.getAttribute('data-cavity') ?? 'main'
         const one = s.doc.items[s.selection[0]]
         const surface = one?.type === 'symbol' ? surfaces(one).find((q) => q.cavity === cavity) : undefined
@@ -121,7 +194,7 @@ export function Canvas() {
         s.beginGesture('level')
       } else if (handle === 'rotate') {
         const one = s.selection.length === 1 ? s.doc.items[s.selection[0]] : null
-        const centre = one && one.type === 'symbol' ? P(one.x, one.y) : boxCentre(itemsBox(s.doc, s.selection)!)
+        const centre = one && (one.type === 'symbol' || one.type === 'shape') ? P(one.x, one.y) : boxCentre(itemsBox(s.doc, s.selection)!)
         drag.current = { kind: 'rotate', ids: s.selection, centre, start: rotationTo(centre, wp) }
         s.beginGesture('rotate')
       } else {
@@ -156,10 +229,17 @@ export function Canvas() {
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current
-    if (!d) return
     const s = useEditor.getState()
     const sp = screenPt(e),
       wp = toWorld(s.view, sp)
+    if (!d || d.kind === 'draw') {
+      // The rubber band follows the pointer, between clicks and during a press.
+      if (s.draft) {
+        const place = nextPoint(s.draft, wp, e)
+        draftHover(place.p, place.anchor)
+      }
+      return
+    }
     const base = s.gesture?.base ?? s.doc
     switch (d.kind) {
       case 'pan':
@@ -169,7 +249,7 @@ export function Canvas() {
         const dx = wp.x - d.start.x,
           dy = wp.y - d.start.y
         if (!d.moving) {
-          if (Math.hypot(dx, dy) * s.view.zoom < CLICK_PX) return
+          if (Math.hypot(dx, dy) * s.view.zoom < MOVE_PX) return
           d.moving = true
           if (d.alt) {
             const dup = duplicateItems(base, d.ids, 0, 0)
@@ -189,14 +269,14 @@ export function Canvas() {
       }
       case 'resize': {
         const it = base.items[d.id]
-        if (!it || it.type !== 'symbol') return
-        const def = resizeMode(it)
-        s.preview(setSize(base, d.id, resizeWith(it, def?.resize ?? 'free', def?.min, d.handle, wp, e.shiftKey)))
+        const how = resizeOf(it)
+        if (!how || (it.type !== 'symbol' && it.type !== 'shape')) return
+        s.preview(setSize(base, d.id, resizeWith(it, how.mode, how.min, d.handle, wp, e.shiftKey)))
         return
       }
       case 'rotate': {
         const one = d.ids.length === 1 ? base.items[d.ids[0]] : null
-        if (one && one.type === 'symbol') s.preview(setRotation(base, one.id, snapAngle(rotationTo(d.centre, wp), e.shiftKey)))
+        if (one && (one.type === 'symbol' || one.type === 'shape')) s.preview(setRotation(base, one.id, snapAngle(rotationTo(d.centre, wp), e.shiftKey)))
         else s.preview(rotateItems(base, d.ids, snapAngle(rotationTo(d.centre, wp) - d.start, e.shiftKey), d.centre))
         return
       }
@@ -207,7 +287,51 @@ export function Canvas() {
         if (filled !== null) s.preview(setFilled(base, d.id, d.cavity, filled))
         return
       }
+      case 'point': {
+        // A square handle moves its point; a round one inserts a point. The point snaps to the angles of its two
+        // segments and to ports, terminals and tips (section 10).
+        if (!d.moved) {
+          if (!moved(sp, d.start, CLICK_PX)) return
+          d.moved = true
+        }
+        const it = base.items[d.id]
+        if (it?.type !== 'connector') return
+        const pts = it.points
+        const neighbours = (d.insert ? [pts[d.index - 1], pts[d.index]] : [pts[d.index - 1], pts[d.index + 1]]).filter((q): q is Pt => !!q)
+        const place = pointFor(base, wp, neighbours, s.view.zoom, s.prefs.snap, e)
+        s.preview(d.insert ? insertPoint(base, d.id, d.index, place.p) : movePoint(base, d.id, d.index, place.p))
+        s.updateGesture({ anchor: place.anchor ? place.p : undefined })
+        return
+      }
+      case 'shape': {
+        if (!d.moved) {
+          if (!moved(sp, d.start, CLICK_PX)) return
+          d.moved = true
+        }
+        s.preview(addShape(base, d.shape, dragBox(d.from, round(wp), e.shiftKey), d.id))
+        return
+      }
     }
+  }
+
+  /** The release of a press with a connector tool. */
+  const releaseDraw = (d: Extract<Drag, { kind: 'draw' }>, e: ReactPointerEvent<HTMLDivElement>) => {
+    released.current = false
+    const s = useEditor.getState()
+    const draft = s.draft
+    if (!draft || draft.points[0] !== d.first) return
+    const sp = screenPt(e),
+      wp = toWorld(s.view, sp)
+    const dragged = moved(sp, d.start, CLICK_PX)
+    // A point within 4 screen px of the last one is not placed: most often it is the second click of a double-click.
+    const gap = CLICK_PX / s.view.zoom
+    if (d.fresh) {
+      // A press, drag and release from nothing makes a two-point connector in one gesture.
+      if (dragged && draftAdd(nextPoint(draft, wp, e).p, gap)) draftFinish()
+      return
+    }
+    // A click puts its point where the press was; a drag puts it where the pointer is released.
+    released.current = draftAdd(dragged ? nextPoint(draft, wp, e).p : d.p, gap)
   }
 
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -216,18 +340,61 @@ export function Canvas() {
     drag.current = null
     e.currentTarget.releasePointerCapture(e.pointerId)
     const s = useEditor.getState()
-    // The order rule (section 12): a symbol dropped into a cavity comes to just above that symbol.
-    if (d.kind === 'move' && d.moving) s.preview(orderRule(s.doc, d.ids))
-    s.endGesture()
-    if (d.kind === 'move' && d.moving && d.alt) select(d.ids)
+    switch (d.kind) {
+      case 'draw':
+        releaseDraw(d, e)
+        return
+      case 'shape':
+        if (s.gesture?.kind !== 'shape') return // Escape cancelled it
+        if (!d.moved) {
+          s.cancelGesture() // a click draws nothing
+          return
+        }
+        s.endGesture()
+        toolDone(d.id)
+        return
+      case 'move':
+        // The order rule (section 12): a symbol dropped into a cavity comes to just above that symbol.
+        if (d.moving) s.preview(orderRule(s.doc, d.ids))
+        s.endGesture()
+        if (d.moving && d.alt) select(d.ids)
+        return
+      default:
+        s.endGesture()
+    }
+  }
+
+  const onDoubleClick = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const s = useEditor.getState()
+    // A double-click finishes the connector being drawn. Its first click has already placed its point, so a point that
+    // its second click placed goes again.
+    if (s.draft) {
+      draftFinish(released.current)
+      released.current = false
+      return
+    }
+    if (s.tool !== 'select' || s.selection.length !== 1) return
+    // A double-click on a square handle deletes that point. The event can be aimed at the canvas, which captured the
+    // pointer, so the handle is found under the pointer.
+    const el = document.elementsFromPoint(e.clientX, e.clientY).find((q) => q.getAttribute('data-handle') === 'point')
+    if (el) removePoint(s.selection[0], Number(el.getAttribute('data-index')))
+  }
+
+  const onPointerLeave = () => {
+    if (!drag.current) draftHover(undefined)
   }
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
+    const at = toWorld(useEditor.getState().view, screenPt(e))
     const symbol = e.dataTransfer.getData(DRAG_TYPE)
     if (symbol) {
-      const s = useEditor.getState()
-      addSymbolAt(symbol, toWorld(s.view, screenPt(e)))
+      addSymbolAt(symbol, at)
+      return
+    }
+    const preset = CONNECTOR_PRESETS.find((p) => p.id === e.dataTransfer.getData(PRESET_DRAG_TYPE))
+    if (preset) {
+      addPresetAt(preset, at)
       return
     }
     const file = e.dataTransfer.files[0]
@@ -252,12 +419,14 @@ export function Canvas() {
   return (
     <div
       ref={ref}
-      className="canvas"
+      className={tool === 'select' ? 'canvas' : 'canvas drawing'}
       style={style}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onPointerLeave={onPointerLeave}
+      onDoubleClick={onDoubleClick}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
@@ -268,7 +437,7 @@ export function Canvas() {
           ))}
         </g>
       </svg>
-      <Overlay doc={doc} selection={selection} view={view} gesture={gesture} />
+      <Overlay doc={doc} selection={selection} view={view} gesture={gesture} tool={tool} />
     </div>
   )
 }
@@ -309,25 +478,103 @@ function RotateHandle({ from, to }: { from: Pt; to: Pt }) {
   )
 }
 
-/** The selection box, the handles and the marquee, in screen px. Never part of the render tree. */
-function Overlay({ doc, selection, view, gesture }: { doc: Doc; selection: Id[]; view: View; gesture: Gesture | null }) {
+/** A ring round a port, terminal or tip that a connector point has snapped to (screen px). */
+function Guide({ p }: { p: Pt }) {
+  return <circle className="guide" cx={p.x} cy={p.y} r={7} />
+}
+
+/**
+ * The handles of one selected connector (section 10): its points joined by a thin line, a round handle at the middle of
+ * each segment (drag to insert a point) and a square handle on each point (drag to move it, double-click to delete it).
+ * The square handles come last, so that on a short segment they stay on top and easy to grab.
+ */
+function ConnectorHandles({ it, view, busy }: { it: ConnectorItem; view: View; busy: boolean }) {
+  const pts = it.points.map((p) => toScreen(view, p))
+  const kids = [<polyline key="line" className="path-line" points={pts.map((p) => `${p.x},${p.y}`).join(' ')} />]
+  if (!busy) {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const a = pts[i],
+        b = pts[i + 1]
+      kids.push(
+        <circle key={`mid${i}`} className="handle mid" data-handle="mid" data-index={i} cx={(a.x + b.x) / 2} cy={(a.y + b.y) / 2} r={HANDLE / 2}>
+          <title>Drag to add a point</title>
+        </circle>,
+      )
+    }
+    pts.forEach((p, i) =>
+      kids.push(
+        <rect
+          key={`point${i}`}
+          className="handle point"
+          data-handle="point"
+          data-index={i}
+          x={p.x - HANDLE / 2}
+          y={p.y - HANDLE / 2}
+          width={HANDLE}
+          height={HANDLE}
+        >
+          <title>Drag to move the point. Double-click to delete it.</title>
+        </rect>,
+      ),
+    )
+  }
+  return <>{kids}</>
+}
+
+/**
+ * The connector being drawn: drawn as it will be, through its points and the pointer, with a rubber band from the last
+ * point to the pointer and a mark on each point placed. Not part of the render tree: it is not in the document yet.
+ */
+function DraftView({ draft, view, settings }: { draft: Draft; view: View; settings: DocSettings }) {
+  const placed = draft.points
+  const last = lastPoint(draft)
+  const pointer = draft.pointer
+  const kids = []
+  const pts = pointer && last && (pointer.x !== last.x || pointer.y !== last.y) ? [...placed, pointer] : placed
+  if (isDrawable(pts)) {
+    kids.push(
+      <g key="connector" transform={`matrix(${view.zoom} 0 0 ${view.zoom} ${view.x} ${view.y})`}>
+        <NodeView n={connectorNode(makeConnector(draft.kind, pts, {}, 'draft'), settings)} />
+      </g>,
+    )
+  }
+  if (pointer && last) {
+    const a = toScreen(view, last),
+      b = toScreen(view, pointer)
+    kids.push(<line key="rubber" className="rubber" x1={a.x} y1={a.y} x2={b.x} y2={b.y} />)
+  }
+  placed.forEach((p, i) => {
+    const q = toScreen(view, p)
+    kids.push(<rect key={`p${i}`} className="draft-point" x={q.x - 3} y={q.y - 3} width={6} height={6} />)
+  })
+  if (pointer && draft.anchor) kids.push(<Guide key="anchor" p={toScreen(view, pointer)} />)
+  return <>{kids}</>
+}
+
+/** The selection box, the handles, the marquee and the connector being drawn, in screen px. Never part of the render tree. */
+function Overlay({ doc, selection, view, gesture, tool }: { doc: Doc; selection: Id[]; view: View; gesture: Gesture | null; tool: Tool }) {
+  const draft = useEditor((s) => s.draft)
   const kids = []
   if (gesture?.marquee) {
     const m = screenBox(view, gesture.marquee)
     kids.push(<rect key="marquee" className="marquee" x={m.x0} y={m.y0} width={m.x1 - m.x0} height={m.y1 - m.y0} />)
   }
   const one = selection.length === 1 ? doc.items[selection[0]] : null
-  const busy = gesture?.kind === 'move' || gesture?.kind === 'marquee'
-  if (one && one.type === 'symbol') {
+  // While another tool is chosen, the selection shows no handles: a press belongs to the tool.
+  const busy = tool !== 'select' || gesture?.kind === 'move' || gesture?.kind === 'marquee'
+  const how = resizeOf(one)
+  if (one && how && (one.type === 'symbol' || one.type === 'shape')) {
     const corners = (['nw', 'ne', 'se', 'sw'] as const).map((h) => toScreen(view, handlePoint(one, h)))
     kids.push(<polygon key="box" className="selection" points={corners.map((c) => `${c.x},${c.y}`).join(' ')} />)
     if (!busy) {
       // The level handles first, so that a resize handle on the same spot stays on top and can still be grabbed.
-      for (const sf of surfaces(one)) kids.push(<LevelHandle key={`level-${sf.cavity}`} cavity={sf.cavity} p={toScreen(view, sf.right)} />)
-      const def = resizeMode(one)
-      for (const h of handlesFor(def?.resize ?? 'free')) kids.push(<Handle key={h} id={h} p={toScreen(view, handlePoint(one, h))} />)
+      if (one.type === 'symbol')
+        for (const sf of surfaces(one)) kids.push(<LevelHandle key={`level-${sf.cavity}`} cavity={sf.cavity} p={toScreen(view, sf.right)} />)
+      for (const h of handlesFor(how.mode)) kids.push(<Handle key={h} id={h} p={toScreen(view, handlePoint(one, h))} />)
       kids.push(<RotateHandle key="rotate" from={toScreen(view, handlePoint(one, 'n'))} to={toScreen(view, rotatePoint(one, ROTATE_GAP / view.zoom))} />)
     }
+  } else if (one && one.type === 'connector') {
+    kids.push(<ConnectorHandles key="connector" it={one} view={view} busy={busy} />)
   } else if (selection.length) {
     const b = itemsBox(doc, selection)
     if (b) {
@@ -336,6 +583,8 @@ function Overlay({ doc, selection, view, gesture }: { doc: Doc; selection: Id[];
       if (!busy) kids.push(<RotateHandle key="rotate" from={P((s.x0 + s.x1) / 2, s.y0)} to={P((s.x0 + s.x1) / 2, s.y0 - ROTATE_GAP)} />)
     }
   }
+  if (gesture?.anchor) kids.push(<Guide key="anchor" p={toScreen(view, gesture.anchor)} />)
+  if (draft) kids.push(<DraftView key="draft" draft={draft} view={view} settings={doc.settings} />)
   return (
     <svg className="overlay" width="100%" height="100%" aria-hidden="true">
       {kids}

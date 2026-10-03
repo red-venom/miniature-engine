@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { CONNECTOR_PRESETS } from '../model/connectors'
 import { SYMBOLS } from '../symbols/registry'
-import { PACKS, searchSymbols } from './search'
+import { PACKS, PRESET_GROUP, searchPresets, searchSymbols } from './search'
 
 describe('searchSymbols', () => {
   it('returns everything for an empty query', () => {
@@ -41,5 +42,18 @@ describe('searchSymbols', () => {
       'circuit',
       'annotation',
     ])
+  })
+})
+
+describe('searchPresets', () => {
+  it('finds the "Tubes and lines" presets by name and alias, by the same rule', () => {
+    expect(PRESET_GROUP).toBe('Tubes and lines')
+    expect(searchPresets('')).toBe(CONNECTOR_PRESETS)
+    expect(searchPresets('tube').map((p) => p.id)).toEqual(['deliveryTube', 'rightAngleTube', 'rubberTubing'])
+    expect(searchPresets('RUBBER').map((p) => p.id)).toEqual(['rubberTubing'])
+    expect(searchPresets('glass tube').map((p) => p.id)).toEqual(['deliveryTube', 'rightAngleTube'])
+    expect(searchPresets('dimension').map((p) => p.id)).toEqual(['dimensionLine'])
+    expect(searchPresets('arrow').map((p) => p.id)).toEqual(['arrow'])
+    expect(searchPresets('beaker')).toEqual([])
   })
 })

@@ -27,6 +27,38 @@ export const icons = {
       <path d="M4 3l12 7-5 1.5L8.5 17z" />
     </>,
   ),
+  /** A bent tube: two walls. */
+  tube: icon(
+    <>
+      <path d="M3 17V8.5A5.5 5.5 0 0 1 8.5 3H17" />
+      <path d="M7 17V9.5A2.5 2.5 0 0 1 9.5 7H17" />
+    </>,
+  ),
+  /** A wire with square bends and its two ends. */
+  wire: icon(
+    <>
+      <path d="M4.5 15H9V5h6.5" />
+      <circle cx="3.5" cy="15" r="1" />
+      <circle cx="16.5" cy="5" r="1" />
+    </>,
+  ),
+  /** A line with an arrow head. */
+  line: icon(
+    <>
+      <path d="M4 16L16 4" />
+      <path d="M9.5 4H16v6.5" />
+    </>,
+  ),
+  rect: icon(
+    <>
+      <rect x="3" y="5" width="14" height="10" rx="1" />
+    </>,
+  ),
+  ellipse: icon(
+    <>
+      <ellipse cx="10" cy="10" rx="7.5" ry="5.5" />
+    </>,
+  ),
   undo: icon(
     <>
       <path d="M7 5L3 9l4 4" />
