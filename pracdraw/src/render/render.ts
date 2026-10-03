@@ -74,7 +74,8 @@ export function symbolNode(it: SymbolItem, s: DocSettings): Node {
       flip: it.flip,
       pivot: P(0, it.h / 2),
       mono: s.mono,
-      seed: hash(it.id + cav.id),
+      // From what a copy keeps (not the id), so a pasted or inserted copy draws the same bubbles, dots and lumps.
+      seed: hash(`${it.symbol}|${cav.id}|${it.w}|${it.h}`),
       ink: INK,
     })) {
       inside.push({ t: 'path', d: c.d, fill: c.fill, stroke: c.stroke, sw: c.sw })

@@ -32,7 +32,7 @@ const microscopeParts: TemplateDef = {
     // Left column: the optical path from the eyepiece down to the lamp.
     b.label('eyepiece', -100, 50, [scope, -61.2, 20.1])
     b.label('objective lenses', -100, 90, [scope, -19, 128])
-    b.label('microscope slide', -100, 130, [slide, -30, 3])
+    b.label('microscope slide', -100, 120, [slide, -16, 3]) // on the slide's free top, between the clip's arm and the cover slip
     b.label('stage', -100, 170, [scope, -58, 155])
     b.label('lamp', -100, 210, [scope, -21.1, 230.9])
     // Right column: the focus knobs are concentric on the arm. Coarse focus is the outer ring, fine focus the inner one.
@@ -154,7 +154,7 @@ const photosynthesis: TemplateDef = {
     b.label('ruler', -64.7, -60, [ruler, -4.7, 0]) // between the 14 and 15 cm ticks
     b.label('boiling tube', 230, -140, [tube, 17, 12])
     b.label('beaker', 230, -105, [beaker, 50, 15])
-    b.label('bubbles of oxygen', 230, -70, [tube, 9.8, 82]) // the right edge of a bubble
+    b.label('bubbles of oxygen', 230, -70, [tube, 12.4, 86.1]) // the right edge of a bubble (bubbles are seeded from the symbol, its cavity and its size, so a copy keeps them)
     b.label('pondweed', 230, -35, [weed, -2.2, 40]) // a point of the stem
     b.label('water', 230, 0, [beaker, 35, 90])
     return b.doc
