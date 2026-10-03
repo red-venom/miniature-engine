@@ -134,12 +134,18 @@ export function insertPoint(doc: Doc, id: Id, index: number, p: Pt): Doc {
   })
 }
 
-/** Delete one point. Two points always remain, and they are never on one spot. */
+/**
+ * Delete one point. Two points always remain, and they are never on one spot. When an end goes, the bend next to it
+ * becomes the new end, and an end has no bend radius.
+ */
 export function deletePoint(doc: Doc, id: Id, index: number): Doc {
   return patchConnector(doc, id, (it) => {
     if (it.points.length <= 2 || !Number.isInteger(index) || index < 0 || index >= it.points.length) return it
     const points = it.points.filter((_, i) => i !== index)
-    return isDrawable(points) ? { ...it, points } : it
+    if (!isDrawable(points)) return it
+    const end = index === 0 ? 0 : index === it.points.length - 1 ? points.length - 1 : -1
+    if (end >= 0) points[end] = P(points[end].x, points[end].y)
+    return { ...it, points }
   })
 }
 

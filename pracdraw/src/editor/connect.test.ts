@@ -93,6 +93,21 @@ describe('drawing a connector', () => {
     undo()
     expect(s().doc.order).toEqual([])
   })
+  it('a double-click adds its point once, also when its second click placed a point', () => {
+    setTool('line')
+    draftAdd(P(0, 0))
+    // The first click, 8 u below level: the snap put its point level with the first one.
+    draftAdd(P(100, 0), 4)
+    // The second click lands on the pointer, 8 u from that point, so it places one too. The double-click takes it back.
+    expect(draftAdd(P(100, 8), 4)).toBe(true)
+    const id = draftFinish(true)!
+    expect((s().doc.items[id] as ConnectorItem).points).toEqual([
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ])
+    expect(s().past).toHaveLength(1)
+    expect(s().tool).toBe('select')
+  })
   it('Backspace takes back the last point; Escape drops the connector and keeps the tool', () => {
     setTool('wire')
     draftAdd(P(0, 0))

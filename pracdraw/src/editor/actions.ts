@@ -187,8 +187,13 @@ export function draftCancel(): void {
 /**
  * Double-click or Enter: the connector goes into the document on top, as one undo step. The tool returns to Select and
  * the connector becomes the selection. Points that make no line (one point) are dropped.
+ *
+ * `dropLast` is for a double-click whose second click placed a point. That happens when the snap moved the first
+ * click's point away from the pointer, so that the second click no longer lands on it. That point goes first, so that
+ * the double-click adds its point once.
  */
-export function draftFinish(): Id | null {
+export function draftFinish(dropLast = false): Id | null {
+  if (dropLast) draftBack()
   const s = state(),
     d = s.draft
   if (!d?.points.length) return null

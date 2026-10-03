@@ -526,17 +526,26 @@ test('draw-tube-four-points', async ({ page }) => {
   // The tool is back to Select, and the new tube is the selection.
   await pressed(page, 'Select')
   await expect(page.locator('[data-handle="point"]')).toHaveCount(4)
-  // The SVG: the tube's white body, then its two wall lines, 3.5 u either side of the first point.
+  // The SVG: the tube's white body, a closed shape, then its two wall lines. Each wall runs the whole tube, 3.5 u
+  // beside the centre line: from beside the first point to beside the last.
   const items = await svgItems(page)
   expect(items).toHaveLength(1)
   expect(items[0]).toHaveLength(2)
   const [body, walls] = items[0]
   expect(body).toMatchObject({ fill: '#ffffff', stroke: null })
+  expect(body.d.endsWith('Z')).toBe(true)
   expect(walls).toMatchObject({ fill: 'none', stroke: '#111111', sw: '2' })
-  const starts = [...walls.d.matchAll(/M(-?[\d.]+) (-?[\d.]+)/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }))
-  expect(starts).toHaveLength(2)
+  const lines = walls.d
+    .split('M')
+    .filter(Boolean)
+    .map((s) => pathPoints(s))
+  expect(lines).toHaveLength(2)
+  const starts = lines.map((l) => l[0]),
+    ends = lines.map((l) => l[l.length - 1])
   expect(starts.map((p) => p.x).sort((a, b) => a - b)).toEqual([96.5, 103.5])
   expect(starts.map((p) => p.y)).toEqual([150, 150])
+  expect(ends.map((p) => p.x).sort((a, b) => a - b)).toEqual([296.5, 303.5])
+  expect(ends.map((p) => p.y)).toEqual([520, 520])
 })
 
 test('edit-connector-point', async ({ page }) => {
@@ -677,12 +686,13 @@ test('connector-tools', async ({ page }) => {
   await page.keyboard.press('Escape')
   expect((await getDoc(page)).order).toEqual([wire.id])
   await pressed(page, 'Line and arrow')
-  // Shift gives 45° steps. A double-click finishes, and places its point once.
+  // Shift gives 45° steps. A double-click finishes, and places its point once: also here, where the 5° snap puts the
+  // point of its first click level, 8 u above the pointer, so that its second click does not land on that point.
   await clickAt(page, P(100, 200))
   await page.keyboard.down('Shift')
   await clickAt(page, P(190, 285))
   await page.keyboard.up('Shift')
-  const end = await onScreen(page, P(300, 291))
+  const end = await onScreen(page, P(300, 296))
   await page.mouse.dblclick(end.x, end.y)
   doc = await getDoc(page)
   expect(doc.order).toHaveLength(2)

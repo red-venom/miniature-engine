@@ -158,6 +158,6 @@ export const KEY_TABLE: [string, string][] = [
   ['+ and −, 0, 1', 'Zoom in and out, 100 %, fit'],
   ['/', 'Search the library'],
   ['Space+drag, middle button, wheel', 'Pan. Ctrl+wheel zooms'],
-  ['Escape', 'Cancel the gesture, or clear the selection'],
+  ['Escape', 'Cancel the connector being drawn or the gesture, leave a drawing tool, or clear the selection'],
   ['?', 'Help'],
 ]

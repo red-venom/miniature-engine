@@ -43,8 +43,6 @@ const HANDLE = 8
 const MOVE_PX = 3
 /** The level handle (section 9): a short bar that lies on the top surface and ends at its right end. Screen px. */
 const LEVEL = { w: 18, h: 6 }
-/** A segment shorter than this, in screen px, shows no round handle, so that its square handles stay easy to grab. */
-const MID_MIN = 24
 
 type Drag =
   | { kind: 'pan'; start: Pt; view0: View }
@@ -90,6 +88,11 @@ export function Canvas() {
   const ref = useRef<HTMLDivElement>(null)
   const drag = useRef<Drag | null>(null)
   const space = useRef(false)
+  /**
+   * True when the last release with a connector tool placed a point. When that release is the second click of a
+   * double-click, the point goes again: the double-click adds its point once (section 10).
+   */
+  const released = useRef(false)
   const doc = useEditor((s) => s.doc)
   const view = useEditor((s) => s.view)
   const selection = useEditor((s) => s.selection)
@@ -313,13 +316,14 @@ export function Canvas() {
 
   /** The release of a press with a connector tool. */
   const releaseDraw = (d: Extract<Drag, { kind: 'draw' }>, e: ReactPointerEvent<HTMLDivElement>) => {
+    released.current = false
     const s = useEditor.getState()
     const draft = s.draft
     if (!draft || draft.points[0] !== d.first) return
     const sp = screenPt(e),
       wp = toWorld(s.view, sp)
     const dragged = moved(sp, d.start, CLICK_PX)
-    // The second click of a double-click lands on the point that the first one placed: it places nothing.
+    // A point within 4 screen px of the last one is not placed: most often it is the second click of a double-click.
     const gap = CLICK_PX / s.view.zoom
     if (d.fresh) {
       // A press, drag and release from nothing makes a two-point connector in one gesture.
@@ -327,7 +331,7 @@ export function Canvas() {
       return
     }
     // A click puts its point where the press was; a drag puts it where the pointer is released.
-    draftAdd(dragged ? nextPoint(draft, wp, e).p : d.p, gap)
+    released.current = draftAdd(dragged ? nextPoint(draft, wp, e).p : d.p, gap)
   }
 
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -362,9 +366,11 @@ export function Canvas() {
 
   const onDoubleClick = (e: ReactMouseEvent<HTMLDivElement>) => {
     const s = useEditor.getState()
-    // A double-click finishes the connector being drawn; its first click has already placed its point.
+    // A double-click finishes the connector being drawn. Its first click has already placed its point, so a point that
+    // its second click placed goes again.
     if (s.draft) {
-      draftFinish()
+      draftFinish(released.current)
+      released.current = false
       return
     }
     if (s.tool !== 'select' || s.selection.length !== 1) return
@@ -478,8 +484,9 @@ function Guide({ p }: { p: Pt }) {
 }
 
 /**
- * The handles of one selected connector (section 10): its points joined by a thin line, a square handle on each point
- * (drag to move it, double-click to delete it) and a round handle at the middle of each segment (drag to insert a point).
+ * The handles of one selected connector (section 10): its points joined by a thin line, a round handle at the middle of
+ * each segment (drag to insert a point) and a square handle on each point (drag to move it, double-click to delete it).
+ * The square handles come last, so that on a short segment they stay on top and easy to grab.
  */
 function ConnectorHandles({ it, view, busy }: { it: ConnectorItem; view: View; busy: boolean }) {
   const pts = it.points.map((p) => toScreen(view, p))
@@ -488,7 +495,6 @@ function ConnectorHandles({ it, view, busy }: { it: ConnectorItem; view: View; b
     for (let i = 0; i + 1 < pts.length; i++) {
       const a = pts[i],
         b = pts[i + 1]
-      if (!moved(a, b, MID_MIN)) continue
       kids.push(
         <circle key={`mid${i}`} className="handle mid" data-handle="mid" data-index={i} cx={(a.x + b.x) / 2} cy={(a.y + b.y) / 2} r={HANDLE / 2}>
           <title>Drag to add a point</title>

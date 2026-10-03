@@ -171,6 +171,21 @@ describe('points', () => {
     expect(deletePoint(doc, 't', 7)).toBe(doc)
     expect(deletePoint(doc, 't', -1)).toBe(doc)
   })
+  it('when an end goes, the bend next to it becomes the new end, with no bend radius', () => {
+    const doc = tubeDoc()
+    expect(con(deletePoint(doc, 't', 0), 't').points).toEqual([
+      { x: 0, y: -60 },
+      { x: 160, y: -60, r: 12 },
+      { x: 160, y: 30 },
+    ])
+    expect(con(deletePoint(doc, 't', 3), 't').points).toEqual([
+      { x: 0, y: 0 },
+      { x: 0, y: -60, r: 12 },
+      { x: 160, y: -60 },
+    ])
+    // A bend in the middle goes, and the bends on either side keep their radius.
+    expect(con(deletePoint(doc, 't', 1), 't').points.map((p) => p.r)).toEqual([undefined, 12, undefined])
+  })
   it('the point commands leave other items alone', () => {
     const doc = addSymbol(tubeDoc(), 'beaker', 0, 0, 'b')
     expect(movePoint(doc, 'b', 0, P(5, 5))).toBe(doc)
