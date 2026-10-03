@@ -177,10 +177,10 @@ const metalBlock: SymbolDef = {
       v(hx - 8, hd, 2),
       v(hx + 8, hd, 2),
       v(hx + 8, 0),
-      v(tx - 5, 0),
-      v(tx - 5, td, 2),
-      v(tx + 5, td, 2),
-      v(tx + 5, 0),
+      v(tx - 8, 0),
+      v(tx - 8, td, 2),
+      v(tx + 8, td, 2),
+      v(tx + 8, 0),
       v(x, 0, 3),
       v(x, bottom, 3),
       v(-x, bottom, 3),
@@ -192,7 +192,7 @@ const metalBlock: SymbolDef = {
       anchors: [
         { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: 2 * x },
         { id: 'heater', kind: 'mouth', x: hx, y: 0, dir: -90, width: 16 },
-        { id: 'thermo', kind: 'mouth', x: tx, y: 0, dir: -90, width: 10 },
+        { id: 'thermo', kind: 'mouth', x: tx, y: 0, dir: -90, width: 16 }, // 16, not the recipe's 10: the thermometer bulb is 13 wide (S9)
       ],
     }
   },
