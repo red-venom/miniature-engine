@@ -60,7 +60,7 @@ const pulley: SymbolDef = {
   pack: 'physics',
   size: { w: 50, h: 70 },
   resize: 'free',
-  min: { w: 36, h: 50 },
+  min: { w: 28, h: 40 }, // small enough for the wheel top to sit at a trolley's hook height (acceleration template)
   build({ w, h }) {
     const kx = w / 50,
       ky = h / 70,
