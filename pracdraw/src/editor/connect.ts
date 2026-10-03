@@ -4,10 +4,11 @@
 
 import type { Pt } from '../kernel/geom'
 import { connectorAnchors, placePoint } from '../model/connectors'
+import { SNAP_PX } from '../model/snap'
 import type { Doc } from '../model/types'
 
-/** A port, terminal or tip this near, in screen px, catches a connector point. */
-export const SNAP_PX = 8
+/** A port, terminal or tip this near, in screen px, catches a connector point: the same 8 px as every snap. */
+export { SNAP_PX }
 /** A pointer that moves less than this, in screen px, between press and release is a click. */
 export const CLICK_PX = 4
 
@@ -30,11 +31,14 @@ export interface PointKeys {
   metaKey: boolean
 }
 
+/** Snapping is on unless the Snap view preference is off, or Ctrl or Cmd is held during the drag (section 12). */
+export const snapping = (pref: boolean, keys: Pick<PointKeys, 'ctrlKey' | 'metaKey'>): boolean => pref && !keys.ctrlKey && !keys.metaKey
+
 /**
  * Where a connector point goes for a pointer at world point `p`, next to `neighbours` on the connector: onto a port,
  * terminal or tip within 8 screen px, or snapped to the angles. With Snap off, or Ctrl or Cmd held, only Shift's 45°
  * steps apply.
  */
 export function pointFor(doc: Doc, p: Pt, neighbours: readonly Pt[], zoom: number, snap: boolean, keys: PointKeys): { p: Pt; anchor: boolean } {
-  return placePoint(p, neighbours, { anchors: anchorsOf(doc), reach: SNAP_PX / zoom, step45: keys.shiftKey, snap: snap && !keys.ctrlKey && !keys.metaKey })
+  return placePoint(p, neighbours, { anchors: anchorsOf(doc), reach: SNAP_PX / zoom, step45: keys.shiftKey, snap: snapping(snap, keys) })
 }

@@ -10,8 +10,10 @@ import { boxCentre, docBox, itemsBox } from '../model/bounds'
 import {
   addItem,
   addSymbol,
+  alignItems,
   cloneItems,
   deleteItems,
+  distributeItems,
   duplicateItems,
   expandGroups,
   flipItems,
@@ -32,7 +34,9 @@ import {
   setTitle,
   ungroupItems,
   unlockAll,
+  type Align,
   type Arrange,
+  type Distribute,
   type SizeArgs,
 } from '../model/commands'
 import { deletePoint, isDrawable, makeConnector, presetConnector, setConnector, type ConnectorPatch, type ConnectorPreset } from '../model/connectors'
@@ -56,10 +60,14 @@ const selected = (): Id[] => state().selection
 
 // ---------------------------------------------------------------- selection
 
+/**
+ * Select items: the items that share a group with them come too (section 12). Locked items are never selected on the
+ * canvas, not even as part of a group.
+ */
 export function select(ids: Id[], extend = false): void {
   const s = state()
-  const live = ids.filter((id) => s.doc.items[id] && !s.doc.items[id].locked)
-  const full = expandGroups(s.doc, live)
+  const unlocked = (id: Id) => !!s.doc.items[id] && !s.doc.items[id].locked
+  const full = expandGroups(s.doc, ids.filter(unlocked)).filter(unlocked)
   if (!extend) {
     s.select(full)
     return
@@ -234,6 +242,18 @@ export function nudge(dx: number, dy: number): void {
 export function arrange(how: Arrange): void {
   const ids = selected()
   if (ids.length) commit(reorderItems(state().doc, ids, how))
+}
+
+/** Align the selection: left, centre, right, top, middle or bottom. A group aligns as one. Then the order rule runs. */
+export function alignSelection(how: Align): void {
+  const ids = selected()
+  if (ids.length > 1) commit(orderRule(alignItems(state().doc, ids, how), ids))
+}
+
+/** Distribute the selection across or down, with equal gaps. A group counts as one. Then the order rule runs. */
+export function distributeSelection(how: Distribute): void {
+  const ids = selected()
+  if (ids.length > 2) commit(orderRule(distributeItems(state().doc, ids, how), ids))
 }
 
 /** Mirror the selection left to right about its centre. One symbol flips in place. */

@@ -3,7 +3,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { demoDoc } from '../src/demo.ts'
 import { P, bounds, scan, type Pt } from '../src/kernel/geom.ts'
-import { DocBuilder } from '../src/model/build.ts'
+import { itemBox as boundsOf } from '../src/model/bounds.ts'
+import { DocBuilder, anchorOf, anchorWorld } from '../src/model/build.ts'
 import { toWorld } from '../src/model/transform.ts'
 import type { ConnectorItem, Doc, ShapeItem, SymbolItem } from '../src/model/types.ts'
 import { geometry } from '../src/symbols/registry.ts'
@@ -606,6 +607,46 @@ test('edit-connector-point', async ({ page }) => {
     [100, 100],
     [360, 290],
   ])
+
+  // A dragged point snaps (section 10): its segment to level or upright within 5°, and the point to a port, terminal
+  // or tip within 8 screen px. A wire from (100, 200) to (300, 200), and a bung whose hole is a port at (420, 200).
+  const c = new DocBuilder('Wire and bung')
+  c.connector('wire', [P(100, 200), P(300, 200)])
+  const bung = c.symbol('bung', { x: 420, y: 212 })
+  const port = anchorWorld(bung, 'hole1')
+  expect(anchorOf(bung, 'hole1').kind).toBe('port')
+  expect(port).toEqual(P(420, 200))
+  await page.evaluate((d) => window.__pracdraw.load(d), c.doc)
+  await clickAt(page, P(200, 200))
+  /** Drag the end point so that the pointer lands `px` screen px from the world point `to`. */
+  const dragEnd = async (to: Pt, px: Pt = P(0, 0)) => {
+    const from = await centreOf(handle('point', 1))
+    const target = await onScreen(page, to)
+    await drag(page, from, target.x + px.x - from.x, target.y + px.y - from.y)
+  }
+  // 3.2° off upright: the segment is exactly upright. 6.3° off: it is left as it is.
+  await dragEnd(P(110, 380))
+  expect(await points()).toEqual([
+    [100, 200],
+    [100, 380],
+  ])
+  await dragEnd(P(120, 380))
+  expect(await points()).toEqual([
+    [100, 200],
+    [120, 380],
+  ])
+  // Within 8 screen px of the port (5 px right and 3 px up): the point is exactly on the port.
+  await dragEnd(port, P(5, -3))
+  expect(await points()).toEqual([
+    [100, 200],
+    [420, 200],
+  ])
+  // 12 screen px from the port: no snap to it. (The segment is level, so the 5° snap keeps it level.)
+  await dragEnd(port, P(12, 0))
+  expect(await points()).toEqual([
+    [100, 200],
+    [Math.round(420 + 12 / zoom), 200],
+  ])
 })
 
 test('arrow-and-dimension-caps', async ({ page }) => {
@@ -704,10 +745,13 @@ test('connector-tools', async ({ page }) => {
     [300, 288],
   ])
   await pressed(page, 'Select')
-  // A connector moves like any item: the arrow keys, a drag, duplicate, delete and the marquee.
+  // A connector moves like any item: the arrow keys, a drag, duplicate, delete and the marquee. The drag holds Ctrl, so
+  // that it does not snap: the wire's bounds are 1 u from the line's, which a guide would take (section 12).
   await page.keyboard.press('ArrowRight')
   expect(xy((await getDoc(page)).items[line.id] as ConnectorItem)[0]).toEqual([101, 200])
+  await page.keyboard.down('Control')
   await drag(page, await onScreen(page, P(200, 100)), 0, 30)
+  await page.keyboard.up('Control')
   expect(xy((await getDoc(page)).items[wire.id] as ConnectorItem)).toEqual([
     [100, 130],
     [300, 130],
@@ -761,4 +805,212 @@ test('shape-tools', async ({ page }) => {
   await clickAt(page, P(400, 400))
   expect((await getDoc(page)).order).toEqual([rect.id])
   await pressed(page, 'Ellipse')
+})
+
+// ---------------------------------------------------------------- phase 5 gate tests: snapping
+
+/** Drag an item, grabbed at the world point `grab`, so that its world point `from` goes to the world point `to`. */
+async function dragTo(page: Page, grab: Pt, from: Pt, to: Pt) {
+  const zoom = (await page.evaluate(() => window.__pracdraw.view())).zoom
+  await drag(page, await onScreen(page, grab), (to.x - from.x) * zoom, (to.y - from.y) * zoom)
+}
+
+function expectNear(a: Pt, b: Pt, digits = 6) {
+  expect(a.x).toBeCloseTo(b.x, digits)
+  expect(a.y).toBeCloseTo(b.y, digits)
+}
+
+/** A point on the bung's rubber, beside its hole, in its local frame: something to grab it by. */
+const RUBBER = P(-12, 6)
+
+test('bung-snaps-and-fits', async ({ page }) => {
+  await open(page)
+  const flask = await addFromLibrary(page, 'Conical flask')
+  const bung = await addFromLibrary(page, 'Bung')
+  // The flask's mouth is 34 u wide inside; the bung's plug is 34.8 u wide. They differ, so the bung must change.
+  expect(anchorOf(flask, 'mouth').width).toBe(34)
+  expect(anchorOf(bung, 'plug').width).toBe(34.8)
+  const mouth = anchorWorld(flask, 'mouth'),
+    plug = anchorWorld(bung, 'plug')
+  // Drag the bung until its plug is 3 u right of the mouth and 2 u above it.
+  await dragTo(page, toWorld(bung, RUBBER), plug, P(mouth.x + 3, mouth.y - 2))
+  let it = (await getDoc(page)).items[bung.id] as SymbolItem
+  // The plug anchor lands on the mouth. The bung is the mouth width + 3.2 wide, so that its plug is as wide as the mouth.
+  expectNear(anchorWorld(it, 'plug'), mouth)
+  expect(it.w).toBeCloseTo(34 + 3.2, 6)
+  expect(it.h).toBe(bung.h)
+  expect(anchorOf(it, 'plug').width).toBeCloseTo(34, 6)
+  // The move and the new width are one undo step.
+  await page.keyboard.press('Control+z')
+  expect((await getDoc(page)).items[bung.id]).toMatchObject({ x: bung.x, y: bung.y, w: bung.w })
+  // A narrower mouth: a test tube's is 24 u.
+  const tube = await addFromLibrary(page, 'Test tube')
+  expect(anchorOf(tube, 'mouth').width).toBe(24)
+  const tubeMouth = anchorWorld(tube, 'mouth')
+  await dragTo(page, toWorld(bung, RUBBER), plug, P(tubeMouth.x - 2, tubeMouth.y + 3))
+  it = (await getDoc(page)).items[bung.id] as SymbolItem
+  expectNear(anchorWorld(it, 'plug'), tubeMouth)
+  expect(it.w).toBeCloseTo(24 + 3.2, 6)
+  expect(anchorOf(it, 'plug').width).toBeCloseTo(24, 6)
+})
+
+test('beaker-stands-on-gauze', async ({ page }) => {
+  await open(page)
+  const gauze = await addFromLibrary(page, 'Gauze')
+  const beaker = await addFromLibrary(page, 'Beaker')
+  const top = anchorWorld(gauze, 'top')
+  const zoom = (await page.evaluate(() => window.__pracdraw.view())).zoom
+  // Drag the beaker by its middle until its base is 3 px above the gauze, 30 u right of the gauze's centre.
+  await dragTo(page, P(beaker.x, beaker.y), anchorWorld(beaker, 'base'), P(top.x + 30, top.y - 3 / zoom))
+  let it = (await getDoc(page)).items[beaker.id] as SymbolItem
+  // The base sits exactly on the gauze's surface. Sideways it stays where it was put: 30 u is more than 8 px.
+  let base = anchorWorld(it, 'base')
+  expect(base.y).toBeCloseTo(top.y, 9)
+  expect(base.x).toBeCloseTo(top.x + 30, 0)
+  // As drawn on the screen: the lowest point of the beaker's outline is on the gauze's surface.
+  const lowest = await page.evaluate((id) => {
+    const view = document.querySelector('#stage > g') as SVGGElement
+    const path = document.querySelector(`#stage [data-id="${id}"] path[stroke]`) as SVGPathElement
+    const m = view.getCTM()!.inverse().multiply(path.getCTM()!)
+    const n = path.getTotalLength()
+    let y = -Infinity
+    for (let i = 0; i <= 400; i++) y = Math.max(y, path.getPointAtLength((n * i) / 400).matrixTransform(m).y)
+    return y
+  }, beaker.id)
+  expect(lowest).toBeCloseTo(top.y, 1)
+  // Within 8 px of the centre, the base also goes to the centre of the surface.
+  await dragTo(page, P(it.x, it.y), base, P(top.x + 4, top.y - 2))
+  it = (await getDoc(page)).items[beaker.id] as SymbolItem
+  base = anchorWorld(it, 'base')
+  expectNear(base, top, 9)
+})
+
+test('clamp-on-rod', async ({ page }) => {
+  await open(page)
+  const stand = await addFromLibrary(page, 'Clamp stand')
+  const clamp = await addFromLibrary(page, 'Boss and clamp')
+  const rod = anchorWorld(stand, 'rod') // the middle of the rod; its centre line is upright through it
+  /** The middle of the clamp's arm, to grab it by. */
+  const arm = (it: SymbolItem) => toWorld(it, P(0, it.h / 2))
+  // Drag the clamp until its sleeve is 4 u right of the rod, 60 u above the middle of the rod.
+  await dragTo(page, arm(clamp), anchorWorld(clamp, 'sleeve'), P(rod.x + 4, rod.y - 60))
+  let it = (await getDoc(page)).items[clamp.id] as SymbolItem
+  let sleeve = anchorWorld(it, 'sleeve')
+  // The sleeve is on the rod's line, at the height it was dragged to.
+  expect(sleeve.x).toBeCloseTo(rod.x, 9)
+  expect(sleeve.y).toBeCloseTo(rod.y - 60, 0)
+  // It is free in height: drag it 100 u down the rod and 3 u to the left of it. It stays on the line, 100 u lower.
+  await dragTo(page, arm(it), sleeve, P(rod.x - 3, rod.y + 40))
+  it = (await getDoc(page)).items[clamp.id] as SymbolItem
+  sleeve = anchorWorld(it, 'sleeve')
+  expect(sleeve.x).toBeCloseTo(rod.x, 9)
+  expect(sleeve.y).toBeCloseTo(rod.y + 40, 0)
+})
+
+// ---------------------------------------------------------------- phase 5: snapping off, guides, several items
+
+test('snap-off-and-guides', async ({ page }) => {
+  await open(page)
+  const flask = await addFromLibrary(page, 'Conical flask')
+  const bung = await addFromLibrary(page, 'Bung')
+  const mouth = anchorWorld(flask, 'mouth'),
+    plug = anchorWorld(bung, 'plug')
+  const near = P(mouth.x + 3, mouth.y - 2)
+  // Ctrl held: the drag does not snap. The bung goes where it is dragged and keeps its width.
+  await page.keyboard.down('Control')
+  await dragTo(page, toWorld(bung, RUBBER), plug, near)
+  await page.keyboard.up('Control')
+  let it = (await getDoc(page)).items[bung.id] as SymbolItem
+  expectNear(anchorWorld(it, 'plug'), near, 0)
+  expect(it.w).toBe(bung.w)
+  await page.keyboard.press('Control+z')
+  // The Snap view preference off: no snap either.
+  await page.locator('.canvas').click({ position: { x: 5, y: 5 } })
+  await page.getByLabel('Snap', { exact: true }).uncheck()
+  await dragTo(page, toWorld(bung, RUBBER), plug, near)
+  it = (await getDoc(page)).items[bung.id] as SymbolItem
+  expectNear(anchorWorld(it, 'plug'), near, 0)
+  expect(it.w).toBe(bung.w)
+  await page.locator('.canvas').click({ position: { x: 5, y: 5 } })
+  await page.getByLabel('Snap', { exact: true }).check()
+  // Guides: a test tube, high above a flask, dragged until the centre of its bounds is 4 u from the centre of the
+  // flask's (their edges are far apart) lines up with it, and a guide line shows while the pointer is down.
+  const b = new DocBuilder('Guides')
+  const f2 = b.symbol('conicalFlask', { x: 200, y: 300 })
+  const tube = b.symbol('testTube', { x: 420, y: 100 })
+  await page.evaluate((d) => window.__pracdraw.load(d), b.doc)
+  const centreX = (box: { x0: number; x1: number }) => (box.x0 + box.x1) / 2
+  const flaskX = centreX(boundsOf(b.doc, f2)),
+    tubeX = centreX(boundsOf(b.doc, tube))
+  const zoom = (await page.evaluate(() => window.__pracdraw.view())).zoom
+  const start = await onScreen(page, P(tube.x, tube.y))
+  const dx = (flaskX + 4 - tubeX) * zoom
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  for (let i = 1; i <= 8; i++) await page.mouse.move(start.x + (dx * i) / 8, start.y)
+  await expect(page.locator('.overlay .guide-line')).toHaveCount(1)
+  await page.mouse.up()
+  await expect(page.locator('.overlay .guide-line')).toHaveCount(0)
+  const doc = await getDoc(page)
+  expect(centreX(boundsOf(doc, doc.items[tube.id]))).toBeCloseTo(flaskX, 6)
+  expect((doc.items[tube.id] as SymbolItem).y).toBe(tube.y)
+})
+
+test('arrange-several-items', async ({ page }) => {
+  await open(page)
+  const b = new DocBuilder('Arrange')
+  b.symbol('beaker', { x: 100, y: 150 })
+  b.symbol('conicalFlask', { x: 250, y: 420 })
+  b.symbol('testTube', { x: 440, y: 260 })
+  await page.evaluate((d) => window.__pracdraw.load(d), b.doc)
+  const ids = b.doc.order
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  const heading = (name: string) => expect(inspector.getByRole('heading', { name, exact: true })).toBeVisible()
+  const boxes = (doc: Doc) => ids.map((id) => boundsOf(doc, doc.items[id]))
+  await page.keyboard.press('Control+a')
+  await heading('3 items')
+  // Align the tops of their drawn bounds, then distribute them across with equal gaps.
+  await inspector.getByRole('button', { name: 'Align top' }).click()
+  let doc = await getDoc(page)
+  for (const box of boxes(doc)) expect(box.y0).toBeCloseTo(boxes(doc)[0].y0, 6)
+  await inspector.getByRole('button', { name: 'Distribute across' }).click()
+  doc = await getDoc(page)
+  const [a, c, t] = boxes(doc)
+  expect(c.x0 - a.x1).toBeCloseTo(t.x0 - c.x1, 6)
+  // Group (Ctrl+G): a click on one of them selects all three.
+  await page.keyboard.press('Control+g')
+  doc = await getDoc(page)
+  const group = doc.items[ids[0]].group
+  expect(group).toBeTruthy()
+  for (const id of ids) expect(doc.items[id].group).toBe(group)
+  const first = doc.items[ids[0]] as SymbolItem
+  const at = await onScreen(page, P(first.x, first.y))
+  await page.locator('.canvas').click({ position: { x: 5, y: 5 } })
+  await heading('Document')
+  await page.mouse.click(at.x, at.y)
+  await heading('3 items')
+  // Lock: a locked item cannot be selected on the canvas. Unlock all is in the document settings.
+  await inspector.getByRole('button', { name: 'Lock', exact: true }).click()
+  await page.mouse.click(at.x, at.y)
+  await heading('Document')
+  expect(ids.every((id) => doc.items[id])).toBe(true)
+  await inspector.getByRole('button', { name: 'Unlock all' }).click()
+  await page.mouse.click(at.x, at.y)
+  await heading('3 items')
+  // Ungroup (Ctrl+Shift+G): a click selects one item again.
+  await page.keyboard.press('Control+Shift+g')
+  await page.locator('.canvas').click({ position: { x: 5, y: 5 } })
+  await page.mouse.click(at.x, at.y)
+  await heading('Beaker')
+})
+
+test('keys-work-after-a-checkbox', async ({ page }) => {
+  // Keys stop only while a text field has the focus (section 12): a ticked checkbox keeps the focus, and Delete works.
+  await open(page)
+  await addFromLibrary(page, 'Beaker')
+  const graduations = page.getByRole('complementary', { name: 'Inspector' }).getByLabel('Graduations')
+  await graduations.check()
+  await expect(graduations).toBeFocused()
+  await page.keyboard.press('Delete')
+  expect((await getDoc(page)).order).toEqual([])
 })

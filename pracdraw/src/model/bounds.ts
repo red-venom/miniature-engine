@@ -5,7 +5,7 @@ import { P, pathBounds, type Box, type Pt } from '../kernel/geom'
 import { geometry } from '../symbols/registry'
 import type { Geometry } from '../symbols/types'
 import { toWorld } from './transform'
-import type { Doc, Id, Item } from './types'
+import type { Doc, Id, Item, LabelItem } from './types'
 
 export type Measure = (text: string, size: number) => number
 
@@ -52,7 +52,7 @@ export const boxCentre = (b: Box): Pt => P((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2)
 export const boxesTouch = (a: Box, b: Box): boolean => a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1
 
 /** The point a label's leader ends at, or null for plain text. Only the item's own transform is needed, so no symbol code runs. */
-export function labelTarget(doc: Doc, it: Item & { type: 'label' }): Pt | null {
+export function labelTarget(doc: Doc, it: LabelItem): Pt | null {
   if (!it.target) return null
   if (!('item' in it.target)) return P(it.target.x, it.target.y)
   const t = doc.items[it.target.item]
@@ -86,15 +86,23 @@ export function itemBox(doc: Doc, it: Item, measure: Measure = estimateWidth): B
     }
     return b!
   }
-  const size = it.size ?? doc.settings.labelSize
   const t = labelTarget(doc, it)
-  const mode = t ? doc.settings.labelMode : 'text'
-  const lines = mode === 'text' ? it.text.split('\n') : mode === 'letters' ? ['A'] : []
-  const width = mode === 'blank' ? BLANK_RULE : Math.max(8, ...lines.map((l) => measure(l, size)))
-  b = grow(b, P(it.side === 'left' ? it.x - width : it.x, it.y - size))
-  b = grow(b, P(it.side === 'left' ? it.x : it.x + width, it.y + Math.max(0, lines.length - 1) * size * 1.25 + size * 0.3))
+  b = labelBox(doc, it, measure)
   if (t) b = grow(b, t, 2)
   return b
+}
+
+/**
+ * A label as it is drawn, without its leader: the text box, the 100 u line in blank mode, or the letter in letters
+ * mode. Plain text is always its text box.
+ */
+export function labelBox(doc: Doc, it: LabelItem, measure: Measure = estimateWidth): Box {
+  const size = it.size ?? doc.settings.labelSize
+  const mode = labelTarget(doc, it) ? doc.settings.labelMode : 'text'
+  const lines = mode === 'text' ? it.text.split('\n') : mode === 'letters' ? ['A'] : []
+  const width = mode === 'blank' ? BLANK_RULE : Math.max(8, ...lines.map((l) => measure(l, size)))
+  const b = grow(null, P(it.side === 'left' ? it.x - width : it.x, it.y - size))
+  return grow(b, P(it.side === 'left' ? it.x : it.x + width, it.y + Math.max(0, lines.length - 1) * size * 1.25 + size * 0.3))
 }
 
 /** The union box of several items, or null when none exists. */

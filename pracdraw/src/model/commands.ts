@@ -2,9 +2,9 @@
 // A command never mutates its input: it returns a new document that shares every unchanged item.
 // Event handlers only call commands. Unit tests run them without React or a DOM.
 
-import { P, type Pt } from '../kernel/geom'
+import { P, type Box, type Pt } from '../kernel/geom'
 import { defaultParams, hasSymbol, symbolDef } from '../symbols/registry'
-import { boxCentre, itemsBox } from './bounds'
+import { boxCentre, itemBox, itemsBox, labelBox, unionBox } from './bounds'
 import { toWorld } from './transform'
 import type { Doc, DocSettings, Id, Item, LabelItem, ParamValue, SymbolItem } from './types'
 
@@ -145,6 +145,12 @@ export function deleteItems(doc: Doc, ids: readonly Id[]): Doc {
 
 export type Arrange = 'front' | 'forward' | 'backward' | 'back'
 
+/**
+ * Bring to front, Forward, Backward, Send to back (section 12). Forward and Backward take each item one step past the
+ * next item that is not chosen. Labels are always drawn after every other item, so the step is past an item drawn in
+ * the same pass: a symbol, connector or shape steps past the next of those, and a label past the next label. Chosen
+ * items keep their own order.
+ */
 export function reorderItems(doc: Doc, ids: readonly Id[], how: Arrange): Doc {
   const set = new Set(ids)
   const order = [...doc.order]
@@ -154,23 +160,119 @@ export function reorderItems(doc: Doc, ids: readonly Id[], how: Arrange): Doc {
     const next = how === 'front' ? [...rest, ...chosen] : [...chosen, ...rest]
     return next.every((id, i) => id === order[i]) ? doc : withItems(doc, doc.items, next)
   }
+  const isLabel = (id: Id) => doc.items[id]?.type === 'label'
+  /** The next item from i in the step `dir` that is not chosen and is drawn in the same pass, or −1. */
+  const passed = (i: number, dir: 1 | -1) => {
+    const label = isLabel(order[i])
+    for (let k = i + dir; k >= 0 && k < order.length; k += dir) if (!set.has(order[k]) && isLabel(order[k]) === label) return k
+    return -1
+  }
   let changed = false
-  if (how === 'forward') {
-    for (let i = order.length - 2; i >= 0; i--) {
-      if (set.has(order[i]) && !set.has(order[i + 1])) {
-        ;[order[i], order[i + 1]] = [order[i + 1], order[i]]
-        changed = true
-      }
-    }
-  } else {
-    for (let i = 1; i < order.length; i++) {
-      if (set.has(order[i]) && !set.has(order[i - 1])) {
-        ;[order[i], order[i - 1]] = [order[i - 1], order[i]]
-        changed = true
-      }
-    }
+  const start = how === 'forward' ? order.length - 2 : 1,
+    dir = how === 'forward' ? 1 : -1
+  for (let i = start; i >= 0 && i < order.length; i -= dir) {
+    if (!set.has(order[i])) continue
+    const k = passed(i, dir)
+    if (k < 0) continue
+    const [id] = order.splice(i, 1)
+    order.splice(k, 0, id)
+    changed = true
   }
   return changed ? withItems(doc, doc.items, order) : doc
+}
+
+// ---------------------------------------------------------------- align and distribute (several items)
+
+export type Align = 'left' | 'centre' | 'right' | 'top' | 'middle' | 'bottom'
+export type Distribute = 'across' | 'down'
+
+/** A set of items that align and distribute as one: the items of one group, or one item that is in no group. */
+export interface Unit {
+  ids: Id[]
+  /** The union of the items' drawn bounds. A label counts without its leader, which can end on an item that stays. */
+  box: Box
+}
+
+/** The items as units, in draw order of the first item of each. */
+export function arrangeUnits(doc: Doc, ids: readonly Id[]): Unit[] {
+  const set = new Set(ids)
+  const units = new Map<string, Unit>()
+  for (const id of doc.order) {
+    const it = doc.items[id]
+    if (!it || !set.has(id)) continue
+    const key = it.group ? `group ${it.group}` : `item ${id}`
+    const box = it.type === 'label' ? labelBox(doc, it) : itemBox(doc, it)
+    const u = units.get(key)
+    if (u) {
+      u.ids.push(id)
+      u.box = unionBox(u.box, box)!
+    } else units.set(key, { ids: [id], box })
+  }
+  return [...units.values()]
+}
+
+/** Move each unit by its own offset, sharing what does not move. The same document when nothing moves. */
+function moveUnits(doc: Doc, moves: { unit: Unit; dx: number; dy: number }[]): Doc {
+  let next: Record<Id, Item> | null = null
+  for (const { unit, dx, dy } of moves) {
+    if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) continue
+    next ??= { ...doc.items }
+    for (const it of shiftItems(live(doc, unit.ids), dx, dy)) next[it.id] = it
+  }
+  return next ? withItems(doc, next) : doc
+}
+
+/**
+ * Align several items (section 12): the left, centre or right, or the top, middle or bottom of their drawn bounds go
+ * to that of the bounds of them all. A group moves as one.
+ */
+export function alignItems(doc: Doc, ids: readonly Id[], how: Align): Doc {
+  const units = arrangeUnits(doc, ids)
+  if (units.length < 2) return doc
+  const all = units.reduce<Box>((b, u) => unionBox(b, u.box)!, units[0].box)
+  const to = (b: Box): Pt => {
+    switch (how) {
+      case 'left':
+        return P(all.x0 - b.x0, 0)
+      case 'centre':
+        return P((all.x0 + all.x1 - b.x0 - b.x1) / 2, 0)
+      case 'right':
+        return P(all.x1 - b.x1, 0)
+      case 'top':
+        return P(0, all.y0 - b.y0)
+      case 'middle':
+        return P(0, (all.y0 + all.y1 - b.y0 - b.y1) / 2)
+      case 'bottom':
+        return P(0, all.y1 - b.y1)
+    }
+  }
+  return moveUnits(
+    doc,
+    units.map((unit) => ({ unit, dx: to(unit.box).x, dy: to(unit.box).y })),
+  )
+}
+
+/**
+ * Distribute several items (section 12), across or down: equal gaps between their drawn bounds. The first and the
+ * last, by centre, stay where they are. A group moves as one. It takes three units or more.
+ */
+export function distributeItems(doc: Doc, ids: readonly Id[], how: Distribute): Doc {
+  const units = arrangeUnits(doc, ids)
+  if (units.length < 3) return doc
+  const lo = (b: Box) => (how === 'across' ? b.x0 : b.y0),
+    hi = (b: Box) => (how === 'across' ? b.x1 : b.y1)
+  const sorted = [...units].sort((a, b) => lo(a.box) + hi(a.box) - lo(b.box) - hi(b.box))
+  const first = sorted[0],
+    last = sorted[sorted.length - 1],
+    inner = sorted.slice(1, -1)
+  const gap = (lo(last.box) - hi(first.box) - inner.reduce((sum, u) => sum + hi(u.box) - lo(u.box), 0)) / (sorted.length - 1)
+  let at = hi(first.box) + gap
+  const moves = inner.map((unit) => {
+    const d = at - lo(unit.box)
+    at += hi(unit.box) - lo(unit.box) + gap
+    return { unit, dx: how === 'across' ? d : 0, dy: how === 'down' ? d : 0 }
+  })
+  return moveUnits(doc, moves)
 }
 
 // ---------------------------------------------------------------- size, rotation, flip

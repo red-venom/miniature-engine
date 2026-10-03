@@ -16,17 +16,56 @@ export interface KeyContext {
 
 export const isMac = (): boolean => /Mac|iPhone|iPad/.test(navigator.platform) || /Mac OS/.test(navigator.userAgent)
 
-/** True when the event comes from a field that takes text. */
+/** The fields of an event target that the key rules read. Read by name, so that the rules are unit-tested without a DOM. */
+interface KeyTarget {
+  tagName?: unknown
+  type?: unknown
+  isContentEditable?: unknown
+}
+
+/** The kinds of input that take typed text. */
+const TEXT_INPUTS = new Set(['text', 'search', 'number', 'email', 'url', 'tel', 'password', 'date', 'datetime-local', 'month', 'time', 'week'])
+/** The kinds of input that Space works. */
+const SPACE_INPUTS = new Set(['checkbox', 'radio', 'color', 'button', 'submit', 'reset', 'file'])
+const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
+
+const tagOf = (target: EventTarget | null): string => {
+  const tag = (target as KeyTarget | null)?.tagName
+  return typeof tag === 'string' ? tag.toUpperCase() : ''
+}
+const inputType = (target: EventTarget | null): string => {
+  const type = (target as KeyTarget | null)?.type
+  return typeof type === 'string' ? type.toLowerCase() : 'text'
+}
+
+/**
+ * True when the event comes from a field that takes text: an input for text, numbers, dates and the like, a textarea,
+ * or editable content. Keys do nothing there (section 12). A checkbox, a radio button, a slider, a colour input or a
+ * select is not a text field: the keys work while one has the focus, apart from the keys it uses itself (`controlKey`).
+ */
 export function inTextField(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
+  const tag = tagOf(target)
+  if (tag === 'TEXTAREA' || (target as KeyTarget | null)?.isContentEditable === true) return true
+  return tag === 'INPUT' && TEXT_INPUTS.has(inputType(target))
+}
+
+/**
+ * True when the control with the focus uses this key (with no Ctrl, Cmd or Alt) itself: Space presses a button, ticks a
+ * checkbox or opens a select; the arrow keys move a slider, a radio button or a select. The editor leaves those keys to
+ * the control, so that the inspector still works from the keyboard.
+ */
+export function controlKey(target: EventTarget | null, key: string): boolean {
+  const tag = tagOf(target)
+  if (key === ' ') return tag === 'BUTTON' || tag === 'SELECT' || tag === 'SUMMARY' || (tag === 'INPUT' && SPACE_INPUTS.has(inputType(target)))
+  if (ARROW_KEYS.has(key)) return tag === 'SELECT' || (tag === 'INPUT' && (inputType(target) === 'range' || inputType(target) === 'radio'))
+  return false
 }
 
 /** Handle a key. Returns true when the key did something (the event is then consumed). */
 export function handleKey(e: KeyboardEvent, ctx: KeyContext): boolean {
   if (inTextField(e.target)) return false
   const mod = isMac() ? e.metaKey : e.ctrlKey
+  if (!mod && !e.altKey && controlKey(e.target, e.key)) return false
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
   const s = useEditor.getState()
   if (mod) {
@@ -153,6 +192,7 @@ export const KEY_TABLE: [string, string][] = [
   ['] and [, Ctrl+] and Ctrl+[', 'Forward and backward, front and back'],
   ['H', 'Flip'],
   ['Arrow keys (Shift: 10 u)', 'Move the selection'],
+  ['Ctrl while dragging', 'Move without snapping'],
   ['Ctrl+S, Ctrl+O', 'Save, open'],
   ['Ctrl+Shift+C', 'Copy image'],
   ['+ and −, 0, 1', 'Zoom in and out, 100 %, fit'],

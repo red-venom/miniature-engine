@@ -1,8 +1,10 @@
 // Inspector.tsx — the right panel: the properties of the selection, or the document settings.
 
+import type { ReactNode } from 'react'
 import * as a from '../editor/actions'
 import { itemName } from '../editor/names'
 import { useEditor } from '../editor/store'
+import type { Align } from '../model/commands'
 import { RADIUS_RANGE, WIDTH_RANGE, capsFor, connectorRadius, connectorWidth, isTube, type ConnectorPatch } from '../model/connectors'
 import { SHAPE_FILLS, type ShapeFill, type ShapePatch } from '../model/shapes'
 import type { Cap, ConnectorItem, ConnectorKind, Doc, DocSettings, Item, LabelItem, ShapeItem, SymbolItem } from '../model/types'
@@ -126,6 +128,7 @@ function LabelFields({ it }: { it: LabelItem }) {
         />
         <p className="muted">{it.target ? (fixed ? 'Fixed to an item' : 'Free leader') : 'Plain text'}</p>
       </Section>
+      <Arrange />
       <ItemButtons items={[it]} />
     </>
   )
@@ -205,17 +208,73 @@ function ShapeFields({ it }: { it: ShapeItem }) {
   )
 }
 
+interface AlignButton {
+  how: Align
+  label: string
+  icon: ReactNode
+}
+
+const ALIGN_ACROSS: AlignButton[] = [
+  { how: 'left', label: 'Left', icon: icons.alignLeft },
+  { how: 'centre', label: 'Centre', icon: icons.alignCentre },
+  { how: 'right', label: 'Right', icon: icons.alignRight },
+]
+const ALIGN_DOWN: AlignButton[] = [
+  { how: 'top', label: 'Top', icon: icons.alignTop },
+  { how: 'middle', label: 'Middle', icon: icons.alignMiddle },
+  { how: 'bottom', label: 'Bottom', icon: icons.alignBottom },
+]
+
+/** One row of align buttons. Aligning takes two units or more. */
+function AlignRow({ buttons, disabled }: { buttons: AlignButton[]; disabled: boolean }) {
+  return (
+    <Row>
+      {buttons.map((x) => (
+        <button
+          key={x.how}
+          type="button"
+          className="small"
+          onClick={() => a.alignSelection(x.how)}
+          disabled={disabled}
+          aria-label={`Align ${x.label.toLowerCase()}`}
+        >
+          {x.icon} {x.label}
+        </button>
+      ))}
+    </Row>
+  )
+}
+
+/**
+ * Section 12: align, distribute, group and ungroup, arrange, lock, duplicate, delete. A group aligns and distributes as
+ * one unit, so the buttons count units, not items.
+ */
 function SeveralFields({ items }: { items: Item[] }) {
   const grouped = items.every((it) => it.group && it.group === items[0].group)
+  const units = new Set(items.map((it) => (it.group ? `group ${it.group}` : `item ${it.id}`))).size
   return (
     <>
       <Section title={`${items.length} items`}>
         <Row>
           <button type="button" className="small" onClick={a.groupSelection} disabled={grouped} title="Group (Ctrl+G)">
-            Group
+            {icons.group} Group
           </button>
           <button type="button" className="small" onClick={a.ungroupSelection} disabled={!items.some((it) => it.group)} title="Ungroup (Ctrl+Shift+G)">
             Ungroup
+          </button>
+        </Row>
+      </Section>
+      <Section title="Align">
+        <AlignRow buttons={ALIGN_ACROSS} disabled={units < 2} />
+        <AlignRow buttons={ALIGN_DOWN} disabled={units < 2} />
+      </Section>
+      <Section title="Distribute">
+        <Row>
+          <button type="button" className="small" onClick={() => a.distributeSelection('across')} disabled={units < 3} aria-label="Distribute across">
+            {icons.distributeAcross} Across
+          </button>
+          <button type="button" className="small" onClick={() => a.distributeSelection('down')} disabled={units < 3} aria-label="Distribute down">
+            {icons.distributeDown} Down
           </button>
         </Row>
       </Section>

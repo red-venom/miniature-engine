@@ -1,6 +1,6 @@
 // Canvas.tsx — the drawing surface: the diagram, the pointer state machine of the tools, and the overlay (selection
-// box, handles, marquee, guides, the connector being drawn) in a separate SVG layer above the diagram. Hits come from
-// the DOM.
+// box, handles, marquee, snap guides, the connector being drawn) in a separate SVG layer above the diagram. Hits come
+// from the DOM. A move snaps with `snap` from src/model/snap.ts.
 
 import { useEffect, useRef, type DragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { P, type Box, type Pt } from '../kernel/geom'
@@ -17,20 +17,21 @@ import {
   select,
   toolDone,
 } from '../editor/actions'
-import { CLICK_PX, pointFor } from '../editor/connect'
+import { CLICK_PX, pointFor, snapping } from '../editor/connect'
 import { ROTATE_GAP, handlePoint, handlesFor, resizeWith, rotatePoint, rotationTo, snapAngle, type HandleId } from '../editor/handles'
 import { installHook } from '../editor/hook'
-import { inTextField } from '../editor/keys'
+import { controlKey, inTextField } from '../editor/keys'
 import { filledAt, surfaces } from '../editor/level'
 import { cachedNodes } from '../editor/nodes'
 import { useEditor, type Draft, type Gesture, type Tool, type View } from '../editor/store'
 import { screenBox, toScreen, toWorld, zoomAt } from '../editor/view'
 import { boxCentre, boxesTouch, itemBox, itemsBox } from '../model/bounds'
-import { duplicateItems, moveItems, newId, rotateItems, setRotation, setSize } from '../model/commands'
+import { duplicateItems, newId, rotateItems, setRotation, setSize } from '../model/commands'
 import { CONNECTOR_PRESETS, insertPoint, isDrawable, makeConnector, movePoint } from '../model/connectors'
 import { setFilled } from '../model/contents'
 import { orderRule } from '../model/order'
 import { addShape, dragBox, type ShapeKind } from '../model/shapes'
+import { moveSnapped, snap, snapContext, type SnapGuide } from '../model/snap'
 import type { ConnectorItem, Doc, DocSettings, Id, Item } from '../model/types'
 import { NodeView } from '../render/NodeView'
 import { connectorNode } from '../render/render'
@@ -46,7 +47,12 @@ const LEVEL = { w: 18, h: 6 }
 
 type Drag =
   | { kind: 'pan'; start: Pt; view0: View }
-  | { kind: 'move'; start: Pt; ids: Id[]; alt: boolean; moving: boolean; base: Doc }
+  /**
+   * A move of the Select tool. `base` is the document when the move began (after the copy, for Alt+drag); every pointer
+   * move snaps against it. `last` is the last snapped move shown, so that a pointer move that changes nothing is not
+   * drawn again.
+   */
+  | { kind: 'move'; start: Pt; ids: Id[]; alt: boolean; moving: boolean; base: Doc; last?: string }
   | { kind: 'marquee'; start: Pt; keep: Id[] }
   | { kind: 'resize'; id: Id; handle: HandleId }
   | { kind: 'rotate'; ids: Id[]; centre: Pt; start: number }
@@ -117,7 +123,8 @@ export function Canvas() {
     }
     el.addEventListener('wheel', wheel, { passive: false })
     const down = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !inTextField(e.target)) {
+      // Space pans, unless a text field or a control that Space works (a button, a checkbox) has the focus.
+      if (e.code === 'Space' && !inTextField(e.target) && !controlKey(e.target, ' ')) {
         space.current = true
         el.classList.add('panning')
         e.preventDefault()
@@ -256,8 +263,17 @@ export function Canvas() {
             d.base = dup
             d.ids = dup.order.slice(base.order.length)
           } else d.base = base
+          // The anchors and bounds to snap to are collected once, here, not on every pointer move (section 6).
+          if (s.prefs.snap) snapContext(d.base, d.ids)
         }
-        s.preview(moveItems(d.base, d.ids, Math.round(dx), Math.round(dy)))
+        // Whole units, then the snap (section 12). Ctrl or Cmd turns it off for the drag; so does the Snap preference.
+        const r = snap(d.base, d.ids, Math.round(dx), Math.round(dy), s.view.zoom, snapping(s.prefs.snap, e))
+        const key = `${r.dx} ${r.dy} ${r.resize?.w ?? ''} ${r.guides.length}`
+        if (key === d.last) return
+        d.last = key
+        // The fit rule's new width is in the same document as the move, so the drag stays one undo step.
+        s.preview(moveSnapped(d.base, d.ids, r))
+        s.updateGesture({ guides: r.guides.length ? r.guides : undefined })
         return
       }
       case 'marquee': {
@@ -478,9 +494,23 @@ function RotateHandle({ from, to }: { from: Pt; to: Pt }) {
   )
 }
 
-/** A ring round a port, terminal or tip that a connector point has snapped to (screen px). */
+/** A ring round a port, terminal or tip that a connector point has snapped to, or where two anchors met (screen px). */
 function Guide({ p }: { p: Pt }) {
   return <circle className="guide" cx={p.x} cy={p.y} r={7} />
+}
+
+/** What a move snapped to (section 12): thin guide lines, and a ring where two anchors met. */
+function SnapGuides({ guides, view }: { guides: readonly SnapGuide[]; view: View }) {
+  return (
+    <>
+      {guides.map((g, i) => {
+        if (g.kind === 'anchor') return <Guide key={i} p={toScreen(view, g.p)} />
+        const a = toScreen(view, g.a),
+          b = toScreen(view, g.b)
+        return <line key={i} className="guide-line" x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+      })}
+    </>
+  )
 }
 
 /**
@@ -584,6 +614,7 @@ function Overlay({ doc, selection, view, gesture, tool }: { doc: Doc; selection:
     }
   }
   if (gesture?.anchor) kids.push(<Guide key="anchor" p={toScreen(view, gesture.anchor)} />)
+  if (gesture?.guides) kids.push(<SnapGuides key="guides" guides={gesture.guides} view={view} />)
   if (draft) kids.push(<DraftView key="draft" draft={draft} view={view} settings={doc.settings} />)
   return (
     <svg className="overlay" width="100%" height="100%" aria-hidden="true">
