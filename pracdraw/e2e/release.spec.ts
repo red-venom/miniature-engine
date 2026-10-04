@@ -894,22 +894,31 @@ const focusRing = (page: Page) =>
   })
 
 /**
- * The sides of the focus ring that something paints over, found by their pixels: a box round the ring is taken from
- * the screen, and along the middle half of each side, the middle of the 2 px band must be the focus colour. This
- * finds what `focusRing` cannot: a neighbour drawn on top of the ring, such as the next of a list of touching buttons.
- * Empty when all four sides show.
+ * The parts of the focus ring that something paints over, found by their pixels: a picture of the ring's box is taken
+ * from the screen. The band of each side, 2 px wide, must be the focus colour all along the straight part of the side
+ * (its middle screen pixels: see `m`), and so must the middle of the band all round each round corner. This finds what `focusRing` cannot: a
+ * neighbour drawn on top of the ring, such as the next of a list of touching buttons, over any part of it. Empty when
+ * the whole ring shows.
  */
 async function ringHidden(page: Page): Promise<string> {
   const ring = await page.evaluate(() => {
     const el = document.activeElement as HTMLElement
     const cs = getComputedStyle(el)
-    const out = parseFloat(cs.outlineOffset) + parseFloat(cs.outlineWidth)
+    const band = parseFloat(cs.outlineWidth)
+    const offset = parseFloat(cs.outlineOffset)
+    const out = offset + band
     const r = el.getBoundingClientRect()
-    return { x: r.left - out, y: r.top - out, width: r.width + 2 * out, height: r.height + 2 * out, band: parseFloat(cs.outlineWidth) }
+    // The control's corner radii, scaled down together when two on one side add up to more than the side (as CSS
+    // does). The ring follows a round corner: its outer radius is the control's plus `out`.
+    const radii = [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomRightRadius, cs.borderBottomLeftRadius].map((v) => parseFloat(v) || 0)
+    const [tl, tr, br, bl] = radii
+    const f = Math.min(1, r.width / (tl + tr || 1), r.width / (bl + br || 1), r.height / (tl + bl || 1), r.height / (tr + br || 1))
+    const [rTL, rTR, rBR, rBL] = radii.map((v) => (v * f > 0 ? Math.max(0, v * f + offset) + band : 0))
+    return { x: r.left - out, y: r.top - out, w: r.width + 2 * out, h: r.height + 2 * out, band, rTL, rTR, rBR, rBL }
   })
   const x0 = Math.floor(ring.x),
     y0 = Math.floor(ring.y)
-  const clip = { x: x0, y: y0, width: Math.ceil(ring.x + ring.width) - x0, height: Math.ceil(ring.y + ring.height) - y0 }
+  const clip = { x: x0, y: y0, width: Math.ceil(ring.x + ring.w) - x0, height: Math.ceil(ring.y + ring.h) - y0 }
   const shot = await page.screenshot({ clip })
   return page.evaluate(
     async ({ png, ring, clip }) => {
@@ -921,24 +930,52 @@ async function ringHidden(page: Page): Promise<string> {
       c.height = img.height
       const g = c.getContext('2d')!
       g.drawImage(img, 0, 0)
+      const data = g.getImageData(0, 0, c.width, c.height).data
       const k = img.width / clip.width // screen pixels to one CSS pixel
-      /** Whether the page point (x, y) shows the focus colour, #1d4fc4. */
-      const ink = (x: number, y: number) => {
-        const d = g.getImageData(Math.floor((x - clip.x) * k), Math.floor((y - clip.y) * k), 1, 1).data
-        return Math.abs(d[0] - 29) + Math.abs(d[1] - 79) + Math.abs(d[2] - 196) < 48
+      /** Whether the screen pixel (col, row) of the picture shows the focus colour, #1d4fc4. */
+      const ink = (col: number, row: number) => {
+        const i = (row * c.width + col) * 4
+        return Math.abs(data[i] - 29) + Math.abs(data[i + 1] - 79) + Math.abs(data[i + 2] - 196) < 48
       }
-      const h = ring.band / 2
-      const sides: [string, (t: number) => [number, number]][] = [
-        ['top', (t) => [ring.x + ring.width * t, ring.y + h]],
-        ['bottom', (t) => [ring.x + ring.width * t, ring.y + ring.height - h]],
-        ['left', (t) => [ring.x + h, ring.y + ring.height * t]],
-        ['right', (t) => [ring.x + ring.width - h, ring.y + ring.height * t]],
+      const { x, y, w, h, band, rTL, rTR, rBR, rBL } = ring
+      // The browser may draw the ring up to half a CSS pixel away from the box measured here, where it puts a box that
+      // lies on a half pixel on a whole one. So the screen pixel at each edge of the band, and at each end of a side, is
+      // left out: at scale 2, the middle 2 of the band's 4 screen pixels are checked.
+      const m = Math.max(0, Math.floor((band * k - 2) / 2))
+      /** The screen pixels inside [a, b) of the page, less `m` at each end, counted from `origin`: the first and the last. */
+      const inside = (a: number, b: number, origin: number): [number, number] => [Math.ceil((a - origin) * k) + m, Math.floor((b - origin) * k) - 1 - m]
+      const sides: [string, [number, number], [number, number]][] = [
+        // name, the band's screen columns, its screen rows
+        ['top', inside(x + rTL, x + w - rTR, clip.x), inside(y, y + band, clip.y)],
+        ['bottom', inside(x + rBL, x + w - rBR, clip.x), inside(y + h - band, y + h, clip.y)],
+        ['left', inside(x, x + band, clip.x), inside(y + rTL, y + h - rBL, clip.y)],
+        ['right', inside(x + w - band, x + w, clip.x), inside(y + rTR, y + h - rBR, clip.y)],
       ]
       const hidden: string[] = []
-      for (const [side, at] of sides) {
-        let shown = 0
-        for (let i = 0; i <= 10; i++) if (ink(...at(0.25 + i * 0.05))) shown++
-        if (shown < 9) hidden.push(side)
+      for (const [side, [c0, c1], [r0, r1]] of sides) {
+        let miss = 0
+        for (let row = r0; row <= r1; row++) for (let col = c0; col <= c1; col++) if (!ink(col, row)) miss++
+        if (miss > 0) hidden.push(`${side} (${miss} px)`)
+      }
+      // A round corner: the middle of the band, every 3 degrees. Its centre, and the way out from it.
+      const corners: [string, number, number, number, number, number][] = [
+        ['top left', rTL, x + rTL, y + rTL, -1, -1],
+        ['top right', rTR, x + w - rTR, y + rTR, 1, -1],
+        ['bottom right', rBR, x + w - rBR, y + h - rBR, 1, 1],
+        ['bottom left', rBL, x + rBL, y + h - rBL, -1, 1],
+      ]
+      for (const [corner, R, cx, cy, sx, sy] of corners) {
+        if (R <= band) continue
+        let miss = 0
+        for (let a = 0; a <= 90; a += 3) {
+          const t = (a * Math.PI) / 180
+          /** Whether the point `d` from the centre of the corner, at this angle, shows the focus colour. */
+          const at = (d: number) => ink(Math.floor((cx + sx * d * Math.cos(t) - clip.x) * k), Math.floor((cy + sy * d * Math.sin(t) - clip.y) * k))
+          // The middle of the band, or one screen pixel in or out from it (see `m`).
+          const d = R - band / 2
+          if (!at(d) && !at(d - 1 / k) && !at(d + 1 / k)) miss++
+        }
+        if (miss > 0) hidden.push(`${corner} corner (${miss} of 31 points)`)
       }
       return hidden.join(', ')
     },
