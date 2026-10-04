@@ -1,0 +1,1079 @@
+/* index.css — the look of the app: light theme, neutral greys, accent for selection and the primary button.
+   Every text colour has a contrast of 4.5:1 or more against every background it is drawn on (section 12, "Access"):
+   --muted is at least 4.6:1 even on --active, and text in the accent colour on --accent-soft is --accent-ink.
+   Every control that can take the focus shows a ring of --focus, 2 px wide and 2 px outside it, when the keyboard
+   moved the focus there. */
+
+:root {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --border: #d9dde3;
+  --border-strong: #b9c0ca;
+  --text: #1b1f24;
+  --muted: #5f6672;
+  --hover: #eef0f3;
+  --active: #e3e6eb;
+  --accent: #2f6fde;
+  --accent-soft: #e3ecfb;
+  --accent-ink: #1f56c0;
+  --accent-text: #ffffff;
+  --focus: #1d4fc4;
+  --guide: #d6249f;
+  --danger: #b42318;
+  --notice: #fff8e6;
+  --notice-edge: #e3b341;
+  --check: #e6e8ec;
+  --shade: rgba(27, 31, 36, 0.4);
+  --dot: #cfd3d9;
+  --swatch-edge: #8a919c;
+  --shadow: rgba(0, 0, 0, 0.12);
+  --shadow-drawer: rgba(0, 0, 0, 0.16);
+  --shadow-dialog: rgba(0, 0, 0, 0.2);
+  --canvas: #ffffff;
+  --ink: #111111;
+  --radius: 6px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* No swipe of a finger takes the app away. A swipe to the right that the page cannot scroll would go back in the
+   history (and a pull down would reload): the page itself never scrolls, so its overscroll does nothing. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* Every panel, list, dialog and text area that scrolls stops at its ends: its overscroll goes nowhere, neither to the
+   page nor to the panel round it. ('contain' is not enough: Chromium still takes a sideways swipe that a list cannot
+   scroll as Back.) When Tab scrolls a control into view, 8 px of the list stay round it, so that its focus ring (4 px
+   outside it) shows whole. */
+.panel-scroll,
+.popover.presets,
+.dialog,
+.banner,
+.empty-card,
+.fallback-picture,
+.fallback-text,
+.field textarea {
+  overscroll-behavior: none;
+  scroll-padding: 8px;
+}
+/* The panels, lists and dialogs scroll only up and down, and a finger may only pan them that way. A finger that moves
+   sideways on them is then never a scroll that the browser could take as Back; on a tile of the library it drags the
+   tile (useTileDrag.tsx). */
+.panel-scroll,
+.popover.presets,
+.dialog,
+.banner,
+.empty-card {
+  touch-action: pan-y pinch-zoom;
+}
+
+body {
+  margin: 0;
+  min-width: 900px;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+#root,
+.app {
+  height: 100vh;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: 48px 1fr 24px;
+  grid-template-columns: 280px 1fr 280px;
+  grid-template-areas:
+    'top top top'
+    'library canvas inspector'
+    'status status status';
+  min-width: 900px;
+  min-height: 600px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:hover {
+  background: var(--hover);
+}
+button:active {
+  background: var(--active);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button[aria-pressed='true'],
+button[aria-checked='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+/* Darker on hover, never lighter: white text keeps its contrast. */
+button.primary:hover {
+  filter: brightness(0.92);
+}
+button.icon-button {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+button.small {
+  height: 28px;
+  padding: 0 8px;
+}
+button.danger {
+  color: var(--danger);
+}
+/* The focus ring: clear on white, on the grey panels and round the blue primary button (the 2 px gap shows the bar). */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.icon {
+  flex: none;
+}
+
+/* ---- top bar */
+
+/* Spacing in steps of 8 px (section 12): 8 px between groups and between the buttons of a group, 32 px icon buttons,
+   8 px inside text buttons. The whole bar shows from the width where it fits with a title 160 px wide (TopBar.tsx,
+   FULL_BAR); below that, the More menu holds the secondary controls. */
+.topbar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .group {
+  display: flex;
+  gap: 8px;
+}
+.topbar button {
+  flex: none;
+}
+.topbar .title {
+  flex: 0 1 auto;
+  min-width: 48px;
+}
+.topbar.full .title {
+  min-width: 160px;
+}
+/* A switch: buttons joined in one row, sharing their borders (the tools, Undo and Redo, the label mode, the rows of
+   the export dialog). A pressed or focused button comes on top, so that its whole border shows. */
+.switch,
+.topbar .switch {
+  display: flex;
+  gap: 0;
+}
+.switch button {
+  border-radius: 0;
+  margin-left: -1px;
+}
+.switch button:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+  margin-left: 0;
+}
+.switch button:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.switch button[aria-checked='true'],
+.switch button[aria-pressed='true'] {
+  position: relative;
+  z-index: 1;
+}
+.switch button:focus-visible {
+  position: relative;
+  z-index: 2;
+}
+.spacer {
+  flex: 1;
+}
+.title {
+  font-weight: 600;
+  border-color: transparent;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 30px;
+}
+.title-input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  width: 220px;
+}
+.zoom {
+  min-width: 48px;
+  justify-content: center;
+}
+.menu {
+  position: relative;
+}
+.popover {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.popover.right {
+  left: auto;
+  right: 0;
+}
+.popover [role='menuitem'] {
+  justify-content: flex-start;
+  border-color: transparent;
+}
+.menu-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---- panels */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+}
+.library {
+  grid-area: library;
+  border-right: 1px solid var(--border);
+}
+.inspector {
+  grid-area: inspector;
+  border-left: 1px solid var(--border);
+}
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.tabs [role='tab'] {
+  border-color: transparent;
+  height: 28px;
+}
+.tabs [role='tab'][aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+/* The content of the chosen tab fills the rest of the panel. */
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.tab-title {
+  font-weight: 600;
+}
+.drawer-close {
+  display: none;
+  margin-left: auto;
+}
+.panel-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+.search input {
+  flex: 1;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.section {
+  margin-bottom: 8px;
+}
+.section h3 {
+  margin: 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* A tile is 76 × 84 px (section 12): inside its 1 px border, the 56 px thumbnail and the name, two lines of 12 px. A
+   finger may only scroll the list on it (`.panel-scroll`); a sideways move drags the tile. */
+.tile {
+  flex-direction: column;
+  width: 76px;
+  height: 84px;
+  padding: 0;
+  gap: 0;
+  border-color: transparent;
+  justify-content: flex-start;
+  touch-action: pan-y pinch-zoom;
+}
+.tile:hover {
+  border-color: var(--border);
+}
+.tile .thumb,
+.tile-ghost .thumb {
+  flex: none;
+}
+/* The name: whole, on at most two lines, inside the tile. A long word breaks only at its soft hyphens, and a name that
+   needs a third line is set smaller (Tile.tsx). */
+.tile-name {
+  flex: none;
+  width: 100%;
+  height: 24px;
+  font-size: 10px;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: normal;
+  hyphens: manual;
+  text-align: center;
+  color: var(--text);
+}
+/* The ghost of a tile being dragged, under the pointer: solid over the canvas, where a release adds the part, and
+   faint elsewhere. */
+.tile-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  height: 84px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+  pointer-events: none;
+  will-change: transform;
+}
+.tile-ghost.away {
+  opacity: 0.6;
+}
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card {
+  flex-direction: column;
+  align-items: flex-start;
+  height: auto;
+  width: 100%;
+  padding: 8px;
+  gap: 8px;
+  text-align: left;
+  white-space: normal;
+}
+.card .thumb {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--canvas);
+}
+.card-title {
+  font-weight: 600;
+}
+.muted {
+  color: var(--muted);
+  margin: 8px 0;
+}
+/* In a template card, the gap between its lines is the spacing. */
+.card .muted {
+  margin: 0;
+}
+
+/* ---- fields */
+
+.field {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.field label {
+  color: var(--muted);
+}
+.field input[type='number'],
+.field input[type='text'],
+.field select,
+.field textarea {
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.field textarea {
+  height: auto;
+  padding: 4px 6px;
+  resize: vertical;
+}
+.field-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.unit {
+  color: var(--muted);
+  min-width: 14px;
+  white-space: nowrap;
+}
+.unit.wide {
+  min-width: 40px;
+  text-align: right;
+}
+.field input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.field.check {
+  grid-template-columns: auto 1fr;
+}
+.field.check input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.field.check label {
+  color: var(--text);
+}
+/* A row of buttons in the inspector. The one exception to the 8 px steps: Align top, middle and bottom need 267 px
+   8 px apart, and the inspector has 263 px (280 less its border and 8 px padding each side), so they are 4 px apart
+   (259 px), on one line (Inspector.tsx, AlignRow). */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.row.tight {
+  gap: 4px;
+}
+
+/* ---- contents: layers, the swatch and the preset list */
+
+.layer {
+  padding: 0 0 0 8px;
+  margin: 8px 0;
+  border-left: 2px solid var(--border);
+}
+.layer-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.layer-head select {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+button.swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  justify-content: center;
+}
+.swatch-chip {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--swatch-edge);
+  border-radius: 4px;
+}
+.popover.presets {
+  top: 32px;
+  width: 232px;
+  max-height: 360px;
+  overflow: auto;
+  gap: 0;
+}
+.preset-group h4 {
+  margin: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.preset-group:first-child h4 {
+  margin-top: 0;
+}
+.popover button.preset {
+  width: 100%;
+  height: auto;
+  min-height: 28px;
+  padding: 4px 8px;
+  gap: 8px;
+  justify-content: flex-start;
+  border-color: transparent;
+  white-space: normal;
+  text-align: left;
+}
+/* The presets touch, and the next one would paint over the lower side of the focus ring: lift the focused one. */
+.popover button.preset:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+.colour-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+.colour-pick input {
+  width: 40px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+/* ---- canvas */
+
+.canvas {
+  grid-area: canvas;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--canvas);
+  touch-action: none;
+  user-select: none;
+  cursor: default;
+  min-width: 0;
+  min-height: 0;
+}
+.canvas.drawing {
+  cursor: crosshair;
+}
+.canvas.typing {
+  cursor: text;
+}
+/* The canvas takes the focus (a press, Enter in the search box): its ring is drawn inside it. */
+.canvas:focus-visible {
+  outline-offset: -2px;
+}
+/* The text box of a label: the text as typed, in the label's font and size, over the canvas at its text anchor. It
+   always has the focus while it is open, and shows the focus ring. */
+.canvas .text-box {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--canvas);
+  color: var(--ink);
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  user-select: text;
+}
+.canvas.panning {
+  cursor: grab;
+}
+.stage,
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.overlay {
+  pointer-events: none;
+}
+.overlay .handle {
+  pointer-events: all;
+  fill: var(--panel);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+/* On a coarse pointer, a transparent circle 28 px across under each handle: the area a finger can hit. */
+.overlay .handle-hit {
+  pointer-events: all;
+  fill: transparent;
+  stroke: none;
+}
+.overlay .handle.level {
+  cursor: ns-resize;
+}
+.overlay .handle.point,
+.overlay .handle.mid {
+  cursor: move;
+}
+.overlay .handle.mid {
+  fill: var(--accent-soft);
+}
+/* The leader end of a selected label: drag it to move the end, onto a part to fix it there. */
+.overlay .handle.target {
+  cursor: move;
+  fill: var(--accent-soft);
+}
+/* Where the leader of a label being made will end. */
+.overlay .leader-end {
+  fill: var(--accent);
+}
+/* A selected connector: its points joined by a thin line, under its handles. */
+.overlay .path-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+/* The connector being drawn: a rubber band from its last point to the pointer, and a mark on each point. */
+.overlay .rubber {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+.overlay .draft-point {
+  fill: var(--accent);
+}
+/* A port, terminal or tip that a connector point has snapped to, or where two anchors met in a move. */
+.overlay .guide {
+  fill: none;
+  stroke: var(--guide);
+  stroke-width: 2;
+}
+/* A snap guide of a move: the bounds it lined up with, or the surface, rod or centre line an anchor snapped to. */
+.overlay .guide-line {
+  stroke: var(--guide);
+  stroke-width: 1;
+}
+.overlay .handle-line {
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.overlay .selection {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.overlay .marquee {
+  fill: var(--accent);
+  fill-opacity: 0.08;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+/* ---- status bar */
+
+.statusbar {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 8px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.statusbar .hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.statusbar .selected {
+  color: var(--text);
+}
+.statusbar .status {
+  min-width: 80px;
+  text-align: right;
+}
+/* "Download did not start?": 20 px high, so that its focus ring fits inside the bar. */
+.statusbar button.link {
+  height: 20px;
+  outline-offset: 0;
+}
+
+/* ---- dialog */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--shade);
+}
+.dialog {
+  width: 560px;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 16px 24px 24px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px var(--shadow-dialog);
+}
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dialog h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.dialog h3 {
+  font-size: 13px;
+  margin: 16px 0 8px;
+}
+.dialog ol {
+  padding-left: 20px;
+  margin: 0;
+}
+.keys {
+  border-collapse: collapse;
+  width: 100%;
+}
+.keys td {
+  padding: 8px 8px 8px 0;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+/* A key: one chip, never broken over two lines (in the help, a long entry wraps between its chips). */
+kbd {
+  display: inline-block;
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--bg);
+}
+.dialog-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+/* A button that reads as a link: "Download did not start?" */
+button.link {
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-ink);
+  text-decoration: underline;
+}
+button.link:hover {
+  background: none;
+  filter: brightness(0.85);
+}
+
+/* ---- the export dialog (section 13) */
+
+.export-dialog {
+  width: 640px;
+  max-height: 90vh;
+}
+.export-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: clamp(120px, 24vh, 240px);
+  margin: 16px 0 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--canvas);
+}
+/* A transparent background shows as a check. */
+.export-preview.clear {
+  background-color: var(--canvas);
+  background-image: conic-gradient(var(--check) 25%, transparent 0 50%, var(--check) 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+.export-preview svg {
+  width: 100%;
+  height: 100%;
+}
+.export-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.export-row {
+  display: grid;
+  grid-template-columns: 112px auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.export-name {
+  color: var(--muted);
+}
+.export-note {
+  margin: 0;
+}
+.export-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+}
+.export-check input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.export-summary {
+  margin: 16px 0 0;
+}
+.export-done {
+  color: var(--text);
+}
+
+/* ---- the fallback dialog: take the file by hand */
+
+.backdrop.fallback-backdrop {
+  z-index: 60;
+}
+.fallback-dialog {
+  width: 720px;
+  max-height: 90vh;
+}
+.fallback-picture {
+  display: flex;
+  justify-content: center;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--canvas);
+}
+.fallback-picture img {
+  max-width: 100%;
+  height: auto;
+  user-select: auto;
+}
+.fallback-text {
+  width: 100%;
+  height: 320px;
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  resize: vertical;
+  white-space: pre;
+}
+
+/* ---- the banner over the canvas: problems that Open found. It never blocks the canvas round it. */
+
+.banner {
+  grid-area: canvas;
+  align-self: start;
+  justify-self: center;
+  position: relative;
+  z-index: 20;
+  width: min(640px, calc(100% - 32px));
+  max-height: 40%;
+  overflow: auto;
+  margin-top: 8px;
+  padding: 8px 8px 8px 16px;
+  background: var(--notice);
+  border: 1px solid var(--notice-edge);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+.banner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.banner-head .icon-button {
+  border-color: transparent;
+  background: transparent;
+}
+.banner ul {
+  margin: 0;
+  padding: 0 8px 0 16px;
+}
+
+/* ---- the template gallery: filter chips */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.chip {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+}
+
+/* ---- the card on the canvas of an empty diagram (section 12, "First run") */
+
+.empty-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px var(--shadow);
+  text-align: center;
+  cursor: default;
+}
+.empty-card h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+.empty-templates {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.empty-template {
+  flex-direction: column;
+  width: 136px;
+  height: auto;
+  padding: 8px;
+  white-space: normal;
+  text-align: center;
+}
+.empty-template .thumb {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--canvas);
+}
+.empty-card .muted {
+  margin: 16px 0 0;
+}
+.nowrap {
+  white-space: nowrap;
+}
+
+/* ---- narrow windows: the panels become drawers */
+
+.app.narrow {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'top'
+    'canvas'
+    'status';
+}
+.app.narrow .panel {
+  position: fixed;
+  top: 48px;
+  bottom: 24px;
+  width: 280px;
+  z-index: 30;
+  box-shadow: 0 8px 24px var(--shadow-drawer);
+  /* A shut drawer goes 32 px further than its width, so that its shadow does not show at the edge of the canvas. */
+  transform: translateX(calc(-100% - 32px));
+  transition: transform 0.15s;
+}
+.app.narrow .library {
+  left: 0;
+}
+.app.narrow .inspector {
+  right: 0;
+  transform: translateX(calc(100% + 32px));
+}
+.app.narrow .panel.open {
+  transform: none;
+}
+.app.narrow .drawer-close {
+  display: inline-flex;
+}
