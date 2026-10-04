@@ -895,13 +895,15 @@ const focusRing = (page: Page) =>
 
 /**
  * The parts of the focus ring that something paints over, found by their pixels in a picture of the ring taken from the
- * screen. Along the straight part of each side, every screen column (or row) must cross the whole 2 px band: as many
- * screen pixels of the focus colour as the band is wide, within one CSS pixel of where the band should be (the browser
- * may draw it half a CSS pixel from the box measured here, when the box lies on a half pixel). Round each round corner,
- * every 3 degrees, the middle of the band must show (or one screen pixel in or out from it: a corner's edges are
- * blended into the background, so its whole width cannot be counted the same way). This finds what `focusRing`
- * cannot: a neighbour drawn on top of the ring, such as the next of a list of touching buttons, over any part of a
- * side, or over the whole width of the band at a corner. Empty when the ring shows.
+ * screen. Along the straight part of each side, less one screen pixel at each end, every screen column (or row) must
+ * hold as many screen pixels of the focus colour as the band is wide, within one CSS pixel of where the band should be
+ * (the browser may draw the band half a CSS pixel from the box measured here, when the box lies on a half pixel). Round
+ * each round corner, every 3 degrees, the middle of the band must show, or one screen pixel in or out from it (a
+ * corner's edges are blended into the background, so its whole width cannot be counted the same way). This finds a
+ * neighbour drawn on top of the ring, such as the next of a list of touching buttons, over a whole CSS pixel or more of
+ * a side's band, or over the whole width of the band at a round corner. It does not find a cover smaller than a CSS
+ * pixel at the end of a side, a cover of one CSS pixel inside a square corner (where the other side's band is counted
+ * too), or a cover over part of the band's width round a round corner. Empty when it finds none.
  */
 async function ringHidden(page: Page): Promise<string> {
   const ring = await page.evaluate(() => {
@@ -998,10 +1000,10 @@ async function ringHidden(page: Page): Promise<string> {
 test('focus-is-always-visible', async ({ page }) => {
   // Section 12: focus is always visible. Tab goes once round the whole editor with a part selected (its inspector
   // fields shown), then round the More menu and the export dialog: every control that takes the focus shows a ring
-  // 2 px wide in the focus colour, and the whole ring shows: no list, panel or window hides a side of it, and nothing
-  // paints over it (`ringHidden` reads its pixels: the whole band along each side, the middle of the band round each
-  // corner). That holds too for a control that Tab scrolls into view at the end of its list: a tile of the library, a
-  // template card, a colour preset.
+  // 2 px wide in the focus colour, and the ring shows: no list, panel or window hides a side of it, and nothing paints
+  // over its sides or its round corners (`ringHidden` reads its pixels; see there for what it can and cannot find).
+  // That holds too for a control that Tab scrolls into view at the end of its list: a tile of the library, a template
+  // card, a colour preset.
   test.setTimeout(90_000) // it takes a picture of the ring at every stop
   await open(page)
   const b = new DocBuilder('Focus')
