@@ -258,10 +258,13 @@ const ALIGN_DOWN: AlignButton[] = [
   { how: 'bottom', label: 'Bottom', icon: icons.alignBottom },
 ]
 
-/** One row of align buttons. Aligning takes two units or more. */
-function AlignRow({ buttons, disabled }: { buttons: AlignButton[]; disabled: boolean }) {
+/**
+ * One row of align buttons. Aligning takes two units or more. Top, Middle and Bottom need 267 px 8 px apart, and the
+ * inspector has 263 px: that row is `tight`, so that it stays on one line.
+ */
+function AlignRow({ buttons, disabled, tight }: { buttons: AlignButton[]; disabled: boolean; tight?: boolean }) {
   return (
-    <Row>
+    <Row tight={tight}>
       {buttons.map((x) => (
         <button
           key={x.how}
@@ -299,7 +302,7 @@ function SeveralFields({ items }: { items: Item[] }) {
       </Section>
       <Section title="Align">
         <AlignRow buttons={ALIGN_ACROSS} disabled={units < 2} />
-        <AlignRow buttons={ALIGN_DOWN} disabled={units < 2} />
+        <AlignRow buttons={ALIGN_DOWN} disabled={units < 2} tight />
       </Section>
       <Section title="Distribute">
         <Row>

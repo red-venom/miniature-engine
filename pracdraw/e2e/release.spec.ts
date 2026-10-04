@@ -1,7 +1,8 @@
 // release.spec.ts — phase 10, release 1.0: the five jobs of section 2, the budgets of section 6, and the first run,
-// help, touch and access of section 12. The gate tests of section 15 have its exact titles: job-1 to job-5,
-// drag-budget, keyboard-only and controls-have-names. The window is the Playwright default of the config, 1100 × 900,
-// narrower than the whole top bar (FULL_BAR, 1540 px): New, Open, Save, Label all and Help are in the More menu.
+// help, the library's tiles (their names, a drag to the canvas), touch and access of section 12. The gate tests of
+// section 15 have its exact titles: job-1 to job-5, drag-budget, keyboard-only and controls-have-names. The window is
+// the Playwright default of the config, 1100 × 900, narrower than the whole top bar (FULL_BAR, 1540 px): New, Open,
+// Save, Label all and Help are in the More menu.
 
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -11,10 +12,12 @@ import { docFromSvg } from '../src/export/svg.ts'
 import type { Layer } from '../src/kernel/contents.ts'
 import { P, type Pt } from '../src/kernel/geom.ts'
 import { parseMarkup, smartChem } from '../src/kernel/text.ts'
-import { itemBox } from '../src/model/bounds.ts'
+import { docBox, itemBox } from '../src/model/bounds.ts'
 import { DocBuilder, anchorOf, anchorWorld } from '../src/model/build.ts'
-import type { Doc, LabelItem, ShapeItem, SymbolItem } from '../src/model/types.ts'
-import { geometry, symbolDef } from '../src/symbols/registry.ts'
+import { CONNECTOR_PRESETS } from '../src/model/connectors.ts'
+import { snap } from '../src/model/snap.ts'
+import type { ConnectorItem, Doc, LabelItem, ShapeItem, SymbolItem } from '../src/model/types.ts'
+import { SYMBOLS, geometry, symbolDef } from '../src/symbols/registry.ts'
 import { amountToReading } from '../src/symbols/scale.ts'
 import { TEMPLATES } from '../src/templates/index.ts'
 
@@ -137,6 +140,34 @@ async function grabPoint(page: Page, id: string): Promise<Pt> {
 async function centreOf(l: Locator): Promise<Pt> {
   const b = (await l.boundingBox())!
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+}
+
+/** The world point under a page point. */
+async function worldAt(page: Page, p: Pt): Promise<Pt> {
+  const v = await page.evaluate(() => window.__pracdraw.view())
+  const r = (await page.locator('#stage').boundingBox())!
+  return P((p.x - r.x - v.x) / v.zoom, (p.y - r.y - v.y) / v.zoom)
+}
+
+/**
+ * Fingers on a touch screen, through the DevTools protocol: `touch` sends one touch event with the fingers at these
+ * page points; `drag` puts one finger down at `from`, moves it through `via` and on to `to` in `steps` moves, and lifts
+ * it unless `hold`.
+ */
+async function fingers(page: Page) {
+  const cdp = await page.context().newCDPSession(page)
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', points: Pt[]) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, i) => ({ x: p.x, y: p.y, id: i + 1 })) })
+  const drag = async (from: Pt, to: Pt, { via = [] as Pt[], steps = 8, hold = false } = {}) => {
+    await touch('touchStart', [from])
+    let at = from
+    for (const next of [...via, to]) {
+      for (let i = 1; i <= steps; i++) await touch('touchMove', [P(at.x + ((next.x - at.x) * i) / steps, at.y + ((next.y - at.y) * i) / steps)])
+      at = next
+    }
+    if (!hold) await touch('touchEnd', [])
+  }
+  return { touch, drag }
 }
 
 /**
@@ -401,7 +432,11 @@ test('job-5', async ({ page }, info) => {
 
 test('drag-budget', async ({ page }, info) => {
   // 150 symbols with contents. One is dragged 300 px in 60 pointer moves; the mean time between animation frames must
-  // be under 20 ms in the Playwright Chromium.
+  // be under 20 ms in the Playwright Chromium. The moves go out as a hand sends them: at a steady 60 Hz, each at its
+  // own time on a fixed schedule, not waiting for the page to handle the one before (page.mouse.move waits, so a slow
+  // page would only get idle frames between its moves). Each frame is timed with performance.now() in its
+  // requestAnimationFrame callback, when it really ran (the callback's own argument is the time the frame began,
+  // which a slow page does not delay). A page that takes too long over a move misses frames, and the mean gap grows.
   await open(page)
   const KINDS = [
     'beaker',
@@ -429,48 +464,94 @@ test('drag-budget', async ({ page }, info) => {
     b.symbol(symbol, { x: (i % 15) * 130, y: Math.floor(i / 15) * 230, contents })
   }
   await load(page, b.doc)
-  await page.keyboard.press('1') // fit: all 150 on the screen
+  // The whole diagram on the canvas, at the zoom where 300 px is 1300 u: ten columns of parts. The part dragged ends
+  // where no snap pulls it (the snap itself is checked below), so it must move the full 300 px; on its way most moves
+  // do snap to the parts it passes, as in use.
+  const stage = (await page.locator('#stage').boundingBox())!
+  const box = docBox(json(b.doc))!
+  const zoom = 300 / 1300
+  await page.evaluate((v) => window.__pracdraw.view(v), {
+    zoom,
+    x: stage.width / 2 - ((box.x0 + box.x1) / 2) * zoom,
+    y: stage.height / 2 - ((box.y0 + box.y1) / 2) * zoom,
+  })
+  expect(await zoomOf(page)).toBe(zoom)
   await expect(page.locator('#stage [data-id]')).toHaveCount(150)
   expect(await page.locator('#stage path[fill="#7fb8e6"]').count()).toBeGreaterThanOrEqual(150)
+  for (const it of await page.locator('#stage > g > [data-id]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as DOMRect))) {
+    expect(it.left).toBeGreaterThanOrEqual(stage.x)
+    expect(it.right).toBeLessThanOrEqual(stage.x + stage.width)
+  }
   const id = b.doc.order[67]
   const before = b.doc.items[id] as SymbolItem
   const g = await grabPoint(page, id)
-  // Every animation frame from the press to the release is timed.
+  // The press, then the frame timer and a record of each pointer move as the page gets it.
+  const cdp = await page.context().newCDPSession(page)
+  const mouse = (type: 'mouseMoved' | 'mousePressed' | 'mouseReleased', x: number, buttons: number) =>
+    cdp.send('Input.dispatchMouseEvent', { type, x, y: g.y, button: 'left', buttons, clickCount: 1 })
+  await mouse('mouseMoved', g.x, 0)
+  await mouse('mousePressed', g.x, 1)
   await page.evaluate(() => {
-    const w = window as unknown as { __frames: number[]; __timing: boolean }
-    w.__frames = []
-    w.__timing = true
-    const frame = (t: number) => {
-      w.__frames.push(t)
-      if (w.__timing) requestAnimationFrame(frame)
+    const w = window as unknown as { __drag: { frames: number[]; moves: { t: number; x: number }[]; timing: boolean } }
+    w.__drag = { frames: [], moves: [], timing: true }
+    const frame = () => {
+      w.__drag.frames.push(performance.now())
+      if (w.__drag.timing) requestAnimationFrame(frame)
     }
     requestAnimationFrame(frame)
+    addEventListener('pointermove', (e) => w.__drag.moves.push({ t: performance.now(), x: e.clientX }), true)
   })
-  await page.mouse.move(g.x, g.y)
-  await page.mouse.down()
-  for (let i = 1; i <= 60; i++) await page.mouse.move(g.x + 5 * i, g.y)
-  await page.mouse.up()
-  const frames = await page.evaluate(
+  // The 60 moves of 5 px, on a schedule of absolute times 1/60 s apart. No send waits for the one before.
+  const sent: Promise<unknown>[] = []
+  const start = performance.now() + 20
+  for (let i = 1; i <= 60; i++) {
+    const wait = start + ((i - 1) * 1000) / 60 - performance.now()
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait))
+    sent.push(mouse('mouseMoved', g.x + 5 * i, 1))
+  }
+  const late = performance.now() - (start + (59 * 1000) / 60) // how late the last move went out, ms
+  await Promise.all(sent)
+  await mouse('mouseReleased', g.x + 300, 0)
+  // One frame after the release, the timer stops.
+  const { frames, moves } = await page.evaluate(
     () =>
-      new Promise<number[]>((resolve) =>
-        requestAnimationFrame(() => {
-          const w = window as unknown as { __frames: number[]; __timing: boolean }
-          w.__timing = false
-          resolve(w.__frames)
-        }),
+      new Promise<{ frames: number[]; moves: { t: number; x: number }[] }>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const w = window as unknown as { __drag: { frames: number[]; moves: { t: number; x: number }[]; timing: boolean } }
+            w.__drag.timing = false
+            resolve(w.__drag)
+          }),
+        ),
       ),
   )
-  const gaps = frames.slice(1).map((t, i) => t - frames[i])
-  const mean = (frames[frames.length - 1] - frames[0]) / gaps.length
-  // The part moved with the pointer: 300 px at the zoom of the fit (a snap may change the end by up to 8 px).
-  const after = (await getDoc(page)).items[id] as SymbolItem
-  const zoom = await zoomOf(page)
-  expect(Math.abs(after.x - before.x - 300 / zoom)).toBeLessThanOrEqual(8 / zoom + 1)
+  // The moves reached the page, the last one at the end of the 300 px.
+  expect(moves.length).toBeGreaterThan(0)
+  expect(moves[moves.length - 1].x).toBeCloseTo(g.x + 300, 1)
+  // The frames from the last one before the first move to the first one after the last move.
+  const first = moves[0].t,
+    last = moves[moves.length - 1].t
+  const from = frames.findLastIndex((t) => t <= first)
+  const to = frames.findIndex((t) => t > last)
+  expect(from).toBeGreaterThanOrEqual(0)
+  expect(to).toBeGreaterThan(from)
+  const timed = frames.slice(from, to + 1)
+  const gaps = timed.slice(1).map((t, i) => t - timed[i])
+  const mean = (timed[timed.length - 1] - timed[0]) / gaps.length
   budget(
     info,
-    `drag: mean frame gap ${mean.toFixed(2)} ms over ${gaps.length} frames, longest ${Math.max(...gaps).toFixed(1)} ms (150 symbols with contents, 60 moves)`,
+    `drag: mean frame gap ${mean.toFixed(2)} ms over ${gaps.length} frames, longest ${Math.max(...gaps).toFixed(1)} ms, ` +
+      `${moves.length} pointer moves handled over ${(last - first).toFixed(0)} ms (150 symbols with contents, 60 moves sent at 60 Hz, ` +
+      `the last ${late.toFixed(1)} ms late)`,
   )
-  expect(gaps.length).toBeGreaterThan(30)
+  // The part moved the full 300 px: 1300 u, which the snap leaves as it is. So the moves were handled, the last too.
+  const dx = Math.round(300 / zoom)
+  expect(snap(json(b.doc), [id], dx, 0, zoom)).toMatchObject({ dx, dy: 0 })
+  const after = (await getDoc(page)).items[id] as SymbolItem
+  expect(after.x - before.x).toBe(dx)
+  expect(after.y).toBe(before.y)
+  // The moves came in steadily over the second they took to send, not in a heap at the end.
+  expect(last - first).toBeGreaterThan(900)
   expect(mean).toBeLessThan(20)
 })
 
@@ -761,24 +842,63 @@ test('controls-have-names', async ({ page, context }, info) => {
   expect(checked.size).toBeGreaterThan(200)
 })
 
-/** The focus ring of the control that has the focus, or null when the page itself has it. */
+/**
+ * The focus ring of the control that has the focus, or null when the page itself has it. `cut` names each side of the
+ * ring (outside the control by its offset, 2 px wide) that a box round it hides: a list that scrolls, a panel, the
+ * window; it is empty when the whole ring shows. `edge` is how far the control is from the nearer end of the list
+ * that it scrolls in, or null when it is in none: when Tab scrolls a control into view, it comes to rest 8 px from the
+ * end (the list's scroll-padding).
+ */
 const focusRing = (page: Page) =>
   page.evaluate(() => {
     const el = document.activeElement as HTMLElement | null
     if (!el || el === document.body) return null
     const cs = getComputedStyle(el)
+    const out = parseFloat(cs.outlineOffset) + parseFloat(cs.outlineWidth)
+    const r = el.getBoundingClientRect()
+    const ring = { left: r.left - out, top: r.top - out, right: r.right + out, bottom: r.bottom + out }
+    const cut: string[] = []
+    let edge: number | null = null
+    const inside = (name: string, box: { left: number; top: number; right: number; bottom: number }, x: boolean, y: boolean) => {
+      if (x && ring.left < box.left - 0.5) cut.push(`left by ${name}`)
+      if (x && ring.right > box.right + 0.5) cut.push(`right by ${name}`)
+      if (y && ring.top < box.top - 0.5) cut.push(`top by ${name}`)
+      if (y && ring.bottom > box.bottom + 0.5) cut.push(`bottom by ${name}`)
+    }
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const s = getComputedStyle(a)
+      const x = s.overflowX !== 'visible',
+        y = s.overflowY !== 'visible'
+      if (!x && !y) continue
+      // What a box hides is outside its padding box: inside its borders.
+      const b = a.getBoundingClientRect()
+      const box = {
+        left: b.left + a.clientLeft,
+        top: b.top + a.clientTop,
+        right: b.left + a.clientLeft + a.clientWidth,
+        bottom: b.top + a.clientTop + a.clientHeight,
+      }
+      inside(`${a.tagName.toLowerCase()}.${a.className}`, box, x, y)
+      if (edge === null && /auto|scroll/.test(s.overflowY) && a.scrollHeight > a.clientHeight) edge = Math.min(r.top - box.top, box.bottom - r.bottom)
+    }
+    inside('the window', { left: 0, top: 0, right: innerWidth, bottom: innerHeight }, true, true)
     return {
       what: `${el.tagName} ${el.getAttribute('aria-label') ?? (el.textContent ?? '').trim().slice(0, 30)}`,
+      tile: el.classList.contains('tile'),
       style: cs.outlineStyle,
       width: parseFloat(cs.outlineWidth),
       colour: cs.outlineColor,
+      cut: cut.join(', '),
+      edge,
     }
   })
 
 test('focus-is-always-visible', async ({ page }) => {
   // Section 12: focus is always visible. Tab goes once round the whole editor with a part selected (its inspector
   // fields shown), then round the More menu and the export dialog: every control that takes the focus shows a ring
-  // 2 px wide in the focus colour.
+  // 2 px wide in the focus colour, and the whole ring shows: no list, panel or window hides a side of it. That holds
+  // too for a control that Tab scrolls into view at the end of its list: a tile of the library, a template card, a
+  // colour preset.
   await open(page)
   const b = new DocBuilder('Focus')
   b.symbol('beaker', { x: 150, y: 200, contents: { main: [{ kind: 'liquid', amount: 0.5, colour: '#cfe8f7' }] } })
@@ -786,6 +906,8 @@ test('focus-is-always-visible', async ({ page }) => {
   await page.keyboard.press('Control+a')
   const RING = { style: 'solid', width: 2, colour: 'rgb(29, 79, 196)' }
   const seen: string[] = []
+  /** The tiles that Tab scrolled into view at the end of the list (8 px from it), by name. */
+  const tilesAtEnd: string[] = []
   let pageStops = 0
   for (let i = 0; i < 400 && pageStops < 2; i++) {
     await page.keyboard.press('Tab')
@@ -796,11 +918,14 @@ test('focus-is-always-visible', async ({ page }) => {
     }
     if (pageStops === 1) seen.push(r.what)
     expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
+    expect(r.cut, r.what).toBe('')
+    if (r.tile && r.edge !== null && r.edge <= 8.5) tilesAtEnd.push(r.what)
   }
   expect(pageStops).toBe(2)
   expect(seen.length).toBeGreaterThan(120)
   expect(seen).toContain('DIV Canvas')
   expect(seen).toContain('BUTTON Copy image')
+  expect(tilesAtEnd.length).toBeGreaterThan(20)
   // The More menu.
   await tabTo(page, page.getByRole('button', { name: 'More', exact: true }))
   await page.keyboard.press('Enter')
@@ -840,6 +965,41 @@ test('focus-is-always-visible', async ({ page }) => {
   // Escape closes it; the focus goes back to Export.
   await page.keyboard.press('Escape')
   await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeFocused()
+
+  // The template cards: Tab from the Templates tab goes down the list of cards, each scrolled into view in turn.
+  const library = page.getByRole('complementary', { name: 'Library' })
+  await library.getByRole('tab', { name: 'Templates' }).click()
+  const cards = library.getByRole('button', { name: /^Insert template: / })
+  const cardsAtEnd: string[] = []
+  for (let i = 0; i < 80; i++) {
+    await page.keyboard.press('Tab')
+    const r = (await focusRing(page))!
+    if (!(await library.evaluate((el) => el.contains(document.activeElement)))) break
+    expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
+    expect(r.cut, r.what).toBe('')
+    if (r.what.includes('Insert template') && r.edge !== null && r.edge <= 8.5) cardsAtEnd.push(r.what)
+  }
+  await expect(cards.last()).toBeInViewport()
+  expect(cardsAtEnd.length).toBeGreaterThan(10)
+
+  // The colour presets of the beaker's liquid: a list that scrolls, in the inspector, which scrolls too.
+  const swatch = page.getByRole('complementary', { name: 'Inspector' }).getByRole('button', { name: /^Colour: / })
+  await tabTo(page, swatch)
+  await page.keyboard.press('Enter')
+  const presets = page.getByRole('group', { name: 'Colour presets' })
+  const count = await presets.getByRole('button').count()
+  const presetsAtEnd: string[] = []
+  for (let i = 0; i < count; i++) {
+    await page.keyboard.press('Tab')
+    const r = (await focusRing(page))!
+    expect(await presets.evaluate((el) => el.contains(document.activeElement))).toBe(true)
+    expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
+    expect(r.cut, r.what).toBe('')
+    if (r.edge !== null && r.edge <= 8.5) presetsAtEnd.push(r.what)
+  }
+  expect(presetsAtEnd.length).toBeGreaterThan(3)
+  await page.keyboard.press('Escape')
+  await expect(swatch).toBeFocused()
 })
 
 /** The text on the page whose contrast with its background is below 4.5:1, the lowest ratio, and how many were measured. */
@@ -1074,6 +1234,155 @@ test('narrow-window-keyboard', async ({ page }) => {
   quiet(seen)
 })
 
+// ---------------------------------------------------------------- the library (section 12)
+
+test('tile-names-fit', async ({ page }) => {
+  // "A tile is 76 × 84 px: a thumbnail and the name." Every symbol tile and every "Tubes and lines" tile shows its
+  // whole name inside the tile, on at most two lines: the name's box is inside the tile, every line of it is inside
+  // that box (no letter outside, no word cut at the edge), and nothing of it is hidden. A long word may break only at
+  // a soft hyphen, which then shows. The title and the accessible name are the name as it is.
+  await open(page)
+  const names = [...SYMBOLS.map((d) => d.name), ...CONNECTOR_PRESETS.map((p) => p.name)]
+  const tiles = page.getByRole('complementary', { name: 'Library' }).locator('.tile')
+  await expect(tiles).toHaveCount(names.length)
+  const drawn = await tiles.evaluateAll((els) =>
+    els.map((tile) => {
+      const name = tile.querySelector<HTMLElement>('.tile-name')!
+      const box = (r: DOMRect) => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom })
+      const range = document.createRange()
+      range.selectNodeContents(name)
+      const lines = [...range.getClientRects()].filter((r) => r.width > 0).map(box)
+      return {
+        title: tile.getAttribute('title') ?? '',
+        label: tile.getAttribute('aria-label') ?? '',
+        text: (name.textContent ?? '').replaceAll('\u00ad', ''),
+        tile: box(tile.getBoundingClientRect()),
+        name: box(name.getBoundingClientRect()),
+        lines,
+        rows: new Set(lines.map((r) => Math.round(r.top))).size,
+        hidden: name.scrollWidth > name.clientWidth || name.scrollHeight > name.clientHeight,
+        size: parseFloat(getComputedStyle(name).fontSize),
+      }
+    }),
+  )
+  const inside = (a: { left: number; top: number; right: number; bottom: number }, b: typeof a) =>
+    a.left >= b.left - 0.5 && a.top >= b.top - 0.5 && a.right <= b.right + 0.5 && a.bottom <= b.bottom + 0.5
+  expect(new Set(drawn.map((t) => t.title))).toEqual(new Set(names))
+  for (const t of drawn) {
+    expect(t.label, t.title).toBe(t.title)
+    expect(t.text, t.title).toBe(t.title)
+    expect(Math.round(t.tile.right - t.tile.left), t.title).toBe(76)
+    expect(Math.round(t.tile.bottom - t.tile.top), t.title).toBe(84)
+    expect(inside(t.name, t.tile), `${t.title}: the name's box is inside the tile`).toBe(true)
+    expect(t.rows, `${t.title}: at most two lines`).toBeLessThanOrEqual(2)
+    for (const line of t.lines) expect(inside(line, t.name), `${t.title}: a line is inside the name's box`).toBe(true)
+    expect(t.hidden, `${t.title}: nothing of the name is hidden`).toBe(false)
+    expect(t.size, t.title).toBeGreaterThanOrEqual(8)
+  }
+  // Most names are at the caption size, 10 px; the few that need it are smaller.
+  const small = drawn.filter((t) => t.size < 10).map((t) => `${t.title} (${t.size} px)`)
+  test.info().annotations.push({
+    type: 'tile names',
+    description: `${drawn.length} tiles, ${drawn.filter((t) => t.rows === 2).length} on two lines; smaller than 10 px: ${small.join(', ') || 'none'}`,
+  })
+  expect(small.length).toBeLessThan(5)
+})
+
+// ---------------------------------------------------------------- the library: drag a tile to the canvas (section 12)
+
+test('library-drag-adds-at-the-pointer', async ({ page }) => {
+  // "Drag a tile to the canvas: the symbol is added at the pointer." A tile is dragged with pointer events, the mouse
+  // as a finger: a ghost of the tile follows the pointer, and the release adds the part there, as the selection. A
+  // "Tubes and lines" tile adds its connector with the middle of its box there. A release anywhere but the canvas,
+  // or Escape, adds nothing; a click still adds at the centre of the view. In a narrow window the library is a
+  // drawer: a drag that leaves it shuts it, so that the whole canvas takes the drop.
+  const seen = watch(page)
+  await open(page)
+  const library = page.getByRole('complementary', { name: 'Library' })
+  const ghost = page.locator('.tile-ghost')
+  const count = async () => (await getDoc(page)).order.length
+  /** Press on a tile, move to `to` in 8 moves (the ghost under the pointer), and release unless `hold`. */
+  const drag = async (tile: Locator, to: Pt, hold = false) => {
+    await tile.scrollIntoViewIfNeeded()
+    const from = await centreOf(tile)
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    for (let i = 1; i <= 8; i++) await page.mouse.move(from.x + ((to.x - from.x) * i) / 8, from.y + ((to.y - from.y) * i) / 8)
+    await expect(ghost).toBeVisible()
+    expectNear(await centreOf(ghost), to, 0)
+    if (!hold) await page.mouse.up()
+  }
+  const stage = (await page.locator('#stage').boundingBox())!
+
+  // A beaker dropped on the canvas: the beaker is there, selected, and the canvas has the focus. One part is added:
+  // the release is not also a click of the tile.
+  const at = P(stage.x + stage.width * 0.3, stage.y + stage.height * 0.65)
+  await drag(library.getByRole('button', { name: 'Beaker', exact: true }), at)
+  await expect(ghost).toHaveCount(0)
+  let doc = await getDoc(page)
+  expect(doc.order).toHaveLength(1)
+  const w = await worldAt(page, at)
+  expect(doc.items[doc.order[0]]).toMatchObject({ type: 'symbol', symbol: 'beaker', x: Math.round(w.x), y: Math.round(w.y) })
+  await expect(page.locator('.statusbar .selected')).toHaveText('Beaker')
+  await expect(page.getByRole('application', { name: 'Canvas' })).toBeFocused()
+
+  // A "Tubes and lines" tile: a delivery tube, the middle of its points' box at the pointer.
+  const at2 = P(stage.x + stage.width * 0.6, stage.y + stage.height * 0.3)
+  await drag(library.getByRole('button', { name: 'Delivery tube', exact: true }), at2)
+  doc = await getDoc(page)
+  expect(doc.order).toHaveLength(2)
+  const tube = doc.items[doc.order[1]] as ConnectorItem
+  expect(tube.kind).toBe('glassTube')
+  const xs = tube.points.map((p) => p.x),
+    ys = tube.points.map((p) => p.y)
+  const w2 = await worldAt(page, at2)
+  expect(Math.abs((Math.min(...xs) + Math.max(...xs)) / 2 - w2.x)).toBeLessThanOrEqual(0.5)
+  expect(Math.abs((Math.min(...ys) + Math.max(...ys)) / 2 - w2.y)).toBeLessThanOrEqual(0.5)
+  await expect(page.locator('.statusbar .selected')).toHaveText('Glass tube')
+
+  // Released over the inspector: nothing is added. Escape during a drag: nothing either, and the selection stays.
+  const flask = library.getByRole('button', { name: 'Conical flask', exact: true })
+  await drag(flask, await centreOf(page.getByRole('complementary', { name: 'Inspector' })))
+  await expect(ghost).toHaveCount(0)
+  expect(await count()).toBe(2)
+  await drag(flask, at, true)
+  await page.keyboard.press('Escape')
+  await expect(ghost).toHaveCount(0)
+  await page.mouse.up()
+  expect(await count()).toBe(2)
+  await expect(page.locator('.statusbar .selected')).toHaveText('Glass tube')
+  // A click adds at the centre of the view.
+  await flask.click()
+  doc = await getDoc(page)
+  expect(doc.order).toHaveLength(3)
+  const centre = await worldAt(page, P(stage.x + stage.width / 2, stage.y + stage.height / 2))
+  expect(doc.items[doc.order[2]]).toMatchObject({ symbol: 'conicalFlask', x: Math.round(centre.x), y: Math.round(centre.y) })
+
+  // A narrow window: the library is a drawer over the canvas. A drag that leaves it shuts it; dropped where the
+  // drawer was, the part lands on the canvas there.
+  await page.setViewportSize({ width: 1000, height: 800 })
+  const libraryButton = page.getByRole('button', { name: 'Library', exact: true })
+  await libraryButton.click()
+  await expect.poll(async () => (await library.boundingBox())!.x).toBe(0)
+  const testTube = library.getByRole('button', { name: 'Test tube', exact: true })
+  await testTube.scrollIntoViewIfNeeded()
+  const from = await centreOf(testTube)
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  for (let i = 1; i <= 8; i++) await page.mouse.move(from.x + 50 * i, from.y)
+  await expect(libraryButton).toHaveAttribute('aria-expanded', 'false')
+  await expect.poll(async () => (await library.boundingBox())!.x + (await library.boundingBox())!.width).toBeLessThanOrEqual(0)
+  const back = P(160, from.y + 40)
+  for (let i = 1; i <= 8; i++) await page.mouse.move(from.x + 400 + ((back.x - from.x - 400) * i) / 8, from.y + ((back.y - from.y) * i) / 8)
+  await page.mouse.up()
+  doc = await getDoc(page)
+  expect(doc.order).toHaveLength(4)
+  const w4 = await worldAt(page, back)
+  expect(doc.items[doc.order[3]]).toMatchObject({ symbol: 'testTube', x: Math.round(w4.x), y: Math.round(w4.y) })
+  await expect(library).toHaveAttribute('inert', '')
+  quiet(seen)
+})
+
 // ---------------------------------------------------------------- touch (section 12)
 
 test.describe('on a touch screen', () => {
@@ -1090,9 +1399,7 @@ test.describe('on a touch screen', () => {
     const label = b.label('beaker', 300, 220, [beaker, 50, 60])
     await load(page, b.doc)
     await page.evaluate(() => window.__pracdraw.view({ x: 0, y: 0, zoom: 1 }))
-    const cdp = await page.context().newCDPSession(page)
-    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', points: Pt[]) =>
-      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, i) => ({ x: p.x, y: p.y, id: i + 1 })) })
+    const { touch } = await fingers(page)
 
     // A tap selects the beaker. Each of its handles (8 to resize, 1 to turn, 1 for the level) has a hit area 28 px
     // across.
@@ -1117,19 +1424,22 @@ test.describe('on a touch screen', () => {
     expect(resized.h).toBeCloseTo(beaker.h + 20, 0)
     const doc = await getDoc(page)
 
-    // Two fingers 100 px apart spread to 200 px about a fixed centre: the zoom doubles, and the world point under the
-    // centre stays under it.
+    // Two fingers 100 px apart spread to 200 px about a fixed centre, well away from the centre of the canvas (a zoom
+    // about the centre of the canvas would move what is under the fingers by over 200 px): the zoom doubles, and the
+    // world point under the pinch centre stays under it, within 0.5 px.
     const stage = (await page.locator('#stage').boundingBox())!
     const c = P(stage.x + stage.width / 2, stage.y + stage.height / 2)
+    const q = P(stage.x + 110, stage.y + stage.height / 2 + 160)
+    expect(Math.hypot(q.x - c.x, q.y - c.y)).toBeGreaterThan(200)
     const v0 = await page.evaluate(() => window.__pracdraw.view())
-    const world = P((c.x - stage.x - v0.x) / v0.zoom, (c.y - stage.y - v0.y) / v0.zoom)
-    await touch('touchStart', [P(c.x - 50, c.y), P(c.x + 50, c.y)])
-    for (let i = 1; i <= 5; i++) await touch('touchMove', [P(c.x - 50 - 10 * i, c.y), P(c.x + 50 + 10 * i, c.y)])
+    const world = await worldAt(page, q)
+    await touch('touchStart', [P(q.x - 50, q.y), P(q.x + 50, q.y)])
+    for (let i = 1; i <= 5; i++) await touch('touchMove', [P(q.x - 50 - 10 * i, q.y), P(q.x + 50 + 10 * i, q.y)])
     await touch('touchEnd', [])
     const v1 = await page.evaluate(() => window.__pracdraw.view())
     expect(v1.zoom).toBeCloseTo(2 * v0.zoom, 3)
-    expect(stage.x + v1.x + world.x * v1.zoom).toBeCloseTo(c.x, 0)
-    expect(stage.y + v1.y + world.y * v1.zoom).toBeCloseTo(c.y, 0)
+    expect(Math.abs(stage.x + v1.x + world.x * v1.zoom - q.x)).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(stage.y + v1.y + world.y * v1.zoom - q.y)).toBeLessThanOrEqual(0.5)
     // Two fingers that move together pan: 60 px right and 30 px down, at the same zoom.
     await touch('touchStart', [P(c.x - 40, c.y), P(c.x + 40, c.y)])
     for (let i = 1; i <= 5; i++) await touch('touchMove', [P(c.x - 40 + 12 * i, c.y + 6 * i), P(c.x + 40 + 12 * i, c.y + 6 * i)])
@@ -1141,12 +1451,182 @@ test.describe('on a touch screen', () => {
     // Neither changed the diagram.
     expect(await getDoc(page)).toEqual(doc)
 
-    // A double tap on the label opens its text box.
+    // A double tap on the label opens its text box. (The pinch took the label off the canvas: the view comes back.)
+    await page.evaluate(() => window.__pracdraw.view({ x: 0, y: 0, zoom: 1 }))
     const t = await centreOf(page.locator(`#stage [data-id="${label.id}"] text`))
     await page.touchscreen.tap(t.x, t.y)
     await page.touchscreen.tap(t.x, t.y)
     const box = page.getByRole('textbox', { name: 'Label text' })
     await expect(box).toBeFocused()
     await expect(box).toHaveValue('beaker')
+  })
+
+  test('touch-drag-tile-to-canvas', async ({ page }) => {
+    // A finger drags a tile of the library to the canvas with pointer events, as the mouse does: a symbol, and a "Tubes
+    // and lines" preset. The drag starts when the finger moves sideways; a ghost of the tile is under the finger; the
+    // part is added where the finger is lifted. A tap on a tile still adds the part at the centre of the view. In a
+    // narrow window the drag shuts the library's drawer when it leaves it, and the canvas takes the drop.
+    const seen = watch(page)
+    await open(page)
+    const { drag, touch } = await fingers(page)
+    const library = page.getByRole('complementary', { name: 'Library' })
+    const ghost = page.locator('.tile-ghost')
+    const stage = (await page.locator('#stage').boundingBox())!
+
+    // A beaker: 40 px sideways, then on to the drop point, with the ghost under the finger; then the finger comes up.
+    const from = await centreOf(library.getByRole('button', { name: 'Beaker', exact: true }))
+    const at = P(stage.x + stage.width * 0.4, stage.y + stage.height * 0.7)
+    await drag(from, at, { via: [P(from.x + 40, from.y)], hold: true })
+    await expect(ghost).toBeVisible()
+    expectNear(await centreOf(ghost), at, 0)
+    await touch('touchEnd', [])
+    await expect(ghost).toHaveCount(0)
+    let doc = await getDoc(page)
+    expect(doc.order).toHaveLength(1)
+    const w = await worldAt(page, at)
+    expect(doc.items[doc.order[0]]).toMatchObject({ symbol: 'beaker', x: Math.round(w.x), y: Math.round(w.y) })
+    await expect(page.locator('.statusbar .selected')).toHaveText('Beaker')
+
+    // A wire, from "Tubes and lines" at the end of the list: the middle of its points' box where the finger came up.
+    const wire = library.getByRole('button', { name: 'Wire', exact: true })
+    await wire.scrollIntoViewIfNeeded()
+    const from2 = await centreOf(wire)
+    const at2 = P(stage.x + stage.width * 0.7, stage.y + stage.height * 0.25)
+    await drag(from2, at2, { via: [P(from2.x + 40, from2.y)] })
+    doc = await getDoc(page)
+    expect(doc.order).toHaveLength(2)
+    const added = doc.items[doc.order[1]] as ConnectorItem
+    expect(added.kind).toBe('wire')
+    const w2 = await worldAt(page, at2)
+    const xs = added.points.map((p) => p.x),
+      ys = added.points.map((p) => p.y)
+    expect(Math.abs((Math.min(...xs) + Math.max(...xs)) / 2 - w2.x)).toBeLessThanOrEqual(0.5)
+    expect(Math.abs((Math.min(...ys) + Math.max(...ys)) / 2 - w2.y)).toBeLessThanOrEqual(0.5)
+
+    // A tap still adds at the centre of the view.
+    const flask = library.getByRole('button', { name: 'Conical flask', exact: true })
+    await flask.scrollIntoViewIfNeeded()
+    const f = await centreOf(flask)
+    await page.touchscreen.tap(f.x, f.y)
+    doc = await getDoc(page)
+    expect(doc.order).toHaveLength(3)
+    const centre = await worldAt(page, P(stage.x + stage.width / 2, stage.y + stage.height / 2))
+    expect(doc.items[doc.order[2]]).toMatchObject({ symbol: 'conicalFlask', x: Math.round(centre.x), y: Math.round(centre.y) })
+
+    // A narrow window: the library is a drawer. The finger drags a test tube out of it: the drawer shuts, and the test
+    // tube lands where the finger comes up, on the canvas where the drawer was.
+    await page.setViewportSize({ width: 1000, height: 800 })
+    const libraryButton = page.getByRole('button', { name: 'Library', exact: true })
+    const lb = await centreOf(libraryButton)
+    await page.touchscreen.tap(lb.x, lb.y)
+    await expect.poll(async () => (await library.boundingBox())!.x).toBe(0)
+    const tube = library.getByRole('button', { name: 'Test tube', exact: true })
+    await tube.scrollIntoViewIfNeeded()
+    const from3 = await centreOf(tube)
+    const out = P(600, from3.y)
+    await drag(from3, out, { via: [P(from3.x + 40, from3.y)], hold: true })
+    await expect(libraryButton).toHaveAttribute('aria-expanded', 'false')
+    await expect
+      .poll(async () => {
+        const b = (await library.boundingBox())!
+        return b.x + b.width
+      })
+      .toBeLessThanOrEqual(0)
+    const back = P(160, from3.y + 40)
+    for (let i = 1; i <= 8; i++) await touch('touchMove', [P(out.x + ((back.x - out.x) * i) / 8, out.y + ((back.y - out.y) * i) / 8)])
+    expectNear(await centreOf(ghost), back, 0)
+    await touch('touchEnd', [])
+    doc = await getDoc(page)
+    expect(doc.order).toHaveLength(4)
+    const w3 = await worldAt(page, back)
+    expect(doc.items[doc.order[3]]).toMatchObject({ symbol: 'testTube', x: Math.round(w3.x), y: Math.round(w3.y) })
+    await expect(library).toHaveAttribute('inert', '')
+    quiet(seen)
+  })
+
+  test('touch-library-swipe-scrolls', async ({ page }) => {
+    // A finger that swipes up or down on the library scrolls the list, on a tile as anywhere, and adds nothing: only a
+    // move that is mostly sideways drags a tile. The list lets a finger pan it only up and down.
+    const seen = watch(page)
+    await open(page)
+    const { drag } = await fingers(page)
+    const library = page.getByRole('complementary', { name: 'Library' })
+    const list = library.locator('.panel-scroll')
+    await expect(list).toHaveCSS('touch-action', 'pan-y pinch-zoom')
+    expect(await list.evaluate((el) => el.scrollTop)).toBe(0)
+    const tile = await centreOf(library.getByRole('button', { name: 'Conical flask', exact: true }))
+    await drag(tile, P(tile.x + 20, tile.y - 300), { steps: 10 })
+    await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(100)
+    // And down again, from beside the tiles (20 px in from the list's edge, clear of its scroll bar).
+    const scrolled = await list.evaluate((el) => el.scrollTop)
+    const gap = await list.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      return { x: r.right - 20, y: r.top + 100 }
+    })
+    expect(await page.evaluate((p) => document.elementFromPoint(p.x, p.y)?.closest('.tile'), gap)).toBeNull()
+    await drag(gap, P(gap.x - 10, gap.y + 200), { steps: 10 })
+    await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeLessThan(scrolled)
+    await expect(page.locator('.tile-ghost')).toHaveCount(0)
+    expect((await getDoc(page)).order).toEqual([])
+    quiet(seen)
+  })
+
+  test('touch-swipes-keep-the-app', async ({ page }) => {
+    // A one-finger swipe to the right that nothing scrolls must not take the browser back (to about:blank), which
+    // would lose the app: on the empty-state card, the top bar, the inspector, the status bar, the library and a dialog.
+    // The page gives its overscroll to nothing, and no panel, list or dialog that scrolls passes its overscroll on.
+    await open(page)
+    const url = page.url()
+    expect(url).toBe(FILE)
+    const { drag } = await fingers(page)
+    const swipe = async (what: string, from: Pt, dx = 300) => {
+      const navigated = page.waitForEvent('framenavigated', { timeout: 1000 }).then(
+        () => true,
+        () => false,
+      )
+      await drag(from, P(from.x + dx, from.y), { steps: 10 })
+      expect(await navigated, what).toBe(false)
+      expect(page.url(), what).toBe(url)
+    }
+    /** Every element that scrolls, with its overscroll behaviour unless that is 'none' on both axes. */
+    const leaks = () =>
+      page.evaluate(() =>
+        [document.documentElement, document.body, ...document.querySelectorAll('body *')]
+          .filter((el) => el === document.documentElement || el === document.body || /auto|scroll/.test(getComputedStyle(el).overflow))
+          .map((el) => [el.tagName, el.className, getComputedStyle(el).overscrollBehaviorX, getComputedStyle(el).overscrollBehaviorY].join(' '))
+          .filter((s) => !s.endsWith(' none none')),
+      )
+    await swipe('the empty-state card', await centreOf(emptyCard(page).getByRole('heading')))
+    await swipe('the top bar', await centreOf(page.locator('.topbar .spacer')))
+    const inspector = (await page.getByRole('complementary', { name: 'Inspector' }).boundingBox())!
+    await swipe('the inspector', P(inspector.x + 20, inspector.y + 200), 250)
+    await swipe('the status bar', await centreOf(page.locator('.statusbar .hint')))
+    const library = page.getByRole('complementary', { name: 'Library' })
+    await swipe('a heading of the library', await centreOf(library.locator('h3').first()))
+    expect(await leaks()).toEqual([])
+    // The help dialog.
+    await page.keyboard.press('?')
+    await expect(page.getByRole('dialog', { name: 'Help' })).toBeVisible()
+    expect(await leaks()).toEqual([])
+    await swipe('the help dialog', await centreOf(page.getByRole('dialog', { name: 'Help' }).locator('ol')), 250)
+    await page.keyboard.press('Escape')
+    // The export dialog.
+    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'Export' })).toBeVisible()
+    expect(await leaks()).toEqual([])
+    await page.keyboard.press('Escape')
+    // On a tile, a sideways swipe drags the tile: the part is added where the finger came up, and the page stays.
+    await swipe('a tile of the library', await centreOf(library.getByRole('button', { name: 'Beaker', exact: true })))
+    expect((await getDoc(page)).order).toHaveLength(1)
+    // The colour presets of the beaker's water: a list that scrolls in the inspector.
+    const panel = page.getByRole('complementary', { name: 'Inspector' })
+    await panel.getByRole('button', { name: 'Water', exact: true }).click()
+    await panel.getByRole('button', { name: /^Colour: / }).click()
+    const presets = panel.getByRole('group', { name: 'Colour presets' })
+    await expect(presets).toBeVisible()
+    expect(await presets.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+    expect(await leaks()).toEqual([])
+    await swipe('the colour presets', await centreOf(presets.locator('h4').first()), 150)
+    await expect(page.getByRole('button', { name: 'Copy image' })).toBeVisible()
   })
 })

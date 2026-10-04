@@ -1,8 +1,9 @@
 // Library.tsx — the left panel: Apparatus (search, Recent, one section for each pack) and Templates. The two tabs
 // move with the arrow keys. Enter in the search box adds the first result and gives the focus to the canvas, where the
-// arrow keys move the new item at once.
+// arrow keys move the new item at once. A click on a tile adds its part at the centre of the view; a drag, with a
+// mouse, a finger or a pen, adds it where it is dropped on the canvas (useTileDrag.tsx).
 
-import { useId, useMemo, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { addPresetAt, addSymbolAt, insertTemplateAt } from '../editor/actions'
 import { PACKS, PRESET_GROUP, searchPresets, searchSymbols } from '../editor/search'
 import { useEditor } from '../editor/store'
@@ -12,54 +13,39 @@ import { SYMBOLS, symbolDef } from '../symbols/registry'
 import type { SymbolDef } from '../symbols/types'
 import { TEMPLATES } from '../templates'
 import type { TemplateDef } from '../templates/types'
-import { DocThumbnail, PresetThumbnail, SymbolThumbnail } from './Thumbnail'
-import { DRAG_TYPE, PRESET_DRAG_TYPE, SEARCH_ID } from './constants'
+import { DocThumbnail } from './Thumbnail'
+import { SEARCH_ID } from './constants'
 import { icons } from './icons'
 import { RadioSwitch } from './RadioSwitch'
+import { TileFace, type Part } from './Tile'
+import { useTileDrag, type TileDrag } from './useTileDrag'
 
 export type LibraryTab = 'apparatus' | 'templates'
 
-function Tile({ def }: { def: SymbolDef }) {
-  const onDragStart = (e: DragEvent) => {
-    e.dataTransfer.setData(DRAG_TYPE, def.id)
-    e.dataTransfer.effectAllowed = 'copy'
-  }
+/** A tile: a click adds its part at the centre of the view, a drag where it is dropped on the canvas. */
+function Tile({ part, drag }: { part: Part; drag: TileDrag }) {
+  const name = part.kind === 'symbol' ? part.def.name : part.preset.name
   return (
-    <button type="button" className="tile" title={def.name} draggable onDragStart={onDragStart} onClick={() => addSymbolAt(def.id)}>
-      <SymbolThumbnail def={def} />
-      <span className="tile-name">{def.name}</span>
+    <button type="button" className="tile" title={name} aria-label={name} {...drag.tile(part)}>
+      <TileFace part={part} />
     </button>
   )
 }
 
-/** A "Tubes and lines" preset (section 10): a click adds the connector at the centre of the view; a drag, at the pointer. */
-function PresetTile({ preset }: { preset: ConnectorPreset }) {
-  const onDragStart = (e: DragEvent) => {
-    e.dataTransfer.setData(PRESET_DRAG_TYPE, preset.id)
-    e.dataTransfer.effectAllowed = 'copy'
-  }
-  return (
-    <button type="button" className="tile" title={preset.name} draggable onDragStart={onDragStart} onClick={() => addPresetAt(preset)}>
-      <PresetThumbnail preset={preset} />
-      <span className="tile-name">{preset.name}</span>
-    </button>
-  )
-}
-
-function Tiles({ defs, presets = [] }: { defs: SymbolDef[]; presets?: readonly ConnectorPreset[] }) {
+function Tiles({ defs, presets = [], drag }: { defs: SymbolDef[]; presets?: readonly ConnectorPreset[]; drag: TileDrag }) {
   return (
     <div className="tiles">
       {defs.map((d) => (
-        <Tile key={d.id} def={d} />
+        <Tile key={`symbol:${d.id}`} part={{ kind: 'symbol', def: d }} drag={drag} />
       ))}
       {presets.map((p) => (
-        <PresetTile key={p.id} preset={p} />
+        <Tile key={`preset:${p.id}`} part={{ kind: 'preset', preset: p }} drag={drag} />
       ))}
     </div>
   )
 }
 
-function Apparatus({ onAdded }: { onAdded?(): void }) {
+function Apparatus({ drag, onAdded }: { drag: TileDrag; onAdded?(): void }) {
   const [query, setQuery] = useState('')
   const recent = useEditor((s) => s.prefs.recent)
   const results = useMemo(() => searchSymbols(query), [query])
@@ -95,7 +81,7 @@ function Apparatus({ onAdded }: { onAdded?(): void }) {
       <div className="panel-scroll">
         {searching ? (
           results.length || presets.length ? (
-            <Tiles defs={results} presets={presets} />
+            <Tiles defs={results} presets={presets} drag={drag} />
           ) : (
             <p className="muted">Nothing matches "{query}".</p>
           )
@@ -104,7 +90,7 @@ function Apparatus({ onAdded }: { onAdded?(): void }) {
             {recentDefs.length > 0 && (
               <section className="section">
                 <h3>Recent</h3>
-                <Tiles defs={recentDefs} />
+                <Tiles defs={recentDefs} drag={drag} />
               </section>
             )}
             {PACKS.map((pack) => {
@@ -113,13 +99,13 @@ function Apparatus({ onAdded }: { onAdded?(): void }) {
               return (
                 <section className="section" key={pack.id}>
                   <h3>{pack.name}</h3>
-                  <Tiles defs={defs} />
+                  <Tiles defs={defs} drag={drag} />
                 </section>
               )
             })}
             <section className="section">
               <h3>{PRESET_GROUP}</h3>
-              <Tiles defs={[]} presets={CONNECTOR_PRESETS} />
+              <Tiles defs={[]} presets={CONNECTOR_PRESETS} drag={drag} />
             </section>
           </>
         )}
@@ -173,6 +159,8 @@ const TABS: { id: LibraryTab; label: string }[] = [
 ]
 
 interface Props {
+  /** The library is a drawer over the canvas (narrow windows). */
+  drawer?: boolean
   /** The drawer is open (narrow windows). */
   open: boolean
   /** The drawer is shut and off the screen: nothing in it can take the focus. */
@@ -185,9 +173,13 @@ interface Props {
 }
 
 /** The library. Its tab lives in the app, so that `/` can open the Apparatus tab before it focuses the search box. */
-export function Library({ open, shut, tab, setTab, onClose, onAdded }: Props) {
+export function Library({ drawer, open, shut, tab, setTab, onClose, onAdded }: Props) {
   const id = useId()
   const [group, setGroup] = useState<TemplateFilter>('All')
+  const panel = useRef<HTMLElement>(null)
+  // A tile dragged out of the drawer shuts it: the whole canvas shows, and takes the drop. While the drag lasts, the
+  // drawer stays live (not inert), for the tile it came from keeps the pointer.
+  const drag = useTileDrag({ area: panel, onLeave: drawer && open ? onClose : undefined })
   // The ARIA tabs: Tab reaches the chosen tab, and the arrow keys move to the other one.
   const onTabKey = (e: KeyboardEvent, i: number) => {
     const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
@@ -199,7 +191,7 @@ export function Library({ open, shut, tab, setTab, onClose, onAdded }: Props) {
     document.getElementById(`${id}-${next}`)?.focus()
   }
   return (
-    <aside className={`panel library${open ? ' open' : ''}`} aria-label="Library" inert={shut}>
+    <aside ref={panel} className={`panel library${open ? ' open' : ''}`} aria-label="Library" inert={shut && !drag.dragging}>
       <div className="tabs" role="tablist" aria-label="Library">
         {TABS.map((t, i) => (
           <button
@@ -221,8 +213,9 @@ export function Library({ open, shut, tab, setTab, onClose, onAdded }: Props) {
         </button>
       </div>
       <div className="tab-panel" id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
-        {tab === 'apparatus' ? <Apparatus onAdded={onAdded} /> : <Templates group={group} setGroup={setGroup} />}
+        {tab === 'apparatus' ? <Apparatus drag={drag} onAdded={onAdded} /> : <Templates group={group} setGroup={setGroup} />}
       </div>
+      {drag.ghost}
     </aside>
   )
 }

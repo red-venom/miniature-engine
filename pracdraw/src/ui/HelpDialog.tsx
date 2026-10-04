@@ -1,8 +1,8 @@
 // HelpDialog.tsx — the Help button and `?` (section 12): six lines on how to start, and the key table, with Cmd for
 // Ctrl on a Mac. A modal dialog: the focus stays in it, Escape or Close shuts it, and the focus goes back.
 
-import { useRef } from 'react'
-import { isMac, keyTable, modName } from '../editor/keys'
+import { Fragment, useRef } from 'react'
+import { isMac, keyParts, keyTable, modName } from '../editor/keys'
 import { icons } from './icons'
 import { trapTab, useDialogFocus } from './useDialog'
 
@@ -53,9 +53,8 @@ export function HelpDialog({ onClose }: { onClose(): void }) {
           <tbody>
             {keyTable(mac).map(([key, what]) => (
               <tr key={key}>
-                <td>
-                  <kbd>{key}</kbd>
-                </td>
+                {/* One chip for each key: a long entry wraps between its chips, never inside one. */}
+                <td>{keyParts(key).map((part, i) => (part.key ? <kbd key={i}>{part.text}</kbd> : <Fragment key={i}>{part.text}</Fragment>))}</td>
                 <td>{what}</td>
               </tr>
             ))}

@@ -93,6 +93,7 @@ export default function App() {
         onExport={() => setExporting(true)}
       />
       <Library
+        drawer={narrow}
         open={library}
         shut={narrow && !library}
         tab={libraryTab}

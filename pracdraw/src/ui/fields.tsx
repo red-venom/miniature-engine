@@ -148,6 +148,7 @@ export function Section({ title, children, group }: { title: string; children: R
   )
 }
 
-export function Row({ children }: { children: ReactNode }) {
-  return <div className="row">{children}</div>
+/** A row of buttons, 8 px apart; `tight`, 4 px apart, for a row that would not fit the panel at 8 px. */
+export function Row({ children, tight }: { children: ReactNode; tight?: boolean }) {
+  return <div className={tight ? 'row tight' : 'row'}>{children}</div>
 }

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Host } from '../host/host'
 import { DocBuilder } from '../model/build'
 import type { SymbolItem } from '../model/types'
-import { KEY_TABLE, controlKey, handleKey, inTextField, keyTable, modName, type KeyContext } from './keys'
+import { KEY_TABLE, controlKey, handleKey, inTextField, keyParts, keyTable, modName, type KeyContext } from './keys'
 import { useEditor } from './store'
 
 const s = () => useEditor.getState()
@@ -98,6 +98,40 @@ describe('keyTable', () => {
     expect(keys).toContain('] and [')
     expect(keys).toContain('+ and −, 0, 1')
     expect(keys).toContain('Arrow keys')
+  })
+})
+
+describe('keyParts', () => {
+  /** The parts, with each key in brackets. */
+  const shown = (entry: string) =>
+    keyParts(entry)
+      .map((p) => (p.key ? `[${p.text}]` : p.text))
+      .join('')
+
+  it('makes each key a part of its own, with the words that join the keys between them', () => {
+    expect(shown('Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y')).toBe('[Ctrl+Z], [Ctrl+Shift+Z] or [Ctrl+Y]')
+    expect(shown('Double-click or Enter; Backspace')).toBe('[Double-click] or [Enter]; [Backspace]')
+    expect(shown('Double-click a label, or Enter')).toBe('[Double-click a label], or [Enter]')
+    expect(shown('] and [, Ctrl+] and Ctrl+[')).toBe('[]] and [[], [Ctrl+]] and [Ctrl+[]')
+    expect(shown('+ and −, 0, 1')).toBe('[+] and [−], [0], [1]')
+    expect(shown('Ctrl+Shift+C')).toBe('[Ctrl+Shift+C]')
+    expect(shown('/')).toBe('[/]')
+  })
+
+  it('keeps a context before a colon and a note after the keys as plain text', () => {
+    expect(shown('In the text box: Enter, Shift+Enter, Escape')).toBe('In the text box: [Enter], [Shift+Enter], [Escape]')
+    expect(shown('Arrow keys (Shift: 10 u)')).toBe('[Arrow keys] (Shift: 10 u)')
+    expect(shown('Two fingers (touch)')).toBe('[Two fingers] (touch)')
+    expect(shown('Ctrl while dragging')).toBe('[Ctrl] while dragging')
+  })
+
+  it('gives back every entry of the table, on a PC and on a Mac', () => {
+    for (const [key] of [...keyTable(false), ...keyTable(true)]) {
+      const parts = keyParts(key)
+      expect(parts.map((p) => p.text).join('')).toBe(key)
+      expect(parts.some((p) => p.key)).toBe(true)
+      for (const p of parts) if (p.key) expect(p.text).toBe(p.text.trim())
+    }
   })
 })
 
