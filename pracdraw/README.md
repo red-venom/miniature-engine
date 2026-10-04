@@ -61,7 +61,7 @@ On a Mac, Cmd replaces Ctrl. In a window narrower than 1540 px, the less-used to
 
 Everything works from the keyboard. Tab reaches every control. Press `/`, type a name and press Enter: the part appears in the middle of the view, and the arrow keys move it at once. On the label-mode switch, the arrow keys change the mode.
 
-On a touchscreen, pinch with two fingers to zoom, and move two fingers together to pan. A double tap acts as a double-click, and the handles are easier to hit.
+On a touchscreen, pinch with two fingers to zoom, and move two fingers together to pan. A double tap acts as a double-click, and the handles are easier to hit. To drag a part out of the library, move your finger sideways first: a move up or down scrolls the list. In a narrow window the library drawer closes when the drag leaves it, so you can drop anywhere on the canvas.
 
 ### Good to know
 
