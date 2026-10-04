@@ -21,11 +21,11 @@ The empty canvas also offers three templates straight away: heating a liquid in 
 - **Fill a vessel.** Select it and use the **Contents** block in the inspector on the right: **Water**, or **Add layer** and pick a colour preset (solutions, indicators, precipitates, powders, chips, ice, gases). Drag the small bar at the surface to change the level. Liquids stay level when you turn a vessel.
 - **Set a reading.** Select a measuring cylinder, burette or thermometer and type a value in **Reading**: the liquid moves to that mark. For a gas syringe, Reading sets the plunger.
 - **Draw tubes and wires.** Press `U` for a glass tube, `W` for a wire or `A` for a line or arrow, click each point, and press Enter. Segments snap level and upright, and ends snap to ports and terminals.
-- **Label it.** Press `L`, press on the part, drag to where the text should go, and release. The box already holds the part's name: press Enter to keep it, or type your own. Labels stay fixed to their part when it moves. **Label all** labels every part that has no label yet, with no leaders crossing; circuit symbols, arrows and the bench line are left out. Formulae and units format themselves: `H2SO4`, `Cu2+`, `25 cm3`, `mol/dm3`.
+- **Label it.** Press `L`, press on the part, drag to where the text should go, and release. The box already holds the part's name: press Enter to keep it, or type your own. Labels stay fixed to their part when it moves. **Label all** labels every part that has no label yet, with no leaders crossing. It leaves out circuit symbols, the heat arrow, the eye, the bench line, and tubes, wires and lines. Formulae and units format themselves: `H2SO4`, `Cu2+`, `25 cm3`, `mol/dm3`.
 
 ### Worksheets
 
-- The **label-mode switch** in the top bar changes every label in one click: **Text** for teaching slides, **Blank** for a "label the diagram" worksheet (a line to write on), **Letters** for an exam-style question (A, B, C …).
+- The **label-mode switch** in the top bar changes every label that has a leader line, in one click: **Text** for teaching slides, **Blank** for a "label the diagram" worksheet (a line to write on), **Letters** for an exam-style question (A, B, C …). Plain text with no leader stays as it is.
 - In Letters mode, **Export** can add an answer key under the diagram.
 - **Photocopy-safe** draws contents as patterns instead of colour, so a black-and-white copy stays readable.
 - For worksheets that students receive, export **PNG**. An SVG file carries the whole diagram inside it, including the label text, so that PracDraw can open it again; a student could read the answers from it.
@@ -33,8 +33,9 @@ The empty canvas also offers three templates straight away: heating a liquid in 
 ### Save, open and export
 
 - **Save** (Ctrl+S) downloads `<title>.pracdraw.json`. **Open** (Ctrl+O) opens that file, or an SVG exported by PracDraw, for editing. You can also drop either file on the canvas.
-- **Export** offers PNG at 1×, 2× or 4×, or SVG; a white or transparent background; any label mode; and photocopy-safe on or off. **Copy** puts the picture on the clipboard; **Download** saves it.
-- If the browser blocks the clipboard or a download, PracDraw shows the picture in a window: right-click it and choose **Copy image**.
+- **Export** offers PNG at 1×, 2× or 4×, or SVG; a white or transparent background; any label mode; and photocopy-safe on or off. **Copy** puts a PNG on the clipboard as a picture, or an SVG as text; **Download** saves the file.
+- If the browser blocks the clipboard, PracDraw opens a window with the picture: right-click it and choose **Copy image**. An SVG shows as text, with a **Select all** button.
+- A web page cannot tell when the browser blocks a download. After each download, the link **Download did not start?** opens the same window.
 
 ### Keys
 
@@ -80,11 +81,11 @@ npm run dev       # the editor at http://localhost:5173
 npm run build     # dist/index.html, the single file to ship
 ```
 
-Node 20.19 or later (Vite 8 needs it). The browser tests and the contact sheets use Playwright's Chromium: `playwright.config.ts` and `scripts/sheet.ts` use `/opt/pw-browsers/chromium` when it exists, and Playwright's own download when it does not.
+Node 20.19 or later in Node 20, or Node 22.12 or later (Vite 8 needs one of these). The browser tests and the contact sheets use Playwright's Chromium: `playwright.config.ts` and `scripts/sheet.ts` use `/opt/pw-browsers/chromium` when it exists, and Playwright's own download when it does not.
 
 | Command                                  | What it does                                                                           |
 | ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| `npm run check`                          | Everything below except the sheets.                                                    |
+| `npm run check`                          | Type check, lint, format check, unit tests, build, browser tests.                      |
 | `npm run test`                           | Unit tests (Vitest).                                                                   |
 | `npm run e2e`                            | Builds the single file, then runs the browser tests against it from `file://`.         |
 | `npm run sheet [pack\|templates]`        | `out/reference.png`, `out/sheet-<pack>-<variant>.png`, `out/template-<id>-<mode>.png`. |
