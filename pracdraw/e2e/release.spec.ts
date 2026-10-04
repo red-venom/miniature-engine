@@ -893,12 +893,66 @@ const focusRing = (page: Page) =>
     }
   })
 
+/**
+ * The sides of the focus ring that something paints over, found by their pixels: a box round the ring is taken from
+ * the screen, and along the middle half of each side, the middle of the 2 px band must be the focus colour. This
+ * finds what `focusRing` cannot: a neighbour drawn on top of the ring, such as the next of a list of touching buttons.
+ * Empty when all four sides show.
+ */
+async function ringHidden(page: Page): Promise<string> {
+  const ring = await page.evaluate(() => {
+    const el = document.activeElement as HTMLElement
+    const cs = getComputedStyle(el)
+    const out = parseFloat(cs.outlineOffset) + parseFloat(cs.outlineWidth)
+    const r = el.getBoundingClientRect()
+    return { x: r.left - out, y: r.top - out, width: r.width + 2 * out, height: r.height + 2 * out, band: parseFloat(cs.outlineWidth) }
+  })
+  const x0 = Math.floor(ring.x),
+    y0 = Math.floor(ring.y)
+  const clip = { x: x0, y: y0, width: Math.ceil(ring.x + ring.width) - x0, height: Math.ceil(ring.y + ring.height) - y0 }
+  const shot = await page.screenshot({ clip })
+  return page.evaluate(
+    async ({ png, ring, clip }) => {
+      const img = new Image()
+      img.src = 'data:image/png;base64,' + png
+      await img.decode()
+      const c = document.createElement('canvas')
+      c.width = img.width
+      c.height = img.height
+      const g = c.getContext('2d')!
+      g.drawImage(img, 0, 0)
+      const k = img.width / clip.width // screen pixels to one CSS pixel
+      /** Whether the page point (x, y) shows the focus colour, #1d4fc4. */
+      const ink = (x: number, y: number) => {
+        const d = g.getImageData(Math.floor((x - clip.x) * k), Math.floor((y - clip.y) * k), 1, 1).data
+        return Math.abs(d[0] - 29) + Math.abs(d[1] - 79) + Math.abs(d[2] - 196) < 48
+      }
+      const h = ring.band / 2
+      const sides: [string, (t: number) => [number, number]][] = [
+        ['top', (t) => [ring.x + ring.width * t, ring.y + h]],
+        ['bottom', (t) => [ring.x + ring.width * t, ring.y + ring.height - h]],
+        ['left', (t) => [ring.x + h, ring.y + ring.height * t]],
+        ['right', (t) => [ring.x + ring.width - h, ring.y + ring.height * t]],
+      ]
+      const hidden: string[] = []
+      for (const [side, at] of sides) {
+        let shown = 0
+        for (let i = 0; i <= 10; i++) if (ink(...at(0.25 + i * 0.05))) shown++
+        if (shown < 9) hidden.push(side)
+      }
+      return hidden.join(', ')
+    },
+    { png: shot.toString('base64'), ring, clip },
+  )
+}
+
 test('focus-is-always-visible', async ({ page }) => {
   // Section 12: focus is always visible. Tab goes once round the whole editor with a part selected (its inspector
   // fields shown), then round the More menu and the export dialog: every control that takes the focus shows a ring
-  // 2 px wide in the focus colour, and the whole ring shows: no list, panel or window hides a side of it. That holds
-  // too for a control that Tab scrolls into view at the end of its list: a tile of the library, a template card, a
-  // colour preset.
+  // 2 px wide in the focus colour, and the whole ring shows: no list, panel or window hides a side of it, and nothing
+  // paints over it (its pixels are checked). That holds too for a control that Tab scrolls into view at the end of its
+  // list: a tile of the library, a template card, a colour preset.
+  test.setTimeout(90_000) // it takes a picture of the ring at every stop
   await open(page)
   const b = new DocBuilder('Focus')
   b.symbol('beaker', { x: 150, y: 200, contents: { main: [{ kind: 'liquid', amount: 0.5, colour: '#cfe8f7' }] } })
@@ -919,6 +973,7 @@ test('focus-is-always-visible', async ({ page }) => {
     if (pageStops === 1) seen.push(r.what)
     expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
     expect(r.cut, r.what).toBe('')
+    expect(await ringHidden(page), r.what).toBe('')
     if (r.tile && r.edge !== null && r.edge <= 8.5) tilesAtEnd.push(r.what)
   }
   expect(pageStops).toBe(2)
@@ -934,6 +989,7 @@ test('focus-is-always-visible', async ({ page }) => {
     const r = (await focusRing(page))!
     expect(r.what).not.toMatch(/^BODY/)
     expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
+    expect(await ringHidden(page), r.what).toBe('')
   }
   await page.keyboard.press('Escape')
   // The export dialog: the dialog itself when it opens, then round its controls (Tab stays inside it).
@@ -949,6 +1005,7 @@ test('focus-is-always-visible', async ({ page }) => {
     const r = (await focusRing(page))!
     expect(await page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))).toBe(true)
     expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
+    expect(await ringHidden(page), r.what).toBe('')
     inDialog.push(r.what)
   }
   expect(inDialog.slice(0, 8)).toEqual(inDialog.slice(8, 16))
@@ -977,6 +1034,7 @@ test('focus-is-always-visible', async ({ page }) => {
     if (!(await library.evaluate((el) => el.contains(document.activeElement)))) break
     expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
     expect(r.cut, r.what).toBe('')
+    expect(await ringHidden(page), r.what).toBe('')
     if (r.what.includes('Insert template') && r.edge !== null && r.edge <= 8.5) cardsAtEnd.push(r.what)
   }
   await expect(cards.last()).toBeInViewport()
@@ -995,6 +1053,7 @@ test('focus-is-always-visible', async ({ page }) => {
     expect(await presets.evaluate((el) => el.contains(document.activeElement))).toBe(true)
     expect({ style: r.style, width: r.width, colour: r.colour }, r.what).toEqual(RING)
     expect(r.cut, r.what).toBe('')
+    expect(await ringHidden(page), r.what).toBe('')
     if (r.edge !== null && r.edge <= 8.5) presetsAtEnd.push(r.what)
   }
   expect(presetsAtEnd.length).toBeGreaterThan(3)

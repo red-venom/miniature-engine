@@ -587,6 +587,11 @@ button.swatch {
   white-space: normal;
   text-align: left;
 }
+/* The presets touch, and the next one would paint over the lower side of the focus ring: lift the focused one. */
+.popover button.preset:focus-visible {
+  position: relative;
+  z-index: 1;
+}
 .colour-pick {
   display: flex;
   align-items: center;
