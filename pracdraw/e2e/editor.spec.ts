@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { FILE } from './hook.ts'
 import { demoDoc } from '../src/demo.ts'
 import { P, bounds, dist, scan, type Pt } from '../src/kernel/geom.ts'
@@ -69,7 +69,9 @@ test('the single file runs from file:// with no network requests', async ({ page
   expect(errors).toEqual([])
   const html = readFileSync('dist/index.html', 'utf8')
   expect(html).not.toMatch(/(src|href)="https?:/)
-  expect(html.length).toBeLessThan(900_000) // the size budget in section 6 of the specification
+  // The size budget in section 6 of the specification: 900 kB, counted in bytes (the file's size; kB as Vite reports
+  // it, 1000 bytes), not in characters.
+  expect(statSync('dist/index.html').size).toBeLessThanOrEqual(900_000)
 })
 
 test('the PNG drawn on canvas matches the SVG on screen', async ({ page }) => {

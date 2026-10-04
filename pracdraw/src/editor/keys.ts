@@ -248,3 +248,37 @@ export function keyTable(mac = isMac()): [string, string][] {
   if (!mac) return KEY_TABLE
   return KEY_TABLE.map(([key, what]) => [key.replace(/Ctrl/g, 'Cmd'), what.replace(/Ctrl/g, 'Cmd')])
 }
+
+/** A part of an entry of the key table's first column: a key (or a press of the pointer), or the words round keys. */
+export interface KeyPart {
+  text: string
+  key: boolean
+}
+
+/** The words that join the keys of an entry. */
+const JOINS = /(, or |, |; | or | and )/
+
+/**
+ * An entry of the key table's first column in parts, for the help dialog: each key as a part of its own, which shows
+ * as one chip, and the words between the keys (", ", " or ", " and ", "; "), a context before a colon ("In the text
+ * box: ") and a note in brackets or after "while" (" (touch)", " while dragging") as plain text. So a long entry wraps
+ * between its chips, never inside one. The texts of the parts, joined, are the entry.
+ */
+export function keyParts(entry: string): KeyPart[] {
+  const out: KeyPart[] = []
+  let rest = entry
+  const note = /\s(\(.*\)|while .*)$/.exec(rest)
+  const after = note ? rest.slice(note.index) : ''
+  if (note) rest = rest.slice(0, note.index)
+  const context = /^[^()]*?:\s/.exec(rest)
+  if (context) {
+    out.push({ text: context[0], key: false })
+    rest = rest.slice(context[0].length)
+  }
+  // Split with the joins kept: keys at the even places, joins at the odd ones.
+  rest.split(JOINS).forEach((text, i) => {
+    if (text) out.push({ text, key: i % 2 === 0 })
+  })
+  if (after) out.push({ text: after, key: false })
+  return out
+}

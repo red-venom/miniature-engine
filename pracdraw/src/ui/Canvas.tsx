@@ -11,8 +11,6 @@
 import { useEffect, useRef, type DragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { P, type Box, type Pt } from '../kernel/geom'
 import {
-  addPresetAt,
-  addSymbolAt,
   clearSelection,
   commitText,
   draftAdd,
@@ -38,7 +36,7 @@ import { COARSE, HIT_PX, isDoubleTap, isTap, type Tap } from '../editor/touch'
 import { pinchView, screenBox, toScreen, toWorld, zoomAt } from '../editor/view'
 import { boxCentre, boxesTouch, itemBox, itemsBox, labelBox, labelTarget } from '../model/bounds'
 import { duplicateItems, newId, rotateItems, setRotation, setSize } from '../model/commands'
-import { CONNECTOR_PRESETS, insertPoint, isDrawable, makeConnector, movePoint } from '../model/connectors'
+import { insertPoint, isDrawable, makeConnector, movePoint } from '../model/connectors'
 import { setFilled } from '../model/contents'
 import { gestureLabel, setTargetAt } from '../model/labels'
 import { orderRule } from '../model/order'
@@ -49,7 +47,7 @@ import { NodeView } from '../render/NodeView'
 import { connectorNode, labelNode } from '../render/render'
 import { hasSymbol, symbolDef } from '../symbols/registry'
 import type { ResizeMode } from '../symbols/types'
-import { CANVAS_ID, DRAG_TYPE, HINT_ID, PRESET_DRAG_TYPE } from './constants'
+import { CANVAS_ID, HINT_ID } from './constants'
 import { EmptyState } from './EmptyState'
 import { TextBox } from './TextBox'
 import { useMedia } from './useMedia'
@@ -607,20 +605,10 @@ export function Canvas() {
     if (!drag.current) draftHover(undefined)
   }
 
+  // A .pracdraw.json or a PracDraw SVG dropped on the canvas opens, as Open does (section 13). (A tile of the library
+  // is dragged with pointer events, not dropped here: useTileDrag.tsx.)
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const at = toWorld(useEditor.getState().view, screenPt(e))
-    const symbol = e.dataTransfer.getData(DRAG_TYPE)
-    if (symbol) {
-      addSymbolAt(symbol, at)
-      return
-    }
-    const preset = CONNECTOR_PRESETS.find((p) => p.id === e.dataTransfer.getData(PRESET_DRAG_TYPE))
-    if (preset) {
-      addPresetAt(preset, at)
-      return
-    }
-    // A .pracdraw.json or a PracDraw SVG dropped on the canvas opens, as Open does (section 13).
     const file = e.dataTransfer.files[0]
     if (file) void openFile(file)
   }
