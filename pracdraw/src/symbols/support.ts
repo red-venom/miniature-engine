@@ -1,7 +1,7 @@
 // support.ts — the "Support" pack: every symbol of this pack that is not a pilot.
 // One author owns this file. Each symbol follows its row in the Symbol catalogue (spec/catalogue.json). Copy the nearest pilot.
 
-import { Path, f, rng, roundPoly, v } from '../kernel/geom'
+import { P, Path, bounds, f, rng, roundPoly, scan, v } from '../kernel/geom'
 import { bool, circle, closed, num, rect, str } from './kit'
 import { SAFETY_FLAME } from './pilots'
 import type { Anchor, Prim, SymbolDef } from './types'
@@ -72,6 +72,60 @@ const testTubeRack: SymbolDef = {
   },
 }
 
+const testTubeHolder: SymbolDef = {
+  id: 'testTubeHolder',
+  name: 'Test-tube holder',
+  pack: 'support',
+  size: { w: 150, h: 26 },
+  resize: 'width',
+  min: { w: 100, h: 26 },
+  build({ w, h }) {
+    const x0 = -w / 2,
+      x1 = w / 2,
+      c = h / 2,
+      xs = x0 + 0.6 * w, // the spring
+      xa = x0 + 14, // the slit between the arms begins here: up to it they are one piece
+      xg = x1 - 17, // the centre of the jaws: a ring 26 across with a hole 14 across, open at the right
+      R = 13,
+      ri = 7,
+      g = 2, // half the width of the slit
+      a = (33 * Math.PI) / 180 // the ends of the ring: this far above and below the level of the slit
+    // Points on the outside and the inside of the ring. `s` is -1 above the level of the slit and 1 below it; `ang` is measured up from the level.
+    const outer = (ang: number, s: number) => [xg + R * Math.cos(ang), c + s * R * Math.sin(ang)] as const
+    const inner = (ang: number, s: number) => [xg + ri * Math.cos(ang), c + s * ri * Math.sin(ang)] as const
+    // The upper edge runs level from the nose to the spring, then straight to where it touches the ring.
+    const touch = -Math.atan2(-8, xs - xg) - Math.acos(Math.min(1, R / Math.hypot(xs - xg, 8)))
+    const hole = xg - Math.sqrt(ri * ri - g * g) // where the slit meets the hole
+    const tip = (R - ri) / 2 // the ends of the ring are round
+    const outline = new Path()
+      .M(x0, c - 2)
+      .A(6, x0 + 6, c - 8, true) // the nose
+      .L(xs, c - 8)
+      .L(...outer(touch, -1))
+      .A(R, ...outer(a, -1), true)
+      .A(tip, ...inner(a, -1), true)
+      .A(ri, hole, c - g, false)
+      .L(xs, c - g)
+      .L(xa, c)
+      .L(xs, c + g)
+      .L(hole, c + g)
+      .A(ri, ...inner(a, 1), false)
+      .A(tip, ...outer(a, 1), true)
+      .A(R, ...outer(touch, 1), true)
+      .L(xs, c + 8)
+      .L(x0 + 6, c + 8)
+      .A(6, x0, c + 2, true)
+      .Z()
+    return {
+      prims: [
+        { d: outline.d(), role: 'solid' },
+        { d: rect(xs - 4, c - 10, xs + 4, c + 10), role: 'solid' }, // the spring
+      ],
+      anchors: [{ id: 'grip', kind: 'grip', x: xg, y: c, dir: 0, width: 2 * ri }],
+    }
+  },
+}
+
 const benchLine: SymbolDef = {
   id: 'benchLine',
   name: 'Bench',
@@ -93,6 +147,72 @@ const benchLine: SymbolDef = {
         { d: line(-x, 0, x, 0), role: 'heavy' },
       ],
       anchors: [{ id: 'top', kind: 'surface', x: 0, y: 0, dir: -90, width: w }],
+    }
+  },
+}
+
+/**
+ * A cloud: eight circular arcs round an oval centred on (0, h / 2), fitted to the w × h box.
+ * The cusps lie on the oval at equal distances along it, so that the eight bumps are alike and the outline is symmetric about both axes.
+ */
+function cloud(w: number, h: number): Path {
+  const cy = h / 2
+  const draw = (a0: number, b0: number): Path => {
+    const a = Math.max(a0, 0.5), // a box smaller than its minimum still gives a finite outline
+      b = Math.max(b0, 0.5)
+    // Distance along one quarter of the oval from the end of its long axis. The cusps lie at 1/4 and 3/4 of it.
+    const n = 200,
+      dist = [0]
+    for (let i = 1; i <= n; i++) {
+      const t0 = ((i - 1) * Math.PI) / 2 / n,
+        t1 = (i * Math.PI) / 2 / n
+      dist.push(dist[i - 1] + Math.hypot(a * (Math.cos(t1) - Math.cos(t0)), b * (Math.sin(t1) - Math.sin(t0))))
+    }
+    const at = (fraction: number) => {
+      const target = fraction * dist[n]
+      let i = 1
+      while (i < n && dist[i] < target) i++
+      const t = ((i - 1 + (target - dist[i - 1]) / (dist[i] - dist[i - 1])) * Math.PI) / 2 / n
+      return P(a * Math.cos(t), b * Math.sin(t))
+    }
+    const p = at(0.25),
+      q = at(0.75)
+    // Clockwise from the top of the right-hand bump.
+    const cusps = [P(p.x, -p.y), P(p.x, p.y), P(q.x, q.y), P(-q.x, q.y), P(-p.x, p.y), P(-p.x, -p.y), P(-q.x, -q.y), P(q.x, -q.y)]
+    const path = new Path().M(cusps[0].x, cy + cusps[0].y)
+    for (let i = 1; i <= cusps.length; i++) {
+      const from = cusps[i - 1],
+        to = cusps[i % cusps.length]
+      path.A(0.58 * Math.hypot(to.x - from.x, to.y - from.y), to.x, cy + to.y, true) // a bump of about 120 degrees
+    }
+    return path.Z()
+  }
+  // The bumps stand out from the oval: grow the oval until the bumps touch the box.
+  let a = w / 2 - 3,
+    b = h / 2 - 3
+  for (let i = 0; i < 6; i++) {
+    const box = bounds(draw(a, b).polys(0.02).flat())
+    a += w / 2 - box.x1
+    b += h / 2 - (box.y1 - cy)
+  }
+  return draw(a, b)
+}
+
+const cottonWool: SymbolDef = {
+  id: 'cottonWool',
+  name: 'Cotton wool plug',
+  pack: 'support',
+  size: { w: 34, h: 22 },
+  resize: 'free',
+  min: { w: 24, h: 16 },
+  build({ w, h }) {
+    const outline = cloud(w, h)
+    // Seated like a bung: 40 % of it above the rim. Its width there is the width of the plug.
+    const row = scan(outline.polys(0.05), 0.4 * h)
+    const width = row.length ? Math.max(...row.map((r) => r[1])) - Math.min(...row.map((r) => r[0])) : w
+    return {
+      prims: [{ d: outline.d(), role: 'solid' }],
+      anchors: [{ id: 'plug', kind: 'plug', x: 0, y: 0.4 * h, dir: 90, width }],
     }
   },
 }
@@ -136,6 +256,31 @@ const stirringRod: SymbolDef = {
   min: { w: 6, h: 30 },
   build({ h }) {
     return { prims: [{ d: closed([v(-3, 0, 3), v(3, 0, 3), v(3, h, 3), v(-3, h, 3)]).d(), role: 'solid' }] }
+  },
+}
+
+const spatula: SymbolDef = {
+  id: 'spatula',
+  name: 'Spatula',
+  pack: 'support',
+  size: { w: 14, h: 170 },
+  resize: 'height',
+  min: { w: 14, h: 90 },
+  build({ h }) {
+    const hw = 2.5, // the handle is 5 wide
+      bw = 7, // the blade is 14 wide and 40 long, with its tip at the bottom
+      y0 = h - 40
+    const outline = new Path()
+      .M(-hw, hw)
+      .A(hw, hw, hw, true) // the rounded end of the handle
+      .L(hw, y0)
+      .C(hw, y0 + 7, bw, y0 + 7, bw, y0 + 14) // the handle widens into the blade
+      .L(bw, h - bw)
+      .A(bw, -bw, h - bw, true) // the rounded tip
+      .L(-bw, y0 + 14)
+      .C(-bw, y0 + 7, -hw, y0 + 7, -hw, y0)
+      .Z()
+    return { prims: [{ d: outline.d(), role: 'solid' }] }
   },
 }
 
@@ -386,11 +531,53 @@ const spottingTile: SymbolDef = {
   },
 }
 
+// ---------------------------------------------------------------- clamps
+
+const gClamp: SymbolDef = {
+  id: 'gClamp',
+  name: 'G-clamp',
+  aliases: ['clamp for the bench', 'C-clamp'],
+  label: 'G-clamp',
+  pack: 'support',
+  size: { w: 50, h: 80 },
+  resize: 'uniform',
+  min: { w: 38, h: 60 },
+  build({ h }) {
+    const k = h / 80,
+      s = (n: number) => n * k // drawn at 50 × 80, then scaled by k
+    // The frame: a bar 8 thick down the left side and two jaws 8 thick that reach 30 u (0.6 w) from it. One outline.
+    const frame = closed([
+      v(s(-25), 0, s(2)),
+      v(s(13), 0, s(2)),
+      v(s(13), s(8), s(2)),
+      v(s(-17), s(8), s(1.5)),
+      v(s(-17), s(58), s(1.5)),
+      v(s(13), s(58), s(2)),
+      v(s(13), s(66), s(2)),
+      v(s(-25), s(66), s(2)),
+    ])
+    // The screw on the centre line: the pad at its top end, under the upper jaw, and the T-bar handle at its bottom end.
+    const pad = closed([v(s(-6), s(20), s(1.5)), v(s(6), s(20), s(1.5)), v(s(6), s(24), s(1.5)), v(s(-6), s(24), s(1.5))])
+    const handle = closed([v(s(-10), s(76), s(2)), v(s(10), s(76), s(2)), v(s(10), s(80), s(2)), v(s(-10), s(80), s(2))])
+    return {
+      prims: [
+        { d: frame.d(), role: 'solid' },
+        { d: rect(s(-2.5), s(24), s(2.5), s(76)), role: 'solid' }, // the rod passes through the lower jaw
+        { d: pad.d(), role: 'solid' },
+        { d: handle.d(), role: 'solid' },
+      ],
+    }
+  },
+}
+
 export const support: SymbolDef[] = [
   testTubeRack,
+  testTubeHolder,
   benchLine,
+  cottonWool,
   lid,
   stirringRod,
+  spatula,
   splint,
   filterPaper,
   chromatographyPaper,
@@ -399,4 +586,5 @@ export const support: SymbolDef[] = [
   tile,
   spottingTile,
   crossPaper,
+  gClamp,
 ]

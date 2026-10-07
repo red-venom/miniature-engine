@@ -1,8 +1,9 @@
 // annotation.ts — the "Annotation" pack: every symbol of this pack that is not a pilot.
 // One author owns this file. Each symbol follows its row in the Symbol catalogue (spec/catalogue.json). Copy the nearest pilot.
 
-import { Path } from '../kernel/geom'
-import { rect, str } from './kit'
+import { Path, f, v } from '../kernel/geom'
+import { circle, closed, num, rect, str } from './kit'
+import { luminousFlame } from './support'
 import type { SymbolDef } from './types'
 
 /** Side view of an eye that looks to the right. Turn the item to make it look another way. */
@@ -52,6 +53,59 @@ const eye: SymbolDef = {
   },
 }
 
+/**
+ * A flame on its own: the luminous (safety) flame of the Bunsen burner and the burning splint, drawn the same way, `h` high.
+ * Its flat foot is the bottom edge of the box: stand it on a burner, a wick or a candle.
+ */
+const flame: SymbolDef = {
+  id: 'flame',
+  name: 'Flame',
+  autoLabel: false,
+  pack: 'annotation',
+  size: { w: 26, h: 44 },
+  resize: 'uniform',
+  min: { w: 13, h: 22 },
+  build({ h }) {
+    const k = h / 38 // the flame of the pilot is 14 u wide at its foot and 38 u high
+    return {
+      prims: [luminousFlame(0, h, h, 14 * k)],
+      anchors: [{ id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: 14 * k }],
+    }
+  },
+}
+
+/** A teardrop `height` high and 0.7 `height` wide, point up, with its tip at (0, top): a circle with two straight sides to the tip. */
+function teardrop(top: number, height: number): string {
+  const r = 0.35 * height,
+    d = height - r, // from the tip to the centre of the round end
+    a = Math.acos(r / d), // the sides touch the circle where the tangent from the tip leaves it
+    tx = r * Math.sin(a),
+    ty = top + d - r * Math.cos(a)
+  return new Path().M(0, top).L(tx, ty).A(r, -tx, ty, true, true).Z().d()
+}
+
+const drops: SymbolDef = {
+  id: 'drops',
+  name: 'Drops',
+  aliases: ['drip', 'droplets'],
+  autoLabel: false,
+  pack: 'annotation',
+  size: { w: 12, h: 44 },
+  resize: 'height',
+  min: { w: 12, h: 36 },
+  params: [{ key: 'count', label: 'Count', type: 'number', default: 2, min: 1, max: 4, step: 1 }],
+  build({ h, p }) {
+    const n = Math.max(1, Math.round(num(p.count, 2))),
+      gap = 4, // least distance from the bottom of one drop to the tip of the next: 2 u of clear paper between the lines
+      size = Math.max(1, Math.min(10, (h - (n - 1) * gap) / n)), // 10 u high; a little smaller when four must fit the default box
+      pitch = n > 1 ? (h - size) / (n - 1) : 0, // the first drop at the top, the last at the bottom
+      top = n > 1 ? 0 : (h - size) / 2
+    let d = ''
+    for (let i = 0; i < n; i++) d += teardrop(top + i * pitch, size)
+    return { prims: [{ d, role: 'solid' }] }
+  },
+}
+
 /** The liquid presets of section 9 of the specification, by colour name. */
 const PAPER_TINT: Record<string, string> = {
   red: '#e98a8a',
@@ -81,6 +135,30 @@ const indicatorPaper: SymbolDef = {
   ],
   build({ w, h, p }) {
     return { prims: [{ d: rect(-w / 2, 0, w / 2, h), role: 'solid', tint: PAPER_TINT[str(p.colour, 'red')] ?? PAPER_TINT.red }] }
+  },
+}
+
+const flameTestLoop: SymbolDef = {
+  id: 'flameTestLoop',
+  name: 'Flame test wire',
+  aliases: ['nichrome wire', 'wire loop'],
+  pack: 'annotation',
+  size: { w: 180, h: 12 },
+  resize: 'width',
+  min: { w: 100, h: 12 },
+  build({ w, h }) {
+    const x = w / 2,
+      y = h / 2,
+      r = 4, // the loop at the right end
+      hx = -x + 0.45 * w // the handle ends here
+    return {
+      prims: [
+        // The wire starts inside the handle, which hides its end.
+        { d: `M${f(hx - 4)} ${f(y)}H${f(x - 2 * r)}` + circle(x - r, y, r), role: 'detail' },
+        { d: closed([v(-x, y - 4, 2), v(hx, y - 4, 2), v(hx, y + 4, 2), v(-x, y + 4, 2)]).d(), role: 'solid' },
+      ],
+      anchors: [{ id: 'loop', kind: 'tip', x: x - r, y, dir: 0 }],
+    }
   },
 }
 
@@ -130,4 +208,4 @@ const magnesiumRibbon: SymbolDef = {
   },
 }
 
-export const annotation: SymbolDef[] = [eye, indicatorPaper, magnesiumRibbon]
+export const annotation: SymbolDef[] = [eye, flame, drops, indicatorPaper, flameTestLoop, magnesiumRibbon]
