@@ -1,8 +1,8 @@
 // measuring.ts — the "Measuring" pack: every symbol of this pack that is not a pilot.
 // One author owns this file. Each symbol follows its row in the Symbol catalogue (spec/catalogue.json). Copy the nearest pilot.
 
-import { Path, f, v } from '../kernel/geom'
-import { RIM, bool, circle, closed, num, rect, str } from './kit'
+import { Path, f, v, type Pt } from '../kernel/geom'
+import { RIM, bool, circle, closed, num, rect, str, ticks } from './kit'
 import type { Anchor, Prim, SymbolDef, SymbolText } from './types'
 
 /** Vertical tick marks along a horizontal edge: one path. `len(i)` > 0 draws down from y, < 0 up. */
@@ -425,4 +425,194 @@ const lightGate: SymbolDef = {
   },
 }
 
-export const measuring: SymbolDef[] = [volumetricPipette, dropper, gasSyringe, balance, stopwatch, ruler, instrumentBox, probe, lightGate]
+// ---------------------------------------------------------------- release 1.1 (priority B)
+
+const clamp01 = (n: number): number => Math.max(0, Math.min(1, n))
+
+/**
+ * Upright plastic syringe, nozzle down. The plunger is one rigid part: piston, rod and thumb pad. At plunger = 0 the piston is at the
+ * nozzle end and the pad rests on the barrel; at plunger = 1 the pad is at the top of the box. The cavity is the space under the piston.
+ */
+const syringe: SymbolDef = {
+  id: 'syringe',
+  name: 'Syringe',
+  aliases: ['plastic syringe'],
+  pack: 'measuring',
+  size: { w: 26, h: 120 },
+  resize: 'height',
+  min: { w: 26, h: 70 },
+  params: [{ key: 'plunger', label: 'Plunger', type: 'number', default: 0.5, min: 0, max: 1, step: 0.05 }],
+  build({ h, p }) {
+    const B = 10, // half-width of the barrel (20 wide)
+      N = 2, // half-width of the nozzle (4 wide)
+      yEnd = h - 12, // the nozzle is 12 long
+      yCone = yEnd - 6, // the closed end narrows from the barrel to the nozzle over 6 u
+      yTop = yEnd - 0.5 * h, // the open end: the barrel is 0.5h long
+      ear = 3, // the finger flange: a plate that sticks out 3 u on each side of the barrel, drawn edge on
+      padW = 11, // half-width of the thumb pad
+      padH = 5,
+      pistonH = 5,
+      rod = 3, // half-width of the rod
+      plunger = clamp01(num(p.plunger, 0.5)),
+      travel = yTop - padH, // how far the plunger moves: the pad is at y = 0 at plunger = 1
+      face = yCone - 1 - plunger * travel, // the lower face of the piston: just above the shoulder at plunger = 0
+      back = face - pistonH,
+      padB = yTop - plunger * travel, // at plunger = 0 the pad rests on the barrel
+      padT = padB - padH
+    // One side: the flange, the barrel wall, the shoulder and the nozzle, as one line.
+    const wall = (s: number) => `M${f(s * (B + ear))} ${f(yTop)}H${f(s * B)}V${f(yCone)}L${f(s * N)} ${f(yEnd)}V${f(h)}`
+    // Piston, rod and thumb pad: one rigid part.
+    const plungerD = `M${f(-B)} ${f(face)}V${f(back)}H${f(-rod)}V${f(padB)}H${f(-padW)}V${f(padT)}H${f(padW)}V${f(padB)}H${f(rod)}V${f(back)}H${f(B)}V${f(face)}Z`
+    const cavity = closed([v(-B, face), v(B, face), v(B, yCone), v(N, yEnd), v(N, h), v(-N, h), v(-N, yEnd), v(-B, yCone)])
+    return {
+      prims: [
+        { d: wall(-1) + wall(1), role: 'outline' },
+        { d: plungerD, role: 'solid' },
+      ],
+      cavities: [{ id: 'main', polys: cavity.polys() }],
+      anchors: [{ id: 'tip', kind: 'tip', x: 0, y: h, dir: 90, width: 2 * N }],
+    }
+  },
+}
+
+/** A spring balance. The pointer is a heavy line across the body, and the rod from it to the hook below moves with it. */
+const newtonMeter: SymbolDef = {
+  id: 'newtonMeter',
+  name: 'Newton meter',
+  aliases: ['spring balance', 'force meter', 'newtonmeter'],
+  pack: 'measuring',
+  size: { w: 30, h: 160 },
+  resize: 'height',
+  min: { w: 30, h: 100 },
+  params: [{ key: 'reading', label: 'Reading', type: 'number', default: 0.3, min: 0, max: 1, step: 0.05 }],
+  build({ h, p }) {
+    const X = 11, // half-width of the body (22 wide)
+      yTop = 14,
+      yBot = 0.72 * h,
+      R = 6, // the ring on top
+      yZero = yTop + 10, // the first and the last mark of the scale: 10 divisions
+      yLast = yBot - 10,
+      yPointer = yZero + clamp01(num(p.reading, 0.3)) * (yLast - yZero),
+      r = 5, // the hook
+      yHook = h - 1 - r // where the rod ends and the hook bends; its lowest point is at y = h - 1
+    const rodAndHook = new Path()
+      .M(0, yPointer)
+      .L(0, yHook)
+      .A(r, 2 * r, yHook, false)
+      .L(2 * r, yHook - 6)
+    return {
+      prims: [
+        { d: rect(-X, yTop, X, yBot), role: 'solid' },
+        { d: ticks(-X, yZero, yLast, 10, (i) => (i % 5 === 0 ? 8 : 5)), role: 'detail' },
+        { d: rodAndHook.d(), role: 'outline' },
+        { d: `M${f(1 - X)} ${f(yPointer)}H${f(X - 1)}`, role: 'heavy' }, // its round ends stay under the side walls
+        { d: circle(0, yTop - R, R), role: 'outline' },
+      ],
+      anchors: [
+        { id: 'top', kind: 'port', x: 0, y: yTop - 2 * R, dir: -90 },
+        { id: 'hook', kind: 'port', x: r, y: h - 1, dir: 90 },
+      ],
+    }
+  },
+}
+
+/** A rubber bulb on a sleeve that takes the top of a pipette. Drawn at 34 × 62 and scaled, as bunsenBurner. */
+const pipetteFiller: SymbolDef = {
+  id: 'pipetteFiller',
+  name: 'Pipette filler',
+  aliases: ['pipette pump', 'safety filler'],
+  pack: 'measuring',
+  size: { w: 34, h: 62 },
+  resize: 'uniform',
+  min: { w: 22, h: 40 },
+  build({ h }) {
+    const k = h / 62,
+      s = (n: number) => n * k,
+      R = 0.44 * 34, // the bulb
+      yj = R + Math.sqrt(R * R - 7 * 7) // where the bulb is 14 wide: the top of the sleeve
+    const sleeve = closed([v(s(-7), s(yj)), v(s(7), s(yj)), v(s(4.5), s(62), s(1.5)), v(s(-4.5), s(62), s(1.5))])
+    return {
+      prims: [
+        { d: sleeve.d(), role: 'rubber' }, // under the bulb: it comes out from below it
+        { d: circle(0, s(R), s(R)), role: 'rubber' },
+        { d: circle(0, s(2 * R), s(4)), role: 'solid' }, // the valve, where the bulb meets the sleeve
+      ],
+    }
+  },
+}
+
+/**
+ * A magnified section of a scale, for reading questions. The scale is tied to the tube, so the Reading field sets the liquid level on
+ * it: `top` is the value at y0 and `bottom` the value at y1, and either may be the larger. A burette reads down (top < bottom); a
+ * measuring cylinder or a thermometer reads up (top > bottom). The cavity runs from one break line to the other.
+ */
+const scaleWindow: SymbolDef = {
+  id: 'scaleWindow',
+  name: 'Magnified scale',
+  aliases: ['scale reading', 'enlarged scale'],
+  pack: 'measuring',
+  size: { w: 70, h: 150 },
+  resize: 'free',
+  min: { w: 50, h: 100 },
+  params: [
+    { key: 'top', label: 'Top value', type: 'number', default: 20, min: 0, max: 1000, step: 1 },
+    { key: 'bottom', label: 'Bottom value', type: 'number', default: 21, min: 0, max: 1000, step: 1 },
+    {
+      key: 'divisions',
+      label: 'Divisions',
+      type: 'choice',
+      default: '10',
+      options: ['5', '10', '20'].map((c) => ({ value: c, label: c })),
+    },
+    { key: 'unit', label: 'Unit', type: 'text', default: 'cm³' },
+  ],
+  build({ w, h, p }) {
+    const x = 0.25 * w, // the walls are 0.5w apart
+      A = 2.5, // each break line swings 2.5 u above and below its middle line
+      top = num(p.top, 20),
+      end = num(p.bottom, 21),
+      bottom = end === top ? top + 1 : end, // equal ends: draw as if bottom were top + 1
+      count = Number(str(p.divisions, '10')) || 10,
+      y0 = 14, // the value `top`
+      y1 = h - 14 // the value `bottom`
+    // A wavy break line across the tube, one full wave, as points. The upper one has its middle line at y = A, the lower one at y = h - A.
+    const N = 40
+    const wave = (dy: number): Pt[] => Array.from({ length: N + 1 }, (_, i) => ({ x: -x + (2 * x * i) / N, y: dy + A - A * Math.sin((2 * Math.PI * i) / N) }))
+    const upper = wave(0),
+      lower = wave(h - 2 * A)
+    const line = (pts: Pt[]) => pts.map((q, i) => `${i ? 'L' : 'M'}${f(q.x)} ${f(q.y)}`).join('')
+    const long = 0.45 * 2 * x,
+      short = 0.22 * 2 * x
+    const mark = (i: number) => (i === 0 || i === count || 2 * i === count ? long : short) // long at each end and at the middle
+    const shown = (n: number) => String(Math.round(n * 1000) / 1000)
+    return {
+      prims: [
+        { d: ticks(-x, y0, y1, count, mark), role: 'detail' },
+        { d: `M${f(-x)} ${f(A)}V${f(h - A)}M${f(x)} ${f(A)}V${f(h - A)}`, role: 'outline' },
+        { d: line(upper) + line(lower), role: 'detail' },
+      ],
+      texts: [
+        { x: -x - 5, y: y0 + 3.6, text: shown(top), size: 10, anchor: 'end' },
+        { x: -x - 5, y: y1 + 3.6, text: shown(bottom), size: 10, anchor: 'end' },
+      ],
+      cavities: [{ id: 'main', polys: [[...upper, ...lower.slice().reverse()]] }],
+      scale: { cavity: 'main', unit: str(p.unit, 'cm³'), v0: top, y0, v1: bottom, y1 },
+    }
+  },
+}
+
+export const measuring: SymbolDef[] = [
+  volumetricPipette,
+  dropper,
+  gasSyringe,
+  balance,
+  stopwatch,
+  ruler,
+  instrumentBox,
+  probe,
+  lightGate,
+  syringe,
+  newtonMeter,
+  pipetteFiller,
+  scaleWindow,
+]

@@ -3,6 +3,7 @@
 
 import { Path, f, roundPoly, v } from '../kernel/geom'
 import { RIM, bool, circle, closed, rect, str } from './kit'
+import { SAFETY_FLAME } from './pilots'
 import type { Prim, SymbolDef } from './types'
 
 const line = (x0: number, y0: number, x1: number, y1: number): string => `M${f(x0)} ${f(y0)}L${f(x1)} ${f(y1)}`
@@ -160,4 +161,82 @@ const immersionHeater: SymbolDef = {
   },
 }
 
-export const heating: SymbolDef[] = [heatArrow, hotPlate, heatingMantle, waterBath, immersionHeater]
+// ---------------------------------------------------------------- release 1.1 (priority B)
+
+/** The safety flame of the Bunsen burner (pilots.ts) at another size: `height` high, standing on the line y = base. */
+function safetyFlame(base: number, height: number): string {
+  const c = height / 38 // the Bunsen flame is 38 u high, from y = 2 to y = 40, and 14 u wide at its foot
+  const X = (x: number) => x * c,
+    Y = (y: number) => base - (40 - y) * c
+  return new Path().M(X(-7), Y(40)).C(X(-15), Y(28), X(-4), Y(18), X(-3), Y(2)).C(X(4), Y(10), X(14), Y(26), X(7), Y(40)).Z().d()
+}
+
+/** Drawn at 80 × 76 and scaled, as bunsenBurner. The fuel is the cavity; the wick dips into it. */
+const spiritBurner: SymbolDef = {
+  id: 'spiritBurner',
+  name: 'Spirit burner',
+  aliases: ['alcohol burner', 'spirit lamp'],
+  pack: 'heating',
+  size: { w: 80, h: 76 },
+  resize: 'uniform',
+  min: { w: 54, h: 51 },
+  build({ h }) {
+    const k = h / 76,
+      s = (n: number) => n * k,
+      H = 76,
+      yBody = H / 2, // the top of the body: it is 0.5h high
+      yNeck = 32 // the top of the neck, closed by the cap line
+    // A squat bottle: a body 72 wide (0.9w) with 10 u corners, and a short neck 22 wide. The cap line closes the neck.
+    const bottle = (top: number) => [
+      v(s(-11), top),
+      v(s(-11), s(yBody), s(3)),
+      v(s(-36), s(yBody), s(10)),
+      v(s(-36), s(H), s(10)),
+      v(s(36), s(H), s(10)),
+      v(s(36), s(yBody), s(10)),
+      v(s(11), s(yBody), s(3)),
+      v(s(11), top),
+    ]
+    return {
+      prims: [
+        { d: safetyFlame(s(22), s(22)), role: 'flame', tint: SAFETY_FLAME },
+        { d: closed(bottle(s(yNeck))).d(), role: 'outline' },
+        { d: `M${f(s(-2))} ${f(s(yNeck))}V${f(s(66))}H${f(s(2))}V${f(s(yNeck))}`, role: 'detail' }, // the wick, down into the fuel
+        { d: rect(s(-7), s(24), s(7), s(yNeck)), role: 'solid' }, // the wick holder
+        { d: rect(s(-2), s(19), s(2), s(24)), role: 'solid' }, // the wick above it
+      ],
+      cavities: [{ id: 'main', polys: closed(bottle(s(yNeck) + RIM)).polys() }],
+      anchors: [
+        { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: s(72) },
+        { id: 'flame', kind: 'heat', x: 0, y: 0, dir: -90 },
+      ],
+    }
+  },
+}
+
+/** Seen from the side: the wire of the triangle is a heavy line, and the three pipeclay tubes are the beads on it. */
+const pipeclayTriangle: SymbolDef = {
+  id: 'pipeclayTriangle',
+  name: 'Pipeclay triangle',
+  pack: 'heating',
+  size: { w: 90, h: 6 },
+  resize: 'width',
+  min: { w: 56, h: 6 },
+  build({ w, h }) {
+    const x = w / 2,
+      c = 0.32 * w // the two outer beads; the third is at the centre
+    const bead = (cx: number) => closed([v(cx - 7, 0, 1.5), v(cx + 7, 0, 1.5), v(cx + 7, h, 1.5), v(cx - 7, h, 1.5)]).d()
+    return {
+      prims: [
+        { d: `M${f(-x)} ${f(h / 2)}H${f(x)}`, role: 'heavy' },
+        { d: bead(-c) + bead(0) + bead(c), role: 'solid' },
+      ],
+      anchors: [
+        { id: 'top', kind: 'surface', x: 0, y: 0, dir: -90, width: w },
+        { id: 'under', kind: 'base', x: 0, y: h, dir: 90, width: w },
+      ],
+    }
+  },
+}
+
+export const heating: SymbolDef[] = [heatArrow, hotPlate, heatingMantle, waterBath, immersionHeater, spiritBurner, pipeclayTriangle]
