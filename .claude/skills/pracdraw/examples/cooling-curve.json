@@ -18,7 +18,7 @@
       "id": "thermometer",
       "symbol": "thermometer",
       "size": { "h": 190 },
-      "on": { "part": "tube", "anchor": "bottom", "own": "bulb", "dx": 4, "dy": -12 },
+      "on": { "part": "tube", "anchor": "bottom", "own": "bulb", "dx": -5, "dy": -12 },
       "contents": { "main": [{ "reading": 60 }] }
     },
     {
@@ -44,7 +44,7 @@
     "text": { "clamp": "clamp", "tube": "boiling tube", "mat": "heatproof mat" },
     "side": { "stand": "left", "clamp": "left" },
     "extra": [
-      { "text": "stearic acid", "part": "tube", "at": [8, 125] },
+      { "text": "stearic acid", "part": "tube", "at": [10, 118] },
       { "text": "hot water", "part": "beaker", "at": [30, 100] }
     ]
   }

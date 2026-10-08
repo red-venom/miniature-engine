@@ -33,6 +33,6 @@
   "labels": {
     "text": { "clamp": "clamp", "tile": "white tile" },
     "side": { "clamp": "left", "stand": "left" },
-    "extra": [{ "text": "alkali and indicator", "part": "flask", "at": [30, 130] }]
+    "extra": [{ "text": "alkali", "part": "flask", "at": [30, 130] }]
   }
 }

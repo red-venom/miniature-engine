@@ -6,12 +6,24 @@ import { geometry } from '../symbols/registry'
 import { amountToReading } from '../symbols/scale'
 import { TEMPLATES } from '../templates'
 import { LABEL_SPACING, autoLabels, segmentsCross } from './autoLabel'
-import { labelTarget } from './bounds'
+import { labelTarget, letterMap } from './bounds'
 import { anchorWorld } from './build'
 import { filledAmount, normaliseLayers, PRESETS } from './contents'
 import { isFixed, leaderOf } from './labels'
 import { parseDoc } from './parse'
-import { RECIPE_PRESETS, compileRecipe, isRecipe, nearestNames, suggestSymbols, type Problem, type Recipe } from './recipe'
+import {
+  COUNT_LIMIT,
+  RECIPE_PRESETS,
+  SIZE_LIMIT,
+  WORLD_LIMIT,
+  compileRecipe,
+  isRecipe,
+  nearestNames,
+  suggestSymbols,
+  type Problem,
+  type Recipe,
+} from './recipe'
+import { toWorld } from './transform'
 import type { ConnectorItem, Doc, LabelItem, SymbolItem } from './types'
 
 /** The recipes of the skill: every one must compile with no error and no warning. */
@@ -1278,6 +1290,157 @@ describe('recipe: labels', () => {
     ])
   })
 
+  it('labels-end-and-order', () => {
+    const plain = withLabels({})
+    const of = (doc: Doc, id: string) =>
+      labels(doc)
+        .filter(isFixed)
+        .filter((l) => l.target.item === id)
+    // labels.end moves only the end of the leader: a point of the part, or one of its anchors moved in the part's own frame.
+    const moved = withLabels({ end: { right: { at: [20, 30] }, left: { anchor: 'mouth', dx: 5, dy: 8 } } })
+    expect(of(moved, 'right')[0].target).toEqual({ item: 'right', lx: 20, ly: 30 })
+    expect(of(moved, 'left')[0].target).toEqual({ item: 'left', lx: 5, ly: 8 })
+    // The label is still the automatic one: the same texts, the same number of labels, in the columns beside the diagram,
+    // laid out as Label all lays them out.
+    expect(
+      labels(moved)
+        .map((l) => l.text)
+        .sort(),
+    ).toEqual(
+      labels(plain)
+        .map((l) => l.text)
+        .sort(),
+    )
+    expect(labels(moved)).toHaveLength(4)
+    for (const id of ['right', 'left']) expect(Math.abs(of(moved, id)[0].x)).toBeGreaterThan(100)
+    expectColumns(moved)
+    // The other labels end where they ended, and the leader of the moved one ends at the point, in the world.
+    expect(of(moved, 'mat')[0].target).toEqual(of(plain, 'mat')[0].target)
+    expect(of(moved, 'thermometer')[0].target).toEqual(of(plain, 'thermometer')[0].target)
+    const end = labelTarget(moved, of(moved, 'right')[0])!
+    const want = toWorld(part(moved, 'right'), { x: 20, y: 30 })
+    expect(near(end.x, want.x) && near(end.y, want.y)).toBe(true)
+    // For a part that is turned, "at" is a point of the part in its own frame, before it is turned.
+    const turned = (rot: number) =>
+      make({ title: 't', parts: [{ id: 'tube', symbol: 'testTube', at: { x: 0, y: 0 }, rot }], labels: { end: { tube: { at: [0, 50] } } } })
+    for (const rot of [0, 90, 180]) {
+      const doc = turned(rot)
+      const l = labels(doc)[0]
+      expect(l.target).toEqual({ item: 'tube', lx: 0, ly: 50 })
+      const w = labelTarget(doc, l)!
+      const p = toWorld(part(doc, 'tube'), { x: 0, y: 50 })
+      expect(near(w.x, p.x) && near(w.y, p.y), `rot ${rot}`).toBe(true)
+    }
+    const at0 = labelTarget(turned(0), labels(turned(0))[0])!
+    const at90 = labelTarget(turned(90), labels(turned(90))[0])!
+    expect(near(at0.x, at90.x) && near(at0.y, at90.y)).toBe(false) // the same point of the part, another place in the world
+    // It works with a side, and with the text of the part.
+    const both = withLabels({ side: { left: 'right' }, end: { left: { at: [-10, 40] } }, text: { left: '250 cm3 beaker' } })
+    const l = of(both, 'left')[0]
+    expect([l.side, l.text, l.target]).toEqual(['right', '250 cm3 beaker', { item: 'left', lx: -10, ly: 40 }])
+    // Skip with extra still works, as before.
+    const old = withLabels({ skip: ['right'], extra: [{ text: 'beaker', part: 'right', at: [20, 30] }] })
+    expect(of(old, 'right')[0].target).toEqual({ item: 'right', lx: 20, ly: 30 })
+    // In "extra", "side" may stand alone: the text goes in the column on that side.
+    const side = withLabels({
+      auto: false,
+      extra: [
+        { text: 'x', part: 'left', side: 'right' },
+        { text: 'y', part: 'right', side: 'left' },
+      ],
+    })
+    expect(labels(side).map((q) => [q.text, q.side])).toEqual([
+      ['y', 'left'],
+      ['x', 'right'],
+    ])
+    expect(labels(side).every((q) => Math.abs(q.x) > 100)).toBe(true)
+    // "connector" with "along" works for a line as well as for a tube.
+    const scale = {
+      id: 'scale',
+      kind: 'line',
+      points: [
+        { x: 0, y: -400 },
+        { x: 200, y: -400 },
+      ],
+    }
+    const line = make({ ...beakers, labels: { auto: false, extra: [{ text: 'ruler', connector: 'scale', along: 0.25 }] }, connectors: [scale] })
+    expect(labels(line)[0].target).toEqual({ x: 50, y: -400 })
+    // A connector without an id is named by the id that it gets: its kind and its place in the list.
+    const { id: _id, ...unnamed } = scale
+    const generated = make({ ...beakers, labels: { auto: false, extra: [{ text: 'line', connector: 'line1' }] }, connectors: [unnamed] })
+    expect(labels(generated)[0].target).toEqual({ x: 100, y: -400 })
+
+    // The letters follow the order of the labels, and labels.order says that order: the listed parts first.
+    const letters = (extra: object) => {
+      const doc = make({ ...beakers, settings: { labelMode: 'letters' }, labels: extra })
+      return [...letterMap(doc)].map(([id, letter]) => `${letter}:${(doc.items[id] as LabelItem & { target: { item: string } }).target.item}`)
+    }
+    expect(letters({})).toHaveLength(4)
+    expect(letters({ order: ['thermometer', 'right'] }).slice(0, 2)).toEqual(['A:thermometer', 'B:right'])
+    expect(letters({ order: ['right', 'left', 'mat', 'thermometer'] })).toEqual(['A:right', 'B:left', 'C:mat', 'D:thermometer'])
+    // The rest keep the order that they had.
+    const rest = letters({})
+      .map((x) => x.split(':')[1])
+      .filter((id) => id !== 'mat')
+    expect(letters({ order: ['mat'] }).map((x) => x.split(':')[1])).toEqual(['mat', ...rest])
+    // All the labels of a listed part come with it: its own, and the extra ones.
+    const extras = letters({
+      order: ['right'],
+      extra: [
+        { text: 'water', part: 'right', at: [30, 90] },
+        { text: 'x', part: 'left', at: [0, 60] },
+      ],
+    })
+    expect(extras.slice(0, 2)).toEqual(['A:right', 'B:right'])
+    // And it works with the labels that "side" and "end" make.
+    expect(letters({ order: ['left'], side: { left: 'right' }, end: { right: { at: [0, 30] } } })[0]).toBe('A:left')
+    expect(letters({ order: ['right'], end: { right: { at: [0, 30] } } })[0]).toBe('A:right')
+  })
+
+  it('reports a label end and an order that cannot be', () => {
+    const faults = (l: unknown) => errorsOf({ ...beakers, labels: l }).map((p) => [p.path, p.message, p.hint])
+    const ids = '"mat", "left", "right", "thermometer"'
+    expect(faults({ end: { zz: { at: [0, 0] } } })).toEqual([['labels.end.zz', '"labels.end" names "zz", which is not a part.', `The part ids are: ${ids}.`]])
+    expect(faults({ skip: ['left'], end: { left: { at: [0, 0] } } })).toEqual([
+      ['labels.end.left', '"labels.end" names "left", which is in "labels.skip": it has no label whose end could move.', 'Keep it in one of them.'],
+    ])
+    expect(faults({ end: { left: {} } })[0]).toEqual([
+      'labels.end.left',
+      'A label end is given by "at" or by "anchor": one of them.',
+      '"at": [lx, ly] is a point of the part; "anchor": "mouth" is one of its anchors, which "dx" and "dy" may move.',
+    ])
+    expect(faults({ end: { left: { at: [0, 0], anchor: 'mouth' } } })[0][1]).toBe('A label end is given by "at" or by "anchor": one of them.')
+    expect(faults({ end: { left: { at: [0] } } })[0].slice(0, 2)).toEqual(['labels.end.left.at', 'The "at" of a label end must be [lx, ly].'])
+    expect(faults({ end: { left: { at: [0, 0], dx: 4 } } })[0].slice(0, 2)).toEqual([
+      'labels.end.left.dx',
+      '"dx" moves an anchor: it goes with "anchor", not with "at".',
+    ])
+    expect(faults({ end: { left: { anchor: 'nope' } } })[0].slice(0, 2)).toEqual(['labels.end.left.anchor', 'The part "left" (beaker) has no anchor "nope".'])
+    expect(faults({ end: { left: { anchor: 'mouth', dz: 1 } } })[0].slice(0, 2)).toEqual(['labels.end.left.dz', 'Unknown key "dz" in this end.'])
+    expect(faults({ end: 'x' })[0].slice(0, 2)).toEqual(['labels.end', 'The "end" of the labels must be an object { "partId": { "at": [lx, ly] } }.'])
+    expect(faults({ auto: false, end: { left: { at: [0, 0] } } })[0].slice(0, 2)).toEqual([
+      'labels.end.left',
+      '"labels.end" moves the leader of an automatic label, and "labels.auto" is false.',
+    ])
+    // A symbol that Label all does not label has no leader to move.
+    const cell = errorsOf({ title: 't', parts: [{ id: 'cell', symbol: 'cCell', at: { x: 0, y: 0 } }], labels: { end: { cell: { at: [0, 0] } } } })
+    expect(cell.map((p) => [p.path, p.message])).toEqual([['labels.end.cell', '"cell" (cCell) gets no automatic label, so it has no leader to move.']])
+
+    expect(faults({ order: ['zz'] })).toEqual([['labels.order[0]', '"labels.order" names "zz", which is not a part.', `The part ids are: ${ids}.`]])
+    expect(faults({ skip: ['mat'], order: ['mat'] })).toEqual([
+      [
+        'labels.order[0]',
+        '"labels.order" names "mat", which is in "labels.skip": it has no label, so it has no letter.',
+        'Take it out of "labels.order", or out of "labels.skip".',
+      ],
+    ])
+    expect(faults({ order: ['left', 'left'] })).toEqual([['labels.order[1]', '"labels.order" names "left" twice.', 'List each part once.']])
+    expect(faults({ order: 'left' })[0].slice(0, 2)).toEqual(['labels.order', 'The "order" of the labels must be a list of part ids.'])
+    // A part that gets no label has no letter.
+    const noLabel = errorsOf({ title: 't', parts: [{ id: 'cell', symbol: 'cCell', at: { x: 0, y: 0 } }], labels: { order: ['cell'] } })
+    expect(noLabel.map((p) => [p.path, p.message])).toEqual([['labels.order[0]', '"labels.order" names "cell", which has no label.']])
+  })
+
   it('reports each label fault with the fix', () => {
     const faults = (extra: unknown) => errorsOf({ ...beakers, labels: { extra } }).map((p) => [p.path, p.message])
     expect(faults([{ text: 'x' }])).toEqual([['labels.extra[0]', 'This label points at nothing.']])
@@ -1293,6 +1456,111 @@ describe('recipe: labels', () => {
     expect(errorsOf({ ...beakers, labels: { skip: ['left'], side: { left: 'left' } } }).map((p) => p.message)).toEqual([
       '"left" is in "labels.skip" and in "labels.side".',
     ])
+  })
+})
+
+describe('recipe: limits', () => {
+  const grid = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `b${i}`, symbol: 'beaker', at: { x: (i % 20) * 120, y: -Math.floor(i / 20) * 200 } }))
+  const HINT = 'A lesson diagram rarely needs more than 40 parts. Draw only what the question asks for, or make two diagrams.'
+  const wire = {
+    kind: 'wire',
+    points: [
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+    ],
+  }
+  const extra = { text: 'x', part: 'b0', at: [0, 10] }
+  const parts = [{ id: 'a', symbol: 'beaker', at: { x: 0, y: 0 } }]
+
+  it('recipe-limits', () => {
+    expect([COUNT_LIMIT, WORLD_LIMIT, SIZE_LIMIT]).toEqual([300, 5000, { min: 1, max: 5000 }])
+    // More than 300 parts, connectors or extra labels is an error with a hint, found before anything is built.
+    const started = performance.now()
+    expect(errorsOf({ title: 't', parts: grid(301) })).toEqual([error('parts', 'The recipe has 301 parts, and the most is 300.', HINT)])
+    expect(errorsOf({ title: 't', parts: grid(1200) })).toEqual([error('parts', 'The recipe has 1200 parts, and the most is 300.', HINT)])
+    expect(errorsOf({ title: 't', parts: grid(1), connectors: Array.from({ length: 301 }, () => wire) })).toEqual([
+      error('connectors', 'The recipe has 301 connectors, and the most is 300.', HINT),
+    ])
+    expect(errorsOf({ title: 't', parts: grid(1), labels: { extra: Array.from({ length: 301 }, () => extra) } })).toEqual([
+      error('labels.extra', 'The recipe has 301 extra labels, and the most is 300.', HINT),
+    ])
+    // All of them are listed, not only the first.
+    expect(errorsOf({ title: 't', parts: grid(301), connectors: Array.from({ length: 301 }, () => wire) }).map((p) => p.path)).toEqual(['parts', 'connectors'])
+    expect(performance.now() - started).toBeLessThan(1000)
+    // 300 parts are allowed, with their 300 labels, and they compile in a fraction of a second.
+    const t = performance.now()
+    const doc = make({ title: 't', parts: grid(300) })
+    expect(labels(doc)).toHaveLength(300)
+    expect(performance.now() - t).toBeLessThan(3000)
+    // With an extra label there are more than 300 labels in all.
+    expect(errorsOf({ title: 't', parts: grid(300), labels: { extra: [extra] } }).map((p) => [p.path, p.message])).toEqual([
+      ['labels', 'The recipe makes 301 labels (one for each part, and the extra ones), and the most is 300.'],
+    ])
+
+    // A size from 1 to 5000. A thermometer of 1e9 u took the browser two minutes to draw: here it is an error at once.
+    const hint = 'A size is from 1 to 5000 units (1 unit is one pixel at 100 % zoom). A lesson diagram is a few hundred units across.'
+    const t2 = performance.now()
+    expect(errorsOf({ title: 't', parts: [{ id: 'a', symbol: 'thermometer', size: { h: 1e9 } }] })).toEqual([
+      error('parts[0].size.h', 'The height 1000000000 is not allowed.', hint),
+    ])
+    expect(errorsOf({ title: 't', parts: [{ id: 'a', symbol: 'tile', size: { w: 5001 } }] })).toEqual([
+      error('parts[0].size.w', 'The width 5001 is not allowed.', hint),
+    ])
+    expect(errorsOf({ title: 't', parts: [{ id: 'a', symbol: 'tile', size: { w: 0.5 } }] })).toEqual([
+      error('parts[0].size.w', 'The width 0.5 is not allowed.', hint),
+    ])
+    expect(performance.now() - t2).toBeLessThan(500)
+    expect(make({ title: 't', parts: [{ id: 'a', symbol: 'tile', size: { w: 5000 } }] }).items.a).toMatchObject({ w: 5000 })
+
+    // A point of the world beyond 5000 u: a part, a point of a connector, the text of a label.
+    const farHint =
+      'A lesson diagram is a few hundred units across, with y = 0 at the bench. Check the numbers of "at", "near", "dx", "dy", "out" and "textAt": a number that is 100 times too big is the usual cause.'
+    expect(errorsOf({ title: 't', parts: [{ id: 'a', symbol: 'beaker', at: { x: 5001, y: 0 } }] })).toEqual([
+      error('parts[0]', 'The part "a" is placed at (5001, 0), beyond the 5000 u that a diagram may reach from the origin.', farHint),
+    ])
+    expect(
+      errorsOf({ title: 't', parts: [...parts, { id: 'b', symbol: 'beaker', on: { part: 'a', anchor: 'base', own: 'base', dx: 1e6 } }] }).map((p) => p.path),
+    ).toEqual(['parts[1]'])
+    expect(errorsOf({ title: 't', parts: [{ id: 'a', symbol: 'beaker', at: { x: 0, y: -5000.5 } }] })).toHaveLength(1)
+    expect(make({ title: 't', parts: [{ id: 'a', symbol: 'beaker', at: { x: 5000, y: -5000 } }] }).items.a).toMatchObject({ x: 5000, y: -5000 })
+    // A part that is beyond reach is not built, so the part that stands on it is not reported again.
+    expect(
+      errorsOf({
+        title: 't',
+        parts: [
+          { id: 'a', symbol: 'beaker', at: { x: 1e6, y: 0 } },
+          { id: 'b', symbol: 'bung', on: { part: 'a', anchor: 'mouth', own: 'plug' } },
+        ],
+      }).map((p) => p.path),
+    ).toEqual(['parts[0]'])
+    expect(
+      errorsOf({
+        title: 't',
+        parts,
+        connectors: [
+          {
+            kind: 'wire',
+            points: [
+              { x: 0, y: 0 },
+              { x: 0, y: -90000 },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([
+      error('connectors[0].points[1]', 'This point of the connector is at (0, -90000), beyond the 5000 u that a diagram may reach from the origin.', farHint),
+    ])
+    expect(errorsOf({ title: 't', parts, connectors: [{ kind: 'wire', points: [{ x: 0, y: 0 }, { dx: 6000 }] }] }).map((p) => p.path)).toEqual([
+      'connectors[0].points[1]',
+    ])
+    expect(errorsOf({ title: 't', parts, labels: { extra: [{ text: 'x', part: 'a', at: [0, 10], textAt: [9000, 0] }] } }).map((p) => p.path)).toEqual([
+      'labels.extra[0].textAt',
+    ])
+    expect(errorsOf({ title: 't', parts, labels: { extra: [{ text: 'x', point: { x: 0, y: 1e5 } }] } }).map((p) => p.path)).toEqual(['labels.extra[0]'])
+    expect(errorsOf({ title: 't', parts, labels: { extra: [{ text: 'x', near: { part: 'a', anchor: 'base', dx: 1e5 } }] } }).map((p) => p.path)).toEqual([
+      'labels.extra[0].near',
+    ])
+    expect(errorsOf({ title: 't', parts, labels: { end: { a: { at: [1e6, 0] } } } }).map((p) => p.path)).toEqual(['labels.end.a'])
   })
 })
 

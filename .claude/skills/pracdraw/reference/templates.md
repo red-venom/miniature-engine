@@ -2,7 +2,7 @@
 
 # Templates
 
-43 ready-made set-ups. Look here first: if the request is one of these, `npm run render -- --template <id> --out <dir>` writes it, and `--explain` lists its parts with their anchors. A template is not a recipe: to change one, write a recipe of your own with the same symbols.
+43 ready-made set-ups. Look here first: if the request is one of these, `npm run render -- --template <id> --out <dir>` writes it, and `--explain` lists its parts with their anchors. A template is not a recipe: to change one, write a recipe of your own with the same symbols (`--template <id> --explain` gives the world position of every anchor, so that offsets can be copied).
 
 Each entry gives the id, the title, the practicals it serves, the symbols it uses, and how it is set up.
 

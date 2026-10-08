@@ -3,7 +3,7 @@ import { demoDoc } from '../demo'
 import { P, rng } from '../kernel/geom'
 import { TEMPLATES } from '../templates'
 import { DocBuilder } from './build'
-import { COLOUR, parseDoc, parseDocJson } from './parse'
+import { COLOUR, SYMBOL_SIZE, parseDoc, parseDocJson } from './parse'
 import { newDoc, type Doc, type LabelItem, type SymbolItem } from './types'
 
 /** A document as a file holds it: JSON, so undefined fields are gone. */
@@ -230,6 +230,56 @@ describe('parseDoc: repairs', () => {
   it('colours are # and six hex digits', () => {
     for (const c of ['#cfe8f7', '#ABCDEF', '#aBc012']) expect(COLOUR.test(c), c).toBe(true)
     for (const c of ['#abc', 'cfe8f7', '#cfe8f7 ', ' #cfe8f7', '#cfe8f77', 'rgb(1,2,3)', '#ggg000']) expect(COLOUR.test(c), c).toBe(false)
+  })
+
+  it('a symbol size outside 1 to 5000 u takes the size of its definition, and is listed', () => {
+    expect(SYMBOL_SIZE).toEqual({ min: 1, max: 5000 })
+    // A thermometer of 1e9 u took the browser two minutes to draw and then crashed it.
+    const raw = base()
+    raw.items.beaker1.h = 1e9
+    raw.items.beaker1.w = 5000.5
+    const r = parsed(raw)
+    expect(r.doc.items.beaker1).toMatchObject({ w: 100, h: 120 })
+    expect(r.problems).toEqual([
+      'The width of the part "beaker1" (beaker) was 5000.5, outside 1 to 5000 u: it is now 100.',
+      'The height of the part "beaker1" (beaker) was 1000000000, outside 1 to 5000 u: it is now 120.',
+    ])
+    // Below 1 as well, and the rest of the item is as it was.
+    const small = base()
+    small.items.beaker1.w = 0.5
+    const s = parsed(small)
+    expect(s.doc.items.beaker1).toMatchObject({ w: 100, h: 120, contents: small.items.beaker1.contents })
+    expect(s.problems).toEqual(['The width of the part "beaker1" (beaker) was 0.5, outside 1 to 5000 u: it is now 100.'])
+    // 1 and 5000 are allowed.
+    const edge = base()
+    edge.items.beaker1.w = 1
+    edge.items.beaker1.h = 5000
+    const e = parsed(edge)
+    expect(e.problems).toEqual([])
+    expect(e.doc.items.beaker1).toMatchObject({ w: 1, h: 5000 })
+    // 0, negative numbers and what is no number leave the item out, as before.
+    const zero = base()
+    zero.items.beaker1.h = 0
+    expect(parsed(zero).doc.items.beaker1).toBeUndefined()
+    // A symbol that is not known has no size of its own to fall back to: the item is left out, and listed.
+    const unknown = base()
+    unknown.items.beaker1.symbol = 'fromTheFuture'
+    unknown.items.beaker1.w = 1e9
+    const u = parsed(unknown)
+    expect(u.doc.items.beaker1).toBeUndefined()
+    expect(u.problems).toContain('Left out item "beaker1" (fromTheFuture): "w" must be from 1 to 5000.')
+    // The note is for an item that is kept: when the item is left out for another field, only that is said.
+    const both = base()
+    both.items.beaker1.w = 1e9
+    both.items.beaker1.x = 'far'
+    const b = parsed(both)
+    expect(b.doc.items.beaker1).toBeUndefined()
+    expect(b.problems.filter((p) => p.includes('beaker1') && p.includes('outside 1 to 5000'))).toEqual([])
+    // Every template is within the limits, and so is the demo.
+    for (const t of TEMPLATES) {
+      const doc = t.build()
+      for (const it of Object.values(doc.items)) if (it.type === 'symbol') expect(Math.max(it.w, it.h), `${t.id} ${it.id}`).toBeLessThanOrEqual(5000)
+    }
   })
 
   it('a gas layer that is not last moves to the end; the other layers keep their order', () => {

@@ -193,6 +193,14 @@ export const RECIPE_PRESETS: readonly Preset[] = [
   { name: 'Colourless gas', kind: 'gas', colour: '#ffffff' },
 ]
 
+/** How far from the origin a part, a point of a connector or a label may be, in units: a lesson diagram is a few hundred across. */
+export const WORLD_LIMIT = 5000
+/** The size of a part, in units: the editor allows no more, and a part of 1e9 units crashes the browser while it is drawn. */
+export const SIZE_LIMIT = { min: 1, max: 5000 }
+/** The most parts, connectors and labels of one recipe. */
+export const COUNT_LIMIT = 300
+const COUNT_HINT = 'A lesson diagram rarely needs more than 40 parts. Draw only what the question asks for, or make two diagrams.'
+
 // ---------------------------------------------------------------- small helpers
 
 type Obj = Record<string, unknown>
@@ -210,6 +218,20 @@ const list = (items: readonly string[]) => items.map(quote).join(', ')
 /** A number as the messages show it: no more than 3 decimals. */
 const show = (n: number) => String(r3(n))
 const join = (path: string, key: string) => (path ? `${path}.${key}` : key)
+
+/** True when a point is farther from the origin than a diagram may reach (or is not a number). */
+const beyond = (x: number, y: number): boolean => !(Math.abs(x) <= WORLD_LIMIT && Math.abs(y) <= WORLD_LIMIT)
+
+/** Record an error when a point is out of reach; true when it is. `what` says what the point is: "The part "a" is placed". */
+function farAway(ctx: Ctx, path: string, what: string, x: number, y: number): boolean {
+  if (!beyond(x, y)) return false
+  ctx.error(
+    path,
+    `${what} at (${show(x)}, ${show(y)}), beyond the ${WORLD_LIMIT} u that a diagram may reach from the origin.`,
+    `A lesson diagram is a few hundred units across, with y = 0 at the bench. Check the numbers of "at", "near", "dx", "dy", "out" and "textAt": a number that is 100 times too big is the usual cause.`,
+  )
+  return true
+}
 
 const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
 
@@ -616,20 +638,13 @@ function readSize(st: PartState, current: number, path: string, def: SymbolDef, 
   }
   let w = read('w')
   let h = read('h')
-  if (w !== undefined && !(w > 0 && w <= 4000)) {
-    ctx.error(
-      join(path, 'w'),
-      `The width ${show(w)} is not allowed.`,
-      'A size is a number above 0 and at most 4000 (world units: 1 unit is one pixel at 100 % zoom).',
-    )
+  const sizeHint = `A size is from ${SIZE_LIMIT.min} to ${SIZE_LIMIT.max} units (1 unit is one pixel at 100 % zoom). A lesson diagram is a few hundred units across.`
+  if (w !== undefined && !(w >= SIZE_LIMIT.min && w <= SIZE_LIMIT.max)) {
+    ctx.error(join(path, 'w'), `The width ${show(w)} is not allowed.`, sizeHint)
     w = undefined
   }
-  if (h !== undefined && !(h > 0 && h <= 4000)) {
-    ctx.error(
-      join(path, 'h'),
-      `The height ${show(h)} is not allowed.`,
-      'A size is a number above 0 and at most 4000 (world units: 1 unit is one pixel at 100 % zoom).',
-    )
+  if (h !== undefined && !(h >= SIZE_LIMIT.min && h <= SIZE_LIMIT.max)) {
+    ctx.error(join(path, 'h'), `The height ${show(h)} is not allowed.`, sizeHint)
     h = undefined
   }
   const aspect = def.size.w / def.size.h
@@ -1180,6 +1195,11 @@ function readConnector(st: PartState, i: number, raw: unknown, made: ConnectorIt
     }
   }
   if (ctx.failedSince(from) || !kind || !pts) return null
+  const far = pts.findIndex((p) => beyond(p.x, p.y))
+  if (far >= 0) {
+    farAway(ctx, `${join(path, 'points')}[${far}]`, 'This point of the connector is', pts[far].x, pts[far].y)
+    return null
+  }
   if (!isDrawable(pts)) {
     ctx.error(join(path, 'points'), 'All the points of this connector are in one place, so nothing would be drawn.', 'Move a point away from the others.')
     return null
@@ -1256,7 +1276,7 @@ function drawOrder(ctx: Ctx, given: Id[], behind: Map<Id, Behind>, back: Set<Id>
 
 // ---------------------------------------------------------------- labels
 
-const LABELS_KEYS = ['auto', 'text', 'skip', 'side', 'extra']
+const LABELS_KEYS = ['auto', 'text', 'skip', 'side', 'end', 'order', 'extra']
 const EXTRA_KEYS = ['text', 'part', 'anchor', 'at', 'connector', 'along', 'point', 'near', 'side', 'textAt', 'end', 'size', 'note']
 
 /** The point at a fraction of the way along a polyline, and whether the run it is on is more level than upright. */
@@ -1371,6 +1391,7 @@ function readExtra(ctx: Ctx, ls: LabelState, path: string, raw: unknown, out: Ex
     }
     const r = readRef(st, join(path, 'near'), o.near, ANY_PART, false)
     if (!r || text === undefined || ctx.failedSince(from)) return
+    if (farAway(ctx, join(path, 'near'), 'This text is', r.point.x, r.point.y)) return
     out.plain.push(newLabel({ x: r3(r.point.x), y: r3(r.point.y), side: side ?? 'right', text, size }))
     return
   }
@@ -1463,6 +1484,8 @@ function readExtra(ctx: Ctx, ls: LabelState, path: string, raw: unknown, out: Ex
   if (text === undefined || !end || ctx.failedSince(from)) return
   const s = side ?? (textAt ? (textAt.x < 0 ? 'left' : 'right') : centreX < out.centre ? 'left' : 'right')
   const { world, target } = end(s)
+  if (farAway(ctx, path, 'The leader of this label ends', world.x, world.y)) return
+  if (textAt && farAway(ctx, join(path, 'textAt'), 'The text of this label is', world.x + textAt.x, world.y + textAt.y)) return
   if (textAt) {
     out.placed.push(newLabel({ x: r3(world.x + textAt.x), y: r3(world.y + textAt.y), side: s, target, text, leaderEnd, size }))
     return
@@ -1511,6 +1534,8 @@ function makeLabels(ctx: Ctx, ls: LabelState, raw: unknown): LabelItem[] {
     }
   }
 
+  const userSkip = new Set(skip)
+
   // The parts whose label is on the side that the recipe says, not the side that Label all chooses.
   const sides = new Map<string, 'left' | 'right'>()
   if (o?.side !== undefined) {
@@ -1531,6 +1556,112 @@ function makeLabels(ctx: Ctx, ls: LabelState, raw: unknown): LabelItem[] {
           skip.add(id)
         }
       }
+    }
+  }
+
+  // The parts whose leader ends at a point that the recipe gives (a point of the part, or one of its anchors, moved by dx and
+  // dy in the part's own frame), where Label all would end it at one of its two leader points. The label stays in its column.
+  const ends = new Map<string, Pt>()
+  if (o?.end !== undefined) {
+    if (!isObj(o.end))
+      ctx.error(
+        'labels.end',
+        'The "end" of the labels must be an object { "partId": { "at": [lx, ly] } }.',
+        'For example { "funnel": { "at": [29, 20] } } or { "funnel": { "anchor": "mouth", "dy": 5 } }.',
+      )
+    else {
+      for (const [id, v] of Object.entries(o.end)) {
+        const at = join('labels.end', id)
+        if (!st.index.has(id)) {
+          ctx.error(at, `"labels.end" names ${quote(id)}, which is not a part.`, `The part ids are: ${idList(st)}.${didYouMean(id, st.names)}`)
+          continue
+        }
+        const rec = st.built.get(id)
+        if (!rec) continue // a part with a problem of its own: that is listed already
+        if (userSkip.has(id)) {
+          ctx.error(at, `"labels.end" names ${quote(id)}, which is in "labels.skip": it has no label whose end could move.`, 'Keep it in one of them.')
+          continue
+        }
+        if (!auto && !sides.has(id)) {
+          ctx.error(
+            at,
+            `"labels.end" moves the leader of an automatic label, and "labels.auto" is false.`,
+            'Give the label by hand with "labels.extra", or set "auto" to true.',
+          )
+          continue
+        }
+        if (rec.def.autoLabel === false) {
+          ctx.error(
+            at,
+            `${quote(id)} (${rec.item.symbol}) gets no automatic label, so it has no leader to move.`,
+            'Give it a label with "labels.extra": { "text": "...", "part": ..., "at": [lx, ly] }.',
+          )
+          continue
+        }
+        const e = readObject(ctx, at, v, ['at', 'anchor', 'dx', 'dy'], 'this end')
+        if (!e) continue
+        const from = ctx.problems.length
+        if ((e.at === undefined) === (e.anchor === undefined)) {
+          ctx.error(
+            at,
+            'A label end is given by "at" or by "anchor": one of them.',
+            '"at": [lx, ly] is a point of the part; "anchor": "mouth" is one of its anchors, which "dx" and "dy" may move.',
+          )
+          continue
+        }
+        let local: Pt | undefined
+        if (e.at !== undefined) {
+          if (Array.isArray(e.at) && e.at.length === 2 && e.at.every(isNum)) local = P(e.at[0] as number, e.at[1] as number)
+          else
+            ctx.error(
+              join(at, 'at'),
+              'The "at" of a label end must be [lx, ly].',
+              'Two numbers: a point in the frame of the part, before it is turned (x = 0 is its centre line, y = 0 its top, y = its height its bottom).',
+            )
+          for (const k of ['dx', 'dy'] as const)
+            if (e[k] !== undefined) ctx.error(join(at, k), `"${k}" moves an anchor: it goes with "anchor", not with "at".`, `Add ${k} to the number in "at".`)
+        } else {
+          const name = readString(ctx, join(at, 'anchor'), e.anchor, 'The "anchor" of a label end')
+          const a = name === undefined ? null : refAnchor(ctx, join(at, 'anchor'), rec, name)
+          const dx = e.dx === undefined ? 0 : readNumber(ctx, join(at, 'dx'), e.dx, 'The "dx" of a label end')
+          const dy = e.dy === undefined ? 0 : readNumber(ctx, join(at, 'dy'), e.dy, 'The "dy" of a label end')
+          if (a && dx !== undefined && dy !== undefined) local = P(a.x + dx, a.y + dy)
+        }
+        if (local && !ctx.failedSince(from)) {
+          ends.set(id, local)
+          if (!sides.has(id)) skip.add(id)
+        }
+      }
+    }
+  }
+
+  // The order of the letters: the labels of the parts that are listed come first, in that order.
+  const letterOrder: string[] = []
+  if (o?.order !== undefined) {
+    if (!Array.isArray(o.order))
+      ctx.error(
+        'labels.order',
+        'The "order" of the labels must be a list of part ids.',
+        'For example ["burette", "flask", "clamp"]: the label of the burette gets the letter A.',
+      )
+    else {
+      o.order.forEach((id, i) => {
+        const at = `labels.order[${i}]`
+        if (typeof id !== 'string' || !st.index.has(id)) {
+          ctx.error(
+            at,
+            `"labels.order" names ${quote(String(id))}, which is not a part.`,
+            `The part ids are: ${idList(st)}.${typeof id === 'string' ? didYouMean(id, st.names) : ''}`,
+          )
+        } else if (userSkip.has(id)) {
+          ctx.error(
+            at,
+            `"labels.order" names ${quote(id)}, which is in "labels.skip": it has no label, so it has no letter.`,
+            'Take it out of "labels.order", or out of "labels.skip".',
+          )
+        } else if (letterOrder.includes(id)) ctx.error(at, `"labels.order" names ${quote(id)} twice.`, 'List each part once.')
+        else letterOrder.push(id)
+      })
     }
   }
 
@@ -1562,7 +1693,16 @@ function makeLabels(ctx: Ctx, ls: LabelState, raw: unknown): LabelItem[] {
   out.centre = B ? (B.x0 + B.x1) / 2 : 0
   for (const [id, side] of sides) {
     const rec = st.built.get(id)
-    if (rec) readExtra(ctx, ls, join('labels.side', id), { text: texts.get(id) ?? labelText(rec.def, rec.item.params), part: id, side }, out, B)
+    const end = ends.get(id)
+    if (rec) {
+      const label = { text: texts.get(id) ?? labelText(rec.def, rec.item.params), part: id, side }
+      readExtra(ctx, ls, join('labels.side', id), end ? { ...label, at: [end.x, end.y] } : label, out, B)
+    }
+  }
+  for (const [id, end] of ends) {
+    const rec = st.built.get(id)
+    if (rec && !sides.has(id))
+      readExtra(ctx, ls, join('labels.end', id), { text: texts.get(id) ?? labelText(rec.def, rec.item.params), part: id, at: [end.x, end.y] }, out, B)
   }
   if (o?.extra !== undefined) {
     if (!Array.isArray(o.extra))
@@ -1588,7 +1728,22 @@ function makeLabels(ctx: Ctx, ls: LabelState, raw: unknown): LabelItem[] {
       return column.map((p) => p.label).sort((a, b) => a.y - b.y)
     })
   }
-  return [...columns, ...out.placed, ...out.plain]
+  const made = [...columns, ...out.placed, ...out.plain]
+  if (!letterOrder.length) return made
+  // The listed parts first, each with all its labels (its own, then the extra ones); the others as they were.
+  const first: LabelItem[] = []
+  for (const id of letterOrder) {
+    const mine = made.filter((l) => l.target && 'item' in l.target && l.target.item === id)
+    if (!mine.length && st.built.has(id)) {
+      ctx.error(
+        `labels.order[${letterOrder.indexOf(id)}]`,
+        `"labels.order" names ${quote(id)}, which has no label.`,
+        'The letters go to parts that have a label: Label all gives one to most parts (not to the bench line, wires or circuit symbols), and "labels.extra" gives one by hand.',
+      )
+    }
+    first.push(...mine)
+  }
+  return [...first, ...made.filter((l) => !first.includes(l))]
 }
 
 // ---------------------------------------------------------------- compileRecipe
@@ -1643,6 +1798,14 @@ export function compileRecipe(recipe: unknown): RecipeResult {
     ctx.error('parts', 'The recipe needs a list of "parts": at least one.', 'Each part is { "id": "beaker", "symbol": "beaker" }.')
     return fail()
   }
+  // A recipe of a thousand parts is a mistake, and building it would take seconds: the counts come first.
+  const lists: [string, number, string][] = [
+    ['parts', root.parts.length, 'parts'],
+    ['connectors', Array.isArray(root.connectors) ? root.connectors.length : 0, 'connectors'],
+    ['labels.extra', isObj(root.labels) && Array.isArray(root.labels.extra) ? root.labels.extra.length : 0, 'extra labels'],
+  ]
+  for (const [path, n, what] of lists) if (n > COUNT_LIMIT) ctx.error(path, `The recipe has ${n} ${what}, and the most is ${COUNT_LIMIT}.`, COUNT_HINT)
+  if (ctx.problems.some((p) => p.level === 'error')) return fail()
 
   // The ids first, so that a reference can be told from a mistake, and a part that comes later from one that is missing.
   const st: PartState = { ctx, ids: [], names: [], index: new Map(), built: new Map(), deps: new Map() }
@@ -1677,6 +1840,7 @@ export function compileRecipe(recipe: unknown): RecipeResult {
     if (!st.ids[i]) return
     const rec = readPart(st, i, raw)
     if (!rec || !placePart(st, rec, raw as Obj, explain)) return
+    if (farAway(ctx, `parts[${i}]`, `The part ${quote(rec.id)} is placed`, rec.item.x, rec.item.y)) return
     st.built.set(rec.id, rec)
     readDraw(st, `parts[${i}]`, raw as Obj, rec.id, behind, back)
   })
@@ -1707,6 +1871,12 @@ export function compileRecipe(recipe: unknown): RecipeResult {
 
   // The labels, last of all.
   const labels = makeLabels(ctx, { st, doc, connectors }, root.labels === undefined ? {} : root.labels)
+  if (labels.length > COUNT_LIMIT)
+    ctx.error(
+      'labels',
+      `The recipe makes ${labels.length} labels (one for each part, and the extra ones), and the most is ${COUNT_LIMIT}.`,
+      `${COUNT_HINT} "labels.skip" leaves the parts out that need no label.`,
+    )
   const used = new Set(Object.keys(doc.items))
   let k = 0
   for (const l of labels) {

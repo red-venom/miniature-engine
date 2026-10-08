@@ -57,12 +57,14 @@
     }
   ],
   "labels": {
-    "text": { "cylinder": "100 cm3 measuring cylinder", "trough": "trough of water", "clamp": "clamp" },
-    "skip": ["stopwatch"],
+    "text": { "cylinder": "cylinder", "ribbon": "magnesium", "clamp": "clamp" },
+    "skip": ["trough", "stopwatch"],
+    "end": { "cylinder": { "at": [-22, 140] } },
     "extra": [
       { "text": "dilute HCl(aq)", "part": "flask", "at": [-22, 112] },
       { "text": "34 cm3 of H2", "part": "cylinder", "at": [0, 150] },
       { "text": "delivery tube", "connector": "tube", "along": 0.3 },
+      { "text": "trough", "part": "trough", "at": [0, 90], "textAt": [-30, 52] },
       { "text": "stopwatch", "part": "stopwatch", "at": [0, 66], "textAt": [-24, 34], "side": "right" }
     ]
   }
