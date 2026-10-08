@@ -1,24 +1,25 @@
-# PracDraw release 1.0: build report
+# PracDraw build report: releases 1.0 and 1.1
 
-This report closes the release 1.0 build of PracDraw, as section 14 of `docs/SPEC.md` asks. The build started from the starter kit (phases 0 and 1) and ran phases 2 to 10 in two tracks: the editor (track E) and the drawings (track S). Every symbol, template and gate test was checked by a separate reviewer agent that did not write it. Release 1.1 (priority B) was not built, as the specification says.
+This report closes the release 1.0 build of PracDraw, as section 14 of `docs/SPEC.md` asks. The build started from the starter kit (phases 0 and 1) and ran phases 2 to 10 in two tracks: the editor (track E) and the drawings (track S). Every symbol, template and gate test was checked by a separate reviewer agent that did not write it. Release 1.1 (priority B) was built afterwards, on its own branch, when James asked for more development: section 8 covers it. Sections 1 to 7 are the release 1.0 report and stay as they were.
 
 The project is in the `pracdraw/` folder of the repository, because the repository root already holds another project. The built single file is `pracdraw/dist/index.html` (`npm run build`).
 
 ## 1. Phases
 
-| Phase                   | Result     | Gate                                                                                                      |
-| ----------------------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| 0. Scaffold             | In the kit | `npm run check` green before any change: 320 unit tests, 5 browser tests                                  |
-| 1. Kernel and pilots    | In the kit | as above                                                                                                  |
-| 2. Editor core          | Passed     | 6 gate tests and the 5 ported starter tests, reviewed                                                     |
-| 3. Contents             | Passed     | 3 gate tests, reviewed                                                                                    |
-| 4. Connectors           | Passed     | 3 gate tests, reviewed                                                                                    |
-| 5. Snapping and arrange | Passed     | 3 gate tests and one unit test for each row of the snap table, reviewed                                   |
-| 6. Labels               | Passed     | 3 gate tests and the Label all unit tests, reviewed                                                       |
-| 7. Export and files     | Passed     | 6 gate tests and the section 14 unit tests, reviewed                                                      |
-| 8. Symbols A            | Passed     | `npm run release:a:symbols`; all 78 new symbols passed visual review                                      |
-| 9. Templates A          | Passed     | `npm run release:a`; all 39 new templates reviewed (one accepted with a note); `gallery-inserts-template` |
-| 10. Release 1.0         | Passed     | 8 gate tests and the four budgets, reviewed; `drag-budget` passed after a fix round                       |
+| Phase                   | Result             | Gate                                                                                                      |
+| ----------------------- | ------------------ | --------------------------------------------------------------------------------------------------------- |
+| 0. Scaffold             | In the kit         | `npm run check` green before any change: 320 unit tests, 5 browser tests                                  |
+| 1. Kernel and pilots    | In the kit         | as above                                                                                                  |
+| 2. Editor core          | Passed             | 6 gate tests and the 5 ported starter tests, reviewed                                                     |
+| 3. Contents             | Passed             | 3 gate tests, reviewed                                                                                    |
+| 4. Connectors           | Passed             | 3 gate tests, reviewed                                                                                    |
+| 5. Snapping and arrange | Passed             | 3 gate tests and one unit test for each row of the snap table, reviewed                                   |
+| 6. Labels               | Passed             | 3 gate tests and the Label all unit tests, reviewed                                                       |
+| 7. Export and files     | Passed             | 6 gate tests and the section 14 unit tests, reviewed                                                      |
+| 8. Symbols A            | Passed             | `npm run release:a:symbols`; all 78 new symbols passed visual review                                      |
+| 9. Templates A          | Passed             | `npm run release:a`; all 39 new templates reviewed (one accepted with a note); `gallery-inserts-template` |
+| 10. Release 1.0         | Passed             | 8 gate tests and the four budgets, reviewed; `drag-budget` passed after a fix round                       |
+| 11. Release 1.1         | Passed (section 8) | `npm run release:b`; all 27 new symbols and 3 new templates passed visual review                          |
 
 A gap that a reviewer found in a gate test was fixed in the next phase's commit (for phase 10, in a fix round) and checked again by the next reviewer. Section 4 lists each one.
 
@@ -367,3 +368,252 @@ These are open. The build could not do them.
 - [ ] Read each template's set-up in the Templates tab against your own scheme of work.
 - [ ] Decide on the top bar: 8 px spacing with the More menu below 1540 px (as built), or 6 px gaps with the full bar down to 1300 px.
 - [ ] Note for worksheets: an SVG exported in blank or letters mode still carries every label's text in its metadata (section 13 requires it, so the file can be opened again). A student could read the answers from it. Give students PNG files.
+
+## 8. Release 1.1 (phase 11)
+
+Release 1.1 adds the 27 priority B symbols and the 3 priority B templates. The specification says that release 1.1 is "not built until James asks" (section 16). After release 1.0 was closed, James wrote "Continue with developing the site". The lead read this as the request for release 1.1, and built it on its own branch, `claude/pracdraw-release-1-1`, in a pull request stacked on the release 1.0 pull request. If James meant something else, release 1.1 can be left out: nothing in release 1.0 changed, except the counts in `README.md` and the gallery test (see "Departures" below).
+
+### What was built
+
+| Pack           | Priority B symbols                                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Containers (9) | flatBottomFlask, pearFlask, sideArmTube, crystallisingDish, crucible, reagentBottle, gasJar, uTube, copperCalorimeter          |
+| Measuring (4)  | syringe, newtonMeter, pipetteFiller, scaleWindow (the magnified scale for reading questions; its Reading field sets the level) |
+| Heating (2)    | spiritBurner, pipeclayTriangle                                                                                                 |
+| Support (4)    | testTubeHolder, cottonWool, spatula, gClamp                                                                                    |
+| Filtering (2)  | droppingFunnel, thistleFunnel                                                                                                  |
+| Organic (1)    | fractionatingColumn                                                                                                            |
+| Biology (2)    | petriDishTop, leaf                                                                                                             |
+| Annotation (3) | flame, drops, flameTestLoop                                                                                                    |
+
+The 3 templates are `flameTest` (Flame test), `spiritBurnerCalorimetry` (Enthalpy of combustion) and `massLoss` (Rate of reaction: loss of mass), all in the Chemistry group.
+
+Three symbol authors worked at the same time (containers; measuring, heating, filtering and organic; support, biology and annotation), then one template author. The lead merged one branch at a time and ran `npm run check` on each merged tree: 1853, 1943 and 2033 unit tests after the three symbol merges, and 2039 after the templates, with 68 browser tests each time. A separate reviewer agent opened every picture of every new symbol and template. Usage limits stopped two reviewers and the template author once; the template author was resumed with its work in progress, and the two reviews were run again from the start.
+
+### Command output on the final tree
+
+`npm run check`:
+
+```
+> pracdraw@0.1.0 check
+> npm run typecheck && npm run lint && npm run format:check && npm run test && npm run e2e
+
+
+> pracdraw@0.1.0 typecheck
+> tsc -b
+
+
+> pracdraw@0.1.0 lint
+> oxlint
+
+
+> pracdraw@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> pracdraw@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.3 /home/user/miniature-engine/pracdraw
+
+
+ Test Files  37 passed (37)
+      Tests  2039 passed (2039)
+   Start at  07:06:58
+   Duration  5.47s (transform 40%, tests 31%, import 26%, worker 2%)
+
+  Transform  transforming modules took 3.78s · 40% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
+
+> pracdraw@0.1.0 e2e
+> npm run build && playwright test
+
+
+> pracdraw@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.2 building client environment for production...
+transforming...
+✓ 110 modules transformed.
+rendering chunks...
+[plugin vite:singlefile]
+
+[plugin vite:singlefile] Inlining: index-Bd5r9WUJ.js
+[plugin vite:singlefile] Inlining: style-DkvPe7V3.css
+computing gzip size...
+dist/index.html  514.25 kB │ gzip: 162.64 kB
+
+✓ built in 863ms
+
+Running 68 tests using 2 workers
+
+  ✓   1 e2e/editor.spec.ts:54:1 › the single file runs from file:// with no network requests (628ms)
+  ✓   2 e2e/files.spec.ts:128:1 › png-size-matches-bounds (1.5s)
+  ✓   3 e2e/editor.spec.ts:77:1 › the PNG drawn on canvas matches the SVG on screen (1.1s)
+  ✓   5 e2e/editor.spec.ts:121:1 › the SVG export is standalone and plain (477ms)
+  ✓   4 e2e/files.spec.ts:190:1 › svg-reopens-equal (1.1s)
+  ✓   6 e2e/editor.spec.ts:144:1 › copy puts a PNG on the clipboard (813ms)
+  ✓   7 e2e/files.spec.ts:224:1 › save-open-round-trip (954ms)
+  ✓   8 e2e/editor.spec.ts:155:1 › settings re-render the diagram (701ms)
+  ✓   9 e2e/files.spec.ts:257:1 › unknown-symbol-opens (909ms)
+  ✓  10 e2e/editor.spec.ts:169:1 › add-move-undo (848ms)
+  ✓  12 e2e/editor.spec.ts:186:1 › resize-keeps-line-width (704ms)
+  ✓  11 e2e/files.spec.ts:315:1 › open-lists-problems-in-a-banner (992ms)
+  ✓  14 e2e/files.spec.ts:347:1 › drop-a-file-on-the-canvas-opens-it (549ms)
+  ✓  13 e2e/editor.spec.ts:200:1 › rotate-and-flip (904ms)
+  ✓  16 e2e/editor.spec.ts:231:1 › parameter-change (609ms)
+  ✓  15 e2e/files.spec.ts:377:1 › copy-fallback-shows-picture (844ms)
+  ✓  18 e2e/files.spec.ts:405:1 › text-fallback-and-download-did-not-start (1.5s)
+  ✓  17 e2e/editor.spec.ts:244:1 › autosave-restores (1.8s)
+  ✓  20 e2e/editor.spec.ts:277:1 › insert-template-twice (783ms)
+  ✓  19 e2e/files.spec.ts:453:1 › claude-host-saves (1.1s)
+  ✓  21 e2e/editor.spec.ts:307:1 › fill-and-turn-stays-level (627ms)
+  ✓  23 e2e/editor.spec.ts:356:1 › set-reading-37 (561ms)
+  ✓  24 e2e/editor.spec.ts:373:1 › drop-into-beaker-comes-to-front (1.0s)
+  ✓  25 e2e/editor.spec.ts:400:1 › contents-controls (1.1s)
+  ✓  26 e2e/editor.spec.ts:490:1 › draw-tube-four-points (591ms)
+  ✓  22 e2e/files.spec.ts:521:1 › gallery-inserts-template (4.3s)
+  ✓  28 e2e/release.spec.ts:216:1 › job-1 (796ms)
+  ✓  27 e2e/editor.spec.ts:540:1 › edit-connector-point (2.8s)
+  ✓  30 e2e/editor.spec.ts:672:1 › arrow-and-dimension-caps (683ms)
+  ✓  29 e2e/release.spec.ts:258:1 › job-2 (2.5s)
+  ✓  32 e2e/release.spec.ts:332:1 › job-3 (897ms)
+  ✓  31 e2e/editor.spec.ts:728:1 › connector-tools (1.3s)
+  ✓  33 e2e/release.spec.ts:369:1 › job-4 (601ms)
+  ✓  34 e2e/editor.spec.ts:792:1 › shape-tools (1.2s)
+  ✓  35 e2e/release.spec.ts:392:1 › job-5 (1.5s)
+  ✓  36 e2e/editor.spec.ts:846:1 › bung-snaps-and-fits (916ms)
+  ✓  38 e2e/editor.spec.ts:877:1 › beaker-stands-on-gauze (974ms)
+budget: drag: mean frame gap 16.85 ms over 60 frames, longest 27.9 ms, 60 pointer moves handled over 992 ms (150 symbols with contents, 60 moves sent at 60 Hz, the last 0.8 ms late)
+  ✓  37 e2e/release.spec.ts:433:1 › drag-budget (1.9s)
+  ✓  39 e2e/editor.spec.ts:908:1 › clamp-on-rod (1.0s)
+budget: open to first paint from file://: 116 ms (first contentful 272 ms), 108 ms (first contentful 288 ms), 156 ms (first contentful 324 ms)
+  ✓  40 e2e/release.spec.ts:558:1 › open-to-first-paint (1.4s)
+  ✓  41 e2e/editor.spec.ts:932:1 › snap-off-and-guides (1.4s)
+  ✓  43 e2e/editor.spec.ts:979:1 › arrange-several-items (863ms)
+  ✓  42 e2e/release.spec.ts:590:1 › keyboard-only (1.6s)
+  ✓  44 e2e/editor.spec.ts:1027:1 › keys-work-after-a-checkbox (659ms)
+  ✓  46 e2e/editor.spec.ts:1080:1 › label-follows-item (1.2s)
+  ✓  47 e2e/editor.spec.ts:1153:1 › blank-mode-has-no-label-text (565ms)
+  ✓  48 e2e/editor.spec.ts:1191:1 › label-all-no-crossing (719ms)
+  ✓  49 e2e/editor.spec.ts:1234:1 › label-and-text-tools (1.3s)
+  ✓  50 e2e/editor.spec.ts:1305:1 › edit-label-text (702ms)
+  ✓  51 e2e/editor.spec.ts:1341:1 › label-inspector (1.0s)
+  ✓  52 e2e/editor.spec.ts:1387:1 › label-leader-end-handle (837ms)
+  ✓  53 e2e/editor.spec.ts:1418:1 › alt-drag-selects-the-copy (651ms)
+empty diagram: 161 controls, 161 new
+More menu: 172 controls, 11 new
+title: 161 controls, 1 new
+templates: 79 controls, 48 new
+help: 162 controls, 1 new
+a beaker with water: 175 controls, 27 new
+the colour presets: 205 controls, 29 new
+a measuring cylinder: 169 controls, 4 new
+a label: 161 controls, 7 new
+the text box: 162 controls, 1 new
+a wire: 160 controls, 6 new
+a rectangle: 160 controls, 5 new
+several items: 167 controls, 10 new
+export: 185 controls, 14 new
+copy by hand: picture: 168 controls, 1 new
+copy by hand: text: 189 controls, 3 new
+saved: 168 controls, 1 new
+banner: 168 controls, 1 new
+wide window: 178 controls, 0 new
+narrow window, drawers open: 172 controls, 4 new
+  ✓  45 e2e/release.spec.ts:701:1 › controls-have-names (7.8s)
+  ✓  54 e2e/editor.spec.ts:1447:1 › labels-move-like-items (746ms)
+  ✓  56 e2e/editor.spec.ts:1483:1 › letters-mode (596ms)
+  ✓  57 e2e/editor.spec.ts:1501:1 › align-and-guides-measure-label-text (848ms)
+  ✓  58 e2e/editor.spec.ts:1539:1 › enter-on-a-focused-control-presses-it (747ms)
+  ✓  55 e2e/release.spec.ts:1000:1 › focus-is-always-visible (34.7s)
+budget: text contrast: lowest ratio 4.72 (empty diagram: 55 texts, lowest 4.72; More menu: 62 texts, lowest 4.72; templates: 42 texts, lowest 4.72; a beaker with its colour presets: 88 texts, lowest 4.72; help: 51 texts, lowest 15.05; export: 27 texts, lowest 4.72; banner and status bar: 51 texts, lowest 4.72)
+  ✓  59 e2e/release.spec.ts:1185:1 › text-contrast (1.3s)
+  ✓  60 e2e/release.spec.ts:1230:1 › empty-state-card (1.1s)
+  ✓  61 e2e/release.spec.ts:1270:1 › help-dialog (721ms)
+  ✓  62 e2e/release.spec.ts:1303:1 › narrow-window-keyboard (1.1s)
+  ✓  63 e2e/release.spec.ts:1351:1 › tile-names-fit (849ms)
+  ✓  64 e2e/release.spec.ts:1405:1 › library-drag-adds-at-the-pointer (2.1s)
+  ✓  65 e2e/release.spec.ts:1503:3 › on a touch screen › touch-pinch-pan-and-handles (1.2s)
+  ✓  66 e2e/release.spec.ts:1576:3 › on a touch screen › touch-drag-tile-to-canvas (3.0s)
+  ✓  67 e2e/release.spec.ts:1659:3 › on a touch screen › touch-library-swipe-scrolls (1.0s)
+  ✓  68 e2e/release.spec.ts:1686:3 › on a touch screen › touch-swipes-keep-the-app (8.8s)
+
+  68 passed (1.5m)
+```
+
+`npm run progress`:
+
+```
+> pracdraw@0.1.0 progress
+> tsx scripts/progress.ts
+
+Symbols         A built/planned   B built/planned
+  containers        13/13             9/9
+  measuring         12/12             4/4
+  heating           9/9               2/2
+  support           15/15             4/4
+  filtering         3/3               2/2
+  organic           5/5               1/1
+  electrochemistry  5/5               0/0
+  physics           12/12             0/0
+  biology           5/5               2/2
+  circuit           14/14             0/0
+  annotation        3/3               3/3
+  TOTAL             96/96             27/27
+Templates       A 40/40   B 3/3
+Next (priority A, not built): none
+```
+
+`npm run release:b` (the gate of phase 11) and `npm run release:a` run the same test file with `RELEASE=B` or `RELEASE=A`; both pass:
+
+```
+> pracdraw@0.1.0 release:b
+> RELEASE=B vitest run src/spec.test.ts
+
+
+ RUN  v5.0.3 /home/user/miniature-engine/pracdraw
+
+
+ Test Files  1 passed (1)
+      Tests  170 passed (170)
+   Start at  07:12:37
+   Duration  1.36s (transform 77%, tests 15%, import 7%, worker 1%)
+```
+
+### Size and budgets
+
+| Budget (section 6)                                                    | Limit                      | Result                                                                                                                                                                                               |
+| --------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dist/index.html`                                                     | 900 kB                     | 514.25 kB (gzip 162.64 kB): pass (release 1.0: 493.06 kB)                                                                                                                                            |
+| Network requests at run time                                          | 0                          | 0: pass (the same tests as in section 3)                                                                                                                                                             |
+| Drag one symbol 300 px in 60 pointer moves, 150 symbols with contents | mean frame gap under 20 ms | mean 16.85 ms over 60 frames, longest 27.9 ms: pass (`drag-budget`, in the final `npm run check`)                                                                                                    |
+| Open to first paint from `file://`                                    | under 1 s                  | 116, 108 and 156 ms to first paint (first contentful paint 272 to 324 ms) on three fresh pages: pass (`open-to-first-paint`; release 1.0 measured 44 to 92 ms, and the machine was busier this time) |
+
+### Reviewer verdicts
+
+Each new symbol and template was passed by a reviewer that did not write it. The reviewer judged every choice that the author recorded where the catalogue recipe was silent or open ("accepted" means that it looks right and breaks no style rule).
+
+| Group                                                 | Round 1                                                                                               | Round 2                                                                                       |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Containers (9 symbols)                                | 9 pass                                                                                                |                                                                                               |
+| Support, biology and annotation (9 symbols)           | 9 pass                                                                                                |                                                                                               |
+| Measuring, heating, filtering and organic (9 symbols) | 8 pass; `thistleFunnel`: defect (fillet of 2 u under the cup; glass corners are 3 u or more, rule S4) | `thistleFunnel`: pass (fillet 3 u, arcs tangent, clean at 44 by 120, 44 by 270 and 44 by 405) |
+| The 3 templates                                       | 3 pass                                                                                                |                                                                                               |
+
+The functional check of `scaleWindow` was made in the built app: typed readings put the liquid surface exactly on the tick (0.00 u error) for the default scale (20 to 21, 10 divisions), for a reversed scale (top 50, bottom 40), and for 5 and 20 divisions; readings outside the scale clamp to its ends; when the item is turned or flipped the Reading field gives way to a hint, and no scale number is mirrored.
+
+### Departures and notes
+
+- **A lead change after review.** `thistleFunnel`: the fillet where the bowl meets the bulb is 3 u, not 2 u (one value in `src/symbols/filtering.ts`).
+- **Tests and README.** `gallery-inserts-template` now checks a card with a thumbnail for all 43 templates of the plan, not only the 40 of priority A. `README.md` says 123 items and 43 templates.
+- **Choices where the recipe is silent or open** (all accepted by the reviewers): `reagentBottle` with its stopper draws no rim flare, has an 8 u plug with no taper, and its cavity starts 1 u under the plug; `pearFlask` starts its bottom arc 50 degrees below horizontal; the `crucible` lid is one outline that rises 0.09w, with a 6 by 4 knob; the `gasJar` flange is a flat 5 u line with a radius 2 corner; `gClamp` reads "jaws reach 0.6w" as 30 u from the bar's inner face, so it sits left of the box centre with the screw on the centre line; `testTubeHolder` has a round ring jaw; `drops` at count 4 are 8 u high; the `leaf` stalk is a separate 2 u line; `flameTestLoop` has its `loop` anchor at the centre of the loop; `flame` reuses the `luminousFlame` shape (the same curve as the Bunsen safety flame, checked point by point); `syringe` has a 6 u closed-end taper, a piston face 1 u above the shoulder at plunger 0, and an edge-on flange; `newtonMeter` has a J hook, so `hook:port` is at x = 5; `scaleWindow` has tilde break lines, no middle tick for 5 divisions, and does not draw its `unit`; `spiritBurner` has a cap line under the wick holder; `fractionatingColumn` has a tube 30 u wide below a 28 u socket throat.
+- **Template choices** (all accepted): `flameTest` draws the Bunsen burner at 1.75 times its size, because the 8 u loop cannot sit between the dark inner cone and the edge of the flame at the default size; `spiritBurnerCalorimetry` uses a can of 60 by 90, because the clamp's jaw opening is capped at 60 u.
+- **Known, not changed.** On the turned photocopy-safe sheet, one dash of liquid in the `uTube` touches the outer wall by about 0.35 u (the kernel's dash layout does the same to `volumetricFlask`, which passed in release 1.0). At some turn angles (about 30, 45, 60, 150, 210 and 330 degrees), a stub of about 6 u of centre line shows in the acute pocket where the lower break line of `scaleWindow` meets the wall (the kernel's mark for a narrow span of liquid in photocopy-safe mode, `MIN_RUN`).
+- **No symbol or template was accepted with a note.**
+- **Manual checks.** The open list in section 7 applies to the 123 symbols and 43 templates of release 1.1 as well.
