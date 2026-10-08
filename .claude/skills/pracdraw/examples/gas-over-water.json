@@ -1,0 +1,69 @@
+{
+  "title": "Gas collected over water",
+  "parts": [
+    {
+      "id": "flask",
+      "symbol": "conicalFlask",
+      "at": { "x": 0, "y": 0, "anchor": "base" },
+      "contents": { "main": [{ "preset": "Colourless solution", "amount": 0.34, "bubbles": "few" }] }
+    },
+    { "id": "ribbon", "symbol": "magnesiumRibbon", "near": { "part": "flask", "anchor": "base", "dy": -9 } },
+    { "id": "bung", "symbol": "bung", "on": { "part": "flask", "anchor": "mouth", "own": "plug" } },
+    {
+      "id": "trough",
+      "symbol": "trough",
+      "on": { "part": "flask", "anchor": "base", "own": "base", "dx": 310 },
+      "contents": { "main": [{ "preset": "Water", "amount": 0.62 }] }
+    },
+    {
+      "id": "cylinder",
+      "symbol": "measuringCylinder",
+      "rot": 180,
+      "size": { "h": 170 },
+      "on": { "part": "trough", "anchor": "base", "own": "mouth", "dx": 35, "dy": -22 },
+      "contents": { "main": [{ "preset": "Water", "reading": 34 }, { "preset": "Colourless gas" }] }
+    },
+    {
+      "id": "clamp",
+      "symbol": "bossClamp",
+      "size": { "w": 162 },
+      "flip": true,
+      "params": { "grip": 36 },
+      "on": { "part": "cylinder", "anchor": "mouth", "own": "grip", "dy": -96 },
+      "behind": "cylinder"
+    },
+    {
+      "id": "stand",
+      "symbol": "clampStand",
+      "size": { "h": { "between": [{ "part": "flask", "anchor": "base" }, { "part": "clamp", "anchor": "sleeve", "dy": -22 }] } },
+      "alignX": { "part": "clamp", "anchor": "sleeve", "own": "rod" },
+      "alignY": { "part": "flask", "anchor": "base", "own": "base" },
+      "back": true
+    },
+    { "id": "stopwatch", "symbol": "stopwatch", "near": { "part": "flask", "anchor": "base", "dx": 112, "dy": -33 } }
+  ],
+  "connectors": [
+    {
+      "id": "tube",
+      "kind": "glassTube",
+      "points": [
+        { "part": "flask", "anchor": "mouth", "dy": 46 },
+        { "y": { "part": "flask", "anchor": "mouth", "dy": -62 } },
+        { "x": { "part": "trough", "anchor": "base", "dx": -90 } },
+        { "y": { "part": "trough", "anchor": "base", "dy": -30 } },
+        { "x": { "part": "cylinder", "anchor": "mouth" } },
+        { "y": { "part": "cylinder", "anchor": "mouth", "dy": -36 } }
+      ]
+    }
+  ],
+  "labels": {
+    "text": { "cylinder": "100 cm3 measuring cylinder", "trough": "trough of water", "clamp": "clamp" },
+    "skip": ["stopwatch"],
+    "extra": [
+      { "text": "dilute HCl(aq)", "part": "flask", "at": [-22, 112] },
+      { "text": "34 cm3 of H2", "part": "cylinder", "at": [0, 150] },
+      { "text": "delivery tube", "connector": "tube", "along": 0.3 },
+      { "text": "stopwatch", "part": "stopwatch", "at": [0, 66], "textAt": [-24, 34], "side": "right" }
+    ]
+  }
+}

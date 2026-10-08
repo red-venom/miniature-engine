@@ -1,0 +1,51 @@
+{
+  "title": "Cooling curve of stearic acid",
+  "parts": [
+    { "id": "mat", "symbol": "heatproofMat", "at": { "x": 0, "y": 0, "anchor": "under" }, "size": { "w": 160 } },
+    {
+      "id": "beaker",
+      "symbol": "beaker",
+      "on": { "part": "mat", "anchor": "top", "own": "base" },
+      "contents": { "main": [{ "preset": "Water", "amount": 0.7 }] }
+    },
+    {
+      "id": "tube",
+      "symbol": "boilingTube",
+      "on": { "part": "beaker", "anchor": "base", "own": "bottom", "dy": -30 },
+      "contents": { "main": [{ "preset": "Cloudy", "amount": 0.35 }] }
+    },
+    {
+      "id": "thermometer",
+      "symbol": "thermometer",
+      "size": { "h": 190 },
+      "on": { "part": "tube", "anchor": "bottom", "own": "bulb", "dx": 4, "dy": -12 },
+      "contents": { "main": [{ "reading": 60 }] }
+    },
+    {
+      "id": "clamp",
+      "symbol": "bossClamp",
+      "size": { "w": 150 },
+      "params": { "grip": 34 },
+      "on": { "part": "tube", "anchor": "neck", "own": "grip" },
+      "behind": "tube"
+    },
+    {
+      "id": "stand",
+      "symbol": "clampStand",
+      "flip": true,
+      "size": { "w": 100, "h": { "between": [{ "part": "mat", "anchor": "under" }, { "part": "clamp", "anchor": "sleeve", "dy": -40 }] } },
+      "alignX": { "part": "clamp", "anchor": "sleeve", "own": "rod" },
+      "alignY": { "part": "mat", "anchor": "under", "own": "base" },
+      "back": true
+    },
+    { "id": "stopwatch", "symbol": "stopwatch", "near": { "part": "stand", "anchor": "base", "dx": -120, "dy": -33 } }
+  ],
+  "labels": {
+    "text": { "clamp": "clamp", "tube": "boiling tube", "mat": "heatproof mat" },
+    "side": { "stand": "left", "clamp": "left" },
+    "extra": [
+      { "text": "stearic acid", "part": "tube", "at": [8, 125] },
+      { "text": "hot water", "part": "beaker", "at": [30, 100] }
+    ]
+  }
+}

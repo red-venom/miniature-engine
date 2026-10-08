@@ -1,0 +1,38 @@
+{
+  "title": "Titration",
+  "parts": [
+    { "id": "tile", "symbol": "tile", "at": { "x": 0, "y": 0, "anchor": "under" } },
+    {
+      "id": "flask",
+      "symbol": "conicalFlask",
+      "on": { "part": "tile", "anchor": "top", "own": "base" },
+      "contents": { "main": [{ "preset": "Pink", "amount": 0.2 }] }
+    },
+    {
+      "id": "burette",
+      "symbol": "burette",
+      "on": { "part": "flask", "anchor": "mouth", "own": "tip", "dy": 15 },
+      "contents": { "main": [{ "preset": "Colourless solution", "reading": 0, "meniscus": true }] }
+    },
+    {
+      "id": "clamp",
+      "symbol": "bossClamp",
+      "params": { "grip": 18 },
+      "on": { "part": "burette", "anchor": "neck", "own": "grip" },
+      "behind": "burette"
+    },
+    {
+      "id": "stand",
+      "symbol": "clampStand",
+      "size": { "w": 200, "h": { "between": [{ "part": "tile", "anchor": "under", "dy": 9 }, { "part": "clamp", "anchor": "sleeve", "dy": -70 }] } },
+      "alignX": { "part": "clamp", "anchor": "sleeve", "own": "rod" },
+      "alignY": { "part": "tile", "anchor": "under", "own": "base", "dy": 9 },
+      "back": true
+    }
+  ],
+  "labels": {
+    "text": { "clamp": "clamp", "tile": "white tile" },
+    "side": { "clamp": "left", "stand": "left" },
+    "extra": [{ "text": "alkali and indicator", "part": "flask", "at": [30, 130] }]
+  }
+}
