@@ -1,0 +1,37 @@
+{
+  "title": "Circuit for a filament lamp",
+  "parts": [
+    { "id": "ammeter", "symbol": "cAmmeter" },
+    { "id": "lamp", "symbol": "cLamp", "on": { "part": "ammeter", "anchor": "b", "own": "a", "dx": 110 } },
+    { "id": "voltmeter", "symbol": "cVoltmeter", "near": { "part": "lamp", "anchor": "a", "dx": 30, "dy": -100 } },
+    { "id": "cell", "symbol": "cCell", "rot": 90, "near": { "part": "ammeter", "anchor": "a", "dx": -110, "dy": 100 } },
+    { "id": "switch", "symbol": "cSwitch", "near": { "part": "lamp", "anchor": "a", "dx": -30, "dy": 200 } },
+    { "id": "junction-a", "symbol": "cJunction", "near": { "part": "lamp", "anchor": "a" } },
+    { "id": "junction-b", "symbol": "cJunction", "near": { "part": "lamp", "anchor": "b" } }
+  ],
+  "connectors": [
+    { "kind": "wire", "points": [{ "part": "ammeter", "anchor": "b" }, { "part": "lamp", "anchor": "a" }] },
+    { "kind": "wire", "points": [{ "part": "ammeter", "anchor": "a" }, { "x": { "part": "cell", "anchor": "a" } }, { "part": "cell", "anchor": "a" }] },
+    { "kind": "wire", "points": [{ "part": "cell", "anchor": "b" }, { "y": { "part": "switch", "anchor": "a" } }, { "part": "switch", "anchor": "a" }] },
+    {
+      "kind": "wire",
+      "points": [
+        { "part": "switch", "anchor": "b" },
+        { "x": { "part": "lamp", "anchor": "b", "dx": 70 } },
+        { "y": { "part": "lamp", "anchor": "b" } },
+        { "part": "lamp", "anchor": "b" }
+      ]
+    },
+    { "kind": "wire", "points": [{ "part": "lamp", "anchor": "a" }, { "part": "voltmeter", "anchor": "a" }] },
+    { "kind": "wire", "points": [{ "part": "lamp", "anchor": "b" }, { "part": "voltmeter", "anchor": "b" }] }
+  ],
+  "labels": {
+    "extra": [
+      { "text": "ammeter", "part": "ammeter", "at": [0, 8], "textAt": [14, -30], "side": "right" },
+      { "text": "lamp", "part": "lamp", "at": [0, 32], "textAt": [-24, 40], "side": "right" },
+      { "text": "voltmeter", "part": "voltmeter", "at": [0, 8], "textAt": [34, -34], "side": "right" },
+      { "text": "cell", "part": "cell", "at": [0, 20], "textAt": [-50, 0], "side": "left" },
+      { "text": "switch", "part": "switch", "at": [-12, 14], "textAt": [-26, 44], "side": "right" }
+    ]
+  }
+}

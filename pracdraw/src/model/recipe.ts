@@ -20,7 +20,7 @@
 import { P, type Pt, type V } from '../kernel/geom'
 import type { Layer, LayerKind } from '../kernel/contents'
 import { labelPoint } from '../symbols/label'
-import { SYMBOLS, defaultParams, geometry, hasSymbol, symbolDef } from '../symbols/registry'
+import { SYMBOLS, defaultParams, geometry, hasSymbol, labelText, symbolDef } from '../symbols/registry'
 import { readingToAmount } from '../symbols/scale'
 import type { Anchor, Geometry, ParamDef, SymbolDef } from '../symbols/types'
 import { LABEL_GAP, autoLabels, spaceColumn, uncrossColumn, type Placed } from './autoLabel'
@@ -78,7 +78,15 @@ export interface AtSpec {
   /** The part's own anchor that goes on (x, y); without it, the centre of the part does. */
   anchor?: string
 }
-export type PointSpec = { x: number; y: number; r?: number } | ({ r?: number } & AnchorRef) | { dx?: number; dy?: number; r?: number }
+/** A size: a number, or the distance between two points (a clamp stand as tall as from the bench to above its clamp). */
+export type SizeSpec = number | { between: [AnchorRef, AnchorRef] }
+/** A coordinate of a point: a number, or the same coordinate of an anchor (with its shifts). */
+export type CoordinateSpec = number | AnchorRef
+/**
+ * A point of a connector: an anchor of a part, or x and y (each a number or an anchor; with one of them left out, the
+ * point goes level or upright from the point before), or a step (dx, dy) from the point before. `r` is the bend radius.
+ */
+export type PointSpec = ({ r?: number } & AnchorRef) | { x?: CoordinateSpec; y?: CoordinateSpec; r?: number } | { dx?: number; dy?: number; r?: number }
 
 export interface LayerSpec {
   preset?: string
@@ -103,10 +111,14 @@ export interface PartSpec {
   alignY?: OnSpec
   rot?: number
   flip?: boolean
-  size?: { w?: number; h?: number }
+  /** `w` and `h` are numbers, or { "between": [point, point] }: the distance between two anchors. */
+  size?: { w?: SizeSpec; h?: SizeSpec }
   params?: Record<string, ParamValue>
   contents?: Record<string, LayerSpec[]>
+  /** Draw this part just behind another part (a clamp behind the vessel it grips). */
   behind?: string
+  /** Draw this part behind all the others (a clamp stand). */
+  back?: boolean
   note?: string
 }
 
@@ -119,7 +131,9 @@ export interface ConnectorSpec {
   dash?: boolean
   startCap?: Cap
   endCap?: Cap
+  /** Connectors are drawn after all the parts; this one is drawn just behind a part instead. */
   behind?: string
+  back?: boolean
   note?: string
 }
 
@@ -212,7 +226,7 @@ function distance(a: string, b: string): number {
 export function nearestNames(wanted: string, names: readonly string[], max = 3): string[] {
   const w = squash(wanted)
   if (!w) return []
-  const reach = Math.max(2, Math.ceil(w.length / 3))
+  const reach = Math.max(1, Math.floor(w.length / 3))
   return names
     .map((name) => {
       const n = squash(name)
@@ -401,7 +415,7 @@ function refPart(st: PartState, path: string, id: string, current: number, what:
     st.ctx.error(
       path,
       `${what} names ${quote(id)}, which comes later in the list than ${quote(me)}.`,
-      `A part can only be placed on parts listed before it: move ${quote(id)} above ${quote(me)}. To draw ${quote(me)} behind ${quote(id)} (a stand behind its clamp) and still place it on ${quote(id)}, list ${quote(me)} after ${quote(id)} and add "behind": ${quote(id)} to ${quote(me)}.`,
+      `A part is placed on parts that are listed before it: move ${quote(id)} above ${quote(me)} in the list. If ${quote(me)} must be drawn behind ${quote(id)} (a stand behind its clamp), list ${quote(me)} after ${quote(id)} and add "behind": ${quote(id)} to ${quote(me)} (or "back": true to draw it behind everything).`,
     )
     return null
   }
@@ -460,7 +474,7 @@ function readRef(st: PartState, path: string, v: unknown, current: number, own: 
 
 // ---------------------------------------------------------------- parameters, size, contents
 
-const PART_KEYS = ['id', 'symbol', 'on', 'near', 'at', 'alignX', 'alignY', 'rot', 'flip', 'size', 'params', 'contents', 'behind', 'note']
+const PART_KEYS = ['id', 'symbol', 'on', 'near', 'at', 'alignX', 'alignY', 'rot', 'flip', 'size', 'params', 'contents', 'behind', 'back', 'note']
 
 function paramRange(p: ParamDef): string {
   if (p.type === 'number') return `${p.step === 1 ? 'a whole number' : 'a number'} from ${p.min} to ${p.max}`
@@ -522,12 +536,33 @@ function readParams(ctx: Ctx, path: string, def: SymbolDef, v: unknown): Record<
 }
 
 /** The size of a part: its own, or what the recipe asks for, within what its resize mode allows. */
-function readSize(ctx: Ctx, path: string, def: SymbolDef, v: unknown): { w: number; h: number } {
+function readSize(st: PartState, current: number, path: string, def: SymbolDef, v: unknown): { w: number; h: number } {
+  const ctx = st.ctx
   const size = { w: def.size.w, h: def.size.h }
   const o = readObject(ctx, path, v, ['w', 'h'], 'the size')
   if (!o) return size
-  let w = o.w === undefined ? undefined : readNumber(ctx, join(path, 'w'), o.w, 'The width "w"')
-  let h = o.h === undefined ? undefined : readNumber(ctx, join(path, 'h'), o.h, 'The height "h"')
+  /** A number, or { "between": [point, point] }: the distance between two anchors, across (w) or up and down (h). */
+  const read = (axis: 'w' | 'h'): number | undefined => {
+    const value = o[axis]
+    if (value === undefined) return undefined
+    const at = join(path, axis)
+    if (!isObj(value)) return readNumber(ctx, at, value, axis === 'w' ? 'The width "w"' : 'The height "h"')
+    readObject(ctx, at, value, ['between'], 'this size')
+    const pair = value.between
+    if (!Array.isArray(pair) || pair.length !== 2) {
+      ctx.error(
+        join(at, 'between'),
+        'The "between" of a size must be a list of two points.',
+        'For example [{ "part": "mat", "anchor": "under" }, { "part": "clamp", "anchor": "sleeve", "dy": -40 }].',
+      )
+      return undefined
+    }
+    const [a, b] = pair.map((p, k) => readRef(st, `${at}.between[${k}]`, p, current, false))
+    if (!a || !b) return undefined
+    return Math.abs(axis === 'w' ? a.point.x - b.point.x : a.point.y - b.point.y)
+  }
+  let w = read('w')
+  let h = read('h')
   if (w !== undefined && !(w > 0 && w <= 4000)) {
     ctx.error(
       join(path, 'w'),
@@ -835,7 +870,7 @@ function readPart(st: PartState, i: number, raw: unknown): PartRec | null {
   }
   if (o.flip !== undefined) item.flip = readBool(ctx, join(path, 'flip'), o.flip, 'The "flip"') ?? false
   if (o.size !== undefined) {
-    const size = readSize(ctx, join(path, 'size'), def, o.size)
+    const size = readSize(st, i, join(path, 'size'), def, o.size)
     item.w = size.w
     item.h = size.h
   }
@@ -937,7 +972,7 @@ function placePart(st: PartState, rec: PartRec, o: Obj, explain: string[]): bool
 
 // ---------------------------------------------------------------- connectors
 
-const CONNECTOR_KEYS = ['id', 'kind', 'points', 'width', 'radius', 'dash', 'startCap', 'endCap', 'behind', 'note']
+const CONNECTOR_KEYS = ['id', 'kind', 'points', 'width', 'radius', 'dash', 'startCap', 'endCap', 'behind', 'back', 'note']
 const POINT_KEYS = ['part', 'anchor', 'dx', 'dy', 'out', 'x', 'y', 'r']
 const CONNECTOR_KINDS: readonly ConnectorKind[] = ['glassTube', 'rubberTube', 'wire', 'line']
 const ID = /^[A-Za-z][A-Za-z0-9_-]{0,39}$/
@@ -950,7 +985,7 @@ function readPoints(st: PartState, path: string, v: unknown): V[] | null {
     ctx.error(
       path,
       'A connector needs a list of at least two points.',
-      'Each point is { "x": 0, "y": 0 }, { "part": "flask", "anchor": "mouth" } or a step { "dx": 0, "dy": -60 } from the point before.',
+      'Each point is { "part": "flask", "anchor": "mouth" }, { "x": 0, "y": 0 } or a step { "dx": 0, "dy": -60 } from the point before.',
     )
     return null
   }
@@ -959,7 +994,7 @@ function readPoints(st: PartState, path: string, v: unknown): V[] | null {
   v.forEach((raw, i) => {
     const at = `${path}[${i}]`
     if (!isObj(raw)) {
-      ctx.error(at, 'A point must be an object.', 'Write { "x": 0, "y": 0 }, { "part": "flask", "anchor": "mouth" } or { "dx": 0, "dy": -60 }.')
+      ctx.error(at, 'A point must be an object.', 'Write { "part": "flask", "anchor": "mouth" }, { "x": 0, "y": 0 } or { "dx": 0, "dy": -60 }.')
       bad = true
       return
     }
@@ -977,9 +1012,25 @@ function readPoints(st: PartState, path: string, v: unknown): V[] | null {
       const ref = readRef(st, at, raw, ANY_PART, false, ['r'])
       if (ref) p = ref.point
     } else if (raw.x !== undefined || raw.y !== undefined) {
+      // A point with x and y; with only one of them, a run that goes level or upright from the point before.
       readObject(ctx, at, raw, ['x', 'y', 'r'], 'this point')
-      const x = readNumber(ctx, join(at, 'x'), raw.x, 'The "x" of a point'),
-        y = readNumber(ctx, join(at, 'y'), raw.y, 'The "y" of a point')
+      const prev = pts[pts.length - 1]
+      const coordinate = (axis: 'x' | 'y'): number | undefined => {
+        const v = raw[axis]
+        if (v === undefined) {
+          if (!prev)
+            ctx.error(
+              at,
+              'The first point of a connector needs both "x" and "y".',
+              'Only a later point can leave one of them out: it keeps that coordinate of the point before.',
+            )
+          return prev?.[axis]
+        }
+        if (isObj(v)) return readRef(st, join(at, axis), v, ANY_PART, false)?.point[axis]
+        return readNumber(ctx, join(at, axis), v, `The "${axis}" of a point`)
+      }
+      const x = coordinate('x'),
+        y = coordinate('y')
       if (x !== undefined && y !== undefined) p = P(x, y)
     } else if (raw.dx !== undefined || raw.dy !== undefined) {
       readObject(ctx, at, raw, ['dx', 'dy', 'r'], 'this step')
@@ -995,7 +1046,11 @@ function readPoints(st: PartState, path: string, v: unknown): V[] | null {
       else if (dx !== undefined && dy !== undefined) p = P(prev.x + dx, prev.y + dy)
     } else {
       readObject(ctx, at, raw, POINT_KEYS, 'this point')
-      ctx.error(at, 'This point says nothing.', 'Write { "x": 0, "y": 0 }, { "part": "flask", "anchor": "mouth" } or a step { "dx": 0, "dy": -60 }.')
+      ctx.error(
+        at,
+        'This point says nothing.',
+        'Write { "part": "flask", "anchor": "mouth" }, { "x": 0, "y": 0 }, a step { "dx": 0, "dy": -60 } from the point before, or { "y": 0 } to go upright to there.',
+      )
     }
     if (!p) {
       bad = true
@@ -1071,7 +1126,6 @@ function readConnector(st: PartState, i: number, raw: unknown, made: ConnectorIt
         )
     }
   }
-  if (o.behind !== undefined) readString(ctx, join(path, 'behind'), o.behind, 'The "behind" of a connector')
   if (ctx.failedSince(from) || !kind || !pts) return null
   if (!isDrawable(pts)) {
     ctx.error(join(path, 'points'), 'All the points of this connector are in one place, so nothing would be drawn.', 'Move a point away from the others.')
@@ -1093,9 +1147,37 @@ function readConnector(st: PartState, i: number, raw: unknown, made: ConnectorIt
 
 // ---------------------------------------------------------------- the draw order
 
-/** Back to front: the order given (parts, then connectors), then each `behind` takes its item to just before its target. */
-function drawOrder(ctx: Ctx, base: Id[], behind: Map<Id, { target: Id; path: string }>): Id[] {
-  const order = [...base]
+interface Behind {
+  target: Id
+  path: string
+}
+
+/** The `behind` and `back` keys of a part or a connector: where in the draw order it goes. */
+function readDraw(st: PartState, path: string, o: Obj, id: Id, behind: Map<Id, Behind>, back: Set<Id>): void {
+  const ctx = st.ctx
+  if (o.back !== undefined && o.behind !== undefined) {
+    ctx.error(join(path, 'back'), 'An item is drawn "behind" another part or at the "back", not both.', 'Remove one of them.')
+    return
+  }
+  if (o.back !== undefined) {
+    if (readBool(ctx, join(path, 'back'), o.back, 'The "back" flag')) back.add(id)
+    return
+  }
+  if (o.behind === undefined) return
+  const target = readString(ctx, join(path, 'behind'), o.behind, 'The "behind" of a part')
+  if (target === undefined) return
+  if (target === id) ctx.error(join(path, 'behind'), 'An item cannot be drawn behind itself.', 'Name another part.')
+  else if (!st.index.has(target)) {
+    ctx.error(join(path, 'behind'), `"behind" names ${quote(target)}, which is not a part.`, `The part ids are: ${idList(st)}.${didYouMean(target, st.names)}`)
+  } else behind.set(id, { target, path: join(path, 'behind') })
+}
+
+/**
+ * Back to front. The order given (the parts, then the connectors) with the `back` items first; then each `behind` takes
+ * its item to just before its target, so a stand that is behind a clamp that is behind a vessel comes out right.
+ */
+function drawOrder(ctx: Ctx, given: Id[], behind: Map<Id, Behind>, back: Set<Id>): Id[] {
+  const order = [...given.filter((id) => back.has(id)), ...given.filter((id) => !back.has(id))]
   const done = new Set<Id>()
   const visiting: Id[] = []
   const settle = (id: Id): void => {
@@ -1115,28 +1197,34 @@ function drawOrder(ctx: Ctx, base: Id[], behind: Map<Id, { target: Id; path: str
     }
     done.add(id)
   }
-  for (const id of base) settle(id)
+  for (const id of given) settle(id)
   return order
 }
 
 // ---------------------------------------------------------------- labels
 
-const LABELS_KEYS = ['auto', 'text', 'skip', 'extra']
+const LABELS_KEYS = ['auto', 'text', 'skip', 'side', 'extra']
 const EXTRA_KEYS = ['text', 'part', 'anchor', 'at', 'connector', 'along', 'point', 'near', 'side', 'textAt', 'end', 'size', 'note']
 
-/** The point at a fraction of the way along a polyline. */
-function along(points: readonly Pt[], t: number): Pt {
+/** The point at a fraction of the way along a polyline, and whether the run it is on is more level than upright. */
+function along(points: readonly Pt[], t: number): { at: Pt; level: boolean } {
   const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y))
   let left = lengths.reduce((a, b) => a + b, 0) * clamp(t, 0, 1)
   for (let i = 0; i < lengths.length; i++) {
     if (left <= lengths[i] || i === lengths.length - 1) {
       const k = lengths[i] ? left / lengths[i] : 0
-      return P(points[i].x + (points[i + 1].x - points[i].x) * k, points[i].y + (points[i + 1].y - points[i].y) * k)
+      const dx = points[i + 1].x - points[i].x,
+        dy = points[i + 1].y - points[i].y
+      return { at: P(points[i].x + dx * k, points[i].y + dy * k), level: Math.abs(dx) >= Math.abs(dy) }
     }
     left -= lengths[i]
   }
-  return points[0]
+  return { at: points[0], level: true }
 }
+
+/** Where the text of a label on a connector goes when the recipe does not say: just above a level run, or beside an upright one. */
+const ABOVE = { dx: 12, dy: -24 },
+  BESIDE = { dx: 30, dy: 5 }
 
 /** A label without the optional fields that are not set (a clean object, whatever the JSON round trip does). */
 function newLabel(fields: Pick<LabelItem, 'x' | 'y' | 'side' | 'text'> & Partial<LabelItem>): LabelItem {
@@ -1264,7 +1352,12 @@ function readExtra(ctx: Ctx, ls: LabelState, path: string, raw: unknown, out: Ex
       }
       centreX = it.x
       end = (s) => {
-        const p = local ?? labelPoint(g, it.w, it.h, s)
+        // Without a point of its own, the leader ends where Label all would end it: of the two leader points of the part,
+        // the one that lies further towards the side of the text, as the part stands in the world.
+        const left = labelPoint(g, it.w, it.h, 'left'),
+          right = labelPoint(g, it.w, it.h, 'right')
+        const useLeft = s === 'left' ? toWorld(it, left).x <= toWorld(it, right).x : toWorld(it, left).x > toWorld(it, right).x
+        const p = local ?? (useLeft ? left : right)
         return { world: toWorld(it, p), target: { item: rec.id, lx: r3(p.x), ly: r3(p.y) } }
       }
     }
@@ -1293,9 +1386,15 @@ function readExtra(ctx: Ctx, ls: LabelState, path: string, raw: unknown, out: Ex
       else if (n !== undefined) t = n
     }
     if (c) {
-      const p = along(c.points, t)
+      const { at: p, level } = along(c.points, t)
       centreX = p.x
       end = () => ({ world: p, target: { x: r3(p.x), y: r3(p.y) } })
+      // A tube runs through the middle of the diagram: its text goes next to it, not in a column far away.
+      if (!textAt) {
+        const s = side ?? (level ? 'right' : p.x < out.centre ? 'left' : 'right')
+        textAt = level ? P(s === 'right' ? -ABOVE.dx : ABOVE.dx, ABOVE.dy) : P(s === 'left' ? -BESIDE.dx : BESIDE.dx, BESIDE.dy)
+        side = s
+      }
     }
   } else if (o.point !== undefined) {
     const p = readObject(ctx, join(path, 'point'), o.point, ['x', 'y'], 'this point')
@@ -1359,6 +1458,29 @@ function makeLabels(ctx: Ctx, ls: LabelState, raw: unknown): LabelItem[] {
     }
   }
 
+  // The parts whose label is on the side that the recipe says, not the side that Label all chooses.
+  const sides = new Map<string, 'left' | 'right'>()
+  if (o?.side !== undefined) {
+    if (!isObj(o.side)) ctx.error('labels.side', 'The "side" of the labels must be an object { "partId": "left" }.', 'For example { "stand": "left" }.')
+    else {
+      for (const [id, s] of Object.entries(o.side)) {
+        if (!st.index.has(id))
+          ctx.error(
+            join('labels.side', id),
+            `"labels.side" names ${quote(id)}, which is not a part.`,
+            `The part ids are: ${idList(st)}.${didYouMean(id, st.names)}`,
+          )
+        else if (s !== 'left' && s !== 'right')
+          ctx.error(join('labels.side', id), `The side of ${quote(id)} must be "left" or "right".`, 'It is the side of the diagram on which the text stands.')
+        else if (skip.has(id)) ctx.error(join('labels.side', id), `${quote(id)} is in "labels.skip" and in "labels.side".`, 'Keep it in one of them.')
+        else {
+          sides.set(id, s)
+          skip.add(id)
+        }
+      }
+    }
+  }
+
   // Label all, for the parts that are not skipped. A skipped part gets a dummy label fixed to it, so that Label all leaves it
   // alone; the columns are laid out beside the same bounds, because a label is no part of them.
   let count = 0
@@ -1378,19 +1500,21 @@ function makeLabels(ctx: Ctx, ls: LabelState, raw: unknown): LabelItem[] {
     }
   }
 
-  // The extra labels.
+  // The labels of "side", then the extra labels.
   const out: ExtraOut = { centre: 0, columned: [], placed: [], plain: [] }
+  const B = itemsBox(
+    doc,
+    doc.order.filter((id) => doc.items[id]?.type !== 'label'),
+  )
+  out.centre = B ? (B.x0 + B.x1) / 2 : 0
+  for (const [id, side] of sides) {
+    const rec = st.built.get(id)
+    if (rec) readExtra(ctx, ls, join('labels.side', id), { text: texts.get(id) ?? labelText(rec.def, rec.item.params), part: id, side }, out, B)
+  }
   if (o?.extra !== undefined) {
     if (!Array.isArray(o.extra))
       ctx.error('labels.extra', 'The "extra" labels must be a list [ ... ].', 'For example [{ "text": "water", "part": "beaker", "at": [10, 90] }].')
-    else {
-      const B = itemsBox(
-        doc,
-        doc.order.filter((id) => doc.items[id]?.type !== 'label'),
-      )
-      out.centre = B ? (B.x0 + B.x1) / 2 : 0
-      o.extra.forEach((e, i) => readExtra(ctx, ls, `labels.extra[${i}]`, e, out, B))
-    }
+    else o.extra.forEach((e, i) => readExtra(ctx, ls, `labels.extra[${i}]`, e, out, B))
   }
   let columns = base
   if (out.columned.length) {
@@ -1458,6 +1582,8 @@ export function compileRecipe(recipe: unknown): RecipeResult {
   const fail = (): RecipeResult => ({ doc: null, problems: ctx.problems, explain })
   const root = readObject(ctx, '', recipe, ROOT_KEYS, 'the recipe')
   if (!root) return fail()
+  if (root.title === undefined)
+    ctx.warn('title', 'The recipe has no "title", so the diagram is called "Untitled diagram".', 'Add "title": "..." (it names the diagram in the editor).')
   const title = root.title === undefined ? 'Untitled diagram' : (readString(ctx, 'title', root.title, 'The "title"') ?? 'Untitled diagram')
   const settings = root.settings === undefined ? { ...DEFAULT_SETTINGS } : readSettings(ctx, root.settings)
   if (!Array.isArray(root.parts) || root.parts.length === 0) {
@@ -1491,24 +1617,14 @@ export function compileRecipe(recipe: unknown): RecipeResult {
   // Build and place the parts, in list order.
   const doc = newDoc(title)
   doc.settings = settings
-  const behind = new Map<Id, { target: Id; path: string }>()
+  const behind = new Map<Id, Behind>()
+  const back = new Set<Id>()
   root.parts.forEach((raw, i) => {
     if (!st.ids[i]) return
     const rec = readPart(st, i, raw)
     if (!rec || !placePart(st, rec, raw as Obj, explain)) return
     st.built.set(rec.id, rec)
-    const wanted = (raw as Obj).behind
-    if (wanted !== undefined) {
-      const target = readString(ctx, `parts[${i}].behind`, wanted, 'The "behind" of a part')
-      if (target === rec.id) ctx.error(`parts[${i}].behind`, 'A part cannot be behind itself.', 'Name another part.')
-      else if (target !== undefined && !st.index.has(target))
-        ctx.error(
-          `parts[${i}].behind`,
-          `"behind" names ${quote(target)}, which is not a part.`,
-          `The part ids are: ${idList(st)}.${didYouMean(target, st.names)}`,
-        )
-      else if (target !== undefined) behind.set(rec.id, { target, path: `parts[${i}].behind` })
-    }
+    readDraw(st, `parts[${i}]`, raw as Obj, rec.id, behind, back)
   })
   for (const rec of st.built.values()) {
     doc.items[rec.id] = rec.item
@@ -1529,20 +1645,11 @@ export function compileRecipe(recipe: unknown): RecipeResult {
         connectors.set(c.id, c)
         doc.items[c.id] = c
         doc.order.push(c.id)
-        const wanted = (raw as Obj).behind
-        if (typeof wanted === 'string') {
-          if (!st.index.has(wanted))
-            ctx.error(
-              `connectors[${i}].behind`,
-              `"behind" names ${quote(wanted)}, which is not a part.`,
-              `The part ids are: ${idList(st)}.${didYouMean(wanted, st.names)}`,
-            )
-          else behind.set(c.id, { target: wanted, path: `connectors[${i}].behind` })
-        }
+        readDraw(st, `connectors[${i}]`, raw as Obj, c.id, behind, back)
       })
     }
   }
-  doc.order = drawOrder(ctx, doc.order, behind)
+  doc.order = drawOrder(ctx, doc.order, behind, back)
 
   // The labels, last of all.
   const labels = makeLabels(ctx, { st, doc, connectors }, root.labels === undefined ? {} : root.labels)

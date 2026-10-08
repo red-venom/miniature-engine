@@ -1,0 +1,27 @@
+{
+  "title": "Heating water in a beaker",
+  "parts": [
+    { "id": "mat", "symbol": "heatproofMat", "at": { "x": 0, "y": 0, "anchor": "under" } },
+    { "id": "tripod", "symbol": "tripod", "on": { "part": "mat", "anchor": "top", "own": "feet" } },
+    { "id": "burner", "symbol": "bunsenBurner", "on": { "part": "mat", "anchor": "top", "own": "base" } },
+    { "id": "gauze", "symbol": "gauze", "on": { "part": "tripod", "anchor": "top", "own": "under" } },
+    {
+      "id": "beaker",
+      "symbol": "beaker",
+      "params": { "graduations": true },
+      "on": { "part": "gauze", "anchor": "top", "own": "base" },
+      "contents": { "main": [{ "preset": "Water", "amount": 0.6 }] }
+    },
+    {
+      "id": "thermometer",
+      "symbol": "thermometer",
+      "size": { "h": 200 },
+      "on": { "part": "beaker", "anchor": "base", "own": "bulb", "dx": 16, "dy": -12 },
+      "contents": { "main": [{ "reading": 60 }] }
+    }
+  ],
+  "labels": {
+    "text": { "beaker": "250 cm3 beaker" },
+    "extra": [{ "text": "water", "part": "beaker", "at": [30, 90] }]
+  }
+}

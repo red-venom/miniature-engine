@@ -4,10 +4,11 @@
 //
 // `checkDoc` finds: two leader lines that cross; a label text (or the line to write on) that overlaps a part other than
 // the one it names; two label texts that overlap; a symbol that failed to build (it is drawn as a dashed box); a
-// connector whose points are all in one place. Every finding is a warning with the id of the item as its path and a hint.
-// A warning must be a real fault: the 43 templates have none (check.test.ts).
+// connector whose points are all in one place; a leader that ends in empty space; a clamp drawn in front of the vessel
+// it grips. Every finding is a warning with the id of the item as its path and a hint. A warning must be a real fault:
+// the 43 templates have none (check.test.ts).
 
-import { P, pathPolys, roundPoly, type Box, type Pt } from '../kernel/geom'
+import { P, dist, nearestOnSegment, pathPolys, roundPoly, type Box, type Pt } from '../kernel/geom'
 import { smartChem } from '../kernel/text'
 import { geometry, hasSymbol } from '../symbols/registry'
 import type { Role } from '../symbols/types'
@@ -159,6 +160,17 @@ function hits(o: Obstacle, box: Box): boolean {
   return o.regions.some((r) => inside(centre, r))
 }
 
+/** How far a point is from the drawing of an obstacle: 0 on a line or inside a filled part or a cavity. */
+function distanceTo(o: Obstacle, p: Pt): number {
+  if (o.regions.some((r) => inside(p, r))) return 0
+  let best = Infinity
+  for (const [a, b] of o.segments) best = Math.min(best, dist(nearestOnSegment(a, b, p), p))
+  return Math.max(0, best - o.pad)
+}
+
+/** A leader ends within this many units of a drawing, or inside it. Every label of the templates ends within 3. */
+const REACH = 6
+
 // ---------------------------------------------------------------- labels
 
 type Mode = DocSettings['labelMode']
@@ -218,6 +230,24 @@ export function checkDoc(doc: Doc, measure: Measure = estimateWidth): Problem[] 
     }
   }
 
+  // A clamp that grips a vessel is drawn behind it, so that its jaws meet the walls and do not cross the glass.
+  const symbols = doc.order.map((id) => doc.items[id]).filter((it): it is SymbolItem => it?.type === 'symbol' && hasSymbol(it.symbol))
+  const spots = (it: SymbolItem, kind: 'grip' | 'neck') =>
+    (geometry(it.symbol, it.w, it.h, it.params).anchors ?? []).filter((a) => a.kind === kind).map((a) => toWorld(it, P(a.x, a.y)))
+  symbols.forEach((clamp, i) => {
+    const grips = spots(clamp, 'grip')
+    if (!grips.length) return
+    for (const vessel of symbols.slice(0, i)) {
+      if (grips.some((g) => spots(vessel, 'neck').some((n) => dist(g, n) < 2))) {
+        warn(
+          clamp.id,
+          `The clamp ${quote(clamp.id)} is drawn in front of ${quote(vessel.id)}, which it grips: its jaws would cross the glass.`,
+          `Draw the clamp behind it: in a recipe add "behind": ${quote(vessel.id)} to the clamp; in the editor use Arrange, Send backward.`,
+        )
+      }
+    }
+  })
+
   const labels = doc.order.map((id) => doc.items[id]).filter((it): it is LabelItem => it?.type === 'label')
 
   // Leaders that cross.
@@ -240,6 +270,18 @@ export function checkDoc(doc: Doc, measure: Measure = estimateWidth): Problem[] 
   // Texts that run into a part, and texts that run into each other.
   const letters = letterMap(doc)
   const obstacles = obstaclesOf(doc)
+
+  // Leaders that end in empty space: nothing is drawn where they end. (The leader of a label fixed to a part ends on that part.)
+  for (const { l, b } of leaders) {
+    const near = Math.min(...obstacles.map((o) => distanceTo(o, b)))
+    if (near > REACH) {
+      warn(
+        l.id,
+        `The leader of the label ${labelName(l)} ends in empty space, ${Math.round(near)} u from the nearest drawing.`,
+        'Move the end of the leader onto the part: the point "at" [lx, ly] of a part is in its own frame (x = 0 is its centre line, y = 0 its top).',
+      )
+    }
+  }
   const seen = new Map<string, Mode[]>()
   for (const mode of modesOf(doc)) {
     const boxes = labels.map((l) => ({ l, box: shrink(inkBox(doc, l, mode, letters.get(l.id), measure), TOUCH) }))
