@@ -1,25 +1,27 @@
-# PracDraw build report: releases 1.0 and 1.1
+# PracDraw build report: releases 1.0 and 1.1, and the lesson pipeline
 
-This report closes the release 1.0 build of PracDraw, as section 14 of `docs/SPEC.md` asks. The build started from the starter kit (phases 0 and 1) and ran phases 2 to 10 in two tracks: the editor (track E) and the drawings (track S). Every symbol, template and gate test was checked by a separate reviewer agent that did not write it. Release 1.1 (priority B) was built afterwards, on its own branch, when James asked for more development: section 8 covers it. Sections 1 to 7 are the release 1.0 report and stay as they were.
+This report closes the release 1.0 build of PracDraw, as section 14 of `docs/SPEC.md` asks. The build started from the starter kit (phases 0 and 1) and ran phases 2 to 10 in two tracks: the editor (track E) and the drawings (track S). Every symbol, template and gate test was checked by a separate reviewer agent that did not write it. Release 1.1 (priority B) was built afterwards, on its own branch, when James asked for more development: section 8 covers it. After that James said that the aim is custom diagrams for lessons, drawn by Claude; section 9 covers the first two steps towards it (phase 12, the render command and the skill, and phase 13, the inventory of diagrams that a lesson may need). Sections 1 to 7 are the release 1.0 report and stay as they were.
 
 The project is in the `pracdraw/` folder of the repository, because the repository root already holds another project. The built single file is `pracdraw/dist/index.html` (`npm run build`).
 
 ## 1. Phases
 
-| Phase                   | Result             | Gate                                                                                                      |
-| ----------------------- | ------------------ | --------------------------------------------------------------------------------------------------------- |
-| 0. Scaffold             | In the kit         | `npm run check` green before any change: 320 unit tests, 5 browser tests                                  |
-| 1. Kernel and pilots    | In the kit         | as above                                                                                                  |
-| 2. Editor core          | Passed             | 6 gate tests and the 5 ported starter tests, reviewed                                                     |
-| 3. Contents             | Passed             | 3 gate tests, reviewed                                                                                    |
-| 4. Connectors           | Passed             | 3 gate tests, reviewed                                                                                    |
-| 5. Snapping and arrange | Passed             | 3 gate tests and one unit test for each row of the snap table, reviewed                                   |
-| 6. Labels               | Passed             | 3 gate tests and the Label all unit tests, reviewed                                                       |
-| 7. Export and files     | Passed             | 6 gate tests and the section 14 unit tests, reviewed                                                      |
-| 8. Symbols A            | Passed             | `npm run release:a:symbols`; all 78 new symbols passed visual review                                      |
-| 9. Templates A          | Passed             | `npm run release:a`; all 39 new templates reviewed (one accepted with a note); `gallery-inserts-template` |
-| 10. Release 1.0         | Passed             | 8 gate tests and the four budgets, reviewed; `drag-budget` passed after a fix round                       |
-| 11. Release 1.1         | Passed (section 8) | `npm run release:b`; all 27 new symbols and 3 new templates passed visual review                          |
+| Phase                   | Result             | Gate                                                                                                                  |
+| ----------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 0. Scaffold             | In the kit         | `npm run check` green before any change: 320 unit tests, 5 browser tests                                              |
+| 1. Kernel and pilots    | In the kit         | as above                                                                                                              |
+| 2. Editor core          | Passed             | 6 gate tests and the 5 ported starter tests, reviewed                                                                 |
+| 3. Contents             | Passed             | 3 gate tests, reviewed                                                                                                |
+| 4. Connectors           | Passed             | 3 gate tests, reviewed                                                                                                |
+| 5. Snapping and arrange | Passed             | 3 gate tests and one unit test for each row of the snap table, reviewed                                               |
+| 6. Labels               | Passed             | 3 gate tests and the Label all unit tests, reviewed                                                                   |
+| 7. Export and files     | Passed             | 6 gate tests and the section 14 unit tests, reviewed                                                                  |
+| 8. Symbols A            | Passed             | `npm run release:a:symbols`; all 78 new symbols passed visual review                                                  |
+| 9. Templates A          | Passed             | `npm run release:a`; all 39 new templates reviewed (one accepted with a note); `gallery-inserts-template`             |
+| 10. Release 1.0         | Passed             | 8 gate tests and the four budgets, reviewed; `drag-budget` passed after a fix round                                   |
+| 11. Release 1.1         | Passed (section 8) | `npm run release:b`; all 27 new symbols and 3 new templates passed visual review                                      |
+| 12. Lesson pipeline     | Passed (section 9) | Gate review (10 of 11 gate tests, the 11th after a fix); acceptance run; two rounds of visual review; `npm run check` |
+| 13. Diagram inventory   | Done (section 9)   | `src/diagrams.test.ts` (15 tests); James sets priorities before any pack is built                                     |
 
 A gap that a reviewer found in a gate test was fixed in the next phase's commit (for phase 10, in a fix round) and checked again by the next reviewer. Section 4 lists each one.
 
@@ -617,3 +619,135 @@ The functional check of `scaleWindow` was made in the built app: typed readings 
 - **Known, not changed.** On the turned photocopy-safe sheet, one dash of liquid in the `uTube` touches the outer wall by about 0.35 u (the kernel's dash layout does the same to `volumetricFlask`, which passed in release 1.0). At some turn angles (about 30, 45, 60, 150, 210 and 330 degrees), a stub of about 6 u of centre line shows in the acute pocket where the lower break line of `scaleWindow` meets the wall (the kernel's mark for a narrow span of liquid in photocopy-safe mode, `MIN_RUN`).
 - **No symbol or template was accepted with a note.**
 - **Manual checks.** The open list in section 7 applies to the 123 symbols and 43 templates of release 1.1 as well.
+
+## 9. Lesson pipeline and diagram inventory (phases 12 and 13)
+
+After release 1.1, James changed the aim. He wants Claude to build custom diagrams for lessons, drawing alone, for anything reasonable in a KS4 science lesson (chemistry first: atoms, electron configuration, ions, giant ionic, covalent and metallic structures, and so on), with KS5 chemistry apparatus as well, and biology and physics later. He did not yet know how the diagrams reach the lesson system, so the route built is image files plus the editable source. The specification has no phase after 11. The lead wrote a plan for phases 12 to 18 and James approved it in plan mode. This section covers phases 12 and 13. Phases 14 to 18 (particle and structure packs) wait until James has set priorities from the inventory.
+
+The work is on branch `claude/pracdraw-lesson-pipeline`, built from the release 1.1 branch, in draft pull request #9 (stacked on #8, which is stacked on #7).
+
+### Phase 12: the hands-free pipeline
+
+Before phase 12, a person had to use the editor to make a picture. Now Claude writes a short JSON recipe, runs one command, looks at the picture, and fixes the recipe until the picture is right.
+
+| Part            | Where                                                           | What it does                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Recipe compiler | `src/model/recipe.ts` (about 1,900 lines) and its tests         | Turns a recipe (parts placed by anchors, parameters, contents, connectors, labels fixed to parts) into a document that passes `parseDoc`. Every error says where it is and names the fix (the nearest symbol ids, the real anchors).                                                                                                                                                               |
+| Layout checks   | `src/model/check.ts`                                            | Finds faults that the eye would find: two leaders that cross, a leader that crosses a part, a leader that ends in empty space, text or a blank-mode line that runs into a part, two vessels drawn through each other, a clamp in front of the vessel it grips, and (blank copies only) a label wider than its 100 u line to write on.                                                              |
+| Render command  | `scripts/render.ts`; `npm run render`                           | Draws a recipe, a `.pracdraw.json`, an SVG that PracDraw wrote, or `--template <id>` in the built editor in headless Chromium, so the picture is the editor's own. It writes an SVG (with the editable document inside), a PNG at 1, 2 or 4 times, and the `.pracdraw.json`. The same input gives the same bytes.                                                                                  |
+| Variants        | `--variants`, `--student`, `--mono`, `--labels`, `--answer-key` | Text labels, a blank copy (a line to write on), a lettered copy, a lettered copy with the key (the mark scheme), and a photocopy-safe copy. `--student` writes the PNG copies that hold no answers.                                                                                                                                                                                                |
+| Finding things  | `--find`, `--list`, `--symbol`, `--template`, `--explain`       | Find a symbol or a template from words, show one symbol in full (parameters, cavities, anchors with directions), and show where every part and anchor of a drawing is.                                                                                                                                                                                                                             |
+| Hook options    | `src/editor/hook.ts`, `src/editor/files.ts`                     | `window.__pracdraw.png(scale, options?)` and `svg(options?)` take the Export dialog's options (labels, answer key, and so on), so the command and the editor draw the same picture.                                                                                                                                                                                                                |
+| The skill       | `.claude/skills/pracdraw/`                                      | `SKILL.md` (the loop, the recipe format, two worked examples, the house rules, how to look at a picture), nine more recipes in `examples/` (a heated beaker, a titration, gas over water, a circuit, a cooling curve, a filtration, a dilution, a boiling tube in a holder, Hooke's law), and `reference/` files that `npm run gen:skill` writes from the code. A unit test fails when they drift. |
+| Documents       | `docs/lesson-pipeline.md`, `docs/process/`                      | The human guide to the command and the recipe; and the briefs and method for authors, reviewers and editors, so that a later session can reuse them.                                                                                                                                                                                                                                               |
+
+#### How phase 12 was checked
+
+| Check                                                                                                                                         | Result                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The author's own tests, with deliberate breaks (mutation tests)                                                                               | Every gate test was run against a break in the code it guards. In the fix round the author made about 83 breaks (9 in `check.ts`, 24 in `recipe.ts`, 6 in `parse.ts`, 18 in the skill and docs and symbol code, 26 in `render.ts` and an example). Two weak tests were strengthened. Every new test fails when its code is broken.  |
+| Gate review: a separate reviewer on 11 gate tests, hostile inputs and the skill's statements                                                  | 10 of 11 passed. `render-variants` had a gap that showed a real fault: `--variants` lost the answer key for a recipe in letters mode. Also found: usage errors printed stack traces, 5,000 parts took over 9 minutes, absurd coordinates drew garbage without a warning, and several statements in the skill were wrong. All fixed. |
+| Acceptance run: a fresh agent given only the skill built five lesson diagrams from one-line requests                                          | All five were built (a filtration worksheet; a titration with an exam copy and a mark scheme; a pipette dilution; a boiling tube in a holder over a spirit burner; Hooke's law). 22 render runs, about 83 tool calls, no tool errors. The agent listed 13 gaps in the tool and the skill. They went into the fix round.             |
+| Visual review of the five pictures, round 1 (a separate reviewer)                                                                             | 1 pass, 4 defects. Two were in the kernel's photocopy-safe liquid (the burette's dash rows read as a second scale; a centre line made the jet look tripled): fixed by the lead. Two were recipe faults (a filter paper that merged with the funnel wall; labels wider than the blank line).                                         |
+| Fix round (17 items) and the follow-up (the label-width check applies to blank copies only)                                                   | Merged. After the follow-up: 2,136 unit tests and 79 browser tests.                                                                                                                                                                                                                                                                 |
+| Visual review round 2 (the five pictures re-drawn from the merged tree, in colour, blank, letters, letters with key, photocopy-safe, student) | 4 pass, 1 minor defect (the boiling-tube "thermometer" leader ran through the tube wall in all five pictures). Fixed in the example (`labels.end`); the render reports no layout faults.                                                                                                                                            |
+
+#### Departures and notes (phase 12)
+
+- **Phases 12 and 13 are not in `docs/SPEC.md`.** They come from the plan that James approved. The lead edited the specification in two places only: the hook line (`png(scale, options?)` and `svg(options?)`), and the photocopy-safe row of the table in section 9 (below).
+- **A lead change to the kernel, after the visual review.** In photocopy-safe mode the liquid is now drawn by the kind of cavity (`ContentOpts.monoLiquid`: `dashes` is the default; `level` for a cavity with a scale, which draws its surface line only, even when full; `thread` for the thermometer, which keeps its centre line in a narrow span). `Cavity` gained one optional field, `thread`, which only the thermometer sets (the only change to the symbol contract). Rule S12 is kept (the level can still be read). Four new tests fail under the old behaviour. This is a departure from section 9 of the specification, which was edited to match.
+- **The turned `scaleWindow` stub of section 8 is gone.** It came from the old centre-line rule. The lead rendered the symbol photocopy-safe at 30, 45, 60, 150, 210 and 330 degrees: each shows its level line and nothing else.
+- **`parseDoc` limits a symbol's size.** A size outside 1 to 5,000 takes the default size (before this, a saved document with a height of 1e9 crashed the browser after 119 seconds).
+- **Branch name.** The author's branch was `worktree-agent-a8d81134`, because git will not check out the pipeline branch in a second worktree. It was merged with a merge commit.
+- **Author's choices in the recipe format.** Parts are drawn in list order, and a part may refer only to an earlier part; `behind` and `back` set the paint order; connectors are drawn after all parts unless `behind` or `back`. The compiler uses the `DocBuilder` arithmetic but not `DocBuilder` itself (it needed problems with paths). Additions to the format: `alignX` and `alignY`, `size.h` as `between`, runs that go upright or level to an anchor, `out`, `labels.side`, `labels.end`, `labels.order`, `labels.extra` (with `textAt`, `connector`, `along`, `point`, `near`, `end`), an anchor chosen by its kind, short preset names, `note`, and two recipe presets ("Thermometer red" and "Colourless gas"). A key that the format does not know is an error. `--scale 1`, `2` and `4` are allowed. Exit code 1 is a usage or recipe error (found before the browser starts); exit code 2 is a browser or build failure. `--answer-key` without letters is a usage error.
+- **Variant names follow the picture.** The mono copy of a letters-mode recipe is `-letters-mono`.
+- **The check for a label wider than the blank line is for blank copies only.** By the unit-test estimate, 41 of the 43 templates have a label wider than the 100 u line (in the browser: 60 labels in 35 templates, the widest 185 u). The line is fixed at 100 u by the specification, so the check warns when a copy is a blank one, and not in every mode.
+
+#### Known and not changed (phase 12)
+
+- **Three template leader blemishes**, found by the new leader check, in templates that passed the earlier visual review: in `testTubeReactions`, "precipitate" crosses `testTubeRack1`; in `thermalDecomposition`, "clamp" crosses `clampStand1` and "limewater" crosses `testTubeRack7`. They are allow-listed in `check.test.ts`, with the reason. They are the template owner's to fix, with a visual re-check.
+- **The part-through-part check covers pairs of vessels only.** A check of every part against every part gave false positives (clamps on vessels, stands behind tubes, electrodes and clips, springs and clamps, chromatography paper and a stirring rod, a bung in a Buchner funnel, a thermometer in a capillary).
+- **No hand or person symbol.** A pipette and its filler, or the handle of a test-tube holder, are drawn with nothing holding them.
+- **Unreadable input files** (permissions) are not tested, because the tests run as root.
+- **The checks cannot see everything.** The skill tells Claude to look at every picture.
+
+### Phase 13: the diagram inventory
+
+Phase 13 wrote the list that bounds the rest of the goal: every diagram type that a KS4 or KS5 science lesson may need, so that James can set priorities before any particle or structure pack is built. It has no drawing code.
+
+| File                        | What it is                                                                                                                                                                                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spec/diagrams.json`        | 287 rows, one for each diagram type (a family such as "Bohr atom, Z 1 to 20" is one row). Each row has a kind, a proposed pack, a priority, what to draw, the parameters, the science checks that a test could make, sources and a confidence.                            |
+| `docs/diagram-inventory.md` | The document for James: counts, the rows by topic, the build order and what each pack would draw, nine decisions with a recommendation each, and the rows to check against the AQA PDF.                                                                                   |
+| `src/diagrams.test.ts`      | 15 unit tests: required fields, enum values, unique ids, `covered` names a real symbol or template, `covered` is null for other kinds, `chart` rows are priority C or have a note, a `checked` row cites an AQA address, and the counts and rows agree with the document. |
+
+| Count      | Figure                                                                                                                  |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Subject    | chemistry 214 (KS4 129, KS5 85), biology 36, physics 37 (the last two are outline rows, all priority C)                 |
+| Kind       | covered 54 (an existing symbol or template draws it), chart 39, new symbol 68, compound 78, new template 16, process 32 |
+| Priority   | A 60, B 117, C 110. Of the 60 A rows, 17 are already covered, 3 are charts and 40 need new code                         |
+| Confidence | checked 118, secondary 78, unverified 91                                                                                |
+
+Recommended build order in the document: step 0, check the 54 covered rows (no code); 1, 14 new templates from existing symbols; 2, `atoms`; 3, `bonding`; 4, the particle box (`matter`); 5, `molecules`; 6, `structures`; 7, flow diagrams and cells; 8 and 9, KS5; 10, the biology and physics outline; 11, charts. Steps 1 to 7 hold all 40 priority A rows that need new code. The author's estimate (not a measurement) is 51 to 76 separate pieces of code for the 127 new chemistry drawings, because several rows share one engine.
+
+#### The limit of the sources (read this before relying on `checked`)
+
+The AQA website and its PDFs could not be opened from this environment: DNS fails for `aqa.org.uk`, `WebFetch` fails for every host, and `curl` through the proxy gets 403. The web-search tool worked, including searches limited to AQA's domains, and returned a paraphrase of AQA's specification pages, question papers, mark schemes, reports and practical handbooks, with section numbers. The author used that and never saw a figure. So:
+
+- `checked` (118 rows) means that the search tool's account of an AQA page, paper or handbook reported the requirement, the figure or the apparatus. It does not mean that a drawing was compared with an AQA drawing, and a mistake in a paraphrase would be copied into the row. The test makes a `checked` row cite an AQA address and a `secondary` row a revision site.
+- 106 specification references (in 104 rows) were shown by a summary, and all were checked against what the author saw. Many rows have none. Trilogy section numbers are not given.
+- Which topics are chemistry only (8462 but not 8464) is partly from the summaries and partly from memory. The biology and physics rows are mostly from memory. Counts depend on how families were grouped (about plus or minus 15 per cent).
+- No text or artwork was copied from any site.
+
+The document ends with the rows to confirm against the PDF: 26 priority A rows that are not `checked`, and 15 priority B chemistry rows that are `unverified`, each with the AQA section to look under.
+
+#### The nine decisions for James (the first five decide the size of the work)
+
+1. **Charts** (39 rows: graphs, tables, spectra). Recommendation: leave them out of PracDraw at first (the specification excludes them), then add about a dozen sketch-graph shapes (rate curve, heating curve, Maxwell-Boltzmann curve, pH curve, concentration-time curve) as symbols once the particle and molecule packs have passed review.
+2. **KS5 skeletal formulae and curly-arrow mechanisms** (21 A-level organic rows depend on them; section 4 of the specification puts skeletal formulae out of scope). Recommendation: later, and build the KS4 molecule drawing as a list of atoms and bonds so that a skeletal view is a second way to draw the same data. It needs a curved-arrow connector and a wedge and dash bond, which do not exist.
+3. **The style of 3D structures** (18 rows: diamond, graphite, the sodium chloride cube, C60, nanotube, ice, iodine, molecule shapes, complex ions). Recommendation: one oblique projection for every lattice and wedge-and-dash bonds for molecules, with three pilot sheets for James first (the sodium chloride cube, a diamond cluster, graphite layers).
+4. **Dot-and-cross conventions** (dots against crosses, photocopy-safe marks, which molecules). No AQA mark scheme could be read: check one before that pack is reviewed.
+5. **Which course first.** 97 rows apply to Trilogy (8464); 32 are chemistry only (8462). If the first users teach Trilogy, those 32 go last in their packs.
+6. **Colour and fill for particles** under the black-line rule S6 (told apart by size and by a white, hatched or grey fill, with a key; hazard symbols with a plain black outline). Confirm, or allow a colour mode for slides.
+7. **The periodic table as a symbol**, not a chart (a fixed grid of 118 cells with highlight parameters), and whether the first version can stop at element 36.
+8. **One template file or two** for the new template groups (`labTemplates`, `organicApparatus`).
+9. **Biology and physics: when.** Recommended: after the KS4 chemistry packs have passed review.
+
+### Command output on the final tree
+
+`npm run check` on the merged tree (commit `d2e0200`), abridged to the lines that carry a result:
+
+```
+> pracdraw@0.1.0 check
+> npm run typecheck && npm run lint && npm run format:check && npm run test && npm run e2e
+
+typecheck   tsc -b                      (no output)
+lint        oxlint                      (no output)
+format      All matched files use Prettier code style!
+vitest      Test Files  41 passed (41)
+            Tests  2151 passed (2151)
+build       dist/index.html  514.76 kB │ gzip: 162.73 kB
+playwright  79 passed (2.4m)
+```
+
+The unit tests went from 2,039 (release 1.1) to 2,136 with phase 12 and to 2,151 with the 15 inventory tests. The browser tests went from 68 to 79 (11 new tests of the render command and the hook options).
+
+### Size and budgets
+
+| Budget (section 6)                                                    | Limit                      | Result                                                                                                   |
+| --------------------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `dist/index.html`                                                     | 900 kB                     | 514.76 kB (gzip 162.73 kB): pass (release 1.1: 514.25 kB)                                                |
+| Network requests at run time                                          | 0                          | 0: pass (the editor tests; the render command makes none either: `network requests: 0` is in its output) |
+| Drag one symbol 300 px in 60 pointer moves, 150 symbols with contents | mean frame gap under 20 ms | mean 16.66 ms over 60 frames, longest 23.7 ms: pass (`drag-budget`)                                      |
+| Open to first paint from `file://`                                    | under 1 s                  | 88, 84 and 80 ms to first paint (first contentful paint 220 to 244 ms): pass (`open-to-first-paint`)     |
+
+### Manual checks and decisions for James
+
+These are open. The build could not do them.
+
+- [ ] **Read `docs/diagram-inventory.md` and set the priorities.** It has nine decisions; the first five decide the size of the work (charts in or out, KS5 skeletal formulae and mechanisms now or later, the style of 3D structures, the dot-and-cross marks, which course comes first). No particle or structure pack is built until you have decided. If you reply "Continue", the recommended answers apply and the work starts with steps 0 to 3 of the build order.
+- [ ] **Check the rows that the AQA PDF can settle:** the 26 priority A rows that are not `checked` and the 15 priority B chemistry rows that are `unverified` (the last section of the inventory lists each with the AQA section to look under). Or allow `aqa.org.uk` in the environment's network policy so that a later session can read the PDFs. Until then `checked` means "a search summary of an AQA page said so".
+- [ ] **The way into the lesson system.** Today the route is image files (PNG, SVG with the editable diagram inside) and the saved `.pracdraw.json`. Try `npm run render -- --template titration --variants --out <folder>`, paste a PNG into the lesson tool, and say whether that is enough or what the lesson system needs.
+- [ ] **Merge the pull requests in order:** #7 (release 1.0), #8 (release 1.1), #9 (the pipeline and the inventory). Each is stacked on the one before.
+- [ ] **`chemistryfigures.com`** is blocked by the environment's network policy. If you want ideas from it, allow the domain (Allowed domains in the environment's network access settings) or send screenshots.
+- The manual checks of section 7 are still open, and apply to the new work as well.
