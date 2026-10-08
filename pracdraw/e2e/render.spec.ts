@@ -647,6 +647,24 @@ test('render-blank-copy-warns-about-long-labels', async ({ page }, info) => {
   expect(none).toContain(`checks: ${wide.length} warning${wide.length === 1 ? '' : 's'}`)
   expect(none).not.toContain('blank copy:')
 
+  // A copy with more of them than a listing shows has the first 25, and a count of the rest.
+  const many = join(folder(info, 'many'), 'many.json')
+  const ids = Array.from({ length: 30 }, (_, i) => `t${i}`)
+  writeFileSync(
+    many,
+    JSON.stringify({
+      title: 'Many',
+      parts: ids.map((id, i) => ({ id, symbol: 'testTube', at: { x: i * 60, y: 0 } })),
+      labels: { text: Object.fromEntries(ids.map((id, i) => [id, `a label that is far too long, number ${i}`])) },
+    }),
+  )
+  const crowd = render([many, '--out', folder(info, 'many-out'), '--no-svg', '--labels', 'blank'])
+  expect(crowd.code, crowd.out + crowd.err).toBe(0)
+  const crowded = notesOf(crowd.out, 'many-blank.png')
+  expect(crowded.filter((n) => n.startsWith('blank copy: the label "a label that is far too long'))).toHaveLength(25)
+  expect(crowded).toContain('and 5 more')
+  expect(crowded.filter((n) => n.startsWith('hint:'))).toHaveLength(1)
+
   // A recipe that is saved as blank is a blank copy as it stands, and --variants has two blank pictures: each lists them.
   const recipe = join(folder(info, 'own'), 'sheet.json')
   const base = readJson(example('heating-beaker')) as { labels: { text: object } }
