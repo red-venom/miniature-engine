@@ -38,7 +38,7 @@
       "alignY": { "part": "mat", "anchor": "under", "own": "base" },
       "back": true
     },
-    { "id": "stopwatch", "symbol": "stopwatch", "near": { "part": "mat", "anchor": "top", "dx": 170, "dy": -33 } }
+    { "id": "stopwatch", "symbol": "stopwatch", "near": { "part": "stand", "anchor": "base", "dx": -120, "dy": -33 } }
   ],
   "labels": {
     "text": { "clamp": "clamp", "tube": "boiling tube", "mat": "heatproof mat" },

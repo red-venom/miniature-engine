@@ -179,6 +179,7 @@ All the recipes of `examples/` were rendered and looked at: `heating-beaker.json
 
 - Place by anchors. Do not type coordinates for a part that can stand on another. A part with no placement sits at the origin, on top of the rest.
 - The first part defines the bench: put it at `y = 0` with `at` (the `under` or `base` anchor), and stand other things on it.
+- A part with no anchors (a stopwatch, a ribbon) is placed with `near`. Give it a `dy` that stands it on the bench, not above it, and put it where no leader has to cross it: on the side with few labels (`examples/cooling-curve.json` has the stopwatch beside the stand). The checks do not see a leader that runs over a part.
 - Draw the parts a student would label, and nothing more. Leave the bench, the mat and the stand unlabelled with `skip` unless they matter.
 - Joined glassware that is heated (reflux, distillation) is open to the air at exactly one point, and every joint is drawn sealed, with no gap. Reflux is open at the top of the condenser; a distillation is open where the distillate leaves. Never draw a sealed flask that is heated with nowhere for the gas to go, or one that is open in two places.
 - A connector is drawn after the item it passes through. This is the default. A tube goes through the hole of a bung (`hole1`), and its end goes below the surface of the liquid it bubbles into. A delivery tube does not dip into the liquid it comes from.

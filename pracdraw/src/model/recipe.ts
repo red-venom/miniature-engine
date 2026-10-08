@@ -1686,9 +1686,8 @@ export function compileRecipe(recipe: unknown): RecipeResult {
     }
   }
   const parsed = parseDoc(JSON.parse(JSON.stringify(doc)))
-  const faults = parsed.ok ? parsed.problems : parsed.problems
-  if (!parsed.ok || faults.length) {
-    for (const message of faults)
+  if (!parsed.ok || parsed.problems.length) {
+    for (const message of parsed.problems)
       ctx.error('', `The compiled document does not pass parseDoc: ${message}`, 'This is a fault in the recipe compiler, not in the recipe. Report it.')
     return fail()
   }
