@@ -14,8 +14,13 @@
 //     "connectors": [ { "kind": "glassTube", "points": [{ "part": "bung", "anchor": "hole1", "out": -30 }, { "dy": -60 }, { "dx": 120 }] } ],
 //     "labels": { "auto": true, "text": { "beaker": "250 cm3 beaker" }, "skip": ["mat"], "extra": [{ "text": "water", "part": "beaker", "at": [10, 90] }] } }
 //
-// Parts are placed in list order, each on parts listed before it, and drawn in list order (back to front) unless a part
-// says `"behind": "<id>"`. Connectors are drawn after all the parts unless they say `"behind"` too.
+// Parts are placed in list order, each on parts listed before it (a reference to a part that comes later is an error),
+// and drawn in list order (back to front) unless a part says `"behind": "<id>"` (just behind that part) or `"back": true`
+// (behind all the others). Connectors are drawn after all the parts unless they say `"behind"` or `"back"` too.
+// A part is placed by `on` (its anchor `own` on an anchor), `near` (its centre near an anchor), `at` (a point of the world),
+// and `alignX` / `alignY` (one coordinate each, from different anchors). A size can be `{ "between": [point, point] }`.
+// A connector point is an anchor, a step `{ dx, dy }`, a point `{ x, y }`, or an axis run `{ y: <anchor> }` (upright or level
+// from the point before). `labels.side` moves one automatic label to the other side; `labels.extra` adds labels by hand.
 
 import { P, type Pt, type V } from '../kernel/geom'
 import type { Layer, LayerKind } from '../kernel/contents'

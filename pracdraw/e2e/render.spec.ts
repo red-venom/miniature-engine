@@ -239,7 +239,8 @@ test('render-variants', async ({ page }, info) => {
   expect(corner).toBe(0) // transparent, not white
 })
 
-test('render-is-deterministic', async ({}, info) => {
+test('render-is-deterministic', () => {
+  const info = test.info()
   const runs = ['one', 'two'].map((name) => {
     const out = folder(info, name)
     const r = render([example('gas-over-water'), '--out', out, '--variants', '--name', 'gas'])
@@ -252,7 +253,8 @@ test('render-is-deterministic', async ({}, info) => {
   for (const f of files) expect(readFileSync(join(runs[0], f)).equals(readFileSync(join(runs[1], f))), `${f} is the same in both runs`).toBe(true)
 })
 
-test('render-reports-errors', async ({}, info) => {
+test('render-reports-errors', () => {
+  const info = test.info()
   const dir = folder(info, 'bad')
   const recipe = join(dir, 'bad.json')
   writeFileSync(
