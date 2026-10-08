@@ -1,5 +1,6 @@
 // hook.ts — the one test hook, window.__pracdraw (section 14). It replaces window.__starter from the kit.
 
+import type { ExportOptions } from '../export/picture'
 import { hostName, type HostName } from '../host/current'
 import type { Doc } from '../model/types'
 import { loadDoc } from './actions'
@@ -12,10 +13,14 @@ export interface PracdrawHook {
   doc(): Doc
   /** Replace the document as one undo step. */
   load(doc: Doc): void
-  /** A data: URL of the default PNG export at this scale, at once: on white, as shown, cropped to `docBounds`. */
-  png(scale: number): string
-  /** The default SVG export, with the document as metadata. */
-  svg(): string
+  /**
+   * A data: URL of a PNG export at this scale, at once, cropped to `docBounds`. With no `options` it is the default
+   * export: on white, labels and photocopy-safe as shown. `options` are the export dialog's controls (labels, answerKey,
+   * mono, background), merged over `DEFAULT_EXPORT`.
+   */
+  png(scale: number, options?: Partial<ExportOptions>): string
+  /** An SVG export, with the document as metadata. With no `options` it is the default export; `options` are merged over it as for `png`. */
+  svg(options?: Partial<ExportOptions>): string
   /** The pan and zoom; with an argument, set them. */
   view(v?: Partial<View>): View
   /** Where the exported picture sits on the page, in CSS px, for a screenshot of the same region. */
@@ -34,8 +39,8 @@ export function installHook(canvasRect: () => { left: number; top: number }): vo
   window.__pracdraw = {
     doc: () => useEditor.getState().doc,
     load: (doc) => loadDoc(doc),
-    png: (scale) => pngDataUrl(useEditor.getState().doc, scale),
-    svg: () => svgText(useEditor.getState().doc),
+    png: (scale, options) => pngDataUrl(useEditor.getState().doc, scale, options),
+    svg: (options) => svgText(useEditor.getState().doc, options),
     view: (v) => {
       if (v) useEditor.getState().setView(v)
       return useEditor.getState().view
