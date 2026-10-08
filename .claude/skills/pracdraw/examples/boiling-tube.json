@@ -31,6 +31,7 @@
   ],
   "labels": {
     "text": { "holder": "holder" },
+    "end": { "thermometer": { "at": [4.5, 40] } },
     "extra": [
       { "text": "water", "part": "tube", "at": [-9, 112], "side": "left" },
       { "text": "flame", "part": "burner", "at": [6, 14] }
