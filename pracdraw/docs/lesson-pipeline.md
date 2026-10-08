@@ -40,7 +40,7 @@ Run it:
 npm run render -- beaker.json --out lessons/heating
 ```
 
-It prints one line for each file it wrote (size, bytes, and what the file is for), then a description of the diagram (where every part, anchor and label is), and the problems it found. Open `lessons/heating/beaker.png` to look at it.
+It prints one line for each file it wrote (size, bytes, and what the file is for), then a description of the diagram (where every part, anchor and label is), and the problems it found. The second line of the description gives the size of the picture, and after `this render:` the label mode and the photocopy-safe setting that the flags of this run made. Open `lessons/heating/beaker.png` to look at it.
 
 | Flag | Meaning |
 | --- | --- |

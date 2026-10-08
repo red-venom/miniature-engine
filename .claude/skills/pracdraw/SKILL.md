@@ -16,7 +16,7 @@ Run every command from the `pracdraw/` folder of this repository (`npm ci` there
 3. Look up each symbol in `reference/symbols.md` (id, size, parameters, cavities, anchors), or run `npm run render -- --symbol <id>`. A symbol id that is wrong is an error that names the nearest ids.
 4. Write the recipe: one JSON file, in a folder of your own (not in `pracdraw/`).
 5. Run `npm run render -- <recipe.json> --out <dir>`. Errors come as a numbered list with the path in the recipe and a hint; nothing is written until there are none. Warnings (layout faults) come with hints too: fix them.
-6. Open `<dir>/<name>.png` with the Read tool and look at it. Check the list under "Look at the picture" below. The text after the file lines says where every part, anchor and label is, so you can reason in numbers as well.
+6. Open `<dir>/<name>.png` with the Read tool and look at it. Check the list under "Look at the picture" below. The text after the file lines says where every part, anchor and label is, so you can reason in numbers as well. Its second line gives the size of the picture in units, the label mode and the photocopy-safe setting of the recipe, and after `this render:` what the flags of this run made of them (for example `labels blank, photocopy-safe on`).
 7. Fix the recipe and run again, until the picture is right and the checks are clean.
 8. Make the copies that the person needs (see "Student copies and teacher copies").
 

@@ -5,7 +5,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test'
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { crc32 } from 'node:zlib'
 import { DEFAULT_EXPORT, exportSvg, type ExportOptions } from '../src/export/picture.ts'
 import { docFromSvg } from '../src/export/svg.ts'
@@ -22,13 +22,50 @@ const EXAMPLES = resolve('../.claude/skills/pracdraw/examples')
 const example = (name: string): string => join(EXAMPLES, `${name}.json`)
 const readJson = (file: string): unknown => JSON.parse(readFileSync(file, 'utf8'))
 
-/** Run `npm run render -- <args>` in the project folder. The proxy is dead, so that a request to the network would fail. */
-function render(args: string[]) {
+/**
+ * A module for `node --require`: a program that starts a browser (Playwright passes --remote-debugging-pipe to it) stops at once,
+ * with exit code 99 and a line on the error output. A mistake in the command or the recipe is found before the browser starts,
+ * so a run with this module ends as it does without it.
+ */
+const NO_BROWSER = `const cp = require('node:child_process')
+const spawn = cp.spawn
+cp.spawn = function (command, args, ...rest) {
+  if ((Array.isArray(args) ? args : []).some((a) => String(a).startsWith('--remote-debugging'))) {
+    process.stderr.write('THE BROWSER WAS STARTED\\n')
+    process.exit(99)
+  }
+  return spawn.call(this, command, args, ...rest)
+}
+`
+
+/** The file of NO_BROWSER, in the folder of the running test. */
+function noBrowserFile(): string {
+  const file = test.info().outputPath('no-browser', 'no-browser.cjs')
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, NO_BROWSER)
+  return file
+}
+
+/**
+ * Run `npm run render -- <args>` in the project folder. The proxy is dead, so that a request to the network would fail. With
+ * `noBrowser` the run stops with exit code 99 if it starts a browser: for the runs that must fail before that.
+ */
+function render(args: string[], options: { noBrowser?: boolean } = {}) {
   const dead = 'http://127.0.0.1:1'
+  const trap = options.noBrowser ? `${process.env.NODE_OPTIONS ?? ''} --require ${noBrowserFile()}`.trim() : process.env.NODE_OPTIONS
   const r = spawnSync('npm', ['run', 'render', '--silent', '--', ...args], {
     cwd: process.cwd(),
     encoding: 'utf8',
-    env: { ...process.env, HTTP_PROXY: dead, HTTPS_PROXY: dead, http_proxy: dead, https_proxy: dead, NO_PROXY: '', no_proxy: '' },
+    env: {
+      ...process.env,
+      HTTP_PROXY: dead,
+      HTTPS_PROXY: dead,
+      http_proxy: dead,
+      https_proxy: dead,
+      NO_PROXY: '',
+      no_proxy: '',
+      ...(trap ? { NODE_OPTIONS: trap } : {}),
+    },
     timeout: 100_000,
   })
   return { code: r.status, out: r.stdout, err: r.stderr }
@@ -271,7 +308,7 @@ test('render-variants', async ({ page }, info) => {
     ['--student', '--answer-key', '--labels', 'letters'],
     ['--student', '--no-png', '--variants'],
   ]) {
-    const bad = render([example('heating-beaker'), '--out', join(info.outputPath('student-bad')), ...args])
+    const bad = render([example('heating-beaker'), '--out', join(info.outputPath('student-bad')), ...args], { noBrowser: true })
     expect(bad.code, args.join(' ')).toBe(1)
     expect(bad.err.trim().split('\n'), args.join(' ')).toHaveLength(1)
     expect(existsSync(info.outputPath('student-bad'))).toBe(false)
@@ -344,8 +381,8 @@ test('render-reports-errors', () => {
     }),
   )
   const out = join(dir, 'out')
-  const r = render([recipe, '--out', out])
-  expect(r.code).toBe(1)
+  const r = render([recipe, '--out', out], { noBrowser: true }) // found before the browser starts
+  expect(r.code, r.err).toBe(1)
   expect(existsSync(out)).toBe(false) // nothing is written
   // The problems are a numbered list, with the path in the recipe and the hint that names the fix.
   expect(r.err).toContain('bad.json has 2 errors. Nothing was written.')
@@ -374,17 +411,20 @@ test('render-reports-errors', () => {
   // Bad input of other kinds is an error too, and says what to do.
   const text = join(dir, 'not-json.json')
   writeFileSync(text, '{ "parts": [ ')
-  const j = render([text, '--out', join(dir, 'json-out')])
-  expect(j.code).toBe(1)
+  const j = render([text, '--out', join(dir, 'json-out')], { noBrowser: true })
+  expect(j.code, j.err).toBe(1)
   expect(j.err).toContain('is not valid JSON')
-  expect(render(['--template', 'heatingBeakr']).err).toContain('Did you mean "heatingBeaker"?')
-  expect(render(['--bogus']).code).toBe(1)
-  expect(render([]).code).toBe(1)
+  expect(render(['--template', 'heatingBeakr'], { noBrowser: true }).err).toContain('Did you mean "heatingBeaker"?')
+  expect(render(['--bogus'], { noBrowser: true }).code).toBe(1)
+  expect(render([], { noBrowser: true }).code).toBe(1)
 })
 
-/** A usage error is one line on the error output, exit code 1, no output, nothing written, and no stack of the program. */
+/**
+ * A usage error is one line on the error output, exit code 1, no output, nothing written, and no stack of the program. It is
+ * found before the browser starts: a run that started one would end with exit code 99.
+ */
 function expectUsageError(args: string[], says: RegExp, written?: string): void {
-  const r = render(args)
+  const r = render(args, { noBrowser: true })
   const what = args.join(' ')
   expect(r.code, `${what}: ${r.out}${r.err}`).toBe(1)
   expect(r.out, what).toBe('')
@@ -402,6 +442,12 @@ test('render-rejects-bad-usage', () => {
   writeFileSync(file, 'not a folder')
   const out = join(dir, 'out')
   const started = Date.now()
+  // The control: a good run needs the browser, and the trap stops it. So the runs below end with exit code 1 because their mistake
+  // is found before the browser starts, and not because the trap lets them by.
+  const control = render([recipe, '--out', join(dir, 'control'), '--no-png', '--no-svg'], { noBrowser: true })
+  expect(control.code, control.out + control.err).toBe(99)
+  expect(control.err).toContain('THE BROWSER WAS STARTED')
+  expect(existsSync(join(dir, 'control'))).toBe(false)
   // The folder for the files is a file, or has a file in its path.
   expectUsageError([recipe, '--out', file], /^--out ".*a-file" is a file, not a folder\.$/)
   expectUsageError([recipe, '--out', join(file, 'inside', 'deeper')], /^--out ".*deeper" cannot be made: ".*a-file" is a file, not a folder\.$/)
@@ -428,8 +474,8 @@ test('render-rejects-bad-usage', () => {
   bad.symbol('thermometer', { x: 0, y: 0, h: 1e9 })
   const saved = join(dir, 'absurd.pracdraw.json')
   writeFileSync(saved, JSON.stringify(bad.doc))
-  const absurd = render([saved, '--out', out])
-  expect(absurd.code).toBe(1)
+  const absurd = render([saved, '--out', out], { noBrowser: true })
+  expect(absurd.code, absurd.err).toBe(1)
   expect(absurd.err).toContain('absurd.pracdraw.json has 1 error. Nothing was written.')
   expect(absurd.err).toContain('1. error at items.thermometer1.h')
   expect(absurd.err).toContain('The height of the part "thermometer1" (thermometer) is 1000000000 u.')
@@ -438,8 +484,8 @@ test('render-rejects-bad-usage', () => {
   // The same diagram in an SVG file.
   const svg = join(dir, 'absurd.svg')
   writeFileSync(svg, `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><metadata>${JSON.stringify(bad.doc)}</metadata></svg>`)
-  const absurdSvg = render([svg, '--out', out])
-  expect(absurdSvg.code).toBe(1)
+  const absurdSvg = render([svg, '--out', out], { noBrowser: true })
+  expect(absurdSvg.code, absurdSvg.err).toBe(1)
   expect(absurdSvg.err).toContain('absurd.svg has 1 error. Nothing was written.')
   expect(absurdSvg.err).toContain('items.thermometer1.h')
   // A recipe with a part that is too big, or too far, is an error of the recipe, with its path and its hint.
@@ -454,12 +500,12 @@ test('render-rejects-bad-usage', () => {
       ],
     }),
   )
-  const bigRun = render([big, '--out', out])
-  expect(bigRun.code).toBe(1)
+  const bigRun = render([big, '--out', out], { noBrowser: true })
+  expect(bigRun.code, bigRun.err).toBe(1)
   expect(bigRun.err).toContain('2. error at parts[1]')
   expect(bigRun.err).toContain('beyond the 5000 u that a diagram may reach from the origin')
   expect(existsSync(out)).toBe(false)
-  // Nothing of this started the browser or built the editor: it was quick.
+  // None of it started the browser (a run that did would have ended with exit code 99), so it was quick.
   expect(Date.now() - started).toBeLessThan(60_000)
   // A reader that closes the pipe early is no error: the command stops quietly.
   const piped = spawnSync('sh', ['-c', 'npm run render --silent -- --list symbols | head -1'], { cwd: process.cwd(), encoding: 'utf8' })
@@ -526,7 +572,7 @@ test('render-finds-symbols-and-templates', () => {
   const none = find(['beker'])
   expect(none.code).toBe(0)
   expect(none.out).toContain('Nothing matches "beker". The nearest symbols: beaker (Beaker)')
-  expect(render(['--find']).err).toBe('--find needs words: npm run render -- --find filter funnel\n')
+  expect(render(['--find'], { noBrowser: true }).err).toBe('--find needs words: npm run render -- --find filter funnel\n')
 })
 
 test('render-lists-and-describes', async () => {
@@ -545,7 +591,7 @@ test('render-lists-and-describes', async () => {
   expect(one.out).toContain('base: kind base, at (0, 120), points down')
   expect(one.out).toContain('mouth: kind mouth, at (0, 0), points up')
   expect(render(['--symbol', 'measuringCylinder']).out).toContain('scale: in cavity "main", from 0 to 100 cm³')
-  const missing = render(['--symbol', 'beker'])
+  const missing = render(['--symbol', 'beker'], { noBrowser: true })
   expect(missing.code).toBe(1)
   expect(missing.err).toContain('Nearest: beaker (Beaker)')
 })

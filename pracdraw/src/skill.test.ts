@@ -88,9 +88,13 @@ describe('the skill', () => {
       expect(skill(), `SKILL.md: ${suffix}`).toContain(suffix)
       expect(people, `docs/lesson-pipeline.md: ${suffix}`).toContain(suffix)
     }
-    // The label keys of a recipe, and the problems of the render command.
-    for (const word of ['labels.order', '"end"', '"order"', '"auto": false', 'textAt', '--student', 'Exit codes']) {
-      expect(skill() + people, word).toContain(word)
+    // The label keys of a recipe, and the exit codes of the render command: all of them in the skill, and those that the
+    // document for people explains in the document too (it does not give the whole format).
+    for (const word of ['labels.order', '"end"', '"order"', '"auto": false', 'textAt', '--student', 'Exit codes', 'this render:']) {
+      expect(skill(), `SKILL.md: ${word}`).toContain(word)
+    }
+    for (const word of ['labels.order', '"end"', 'textAt', '--student', 'Exit codes', 'this render:']) {
+      expect(people, `docs/lesson-pipeline.md: ${word}`).toContain(word)
     }
   })
 
