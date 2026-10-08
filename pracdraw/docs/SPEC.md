@@ -701,7 +701,7 @@ Test rules:
 
 - Every function that a phase adds to `src/model` or `src/export` has unit tests: commands, `snap`, `docBounds`, `parseDoc`, migrations, `autoLabel`, `docFromSvg`.
 - Browser tests open the built single file from `file://`, as `e2e/starter.spec.ts` does now.
-- The app exposes one test hook, `window.__pracdraw`. `doc()` returns the current document. `load(doc)` replaces it as one undo step. `png(scale)` returns a `data:` URL of the default export at once. `svg()` returns the default SVG export with its metadata. The hook replaces `window.__starter` from the kit.
+- The app exposes one test hook, `window.__pracdraw`. `doc()` returns the current document. `load(doc)` replaces it as one undo step. `png(scale, options?)` returns a `data:` URL of the PNG export at once, and `svg(options?)` returns the SVG export with its metadata; `options` is a partial `ExportOptions` merged over the default export, so with no argument both give the default export (phase 12 added the options, for the render command). The hook replaces `window.__starter` from the kit.
 - Phase 2 ports the five tests of `e2e/starter.spec.ts` to the editor and keeps their titles. They are the only checks of D2, D4 and D6. The PNG test loads `demoDoc()`, and compares the canvas PNG with a screenshot of the same region at 100 % zoom.
 - A gate test has exactly the name given in section 15.
 - A reviewer agent that did not write the code checks every gate test of phases 2 to 7 and 10 against this document: does the test prove what the section says? The reviewer records pass, or the gap, in `REPORT.md` before the phase counts.

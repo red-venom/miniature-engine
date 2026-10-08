@@ -20,7 +20,7 @@ Then read the kit: `src/model/types.ts`, `src/model/build.ts`, `src/model/transf
 3. Add no run-time dependency. Add a development dependency only when a phase names it (none does).
 4. Every change to the document goes through a pure function in `src/model/commands.ts`: `(doc, args) => doc`. Event handlers only call commands. Commands get unit tests without React (`src/model/*.test.ts`).
 5. Every function a phase adds to `src/model` or `src/export` has unit tests (section 14).
-6. Browser tests live in `e2e/`, open `dist/index.html` from `file://`, and use `window.__pracdraw` (`doc()`, `load(doc)`, `png(scale)`, `svg()`). A gate test has exactly the name given in section 15 (use it as the Playwright test title, e.g. `test('add-move-undo', ...)`).
+6. Browser tests live in `e2e/`, open `dist/index.html` from `file://`, and use `window.__pracdraw` (`doc()`, `load(doc)`, `png(scale, options?)`, `svg(options?)`). A gate test has exactly the name given in section 15 (use it as the Playwright test title, e.g. `test('add-move-undo', ...)`).
 7. The editor overlay (selection box, handles, guides) is a separate SVG layer above the diagram, never part of the render tree.
 8. Use no `alert`, `confirm` or `prompt`. No icon library: icons are inline SVG, 20 px, 1.75 px line. All colours are CSS variables. System font, 13 px.
 9. Leave no TODO in your files.
