@@ -454,6 +454,29 @@ const titration: TemplateDef = {
   },
 }
 
+const flameTest: TemplateDef = {
+  id: 'flameTest',
+  title: 'Flame test',
+  group: 'Chemistry',
+  refs: 'GCSE Chemistry RP 7',
+  build() {
+    const b = new DocBuilder('Flame test')
+    const mat = b.at('heatproofMat', 'under', P(0, 0), { w: 270 })
+    // The burner is drawn 1.75 times its size, so that the loop (a fixed 8 u) is small beside the flame, as it is in the lab.
+    const k = 1.75
+    const burner = b.on('bunsenBurner', 'base', mat, 'top', { w: 60 * k, h: 124 * k })
+    // The loop is held in the left edge of the blue flame: level with the tip of the dark inner cone, between the cone and the edge.
+    // The handle is higher than the loop, as a hand holds it.
+    const loop = b.on('flameTestLoop', 'loop', burner, 'flame', { w: 170, rot: 8, dx: -4 * k, dy: 20 * k })
+    b.label('nichrome wire loop', -205, -272, [loop, 78.2, 3.2])
+    b.label('handle', -205, -232, [loop, -50, 2])
+    b.label('heatproof mat', -180, -30, [mat, -100, 4])
+    b.label('blue flame', 60, -200, [burner, 3.5 * k, 17 * k])
+    b.label('Bunsen burner', 60, -160, [burner, 7 * k, 100])
+    return b.doc
+  },
+}
+
 const standardSolution: TemplateDef = {
   id: 'standardSolution',
   title: 'Making a standard solution',
@@ -472,6 +495,41 @@ const standardSolution: TemplateDef = {
     b.label('solution', -100, -35, [flask, -20, 190])
     b.label('wash bottle', 350, -125, [bottle, 14, 30])
     b.label('beaker', 350, -50, [beaker, 45, 50])
+    return b.doc
+  },
+}
+
+const spiritBurnerCalorimetry: TemplateDef = {
+  id: 'spiritBurnerCalorimetry',
+  title: 'Enthalpy of combustion',
+  group: 'Chemistry',
+  refs: 'A-level RP 2',
+  build() {
+    const b = new DocBuilder('Enthalpy of combustion')
+    // The stand and its clamp are made first, so that they are drawn behind the can, and placed once it is.
+    const stand = b.symbol('clampStand', { w: 90 })
+    const clamp = b.symbol('bossClamp', { w: 160, params: { grip: 60 } }) // the jaws open as wide as the can
+    const mat = b.at('heatproofMat', 'under', P(0, 0), { w: 100 })
+    const burner = b.on('spiritBurner', 'base', mat, 'top', { contents: { main: [liquid(0.5, COLOURLESS)] } })
+    // The can's base is at the tip of the flame, so the flame touches it.
+    const can = b.on('copperCalorimeter', 'base', burner, 'flame', { w: 60, h: 90, contents: { main: [liquid(0.6, WATER)] } })
+    // The clamp grips the can's wall near its mouth, from the left. Its jaws are 60 u apart, so their centre is 34 u below the rim:
+    // then the upper jaw is inside the can, behind its wall, and does not close the top.
+    const mouth = anchorWorld(can, 'mouth')
+    moveAnchorTo(clamp, 'grip', P(mouth.x, mouth.y + 34))
+    stand.h = Math.round(-(anchorWorld(clamp, 'sleeve').y - 40)) // the bench is at y = 0; the rod ends 40 u above the clamp
+    standUnder(stand, clamp, 0)
+    // The bulb is well below the surface, 14 u above the base of the can.
+    const thermo = b.on('thermometer', 'bulb', can, 'base', { dx: 12, dy: -14, h: 170 })
+    setReading(thermo, 20)
+    b.label('thermometer', 90, -195, [thermo, 4.5, 63])
+    b.label('copper can', 90, -155, [can, 30, 14])
+    b.label('water', 90, -115, [can, 22, 62])
+    b.label('flame', 90, -75, [burner, 3, 14])
+    b.label('spirit burner', 90, -35, [burner, 36, 56])
+    b.label('heatproof mat', 90, 1, [mat, 42, 4])
+    b.label('clamp', -170, -150, [clamp, -80, 20])
+    b.label('clamp stand', -170, -105, [stand, -19, 100])
     return b.doc
   },
 }
@@ -674,6 +732,29 @@ const phCurve: TemplateDef = {
   },
 }
 
+const massLoss: TemplateDef = {
+  id: 'massLoss',
+  title: 'Rate of reaction: loss of mass',
+  group: 'Chemistry',
+  refs: 'A-level RP 7',
+  build() {
+    const b = new DocBuilder('Rate of reaction: loss of mass')
+    const balance = b.at('balance', 'base', P(0, 0), { params: { reading: '146.38 g' } })
+    // The same contents as the gas syringe set-up: chips at the bottom, acid above them, bubbles rising in it.
+    const flask = b.on('conicalFlask', 'base', balance, 'pan', { contents: { main: [lumps(0.1, GRANULES), liquid(0.3, COLOURLESS, { bubbles: 'many' })] } })
+    // The plug seats in the neck like a bung: 40 % of it above the rim. The gas leaves through it, so the flask is open.
+    const plug = b.on('cottonWool', 'plug', flask, 'mouth')
+    const watch = b.near('stopwatch', balance, 'base', { dx: 150, dy: -33 })
+    b.label('cotton wool plug', -80, -210, [plug, -14, 4])
+    b.label('conical flask', -80, -170, [flask, -31, 80])
+    b.label('dilute hydrochloric acid', -80, -130, [flask, -30, 110])
+    b.label('marble chips', -80, -90, [flask, -20, 143])
+    b.label('top-pan balance', -105, -20, [balance, -82.7, 30])
+    b.label('stopwatch', 230, -20, [watch, 27, 40])
+    return b.doc
+  },
+}
+
 const testTubeReactions: TemplateDef = {
   id: 'testTubeReactions',
   title: 'Test-tube reactions',
@@ -760,7 +841,9 @@ export const chemistry: TemplateDef[] = [
   simpleDistillation,
   distillation,
   titration,
+  flameTest,
   standardSolution,
+  spiritBurnerCalorimetry,
   reflux,
   separatingFunnelUse,
   buchnerFiltration,
@@ -768,6 +851,7 @@ export const chemistry: TemplateDef[] = [
   tlc,
   electrochemicalCell,
   phCurve,
+  massLoss,
   testTubeReactions,
   thermalDecomposition,
 ]
