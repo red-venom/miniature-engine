@@ -163,6 +163,21 @@ describe('checkDoc', () => {
     const thermometer = inBeaker.on('thermometer', 'bulb', beaker, 'base', { dy: -12 })
     inBeaker.label('thermometer', 200, 0, [thermometer, 4.5, 150], { side: 'right' })
     expect(checkDoc(inBeaker.doc)).toEqual([])
+    // A burner inside the legs of a tripod: the leader crosses one leg and ends inside the frame, which no leader can avoid.
+    const frame = new DocBuilder('Frame')
+    const mat = frame.symbol('heatproofMat', { x: 0, y: 0 })
+    const tripod = frame.on('tripod', 'feet', mat, 'top')
+    const burner = frame.on('bunsenBurner', 'base', mat, 'top')
+    frame.label('burner', 200, -60, [burner, 7, 62], { side: 'right' })
+    expect(checkDoc(frame.doc, () => 40)).toEqual([])
+    // A leader that goes through the frame to a part on the other side crosses both legs: that is the fault.
+    const through = new DocBuilder('Through the frame')
+    const mat2 = through.symbol('heatproofMat', { x: 0, y: 0 })
+    const tripod2 = through.on('tripod', 'feet', mat2, 'top')
+    const across = through.symbol('beaker', { x: 160, y: -80 })
+    through.label('beaker', -200, -80, [across, -50, 60], { side: 'left' })
+    expect(messages(through.doc, () => 40)).toEqual([`The leader of the label "beaker" crosses part "${tripod2.id}", and the label names "${across.id}".`])
+    expect(tripod.id).toBeTruthy()
   })
 
   it('does not count a line that a part drawn in front hides', () => {
