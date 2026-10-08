@@ -495,7 +495,7 @@
     "detail": "full",
     "draw": "A square grid of touching circles in alternating kinds: the positive ions small and marked +, the negative ions larger and marked -. Usually 4 by 4 to 6 by 6, with a wavy edge or open ends to show that it goes on. A ball-and-stick variant joins neighbours with short lines. Optional ion labels (Na+ and Cl-). For a 1 to 2 compound the layout is staggered, so that a student can count the ratio and give the empirical formula.",
     "params": "compound ratio (1 to 1 | 1 to 2 | 2 to 1), ion labels (Na+ and Cl- | Mg2+ and O2- | custom), grid size (3 to 8), style (balls | ball-and-stick | open ends), show charges (boolean)",
-    "scienceChecks": "No two like ions touch in a 1 to 1 grid. Counting the ions of each kind in the complete repeating unit gives the ratio of the formula. The total charge of the repeating unit is zero. Ion sizes: negative ions drawn larger for the common cases.",
+    "scienceChecks": "No two like ions are nearest neighbours along a row or column in a 1 to 1 grid. Counting the ions of each kind in the complete repeating unit gives the ratio of the formula. The total charge of the repeating unit is zero. Ion sizes: negative ions drawn larger for the common cases.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter",
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/structure-and-bonding/lessons/giant-ionic-structures",
@@ -755,7 +755,7 @@
     "detail": "full",
     "draw": "Three particle boxes of + and - ions: solid (ions fixed in a lattice), molten (ions close together but free), dissolved (ions spread apart in water, with water drawn as plain background). Under each, a small cell and bulb symbol that is off for the solid and lit for the other two, or a label 'ions cannot move' and 'ions free to move'.",
     "params": "show circuit symbol (boolean), show labels (boolean), compound label",
-    "scienceChecks": "The solid box is a regular lattice; the other two are not. Positive and negative ions are present in the same numbers in every box (charge balance). The bulb is lit only when the ions are free.",
+    "scienceChecks": "The solid box is a regular lattice; the other two are not. Charges balance in every box (equal numbers of positive and negative ions for a 1 to 1 compound). The bulb is lit only when the ions are free.",
     "sources": [
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/structure-and-bonding/lessons/giant-ionic-structures",
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/2-bonds-structure-and-properties-of-matter/2-1-ionic-covalent-and-metallic-bond/2-1-2-ionic-bonding/"
