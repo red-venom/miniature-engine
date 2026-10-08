@@ -90,10 +90,11 @@ describe('the skill', () => {
     }
     // The label keys of a recipe, and the exit codes of the render command: all of them in the skill, and those that the
     // document for people explains in the document too (it does not give the whole format).
-    for (const word of ['labels.order', '"end"', '"order"', '"auto": false', 'textAt', '--student', 'Exit codes', 'this render:']) {
+    // 'blank copy:' is the start of the line under the file line of a blank copy that has a label wider than its line to write on.
+    for (const word of ['labels.order', '"end"', '"order"', '"auto": false', 'textAt', '--student', 'Exit codes', 'this render:', 'blank copy:']) {
       expect(skill(), `SKILL.md: ${word}`).toContain(word)
     }
-    for (const word of ['labels.order', '"end"', 'textAt', '--student', 'Exit codes', 'this render:']) {
+    for (const word of ['labels.order', '"end"', 'textAt', '--student', 'Exit codes', 'this render:', 'blank copy:']) {
       expect(people, `docs/lesson-pipeline.md: ${word}`).toContain(word)
     }
   })

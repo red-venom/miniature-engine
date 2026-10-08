@@ -2,12 +2,17 @@
 // description of a diagram so that positions can be read instead of looked at. Pure: no DOM. Text width comes from
 // `measure` (the estimate of bounds.ts in Node; the render command passes the width the browser draws).
 //
-// `checkDoc` finds: two leader lines that cross; a leader that crosses a part other than the one it names; a label text
-// (or the line to write on) that overlaps a part other than the one it names; two label texts that overlap; a label
-// text that is wider than the line to write on; a part drawn through another part; a symbol that failed to build (it
-// is drawn as a dashed box); a connector whose points are all in one place; a leader that ends in empty space; a clamp
-// drawn in front of the vessel it grips. Every finding is a warning with the id of the item as its path and a hint. A
-// warning must be a real fault: the 43 templates have none (check.test.ts), except the long labels that the test lists.
+// `checkLayout` finds, for every picture of a diagram: two leader lines that cross; a leader that crosses a part other
+// than the one it names; a label text (or the line to write on) that overlaps a part other than the one it names; two
+// label texts that overlap; a part drawn through another part; a symbol that failed to build (it is drawn as a dashed
+// box); a connector whose points are all in one place; a leader that ends in empty space; a clamp drawn in front of the
+// vessel it grips. Every finding is a warning with the id of the item as its path and a hint. A warning must be a real
+// fault: the 43 templates have none (check.test.ts), except three leaders that the test lists.
+//
+// `checkBlankCopy` finds what only a blank copy (a worksheet) has: a label text that is wider than the line to write on.
+// A slide has no such line, and most templates have a label that is wider (the textbook names), so it is no fault of the
+// diagram: `checkDoc` makes this check only when the document is in blank mode, and the render command makes it for each
+// picture that it writes as blank.
 //
 // It must stay fast on a big diagram (1200 parts): every pair test is behind a test of bounding boxes.
 
@@ -388,10 +393,35 @@ function wallsCross(a: Obstacle, b: Obstacle): boolean {
 }
 
 /**
- * The layout faults of a diagram, as warnings. Text is measured with `measure`. Labels are checked as text and as the
- * line to write on (and as letters when the document is in letters mode), because all of them are exported.
+ * The warnings of a blank copy: a label that is wider than the line that blank mode draws for its answer, so that the
+ * answer will not fit on its line. A worksheet needs labels of one or two words. Plain text has no line. It does not
+ * depend on the label mode of the document: the render command asks for it for each picture that it writes as blank.
  */
-export function checkDoc(doc: Doc, measure: Measure = estimateWidth): Problem[] {
+export function checkBlankCopy(doc: Doc, measure: Measure = estimateWidth): Problem[] {
+  const out: Problem[] = []
+  for (const id of doc.order) {
+    const l = doc.items[id]
+    if (l?.type !== 'label' || !labelTarget(doc, l)) continue
+    const size = labelSize(doc, l)
+    const width = Math.max(0, ...textLines(doc, l).map((s) => measure(s, size)))
+    if (width > BLANK_RULE) {
+      out.push({
+        level: 'warning',
+        path: l.id,
+        message: `The label ${labelName(l)} is ${Math.ceil(width)} u wide, and the line to write on in blank mode is ${BLANK_RULE} u: the answer will not fit on its line.`,
+        hint: 'Shorten the label to one or two words, or give it a shorter text: "labels.text" in a recipe, the text of the label in the editor.',
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * The layout faults of a diagram, as warnings, in every picture of it: slides, blank copies and letters copies. Text is
+ * measured with `measure`. Labels are checked as text and as the line to write on (and as letters when the document is in
+ * letters mode), because all of them are exported.
+ */
+export function checkLayout(doc: Doc, measure: Measure = estimateWidth): Problem[] {
   const out: Problem[] = []
   const warn = (path: string, message: string, hint: string) => out.push({ level: 'warning', path, message, hint })
 
@@ -522,20 +552,6 @@ export function checkDoc(doc: Doc, measure: Measure = estimateWidth): Problem[] 
     }
   }
 
-  // A text wider than the line that blank mode draws for it: the answer would not fit on its line.
-  for (const l of labels) {
-    if (!labelTarget(doc, l)) continue
-    const size = labelSize(doc, l)
-    const width = Math.max(0, ...textLines(doc, l).map((s) => measure(s, size)))
-    if (width > BLANK_RULE) {
-      warn(
-        l.id,
-        `The label ${labelName(l)} is ${Math.ceil(width)} u wide, and the line to write on in blank mode is ${BLANK_RULE} u: the answer will not fit on its line.`,
-        'Shorten the label to one or two words, or give it a shorter text: "labels.text" in a recipe, the text of the label in the editor.',
-      )
-    }
-  }
-
   const seen = new Map<string, Mode[]>()
   for (const mode of modesOf(doc)) {
     const boxes = labels.map((l) => ({ l, box: shrink(inkBox(doc, l, mode, letters.get(l.id), measure), TOUCH) }))
@@ -580,6 +596,16 @@ export function checkDoc(doc: Doc, measure: Measure = estimateWidth): Problem[] 
     }
   }
   return out
+}
+
+/**
+ * All the warnings of a diagram as it is saved: the layout faults of every picture, and, when the document is in blank
+ * mode (it is a worksheet), those of a blank copy. A diagram in text mode (a slide) has no line to write on, so a long
+ * label is no fault of it.
+ */
+export function checkDoc(doc: Doc, measure: Measure = estimateWidth): Problem[] {
+  const layout = checkLayout(doc, measure)
+  return doc.settings.labelMode === 'blank' ? [...layout, ...checkBlankCopy(doc, measure)] : layout
 }
 
 // ---------------------------------------------------------------- the description
