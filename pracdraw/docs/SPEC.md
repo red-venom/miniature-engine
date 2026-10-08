@@ -346,7 +346,7 @@ A cavity holds up to four layers, and the kernel already draws them. Phase 3 bui
 | Cloudy | A liquid with `cloudy` set also shows sparse dots. Use it for a suspension. The dots keep it different from a clear liquid in photocopy-safe mode. |
 | Meniscus | Only on the top liquid layer; a gas may be above it. The reading is the bottom of the curve. |
 | Bubbles | `few` or `many`, inside that liquid layer. |
-| Photocopy-safe | No tints. A liquid is rows of short dashes under its surface line. |
+| Photocopy-safe | No tints. A liquid is rows of short dashes under its surface line. In a cavity that has a scale (burette, measuring cylinder, thermometer, magnified scale) the dashes would read as a second scale: there the liquid is its surface line only, and the thread of a thermometer also gets a line down its centre, so that the reading survives. A jet or a stem gets no centre line. |
 | Stable | Bubbles, dots and lumps come from a seed made from the item id. They never move between renders. |
 
 The inspector shows one block for each cavity. The block title is "Contents" for `main`, "Jacket" for `jacket` and "Inner tube" for `inner`.

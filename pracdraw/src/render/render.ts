@@ -74,6 +74,9 @@ export function symbolNode(it: SymbolItem, s: DocSettings): Node {
       flip: it.flip,
       pivot: P(0, it.h / 2),
       mono: s.mono,
+      // Photocopy-safe liquid: a thread gets a centre line; a cavity with a scale gets its level only (dashes between
+      // the ticks would read as a second scale); any other cavity gets rows of dashes.
+      monoLiquid: cav.thread ? 'thread' : g.scale?.cavity === cav.id ? 'level' : 'dashes',
       // From what a copy keeps (not the id), so a pasted or inserted copy draws the same bubbles, dots and lumps.
       seed: hash(`${it.symbol}|${cav.id}|${it.w}|${it.h}`),
       ink: INK,
