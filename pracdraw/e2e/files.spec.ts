@@ -522,10 +522,11 @@ test('gallery-inserts-template', async ({ page }) => {
   await open(page)
   await page.getByRole('tab', { name: 'Templates' }).click()
   const library = page.getByRole('complementary', { name: 'Library' })
-  // Every priority A template that exists in TEMPLATES has a card with a thumbnail, its title and its references.
+  // Every template of the plan (the 40 priority A and the 3 priority B) has a card with a thumbnail, its title and its
+  // references.
   const plan = (JSON.parse(readFileSync('spec/templates.json', 'utf8')) as { templates: { id: string; priority: string }[] }).templates
-  const built = plan.filter((p) => p.priority === 'A').flatMap((p) => TEMPLATES.filter((t) => t.id === p.id))
-  expect(built.length).toBe(40)
+  const built = plan.flatMap((p) => TEMPLATES.filter((t) => t.id === p.id))
+  expect(built.length).toBe(43)
   for (const t of built) {
     const card = library.getByRole('button', { name: `Insert template: ${t.title}`, exact: true })
     await expect(card).toHaveCount(1)

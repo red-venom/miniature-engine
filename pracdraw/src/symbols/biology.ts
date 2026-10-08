@@ -1,8 +1,8 @@
 // biology.ts — the "Biology" pack: every symbol of this pack that is not a pilot.
 // One author owns this file. Each symbol follows its row in the Symbol catalogue (spec/catalogue.json). Copy the nearest pilot.
 
-import { Path, f, v } from '../kernel/geom'
-import { circle, closed, rect, str } from './kit'
+import { Path, f, rng, v, type Pt } from '../kernel/geom'
+import { circle, closed, num, rect, str } from './kit'
 import type { Prim, SymbolDef } from './types'
 
 /** A rectangle with rounded corners, as a closed path. */
@@ -114,6 +114,61 @@ const microscopeSlide: SymbolDef = {
   },
 }
 
+/** Places for colonies on the agar of a dish 120 u across: a fixed sequence, so that more colonies only add dots. Kept 7 u from the wall. */
+const COLONY_SPOTS: Pt[] = (() => {
+  const rand = rng(2718)
+  const out: Pt[] = []
+  for (let i = 0; i < 600; i++) {
+    const r = 48 * Math.sqrt(rand()),
+      a = 2 * Math.PI * rand()
+    out.push({ x: r * Math.cos(a), y: r * Math.sin(a) })
+  }
+  return out
+})()
+
+const petriDishTop: SymbolDef = {
+  id: 'petriDishTop',
+  name: 'Petri dish (top view)',
+  aliases: ['agar plate'],
+  label: 'Petri dish',
+  pack: 'biology',
+  size: { w: 120, h: 120 },
+  resize: 'uniform',
+  min: { w: 72, h: 72 },
+  params: [
+    { key: 'colonies', label: 'Colonies', type: 'number', default: 0, min: 0, max: 30, step: 1 },
+    { key: 'discs', label: 'Discs', type: 'number', default: 0, min: 0, max: 6, step: 1 },
+  ],
+  build({ h, p }) {
+    const k = h / 120, // drawn at 120 × 120, then scaled by k
+      cy = h / 2,
+      colonies = Math.max(0, Math.round(num(p.colonies, 0))),
+      discs = Math.max(0, Math.round(num(p.discs, 0)))
+    // Antibiotic discs: evenly spaced on a ring of radius 0.27 w, the first at the top, so that the dish stays symmetric.
+    const ring = 0.27 * 120,
+      centres: Pt[] = Array.from({ length: discs }, (_, i) => {
+        const a = -Math.PI / 2 + (2 * Math.PI * i) / discs
+        return { x: ring * Math.cos(a), y: ring * Math.sin(a) }
+      })
+    // Colonies: the first places of the fixed sequence that are 8 u apart and outside every clear zone (nothing grows there).
+    // With six discs 27 fit like that. For the last few of 30 the spacing falls to 7 u.
+    const dots: Pt[] = []
+    for (const gap of [8, 7]) {
+      for (const q of COLONY_SPOTS) {
+        if (dots.length >= colonies) break
+        if (dots.includes(q) || centres.some((c) => Math.hypot(q.x - c.x, q.y - c.y) < 17.5) || dots.some((d) => Math.hypot(q.x - d.x, q.y - d.y) < gap))
+          continue
+        dots.push(q)
+      }
+    }
+    const at = (pts: Pt[], r: number) => pts.map((q) => circle(q.x * k, cy + q.y * k, r * k)).join('')
+    const prims: Prim[] = [{ d: circle(0, cy, 60 * k) + circle(0, cy, 55 * k), role: 'solid' }] // the wall of the dish: two circles 5 u apart
+    if (discs) prims.push({ d: at(centres, 14), role: 'dashed' }, { d: at(centres, 7), role: 'solid' })
+    if (dots.length) prims.push({ d: at(dots, 2), role: 'dark' })
+    return { prims }
+  },
+}
+
 const quadrat: SymbolDef = {
   id: 'quadrat',
   name: 'Quadrat (top view)',
@@ -217,4 +272,65 @@ const potatoCylinder: SymbolDef = {
   },
 }
 
-export const biology: SymbolDef[] = [microscope, microscopeSlide, quadrat, pondweed, potatoCylinder]
+const leaf: SymbolDef = {
+  id: 'leaf',
+  name: 'Leaf',
+  pack: 'biology',
+  size: { w: 70, h: 100 },
+  resize: 'free',
+  min: { w: 40, h: 64 },
+  build({ w, h }) {
+    const a = w / 2,
+      yb = h - 10, // the blade ends here; the stalk is the last 10 u
+      yw = 0.55 * h, // the widest point
+      d = yb - yw
+    // Two mirrored sides, each two cubic curves from the base to the tip. The tangent is vertical at the widest point, so that the curve is smooth there.
+    const outline = new Path()
+      .M(0, yb)
+      .C(0.26 * a, yb - 0.22 * d, a, yw + 0.45 * d, a, yw)
+      .C(a, 0.6 * yw, 0.13 * a, 0.28 * yw, 0, 0)
+      .C(-0.13 * a, 0.28 * yw, -a, 0.6 * yw, -a, yw)
+      .C(-a, yw + 0.45 * d, -0.26 * a, yb - 0.22 * d, 0, yb)
+      .Z()
+    const edge = outline.polys(0.05)[0]
+    // The midrib runs from the base nearly to the tip. Three pairs of veins leave it at 55 degrees to it and run 78 % of the way to the edge.
+    const top = 0.07 * h,
+      angle = (55 * Math.PI) / 180,
+      dx = Math.sin(angle),
+      dy = -Math.cos(angle)
+    // How far a ray from (0, y0) goes, up and to the right, before it leaves the blade.
+    const reach = (y0: number): number => {
+      let best = Infinity
+      for (let i = 0; i + 1 < edge.length; i++) {
+        const p = edge[i],
+          q = edge[i + 1],
+          ex = q.x - p.x,
+          ey = q.y - p.y,
+          den = dx * ey - dy * ex
+        if (Math.abs(den) < 1e-9) continue
+        const s = (p.x * ey - (p.y - y0) * ex) / den,
+          u = (p.x * dy - (p.y - y0) * dx) / den
+        if (s > 0 && u >= 0 && u <= 1) best = Math.min(best, s)
+      }
+      return Number.isFinite(best) ? best : 0
+    }
+    let veins = ''
+    for (const u of [0.22, 0.47, 0.72]) {
+      const y0 = yb - u * (yb - top),
+        r = 0.78 * reach(y0),
+        ex = r * dx,
+        ey = y0 + r * dy
+      // The vein leaves the midrib flatter and turns up towards the tip.
+      for (const m of [-1, 1]) veins += `M0 ${f(y0)}Q${f(m * 0.62 * ex)} ${f(y0 + 0.3 * (ey - y0))} ${f(m * ex)} ${f(ey)}`
+    }
+    return {
+      prims: [
+        { d: outline.d(), role: 'solid' },
+        { d: `M0 ${f(yb)}V${f(top)}` + veins, role: 'detail' },
+        { d: `M0 ${f(yb)}V${f(h)}`, role: 'outline' }, // the stalk
+      ],
+    }
+  },
+}
+
+export const biology: SymbolDef[] = [microscope, microscopeSlide, petriDishTop, quadrat, pondweed, potatoCylinder, leaf]

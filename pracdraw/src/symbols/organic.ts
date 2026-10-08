@@ -1,7 +1,7 @@
 // organic.ts — the "Organic" pack: every symbol of this pack that is not a pilot.
 // One author owns this file. Each symbol follows its row in the Symbol catalogue (spec/catalogue.json). Copy the nearest pilot.
 
-import { Path, P, roundPoly, v, type Pt, type V } from '../kernel/geom'
+import { Path, P, polyD, rng, roundPoly, v, type Pt, type V } from '../kernel/geom'
 import { CONE_END, CONE_LEN, HOLE, NECK, RIM, circle, closed, rect } from './kit'
 import type { Prim, SymbolDef } from './types'
 
@@ -229,4 +229,67 @@ const meltingPointApparatus: SymbolDef = {
   },
 }
 
-export const organic: SymbolDef[] = [stillHead, receiverAdaptor, thermometerAdaptor, meltingPointApparatus]
+// ---------------------------------------------------------------- release 1.1 (priority B)
+
+/**
+ * Packing for the 30 u tube of a column: small irregular lumps in staggered rows from y = top to y = bottom. The rows have 3 and 4
+ * lumps in turn, so that they interlock. The pattern comes from a fixed seed, so it never changes between renders.
+ */
+function packing(top: number, bottom: number): string {
+  const rand = rng(20261007)
+  const gap = 6.4 // between the centres of two lumps in a row
+  let d = ''
+  for (let y = top, row = 0; y <= bottom; y += 5.6, row++) {
+    const count = row % 2 ? 4 : 3
+    for (let i = 0; i < count; i++) {
+      const cx = (i - (count - 1) / 2) * gap + (rand() - 0.5) * 1.2,
+        cy = y + (rand() - 0.5) * 1.2,
+        r = 2.1 + rand() * 0.7,
+        k = 5 + Math.floor(rand() * 2),
+        a0 = rand() * Math.PI
+      const pts: Pt[] = []
+      for (let j = 0; j < k; j++) {
+        const a = a0 + (j / k) * 2 * Math.PI,
+          q = r * (0.75 + rand() * 0.25)
+        pts.push(P(cx + q * Math.cos(a), cy + q * Math.sin(a) * 0.85))
+      }
+      d += polyD(pts)
+    }
+  }
+  return d
+}
+
+/**
+ * A tube 30 wide with a socket at the top and a cone at the bottom, packed with lumps. The joints have the shared sizes, so the cone
+ * seats in a flask neck and the socket takes a thermometer adaptor. The tube is wider than the throat of its joints, as on the bench.
+ */
+const fractionatingColumn: SymbolDef = {
+  id: 'fractionatingColumn',
+  name: 'Fractionating column',
+  pack: 'organic',
+  size: { w: 44, h: 240 },
+  resize: 'height',
+  min: { w: 44, h: 120 },
+  build({ h }) {
+    const a = 15, // half-width of the tube (30 wide)
+      yShoulder = h - CONE_LEN
+    // One wall below the socket mouth: the end of the socket (28 wide), a gentle widening to the tube (30 wide), the tube, the flare to
+    // the shoulder of the cone, and the end of the cone. The large radii take the elbows out of the widening.
+    const wall = (s: number): V[] => [v(s * E, CONE_LEN, 40), v(s * a, CONE_LEN + 18, 40), v(s * a, yShoulder - 10, 6), v(s * S, yShoulder, 3), v(s * E, h)]
+    const sRim = S - (RIM * (S - E)) / CONE_LEN // half-width of the socket RIM below its mouth
+    const cavity = closed([v(-sRim, RIM), ...wall(-1), ...wall(1).reverse(), v(sRim, RIM)])
+    return {
+      prims: [
+        { d: roundPoly([v(-S, 0), ...wall(-1)]).d() + roundPoly([v(S, 0), ...wall(1)]).d(), role: 'outline' },
+        { d: packing(0.15 * h, 0.85 * h), role: 'detail' }, // the middle 70 %
+      ],
+      cavities: [{ id: 'inner', polys: cavity.polys() }],
+      anchors: [
+        { id: 'bottom', kind: 'plug', x: 0, y: yShoulder, dir: 90, width: NECK },
+        { id: 'top', kind: 'mouth', x: 0, y: 0, dir: -90, width: NECK },
+      ],
+    }
+  },
+}
+
+export const organic: SymbolDef[] = [stillHead, receiverAdaptor, thermometerAdaptor, meltingPointApparatus, fractionatingColumn]

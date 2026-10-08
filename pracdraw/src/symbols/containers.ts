@@ -329,4 +329,375 @@ const displacementCan: SymbolDef = {
   },
 }
 
-export const containers: SymbolDef[] = [volumetricFlask, buchnerFlask, evaporatingBasin, watchGlass, polystyreneCup, washBottle, displacementCan]
+// ---------------------------------------------------------------- priority B
+
+const flatBottomFlask: SymbolDef = {
+  id: 'flatBottomFlask',
+  name: 'Flat-bottomed flask',
+  pack: 'containers',
+  size: { w: 110, h: 150 },
+  resize: 'free',
+  min: { w: 50, h: 70 },
+  build({ w, h }) {
+    // The bulb has the radius of roundBottomFlask. Its centre is lower: the circle cuts y = h in a chord 0.5w long, the flat base.
+    const R = Math.min(w / 2, h * 0.42),
+      n = Math.min(NECK, R) / 2,
+      c = Math.min(w * 0.25, R * 0.85), // half the chord
+      dc = Math.sqrt(R * R - c * c), // the centre of the circle is dc above the base
+      cy = h - dc,
+      rb = 6 // radius of the fillets at the base
+    const yj = cy - Math.sqrt(R * R - n * n) // where the neck meets the bulb
+    const a = Math.atan2(yj - cy, n) + 7 / R // blend end point on the bulb, right side, as roundBottomFlask
+    const bx = R * Math.cos(a),
+      by = cy + R * Math.sin(a)
+    // Base fillet: a circle of radius rb inside the glass, tangent to the base line and to the bulb.
+    const fx = Math.sqrt(Math.max(0, (R - rb) ** 2 - (dc - rb) ** 2)),
+      fy = h - rb
+    const t = P((R * fx) / (R - rb), cy + (R * (fy - cy)) / (R - rb)) // where the fillet leaves the bulb
+    // One side, from the neck down to the centre of the base. sg = −1 is the left side.
+    const side = (sg: number, top: number) =>
+      new Path()
+        .M(sg * n, top)
+        .L(sg * n, yj - 7)
+        .Q(sg * n, yj, sg * bx, by)
+        .A(R, sg * t.x, t.y, sg > 0)
+        .A(rb, sg * fx, h, sg > 0)
+        .L(0, h)
+    const body = (top: number) => side(-1, top).add(joinTo(reversed(side(1, top))))
+    const outline = new Path()
+      .M(-n - 3, 0)
+      .L(-n, 4)
+      .add(joinTo(body(4)))
+      .L(n + 3, 0)
+    return {
+      prims: [{ d: outline.d(), role: 'outline' }],
+      cavities: [{ id: 'main', polys: body(RIM).Z().polys() }],
+      anchors: [
+        { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: 2 * c },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: 2 * n },
+        { id: 'neck', kind: 'neck', x: 0, y: yj * 0.5, width: 2 * n },
+      ],
+    }
+  },
+}
+
+const pearFlask: SymbolDef = {
+  id: 'pearFlask',
+  name: 'Pear-shaped flask',
+  pack: 'containers',
+  size: { w: 90, h: 140 },
+  resize: 'free',
+  min: { w: 60, h: 90 },
+  build({ w, h }) {
+    const W = w / 2,
+      n = Math.min(NECK, w * 0.45) / 2,
+      yN = h * 0.25, // the neck ends
+      yW = h * 0.68, // the widest part
+      r = w * 0.3, // radius of the bottom arc
+      cy = h - r
+    // The bottom arc starts at J, at angle `phi` below the horizontal. The lower curve runs from the widest point to J. Its control points lie
+    // on the two tangents (vertical at the widest point, the arc's tangent at J), so it is convex and has no kink at either end. A short, wide
+    // box needs a larger phi, so that the tangent at J still meets the vertical one below the widest point.
+    const deg = Math.PI / 180
+    let phi = 50 * deg
+    for (let i = 0; i < 12; i++) {
+      const dx = W - r * Math.cos(phi),
+        dy = cy + r * Math.sin(phi) - yW
+      phi = Math.min(80 * deg, Math.max(50 * deg, Math.atan2(dx, 0.7 * dy)))
+    }
+    const J = P(r * Math.cos(phi), cy + r * Math.sin(phi))
+    const dyA = yW - yN,
+      yC = Math.max(J.y - (W - J.x) / Math.tan(phi), yW + 0.2 * (J.y - yW)) // where the two tangents meet
+    const c1 = P(W, yW + 0.7 * (yC - yW)),
+      c2 = P(J.x + 0.7 * (W - J.x), J.y + 0.7 * (yC - J.y))
+    // One side, from the neck to the centre of the bottom: the neck, two cubic curves, the arc. Every join has a common tangent.
+    const side = (sg: number, top: number) =>
+      new Path()
+        .M(sg * n, top)
+        .L(sg * n, yN)
+        .C(sg * n, yN + 0.4 * dyA, sg * W, yW - 0.45 * dyA, sg * W, yW)
+        .C(sg * c1.x, c1.y, sg * c2.x, c2.y, sg * J.x, J.y)
+        .A(r, 0, h, sg > 0)
+    const body = (top: number) => side(-1, top).add(joinTo(reversed(side(1, top))))
+    const outline = new Path()
+      .M(-n - 3, 0)
+      .L(-n, 4)
+      .add(joinTo(body(4)))
+      .L(n + 3, 0)
+    return {
+      prims: [{ d: outline.d(), role: 'outline' }],
+      cavities: [{ id: 'main', polys: body(RIM).Z().polys() }],
+      anchors: [
+        { id: 'bottom', kind: 'round', x: 0, y: h, dir: 90, width: w },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: 2 * n },
+        { id: 'neck', kind: 'neck', x: 0, y: yN * 0.5, width: 2 * n },
+      ],
+    }
+  },
+}
+
+const sideArmTube: SymbolDef = {
+  id: 'sideArmTube',
+  name: 'Side-arm boiling tube',
+  pack: 'containers',
+  size: { w: NECK, h: 150 },
+  resize: 'free',
+  min: { w: 20, h: 70 },
+  build({ w, h }) {
+    const x = w / 2,
+      ya = h * 0.16, // centre line of the side arm
+      armL = 20,
+      a = 4 // half-width of the side arm (8 wide)
+    // As boilingTube.
+    const body = (top: number) =>
+      new Path()
+        .M(-x, top)
+        .L(-x, h - x)
+        .A(x, x, h - x, false)
+        .L(x, top)
+    // The lower wall of the arm leaves the right wall of the tube with a small fillet; the upper wall comes back to it. The end of the arm is open.
+    const lower = roundPoly([v(x, h - x), v(x, ya + a, 2), v(x + armL, ya + a)])
+    const upper = roundPoly([v(x + armL, ya - a), v(x, ya - a, 2), v(x, 3.5)]).L(x + 2.5, 0)
+    const left = new Path()
+      .M(-x - 2.5, 0)
+      .L(-x, 3.5)
+      .L(-x, h - x)
+      .A(x, x, h - x, false)
+      .add(joinTo(lower))
+    return {
+      prims: [{ d: left.d() + upper.d(), role: 'outline' }],
+      cavities: [{ id: 'main', polys: body(RIM).Z().polys() }], // stops at the tube wall: the arm opens into the tube
+      anchors: [
+        { id: 'bottom', kind: 'round', x: 0, y: h, dir: 90, width: w },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: w },
+        { id: 'sideArm', kind: 'port', x: x + armL, y: ya, dir: 0, width: 2 * a },
+      ],
+    }
+  },
+}
+
+const crystallisingDish: SymbolDef = {
+  id: 'crystallisingDish',
+  name: 'Crystallising dish',
+  pack: 'containers',
+  size: { w: 150, h: 55 },
+  resize: 'free',
+  min: { w: 60, h: 24 },
+  build({ w, h }) {
+    const x = w / 2
+    // Straight walls and a flat base. The left rim turns out 5 u as a spout.
+    const outline = roundPoly([v(-x - 5, 0), v(-x, 4.5, 2), v(-x, h, 8), v(x, h, 8), v(x, 0)])
+    const cavity = closed([v(-x, RIM), v(-x, h, 8), v(x, h, 8), v(x, RIM)])
+    return {
+      prims: [{ d: outline.d(), role: 'outline' }],
+      cavities: [{ id: 'main', polys: cavity.polys() }],
+      anchors: [
+        { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: w },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: w },
+      ],
+    }
+  },
+}
+
+const crucible: SymbolDef = {
+  id: 'crucible',
+  name: 'Crucible',
+  pack: 'containers',
+  size: { w: 54, h: 56 },
+  resize: 'free',
+  min: { w: 30, h: 30 },
+  params: [{ key: 'lid', label: 'Lid', type: 'boolean', default: false }],
+  build({ w, h, p }) {
+    const x = w / 2,
+      bx = w * 0.275, // half-width of the base (0.55w)
+      rimX = (y: number) => x - ((x - bx) * y) / h // the wall slopes in as it goes down
+    const outline = roundPoly([v(-x, 0), v(-bx, h, 5), v(bx, h, 5), v(x, 0)])
+    const cavity = closed([v(-rimX(RIM), RIM), v(-bx, h, 5), v(bx, h, 5), v(rimX(RIM), RIM)])
+    const prims: Prim[] = [{ d: outline.d(), role: 'outline' }]
+    if (bool(p.lid, false)) {
+      // Lid and knob are one outline: a shallow arc 1.1w wide, flat underneath on the rim, with a 6 u knob at the top.
+      const L = w * 0.55,
+        s = w * 0.09, // rise of the arc
+        R = (L * L + s * s) / (2 * s),
+        k = 3, // half-width of the knob
+        yk = -s - 4 // top of the knob
+      const arc = (px: number) => -s + R - Math.sqrt(R * R - px * px)
+      const lid = new Path()
+        .M(-L, 0)
+        .A(R, -k, arc(k), true)
+        .L(-k, yk + 1.5)
+        .Q(-k, yk, -k + 1.5, yk)
+        .L(k - 1.5, yk)
+        .Q(k, yk, k, yk + 1.5)
+        .L(k, arc(k))
+        .A(R, L, 0, true)
+        .Z()
+      prims.push({ d: lid.d(), role: 'solid' })
+    }
+    return {
+      prims,
+      cavities: [{ id: 'main', polys: cavity.polys() }],
+      anchors: [
+        { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: 2 * bx },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: w },
+      ],
+    }
+  },
+}
+
+const reagentBottle: SymbolDef = {
+  id: 'reagentBottle',
+  name: 'Reagent bottle',
+  aliases: ['bottle'],
+  pack: 'containers',
+  size: { w: 80, h: 140 },
+  resize: 'free',
+  min: { w: 50, h: 80 },
+  params: [{ key: 'stopper', label: 'Stopper', type: 'boolean', default: true }],
+  build({ w, h, p }) {
+    const x = w / 2,
+      n = Math.min(13, x * 0.45), // half-width of the neck (26 wide)
+      neckBot = h * 0.16,
+      stopper = bool(p.stopper, true)
+    // Bottle as washBottle: shoulders of radius 14 into the neck. An open bottle has a 3 u rim flare; a stopper sits on the rim and hides it.
+    const prof = (top: number): V[] => [v(n, top), v(n, neckBot, 14), v(x, neckBot, 14), v(x, h, 8)]
+    const outline = stopper
+      ? roundPoly(mirrorProfile(prof(0)))
+      : new Path()
+          .M(-n - 3, 0)
+          .add(joinTo(roundPoly(mirrorProfile(prof(4)))))
+          .L(n + 3, 0)
+    // Stopper: a flat round head on the rim and a short plug in the neck, one outline. The plug lies on the neck lines, so the cavity
+    // starts under it and the white plug never covers a liquid.
+    const hw = n + 6, // half-width of the head
+      hh = 7, // height of the head
+      pd = Math.min(8, neckBot * 0.45) // depth of the plug
+    const plug = closed([v(-hw, -hh, 3), v(hw, -hh, 3), v(hw, 0, 1), v(n, 0), v(n, pd), v(-n, pd), v(-n, 0), v(-hw, 0, 1)])
+    const cavity = closed(mirrorProfile(prof(stopper ? pd + 1 : RIM)))
+    const prims: Prim[] = [{ d: outline.d(), role: 'outline' }]
+    if (stopper) prims.push({ d: plug.d(), role: 'solid' })
+    return {
+      prims,
+      cavities: [{ id: 'main', polys: cavity.polys() }],
+      anchors: [
+        { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: w },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: 2 * n },
+      ],
+    }
+  },
+}
+
+const gasJar: SymbolDef = {
+  id: 'gasJar',
+  name: 'Gas jar',
+  pack: 'containers',
+  size: { w: 70, h: 170 },
+  resize: 'free',
+  min: { w: 30, h: 80 },
+  params: [{ key: 'lid', label: 'Lid', type: 'boolean', default: false }],
+  build({ w, h, p }) {
+    const x = w / 2
+    // Straight cylinder, flat base. The rim is a flat flange, 5 u out on each side.
+    const outline = roundPoly([v(-x - 5, 0), v(-x, 0, 2), v(-x, h, 4), v(x, h, 4), v(x, 0, 2), v(x + 5, 0)])
+    const cavity = closed([v(-x, RIM), v(-x, h, 4), v(x, h, 4), v(x, RIM)])
+    const prims: Prim[] = [{ d: outline.d(), role: 'outline' }]
+    if (bool(p.lid, false)) prims.push({ d: rect(-x - 8, -3, x + 8, 0), role: 'solid' }) // a glass plate on the flange
+    return {
+      prims,
+      cavities: [{ id: 'main', polys: cavity.polys() }],
+      anchors: [
+        { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: w },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: w },
+      ],
+    }
+  },
+}
+
+const uTube: SymbolDef = {
+  id: 'uTube',
+  name: 'U-tube',
+  label: 'U-tube',
+  pack: 'containers',
+  size: { w: 110, h: 150 },
+  resize: 'free',
+  min: { w: 64, h: 80 },
+  build({ w, h }) {
+    const tw = Math.min(24, w * 0.4), // the tube is 24 wide inside
+      R = Math.min(w / 2, h - 16), // outer radius of the bend
+      ri = R - tw, // inner radius of the bend
+      cy = h - R // centre of the bend
+    // One wall of the tube: a straight arm, a half-circle (two quarter arcs), a straight arm, each rim flared 2 u. The two walls are drawn open at the top.
+    const wall = (r: number, flare: number) =>
+      new Path()
+        .M(-r - flare, 0)
+        .L(-r, 3.5)
+        .L(-r, cy)
+        .A(r, 0, cy + r, false)
+        .A(r, r, cy, false)
+        .L(r, 3.5)
+        .L(r + flare, 0)
+    const cavity = new Path()
+      .M(-R, RIM)
+      .L(-R, cy)
+      .A(R, 0, cy + R, false)
+      .A(R, R, cy, false)
+      .L(R, RIM)
+      .L(ri, RIM)
+      .L(ri, cy)
+      .A(ri, 0, cy + ri, true)
+      .A(ri, -ri, cy, true)
+      .L(-ri, RIM)
+      .Z()
+    return {
+      prims: [{ d: wall(R, 2).d() + wall(ri, -2).d(), role: 'outline' }],
+      cavities: [{ id: 'main', polys: cavity.polys() }],
+      anchors: [
+        { id: 'mouthL', kind: 'mouth', x: -(R - tw / 2), y: 0, dir: -90, width: tw },
+        { id: 'mouthR', kind: 'mouth', x: R - tw / 2, y: 0, dir: -90, width: tw },
+      ],
+    }
+  },
+}
+
+const copperCalorimeter: SymbolDef = {
+  id: 'copperCalorimeter',
+  name: 'Calorimeter (metal can)',
+  aliases: ['copper can', 'copper calorimeter'],
+  pack: 'containers',
+  size: { w: 80, h: 90 },
+  resize: 'free',
+  min: { w: 30, h: 30 },
+  build({ w, h }) {
+    const x = w / 2
+    // Straight can, flat base, no lip.
+    const outline = roundPoly([v(-x, 0), v(-x, h, 3), v(x, h, 3), v(x, 0)])
+    const cavity = closed([v(-x, RIM), v(-x, h, 3), v(x, h, 3), v(x, RIM)])
+    return {
+      prims: [{ d: outline.d(), role: 'outline' }],
+      cavities: [{ id: 'main', polys: cavity.polys() }],
+      anchors: [
+        { id: 'base', kind: 'base', x: 0, y: h, dir: 90, width: w },
+        { id: 'mouth', kind: 'mouth', x: 0, y: 0, dir: -90, width: w },
+      ],
+    }
+  },
+}
+
+export const containers: SymbolDef[] = [
+  volumetricFlask,
+  buchnerFlask,
+  evaporatingBasin,
+  watchGlass,
+  polystyreneCup,
+  washBottle,
+  displacementCan,
+  flatBottomFlask,
+  pearFlask,
+  sideArmTube,
+  crystallisingDish,
+  crucible,
+  reagentBottle,
+  gasJar,
+  uTube,
+  copperCalorimeter,
+]
