@@ -324,7 +324,7 @@ const ALL_PRESETS: readonly Preset[] = [...PRESETS, ...RECIPE_PRESETS]
 const shortName = (p: Preset) => p.name.replace(/\s*\(.*?\)\s*$/, '').trim()
 
 /** A preset by name: the whole name, or the name without its bracketed part ("Blue" for "Blue (copper sulfate)"), ignoring case. */
-function presetByName(name: string): Preset | undefined {
+export function presetByName(name: string): Preset | undefined {
   const w = name.trim().toLowerCase()
   const whole = ALL_PRESETS.find((p) => p.name.toLowerCase() === w)
   if (whole) return whole
@@ -1676,6 +1676,8 @@ export function compileRecipe(recipe: unknown): RecipeResult {
     else if (it.type === 'label') {
       it.x = r3(it.x)
       it.y = r3(it.y)
+      if (it.target)
+        it.target = 'item' in it.target ? { item: it.target.item, lx: r3(it.target.lx), ly: r3(it.target.ly) } : { x: r3(it.target.x), y: r3(it.target.y) }
     }
   }
   const parsed = parseDoc(JSON.parse(JSON.stringify(doc)))
