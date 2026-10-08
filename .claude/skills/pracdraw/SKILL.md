@@ -45,7 +45,7 @@ The name of a file says what is in it: `<name>`, then `-blank`, `-letters` or `-
 - Give students only the PNG of a copy marked "student copy" in the output. The SVG and the `.pracdraw.json` hold the label texts in their metadata, so that the editor can open them again: they are the teacher's.
 - `--student` writes the student copies and nothing else: PNG files, no SVG, no saved diagram, no key. With `--variants` it writes the blank and letters copies; or give `--labels blank` or `--labels letters`. It says that the source is not written: the teacher's copy comes from a normal run.
 - The letters, and the lines of the key, follow the order of the labels. `labels.order` sets that order, so that "A is the burette" can match the question.
-- Each label should be one or two words, at most 100 u wide: blank mode draws a line of 100 u for the answer, and the checks warn about a longer text.
+- A worksheet needs labels of one or two words, at most 100 u wide: a blank copy draws a line of 100 u for the answer, and a longer answer does not fit on it. The output lists each label that is too wide under the file line of a blank copy (`--labels blank`, `--variants`, `--student`, or a recipe with `labelMode` `blank`), as `blank copy: the label "..." is 141 u wide ...`, with the fix: shorten it, or give it a shorter text in `labels.text`. A slide or a letters copy has no such line, so a long label is no warning there.
 
 ## The recipe
 
@@ -226,7 +226,7 @@ Open the PNG and check each of these before you hand it over.
 5. Each leader ends on the part it names, and not on a part in front of it. No two leaders cross. No text runs into the drawing.
 6. Nothing is cut off or very small. A very wide picture (over about 1200 units) is small on a slide: bring the parts closer.
 
-The checks at the end of the output find: leaders that cross each other; a leader that crosses another part from side to side; text, or the 100 u line of blank mode, that runs into a part or into other text; a label wider than 100 u; two vessels drawn through each other; a leader that ends in empty space; a clamp drawn in front of its vessel; a symbol that failed to build; a connector that draws nothing. Fix every warning (at most 25 are shown; the rest are counted). They cannot see everything: read the `box` of each part in the description, to see that parts touch and that nothing is far away; a leader that ends on the wrong part but near the right one; the end of a leader with no label; a liquid that is level with the wrong mark; a leader that runs through something in front of it.
+The checks at the end of the output find: leaders that cross each other; a leader that crosses another part from side to side; text, or the 100 u line of blank mode, that runs into a part or into other text; two vessels drawn through each other; a leader that ends in empty space; a clamp drawn in front of its vessel; a symbol that failed to build; a connector that draws nothing. Fix every warning (at most 25 are shown; the rest are counted). A blank copy has one more, listed under its file line and not in the checks of a slide: a label wider than its 100 u line (see "Student copies and teacher copies"). They cannot see everything: read the `box` of each part in the description, to see that parts touch and that nothing is far away; a leader that ends on the wrong part but near the right one; the end of a leader with no label; a liquid that is level with the wrong mark; a leader that runs through something in front of it.
 
 ## Common mistakes
 

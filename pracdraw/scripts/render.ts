@@ -20,6 +20,9 @@
 // The name of a picture says what is in it: <name>, then -blank, -letters or -letters-key for the labels (text has no
 // suffix), then -mono when it is photocopy-safe. --variants writes every label mode; --student writes the copies for
 // students only (PNG, no answers).
+//
+// The checks of the layout are made once, for the picture that the flags ask for. A blank copy has one more fault, a label
+// wider than the 100 u line to write on, which a slide has not: it is listed under the file line of each blank picture.
 
 import { execFileSync } from 'node:child_process'
 import { accessSync, constants, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -34,7 +37,7 @@ import { docFromSvg, svgMetadata } from '../src/export/svg.ts'
 import { FONT, SCRIPT } from '../src/kernel/nodes.ts'
 import { parseMarkup } from '../src/kernel/text.ts'
 import { docBounds, drawnBox, type Measure, estimateWidth } from '../src/model/bounds.ts'
-import { MAX_LISTED, checkDoc, describeDoc, listed, measuredTexts } from '../src/model/check.ts'
+import { MAX_LISTED, checkBlankCopy, checkLayout, describeDoc, listed, measuredTexts } from '../src/model/check.ts'
 import { SYMBOL_SIZE, parseDoc } from '../src/model/parse.ts'
 import { compileRecipe, isRecipe, nearestNames, suggestSymbols, type Problem } from '../src/model/recipe.ts'
 import type { Doc } from '../src/model/types.ts'
@@ -653,6 +656,17 @@ const svgSize = (svg: string): string => {
   return m ? `${m[1]} × ${m[2]} px` : ''
 }
 
+/**
+ * The lines that go under the file line of a blank copy: each fault of that copy (at most 25, and a count of the rest), then
+ * the fix once. A slide has no line to write on, so only a blank copy has them.
+ */
+function blankCopyLines(problems: readonly Problem[]): string[] {
+  const { shown, more } = listed(problems)
+  const lower = (s: string): string => s.charAt(0).toLowerCase() + s.slice(1)
+  const hints = [...new Set(shown.map((p) => p.hint).filter(Boolean))]
+  return [...shown.map((p) => `blank copy: ${lower(p.message)}`), ...(more ? [`and ${more} more`] : []), ...hints.map((h) => `hint: ${h}`)]
+}
+
 /** What this render makes of the diagram, for the header of the description. */
 function renderNote(a: Args, base: Pic): string {
   const parts = [`labels ${base.labels}${base.key ? ' with the key' : ''}`, `photocopy-safe ${base.mono ? 'on' : 'off'}`]
@@ -724,9 +738,11 @@ async function main(): Promise<void> {
       throw new Failure('dist/index.html is out of date (its test hook takes no options). Run: npm run build', 2)
     await page.evaluate(`window.__pracdraw.load(${JSON.stringify(doc)})`)
 
-    // The text widths as this browser draws them; then the checks, once.
+    // The text widths as this browser draws them; then the checks, once. The checks of the layout are those of every picture.
+    // What only a blank copy has (a label wider than its line) is listed with the file of each blank picture, below.
     const measure = await browserMeasure(page, measuredTexts(doc))
-    const checks: Problem[] = checkDoc(doc, measure)
+    const checks: Problem[] = checkLayout(doc, measure)
+    const blankCopy = checkBlankCopy(doc, measure)
     const size = pictureSize(doc, base, measure)
     if (size.w > PICTURE_LIMIT || size.h > PICTURE_LIMIT) {
       checks.push({
@@ -737,17 +753,18 @@ async function main(): Promise<void> {
       })
     }
 
-    const files: { name: string; data: Buffer | string; info: string; purpose: string }[] = []
-    for (const p of plan(doc, stem, a)) {
+    const files: { name: string; data: Buffer | string; info: string; purpose: string; pic?: Pic; notes?: string[] }[] = []
+    const planned = plan(doc, stem, a)
+    for (const p of planned) {
       const options = JSON.stringify(p.options)
       if (p.kind === 'svg') {
         const svg = await page.evaluate<string>(`window.__pracdraw.svg(${options})`)
-        files.push({ name: p.name, data: svg, info: svgSize(svg), purpose: purposeOf(p.pic, 'svg') })
+        files.push({ name: p.name, data: svg, info: svgSize(svg), purpose: purposeOf(p.pic, 'svg'), pic: p.pic })
       } else {
         const url = await page.evaluate<string>(`window.__pracdraw.png(${a.scale}, ${options})`)
         const png = Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')
         const px = pngSize(png)
-        files.push({ name: p.name, data: png, info: `${px.w} × ${px.h} px`, purpose: purposeOf(p.pic, 'png') })
+        files.push({ name: p.name, data: png, info: `${px.w} × ${px.h} px`, purpose: purposeOf(p.pic, 'png'), pic: p.pic })
         // The editor keeps a PNG inside what a browser can draw: a big picture at a big scale is made smaller.
         const unit = pictureSize(doc, p.pic, measure)
         if (safeScale(unit.w, unit.h, a.scale) < a.scale - 1e-9) {
@@ -759,6 +776,16 @@ async function main(): Promise<void> {
           })
         }
       }
+    }
+    // The faults of a blank copy go under the last file of each picture that is written as blank (and no other picture has them).
+    // When no blank picture is written (--no-png --no-svg) but the picture that the flags ask for is blank, the checks list them.
+    const blankPictures = [...new Set(planned.map((p) => p.pic).filter((pic) => pic.labels === 'blank'))]
+    if (blankCopy.length) {
+      for (const pic of blankPictures) {
+        const mine = files.filter((f) => f.pic === pic)
+        if (mine.length) mine[mine.length - 1].notes = blankCopyLines(blankCopy)
+      }
+      if (!blankPictures.length && base.labels === 'blank') checks.push(...blankCopy)
     }
     if (!a.student)
       files.push({
@@ -778,6 +805,7 @@ async function main(): Promise<void> {
     for (const f of files) {
       const bytes = typeof f.data === 'string' ? Buffer.byteLength(f.data) : f.data.length
       console.log(`wrote ${join(a.out, f.name)}  ${f.info}  ${bytes.toLocaleString('en-GB')} bytes  ${f.purpose}`)
+      for (const note of f.notes ?? []) console.log(`  ${note}`)
     }
     if (a.student) {
       console.log(

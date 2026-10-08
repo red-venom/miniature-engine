@@ -4,63 +4,15 @@ import { P } from '../kernel/geom'
 import { TEMPLATES } from '../templates'
 import { estimateWidth, type Measure } from './bounds'
 import { DocBuilder } from './build'
-import { MAX_LISTED, checkDoc, describeDoc, listed, measuredTexts } from './check'
+import { MAX_LISTED, checkBlankCopy, checkDoc, checkLayout, describeDoc, listed, measuredTexts } from './check'
 import type { Doc, SymbolItem } from './types'
 
 /** The part of a message that says a label is wider than the line of blank mode. */
 const LONG = 'the line to write on in blank mode is'
 const isLong = (message: string): boolean => message.includes(LONG)
 
-/**
- * The templates are slide diagrams: their labels are the textbook names ("round-bottomed flask"), and the line that blank
- * mode draws is 100 u. By the estimate of the unit tests (0.56 × the size for each character) this is how many labels of
- * each template are wider than that line; the render command measures the real text, which is narrower (60 labels in 35
- * templates). The warning is true for a worksheet made from a template, so it stays, and this list pins it: a template
- * that gains or loses a long label, or a new template with one, fails the test until the list says so.
- */
-const LONG_LABELS: Record<string, number> = {
-  heatingBeaker: 2,
-  filtration: 3,
-  crystallisation: 4,
-  electrolysis: 2,
-  electrolysisBeaker: 3,
-  temperatureChange: 1,
-  rateGasSyringe: 3,
-  rateGasOverWater: 5,
-  disappearingCross: 3,
-  paperChromatography: 2,
-  simpleDistillation: 5,
-  distillation: 4,
-  titration: 2,
-  flameTest: 3,
-  standardSolution: 2,
-  spiritBurnerCalorimetry: 2,
-  reflux: 6,
-  separatingFunnelUse: 3,
-  buchnerFiltration: 3,
-  meltingPoint: 4,
-  tlc: 1,
-  electrochemicalCell: 2,
-  phCurve: 1,
-  massLoss: 5,
-  testTubeReactions: 2,
-  thermalDecomposition: 6,
-  microscopeParts: 3,
-  osmosis: 3,
-  foodTestWaterBath: 3,
-  enzymes: 4,
-  photosynthesis: 2,
-  quadratSampling: 2,
-  specificHeatCapacity: 3,
-  resistanceWire: 1,
-  ivCharacteristic: 2,
-  densityDisplacement: 4,
-  densityLiquid: 2,
-  springExtension: 2,
-  acceleration: 1,
-  wavesOnString: 4,
-  infraredRadiation: 2,
-}
+/** The same diagram with another label mode: the mode is what the checks ask. */
+const inMode = (doc: Doc, labelMode: Doc['settings']['labelMode']): Doc => ({ ...doc, settings: { ...doc.settings, labelMode } })
 
 /**
  * Leaders of the templates that cross another part from side to side, kept as the editor draws them: each reaches a part
@@ -92,20 +44,16 @@ function crossing(swap = false): Doc {
 describe('checkDoc', () => {
   it('all-templates-pass-the-checks', () => {
     expect(TEMPLATES.length).toBeGreaterThanOrEqual(43)
-    for (const t of TEMPLATES) {
-      const found = checkDoc(t.build())
-      // A long label is allowed, with the count that the list says; a leader across a part only where the list says.
-      expect(found.filter((p) => isLong(p.message)).length, `${t.id}: labels wider than the line`).toBe(LONG_LABELS[t.id] ?? 0)
-      const rest = found.filter((p) => !isLong(p.message)).map((p) => p.message)
-      expect(rest, t.id).toEqual(LEADER_ACROSS[t.id] ?? [])
-    }
-    // The lists name templates that exist and are not empty.
-    for (const id of [...Object.keys(LONG_LABELS), ...Object.keys(LEADER_ACROSS)])
+    // A template is a slide: it has no line to write on, so none of its labels is too long for it. A leader across a part
+    // only where the list says.
+    for (const t of TEMPLATES) expect(messages(t.build()), t.id).toEqual(LEADER_ACROSS[t.id] ?? [])
+    // The list names templates that exist.
+    for (const id of Object.keys(LEADER_ACROSS))
       expect(
         TEMPLATES.some((t) => t.id === id),
         id,
       ).toBe(true)
-    // With the text measured shorter than the line, no template has any fault but those across a part.
+    // With the text measured shorter than the line, nothing changes: the faults that are left are not about the text.
     for (const t of TEMPLATES)
       expect(
         messages(t.build(), () => 40),
@@ -125,6 +73,9 @@ describe('checkDoc', () => {
     ])
     // The same labels with their heights swapped do not cross.
     expect(checkDoc(crossing(true))).toEqual([])
+    // A diagram that is saved as blank has the faults of every picture, and those of a blank copy besides: the crossing leaders
+    // are found in every mode.
+    for (const mode of ['text', 'blank', 'letters'] as const) expect(checkDoc(inMode(crossing(), mode)), mode).toEqual(problems)
   })
 
   it('check-finds-leader-crossing-part', () => {
@@ -280,19 +231,72 @@ describe('checkDoc', () => {
     b.label('filtrate', 150, 100, [beaker, 50, 100], { side: 'right' })
     // The width comes from the measure: the browser's real 161 u for the long text, 60 u for the short one.
     const measure: Measure = (text) => (text === 'filtrate (salt solution)' ? 161 : 60)
-    const found = checkDoc(b.doc, measure).filter((p) => isLong(p.message))
-    expect(found).toEqual([
-      {
-        level: 'warning',
-        path: 'label2',
-        message: 'The label "filtrate (salt solution)" is 161 u wide, and the line to write on in blank mode is 100 u: the answer will not fit on its line.',
-        hint: 'Shorten the label to one or two words, or give it a shorter text: "labels.text" in a recipe, the text of the label in the editor.',
-      },
+    const fault = {
+      level: 'warning',
+      path: 'label2',
+      message: 'The label "filtrate (salt solution)" is 161 u wide, and the line to write on in blank mode is 100 u: the answer will not fit on its line.',
+      hint: 'Shorten the label to one or two words, or give it a shorter text: "labels.text" in a recipe, the text of the label in the editor.',
+    }
+    // A blank copy has a line to write on, and the long label does not fit on it.
+    expect(checkDoc(inMode(b.doc, 'blank'), measure)).toEqual([fault])
+    expect(checkBlankCopy(inMode(b.doc, 'blank'), measure)).toEqual([fault])
+    // A slide, and a copy with letters, have no such line: the label is no fault of the diagram.
+    for (const mode of ['text', 'letters'] as const) expect(checkDoc(inMode(b.doc, mode), measure), mode).toEqual([])
+    expect(checkLayout(inMode(b.doc, 'blank'), measure)).toEqual([])
+    // The check of a blank copy does not look at the mode of the document: the render command asks for it for each picture
+    // that it writes as blank, whatever the document says.
+    expect(checkBlankCopy(inMode(b.doc, 'text'), measure)).toEqual([fault])
+    // Exactly the width of the line fits: the line is 100 u.
+    expect(checkBlankCopy(b.doc, () => 100)).toEqual([])
+    expect(checkBlankCopy(b.doc, () => 100.5)).toHaveLength(2)
+    // A label of two lines is as wide as its wider line.
+    const two = new DocBuilder('Two lines')
+    const vessel = two.symbol('beaker', { x: 0, y: 0 })
+    two.label('ab\na long second line here', 150, 60, [vessel, 50, 60], { side: 'right' })
+    expect(checkBlankCopy(two.doc, (line) => line.length * 10).map((p) => p.message)).toEqual([
+      'The label "ab a long second line here" is 230 u wide, and the line to write on in blank mode is 100 u: the answer will not fit on its line.',
     ])
-    // It is a warning in every mode, because the text may be exported as a blank later; and plain text has no line to write on.
+    // The width is that of the size of the label itself: 5 characters at 30 u are 150 u wide, and at the 15 u of the document 75 u.
+    const own = new DocBuilder('Own size')
+    const jar = own.symbol('beaker', { x: 0, y: 0 })
+    own.label('abcde', 150, 60, [jar, 50, 60], { side: 'right', size: 30 })
+    expect(checkBlankCopy(own.doc, (line, size) => line.length * size).map((p) => p.message)).toEqual([
+      'The label "abcde" is 150 u wide, and the line to write on in blank mode is 100 u: the answer will not fit on its line.',
+    ])
+    // Plain text has no line to write on.
     const text = new DocBuilder('Plain')
     text.label('a very long piece of plain text with no leader', 0, 0)
-    expect(checkDoc(text.doc, () => 400)).toEqual([])
+    expect(checkDoc(inMode(text.doc, 'blank'), () => 400)).toEqual([])
+  })
+
+  it('finds the labels of a template that a blank copy cannot hold, and only those', () => {
+    // A template is a slide with the textbook names ("round-bottomed flask"): most have a label that a line of 100 u cannot
+    // hold, and a blank copy of them says so. A slide of them does not.
+    let long = 0
+    for (const t of TEMPLATES) {
+      const doc = t.build()
+      const withLine = doc.order.filter((id) => {
+        const it = doc.items[id]
+        return it.type === 'label' && !!it.target
+      })
+      expect(
+        checkBlankCopy(doc, () => 100).map((p) => p.path),
+        `${t.id}: 100 u fits the line`,
+      ).toEqual([])
+      expect(
+        checkBlankCopy(doc, () => 100.5).map((p) => p.path),
+        `${t.id}: one fault for each line`,
+      ).toEqual(withLine)
+      const found = checkBlankCopy(doc)
+      long += found.length
+      // In blank mode the document has them; in text mode it has none of them.
+      expect(checkDoc(inMode(doc, 'blank')).filter((p) => isLong(p.message))).toEqual(found)
+      expect(
+        checkDoc(inMode(doc, 'text')).filter((p) => isLong(p.message)),
+        t.id,
+      ).toEqual([])
+    }
+    expect(long, 'labels that are too wide for a blank copy, by the estimate').toBeGreaterThan(40)
   })
 
   it('finds two texts that overlap', () => {
@@ -446,6 +450,7 @@ describe('measuredTexts', () => {
           return estimateWidth(text, size)
         }
         checkDoc(doc, record)
+        checkBlankCopy(doc, record) // the render command makes it for a blank picture of a document in any mode
         describeDoc(doc, { measure: record, problems: [] })
         exportPicture(doc, { labels: 'shown', mono: 'shown', answerKey: true }, record)
         for (const key of seen) expect(wanted.has(key), `${t.id} in ${mode} mode measures "${key}"`).toBe(true)

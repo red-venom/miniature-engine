@@ -10,7 +10,7 @@ import { crc32 } from 'node:zlib'
 import { DEFAULT_EXPORT, exportSvg, type ExportOptions } from '../src/export/picture.ts'
 import { docFromSvg } from '../src/export/svg.ts'
 import { FONT, SCRIPT } from '../src/kernel/nodes.ts'
-import { parseMarkup } from '../src/kernel/text.ts'
+import { parseMarkup, smartChem } from '../src/kernel/text.ts'
 import { docBounds, type Measure } from '../src/model/bounds.ts'
 import { DocBuilder } from '../src/model/build.ts'
 import { compileRecipe } from '../src/model/recipe.ts'
@@ -545,17 +545,159 @@ test('render-warns-about-a-big-picture', () => {
   expect(ok.out).toContain('larger than 4000 u on a side')
 })
 
+/**
+ * The labels with a leader, split by the 100 u line that blank mode draws for the answer: those whose text is wider than the
+ * line, as this browser draws it (the text and the width of each), and the texts that fit. Summed here from the browser's own
+ * widths, not by the code that is tested.
+ */
+async function byTheLine(page: Page, doc: Doc): Promise<{ wide: [string, number][]; fit: string[] }> {
+  const labels = labelsOf(doc)
+  const size = (l: LabelItem) => l.size ?? doc.settings.labelSize
+  const lines = (l: LabelItem) => l.text.split('\n').map((s) => ((l.smart ?? doc.settings.smartText) ? smartChem(s) : s))
+  const measure = await browserMeasure(page, (m) => {
+    for (const l of labels) for (const s of lines(l)) m(s, size(l))
+  })
+  const widths = labels.map((l): [string, number] => [l.text, Math.max(0, ...lines(l).map((s) => measure(s, size(l))))])
+  return { wide: widths.filter(([, w]) => w > 100), fit: widths.filter(([, w]) => w <= 100).map(([text]) => text) }
+}
+
+test('render-blank-copy-warns-about-long-labels', async ({ page }, info) => {
+  // A slide has no line to write on, so a long label is no fault of it. A blank copy has a line of 100 u, and a label that is wider
+  // does not fit on it: the file line of that copy says so, and no other file does.
+  await open(page)
+  const { wide, fit } = await byTheLine(page, TEMPLATES.find((t) => t.id === 'distillation')!.build())
+  expect(wide.length, 'labels that a line of 100 u cannot hold, as this browser draws them').toBeGreaterThanOrEqual(2)
+  expect(fit.length, 'labels that it holds').toBeGreaterThanOrEqual(2)
+  const lineOf = ([text, width]: [string, number]) =>
+    `blank copy: the label "${text}" is ${Math.ceil(width)} u wide, and the line to write on in blank mode is 100 u`
+  /** The lines under the file line of `file`, which start with two spaces: its notes. */
+  const notesOf = (out: string, file: string): string[] => {
+    const lines = out.split('\n')
+    const at = lines.findIndex((l) => l.startsWith('wrote ') && l.includes(`${file}  `))
+    expect(at, `${file} is listed`).toBeGreaterThanOrEqual(0)
+    const notes: string[] = []
+    for (let i = at + 1; lines[i]?.startsWith('  '); i++) notes.push(lines[i].trim())
+    return notes
+  }
+  /** Every line of the output that says a label is wider than the line to write on: under the file lines of blank copies, and nowhere else. */
+  const faults = (out: string): string[] => out.split('\n').filter((l) => /u wide, and the line to write on/.test(l))
+  const expectNotes = (notes: string[], what: string) => {
+    for (const w of wide)
+      expect(
+        notes.some((n) => n.startsWith(lineOf(w))),
+        `${what}: a note for "${w[0]}"`,
+      ).toBe(true)
+    for (const text of fit) expect(notes.join('\n'), `${what}: no note for "${text}"`).not.toContain(`the label "${text}" `)
+    expect(
+      notes.filter((n) => n.startsWith('blank copy:')),
+      what,
+    ).toHaveLength(wide.length)
+    expect(
+      notes.filter((n) => n.startsWith('hint: Shorten the label to one or two words')),
+      `${what}: the fix, once`,
+    ).toHaveLength(1)
+  }
+  const template = (...flags: string[]) => {
+    const r = render(['--template', 'distillation', '--out', folder(info, `d${flags.join('')}`), ...flags])
+    expect(r.code, `${flags.join(' ')}\n${r.out}${r.err}`).toBe(0) // a warning does not fail the run
+    return r.out
+  }
+
+  // The slide, as it is: no warning of the kind anywhere, and the checks are clean.
+  const slide = template('--no-svg')
+  expect(faults(slide)).toEqual([])
+  expect(slide).not.toContain('blank copy')
+  expect(slide).toMatch(/\nchecks: no layout faults\n?$/)
+
+  // A blank copy: each label that is too wide, with the width of this browser, under the file line of the copy, once.
+  const blank = template('--no-svg', '--labels', 'blank')
+  expectNotes(notesOf(blank, 'distillation-blank.png'), 'the blank copy')
+  expect(faults(blank)).toHaveLength(wide.length)
+  expect(notesOf(blank, 'distillation.pracdraw.json'), 'the saved diagram has none').toEqual([])
+  expect(blank).toMatch(/\nchecks: no layout faults\n?$/)
+
+  // --variants: under the blank copy only. The text, letters, key and photocopy-safe pictures have none.
+  const variants = template('--no-svg', '--variants')
+  expectNotes(notesOf(variants, 'distillation-blank.png'), 'the blank copy of --variants')
+  for (const file of ['distillation.png', 'distillation-letters.png', 'distillation-letters-key.png', 'distillation-mono.png', 'distillation.pracdraw.json']) {
+    expect(notesOf(variants, file), `${file} has none`).toEqual([])
+  }
+  expect(faults(variants)).toHaveLength(wide.length)
+  expect(variants).toMatch(/\nchecks: no layout faults\n?$/)
+  // With the SVG too: under the last file of the copy, so once and not twice.
+  const both = template('--variants')
+  expect(faults(both)).toHaveLength(wide.length)
+  expectNotes(notesOf(both, 'distillation-blank.png'), 'the PNG of the blank copy')
+
+  // The copies for students, and the photocopy-safe ones: the blank copy has them, the letters copy has not.
+  const student = template('--student', '--variants')
+  expectNotes(notesOf(student, 'distillation-blank.png'), 'the blank copy of --student')
+  expect(notesOf(student, 'distillation-letters.png')).toEqual([])
+  expect(faults(student)).toHaveLength(wide.length)
+  const mono = template('--no-svg', '--variants', '--mono')
+  expectNotes(notesOf(mono, 'distillation-blank-mono.png'), 'the blank photocopy-safe copy')
+  expect(notesOf(mono, 'distillation-mono.png')).toEqual([])
+  expect(faults(mono)).toHaveLength(wide.length)
+  expect(notesOf(template('--student', '--labels', 'letters'), 'distillation-letters.png')).toEqual([])
+  expect(faults(template('--student', '--labels', 'letters'))).toEqual([])
+
+  // No file is written for the blank copy (--no-png --no-svg): the checks list the faults, in the summary and in the list with hints.
+  const none = template('--no-png', '--no-svg', '--labels', 'blank')
+  expect(faults(none)).toHaveLength(wide.length * 2)
+  expect(none).toContain(`checks: ${wide.length} warning${wide.length === 1 ? '' : 's'}`)
+  expect(none).not.toContain('blank copy:')
+
+  // A copy with more of them than a listing shows has the first 25, and a count of the rest.
+  const many = join(folder(info, 'many'), 'many.json')
+  const ids = Array.from({ length: 30 }, (_, i) => `t${i}`)
+  writeFileSync(
+    many,
+    JSON.stringify({
+      title: 'Many',
+      parts: ids.map((id, i) => ({ id, symbol: 'testTube', at: { x: i * 60, y: 0 } })),
+      labels: { text: Object.fromEntries(ids.map((id, i) => [id, `a label that is far too long, number ${i}`])) },
+    }),
+  )
+  const crowd = render([many, '--out', folder(info, 'many-out'), '--no-svg', '--labels', 'blank'])
+  expect(crowd.code, crowd.out + crowd.err).toBe(0)
+  const crowded = notesOf(crowd.out, 'many-blank.png')
+  expect(crowded.filter((n) => n.startsWith('blank copy: the label "a label that is far too long'))).toHaveLength(25)
+  expect(crowded).toContain('and 5 more')
+  expect(crowded.filter((n) => n.startsWith('hint:'))).toHaveLength(1)
+
+  // A recipe that is saved as blank is a blank copy as it stands, and --variants has two blank pictures: each lists them.
+  const recipe = join(folder(info, 'own'), 'sheet.json')
+  const base = readJson(example('heating-beaker')) as { labels: { text: object } }
+  writeFileSync(
+    recipe,
+    JSON.stringify({ ...base, settings: { labelMode: 'blank' }, labels: { ...base.labels, text: { gauze: 'wire gauze held on the tripod' } } }),
+  )
+  const own = render([recipe, '--out', folder(info, 'own-out'), '--no-svg'])
+  expect(own.code, own.out + own.err).toBe(0)
+  expect(notesOf(own.out, 'sheet-blank.png')[0]).toMatch(/^blank copy: the label "wire gauze held on the tripod" is \d+ u wide/)
+  expect(faults(own.out), 'once, under the file line, and not in the checks again').toHaveLength(1)
+  expect(own.out).toMatch(/\nchecks: no layout faults\n?$/)
+  const ownVariants = render([recipe, '--out', folder(info, 'own-variants'), '--no-svg', '--variants'])
+  expect(ownVariants.code, ownVariants.out + ownVariants.err).toBe(0)
+  for (const file of ['sheet-blank.png', 'sheet-blank-mono.png']) expect(notesOf(ownVariants.out, file)[0], file).toMatch(/^blank copy: the label "wire gauze/)
+  for (const file of ['sheet.png', 'sheet-letters.png', 'sheet-letters-key.png']) expect(notesOf(ownVariants.out, file), file).toEqual([])
+  expect(faults(ownVariants.out), 'once for each blank picture').toHaveLength(2)
+})
+
 test('render-examples-are-clean', () => {
-  // Every recipe of the skill is an example to copy: it draws with no warning, as this browser measures the text.
+  // Every recipe of the skill is an example to copy: it draws with no warning, as this browser measures the text, and its
+  // labels fit the line to write on of a blank copy (a worksheet needs labels of one or two words).
   const info = test.info()
   const files = readdirSync(EXAMPLES)
     .filter((f) => f.endsWith('.json'))
     .sort()
   expect(files.length).toBeGreaterThanOrEqual(9)
   for (const file of files) {
-    const r = render([join(EXAMPLES, file), '--out', folder(info, 'clean'), '--no-png', '--no-svg'])
-    expect(r.code, `${file}\n${r.out}${r.err}`).toBe(0)
-    expect(r.out, file).toMatch(/\nchecks: no layout faults\n?$/)
+    for (const flags of [[], ['--labels', 'blank']]) {
+      const r = render([join(EXAMPLES, file), '--out', folder(info, 'clean'), '--no-png', '--no-svg', ...flags])
+      expect(r.code, `${file} ${flags.join(' ')}\n${r.out}${r.err}`).toBe(0)
+      expect(r.out, `${file} ${flags.join(' ')}`).toMatch(/\nchecks: no layout faults\n?$/)
+    }
   }
 })
 

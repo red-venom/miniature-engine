@@ -40,7 +40,7 @@ Run it:
 npm run render -- beaker.json --out lessons/heating
 ```
 
-It prints one line for each file it wrote (size, bytes, and what the file is for), then a description of the diagram (where every part, anchor and label is), and the problems it found. The second line of the description gives the size of the picture, and after `this render:` the label mode and the photocopy-safe setting that the flags of this run made. Open `lessons/heating/beaker.png` to look at it.
+It prints one line for each file it wrote (size, bytes, and what the file is for; under the line of a blank copy, the labels that are too wide for its line to write on), then a description of the diagram (where every part, anchor and label is), and the problems it found. The second line of the description gives the size of the picture, and after `this render:` the label mode and the photocopy-safe setting that the flags of this run made. Open `lessons/heating/beaker.png` to look at it.
 
 | Flag | Meaning |
 | --- | --- |
@@ -119,7 +119,11 @@ A recipe with a mistake gets a numbered list: where (the path in the recipe), wh
    hint: Nearest symbols: beaker (Beaker). The whole list is in reference/symbols.md, or run: npm run render -- --list symbols
 ```
 
-All the problems are listed, not only the first. After a good recipe the command checks the layout and warns about: two leaders that cross; a leader that crosses another part from side to side; a text, or the 100 u line of blank mode, that runs into a part or into another text; a label wider than the 100 u line (keep each label to one or two words for a worksheet); two vessels drawn through each other; a symbol that failed to build; a connector that draws nothing; a leader that ends in empty space; and a clamp drawn in front of the vessel it grips. At most 25 warnings are shown, and the rest are counted. The command also warns when the picture is more than 4000 u on a side, and when a PNG is smaller than the scale asks for because a PNG is at most 8192 pixels on a side and 16 million in all. The checks cannot see everything: look at the picture.
+All the problems are listed, not only the first. After a good recipe the command checks the layout and warns about: two leaders that cross; a leader that crosses another part from side to side; a text, or the 100 u line of blank mode, that runs into a part or into another text; two vessels drawn through each other; a symbol that failed to build; a connector that draws nothing; a leader that ends in empty space; and a clamp drawn in front of the vessel it grips. At most 25 warnings are shown, and the rest are counted.
+
+A blank copy (`--labels blank`, `--variants`, `--student`, or a diagram that is saved as blank) has one more: a label wider than its 100 u line to write on, so that the answer does not fit. A worksheet needs labels of one or two words. The command lists each such label under the file line of the blank copy (`blank copy: the label "..." is 141 u wide ...`), with the fix (a shorter text in `labels.text`), and no other picture has the warning: a slide or a letters copy has no line to write on, so a long label is no fault of it, and the checks of a slide stay clean.
+
+The command also warns when the picture is more than 4000 u on a side, and when a PNG is smaller than the scale asks for because a PNG is at most 8192 pixels on a side and 16 million in all. The checks cannot see everything: look at the picture.
 
 ## What it cannot draw
 
