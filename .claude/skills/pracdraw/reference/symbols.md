@@ -2,14 +2,14 @@
 
 # Symbols
 
-123 symbols in 11 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+123 symbols in 11 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
 - cavities: the keys of `"contents"`. A cavity with a scale also takes `"reading"`, when the symbol stands upright.
 - anchors: id (kind). A recipe names an anchor by its id, or by its kind when only one anchor of the symbol has that kind.
 
-Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (and the `tip` of a tube or a jet); `round` sits in `cup`; `neck` is gripped by `grip`; `rod` carries `sleeve`; `port` and `terminal` take the ends of tubes and wires; `heat` is the top of a flame.
+Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (and the `tip` of a tube or a jet); `round` sits in `cup`; `neck` is gripped by `grip`; `rod` carries `sleeve`; `port` goes with `port` (a spring and its hanger, the ends of tubes) and `terminal` takes a wire; `heat` is the top of a flame, and takes the bottom of a vessel (`base` or `round`).
 
 ## Containers
 
@@ -34,7 +34,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `testTube` | Test tube |  | 24 × 120 | free, min 12 × 40 |  | main | bottom (round), mouth (mouth), neck (neck) |  |
 | `trough` | Trough | water trough, pneumatic trough, washing-up bowl | 280 × 95 | free, min 80 × 40 |  | main | base (base) |  |
 | `uTube` | U-tube |  | 110 × 150 | free, min 64 × 80 |  | main | mouthL (mouth), mouthR (mouth) | label "U-tube" |
-| `volumetricFlask` | Volumetric flask | standard flask, graduated flask | 110 × 210 | free, min 50 × 100 | stopper: boolean, default false; mark: boolean, default true | main | base (base), mouth (mouth), neck (neck) |  |
+| `volumetricFlask` | Volumetric flask | standard flask, graduated flask | 110 × 210 | free, min 50 × 100 | stopper: boolean, default false; mark: boolean, default true | main | base (base), mouth (mouth), neck (neck) | the mark is at 0.2 × height from the top, 15.6 u above neck: amount 0.806 puts the surface on it |
 | `washBottle` | Wash bottle | distilled water bottle | 70 × 150 | free, min 44 × 90 |  | main | base (base) |  |
 | `watchGlass` | Watch glass | clock glass | 110 × 14 | width, min 40 × 14 |  |  | under (base), edge (base), top (surface) |  |
 
@@ -50,14 +50,14 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `lightGate` | Light gate |  | 70 × 90 | free, min 40 × 40 | beam: boolean, default true |  | base (base), lead (terminal) |  |
 | `measuringCylinder` | Measuring cylinder | graduated cylinder | 60 × 190 | free, min 30 × 80 | capacity: "10" or "25" or "50" or "100" or "250", default "100"; numbers: boolean, default false | main (scale 0..100 cm³) | base (base), mouth (mouth) |  |
 | `newtonMeter` | Newton meter | spring balance, force meter, newtonmeter | 30 × 160 | height, min 30 × 100 | reading: number 0..1, default 0.3 |  | top (port), hook (port) |  |
-| `pipetteFiller` | Pipette filler | pipette pump, safety filler | 34 × 62 | uniform, min 22 × 40 |  |  |  |  |
+| `pipetteFiller` | Pipette filler | pipette pump, safety filler | 34 × 62 | uniform, min 22 × 40 |  |  |  | no hand holds it: it stands in the air above its pipette |
 | `probe` | Probe | pH probe, temperature probe, sensor | 12 × 150 | height, min 12 × 50 |  |  | tip (tip), top (terminal) |  |
 | `ruler` | Ruler | metre rule, metre stick, rule, tape measure, half-metre rule | 300 × 22 | width, min 100 × 22 | length: "15" or "30" or "50" or "100", default "30"; numbers: boolean, default true |  |  |  |
 | `scaleWindow` | Magnified scale | scale reading, enlarged scale | 70 × 150 | free, min 50 × 100 | top: number 0..1000, default 20; bottom: number 0..1000, default 21; divisions: "5" or "10" or "20", default "10"; unit: text, default "cm³" | main (scale 20..21 cm³) |  |  |
 | `stopwatch` | Stopwatch | stopclock, timer | 54 × 66 | uniform, min 36 × 44 | style: "digital" or "analogue", default "digital"; reading: text, default "00:00.0" |  |  |  |
 | `syringe` | Syringe | plastic syringe | 26 × 120 | height, min 26 × 70 | plunger: number 0..1, default 0.5 | main | tip (tip) |  |
 | `thermometer` | Thermometer |  | 9 × 210 | height, min 9 × 100 | numbers: boolean, default false | main (scale -10..110 °C) | bulb (tip) |  |
-| `volumetricPipette` | Pipette | volumetric pipette, bulb pipette | 20 × 300 | height, min 20 × 160 |  | main | tip (tip), neck (neck) |  |
+| `volumetricPipette` | Pipette | volumetric pipette, bulb pipette | 20 × 300 | height, min 20 × 160 |  | main | tip (tip), neck (neck) | the mark is at 0.16 × height from the top, 9.5 u above neck: amount 0.845 puts the surface on it |
 
 ## Heating
 
@@ -87,7 +87,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `clampStand` | Clamp stand | retort stand, stand | 150 × 380 | free, min 80 × 120 |  |  | rod (rod), base (base) |  |
 | `cottonWool` | Cotton wool plug |  | 34 × 22 | free, min 24 × 16 |  |  | plug (plug) |  |
 | `crossPaper` | Paper with cross |  | 150 × 30 | width, min 60 × 30 |  |  | top (surface) |  |
-| `filterPaper` | Filter paper | fluted filter paper | 76 × 46 | free, min 30 × 20 | residue: boolean, default false |  | apex (tip) |  |
+| `filterPaper` | Filter paper | fluted filter paper | 76 × 46 | free, min 30 × 20 | residue: boolean, default false |  | apex (tip) | in the 84 u filter funnel: size w 68 (the default 76 nearly touches the funnel wall) |
 | `gClamp` | G-clamp | clamp for the bench, C-clamp | 50 × 80 | uniform, min 38 × 60 |  |  |  | label "G-clamp" |
 | `lid` | Lid | cover | 120 × 7 | width, min 40 × 7 | holes: number 0..2, default 0 |  | under (base) |  |
 | `spatula` | Spatula |  | 14 × 170 | height, min 14 × 90 |  |  |  |  |
@@ -95,7 +95,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `spottingTile` | Spotting tile (top view) | dimple tile, spot plate | 170 × 120 | free, min 60 × 40 | rows: number 2..4, default 3; cols: number 3..6, default 4; iodine: boolean, default false; blueBlack: number 0..24, default 0 |  |  | label "spotting tile" |
 | `stirBar` | Magnetic stirrer bar | flea, follower | 30 × 8 | width, min 12 × 8 |  |  |  |  |
 | `stirringRod` | Glass rod | stirring rod, stirrer | 6 × 190 | height, min 6 × 30 |  |  |  |  |
-| `testTubeHolder` | Test-tube holder |  | 150 × 26 | width, min 100 × 26 |  |  | grip (grip) |  |
+| `testTubeHolder` | Test-tube holder |  | 150 × 26 | width, min 100 × 26 |  |  | grip (grip) | no hand holds it: the handle ends in the air; draw it behind the tube it grips |
 | `testTubeRack` | Test-tube rack |  | 220 × 90 | width, min 120 × 90 | holes: number 3..8, default 6; tube: "test" or "boiling", default "test" |  | slot1 (cup), slot2 (cup), slot3 (cup), slot4 (cup), slot5 (cup), slot6 (cup), base (base) |  |
 | `tile` | White tile |  | 150 × 8 | width, min 40 × 8 |  |  | top (surface), under (base) |  |
 
@@ -105,7 +105,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `buchnerFunnel` | Büchner funnel | Buchner funnel | 100 × 116 | free, min 40 × 50 | paper: boolean, default true | main | stem (tip), rim (mouth) | label "Büchner funnel" |
 | `droppingFunnel` | Dropping funnel | tap funnel, addition funnel | 60 × 230 | free, min 40 × 150 |  | main | stem (tip), mouth (mouth) |  |
-| `filterFunnel` | Filter funnel | funnel | 84 × 110 | free, min 40 × 50 |  | main | stem (tip), rim (mouth) |  |
+| `filterFunnel` | Filter funnel | funnel | 84 × 110 | free, min 40 × 50 |  | main | stem (tip), rim (mouth) | the cavity includes the stem: amount up to 0.55 fills only the stem; filter paper w 68 |
 | `separatingFunnel` | Separating funnel | separatory funnel, tap funnel | 90 × 250 | free, min 40 × 120 | stopper: boolean, default true | main | stem (tip), mouth (mouth), neck (neck) |  |
 | `thistleFunnel` | Thistle funnel |  | 44 × 270 | height, min 44 × 120 |  | main | stem (tip), mouth (mouth) |  |
 

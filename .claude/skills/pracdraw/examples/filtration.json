@@ -1,0 +1,32 @@
+{
+  "title": "Filtering sand from salty water",
+  "note": "A filter paper in the 84 u filter funnel is 68 u wide (the default 76 nearly touches the funnel wall). The leader ends are the ones of the filtration template.",
+  "parts": [
+    {
+      "id": "flask",
+      "symbol": "conicalFlask",
+      "at": { "x": 0, "y": 0, "anchor": "base" },
+      "contents": { "main": [{ "preset": "Colourless solution", "amount": 0.15 }] }
+    },
+    {
+      "id": "funnel",
+      "symbol": "filterFunnel",
+      "on": { "part": "flask", "anchor": "mouth", "own": "stem", "dy": 80 }
+    },
+    {
+      "id": "paper",
+      "symbol": "filterPaper",
+      "size": { "w": 68 },
+      "params": { "residue": true },
+      "on": { "part": "funnel", "anchor": "rim", "own": "apex", "dy": 50 }
+    }
+  ],
+  "labels": {
+    "side": { "paper": "left" },
+    "end": { "funnel": { "at": [36, 8] }, "paper": { "at": [-17, 23] }, "flask": { "at": [36, 95] } },
+    "extra": [
+      { "text": "residue", "part": "paper", "at": [0, 39], "side": "left" },
+      { "text": "filtrate", "part": "flask", "at": [20, 140] }
+    ]
+  }
+}

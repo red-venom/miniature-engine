@@ -530,7 +530,7 @@ export function checkDoc(doc: Doc, measure: Measure = estimateWidth): Problem[] 
     if (width > BLANK_RULE) {
       warn(
         l.id,
-        `The label ${labelName(l)} is ${Math.round(width)} u wide, and the line to write on in blank mode is ${BLANK_RULE} u: the answer will not fit on its line.`,
+        `The label ${labelName(l)} is ${Math.ceil(width)} u wide, and the line to write on in blank mode is ${BLANK_RULE} u: the answer will not fit on its line.`,
         'Shorten the label to one or two words, or give it a shorter text: "labels.text" in a recipe, the text of the label in the editor.',
       )
     }

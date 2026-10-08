@@ -1,0 +1,42 @@
+{
+  "title": "Hooke's law: spring, mass and ruler",
+  "note": "The same symbols as the template springExtension. The pointer arrow is not labelled, as in the template: a text in the 25 u gap between the ruler and the hanger would be too close to both. A longer clamp arm would put the load beyond the base of the stand.",
+  "parts": [
+    { "id": "stand", "symbol": "clampStand", "at": { "x": 0, "y": 0, "anchor": "base" } },
+    {
+      "id": "clamp",
+      "symbol": "bossClamp",
+      "params": { "grip": 14 },
+      "on": { "part": "stand", "anchor": "rod", "own": "sleeve", "dy": -145 }
+    },
+    {
+      "id": "spring",
+      "symbol": "spring",
+      "on": { "part": "clamp", "anchor": "grip", "own": "top", "dy": -4 }
+    },
+    {
+      "id": "hanger",
+      "symbol": "massHanger",
+      "on": { "part": "spring", "anchor": "bottom", "own": "hook" }
+    },
+    {
+      "id": "ruler",
+      "symbol": "ruler",
+      "rot": 90,
+      "near": { "part": "stand", "anchor": "base", "dx": -12, "dy": -159 }
+    }
+  ],
+  "connectors": [
+    {
+      "id": "pointer",
+      "kind": "line",
+      "endCap": "arrow",
+      "points": [{ "part": "spring", "anchor": "bottom", "dx": -4, "dy": -4 }, { "x": -1 }]
+    }
+  ],
+  "labels": {
+    "text": { "clamp": "clamp", "hanger": "masses" },
+    "side": { "stand": "left", "clamp": "left", "ruler": "right" },
+    "end": { "hanger": { "at": [18, 85] }, "ruler": { "at": [99, 0] } }
+  }
+}

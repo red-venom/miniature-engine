@@ -2,30 +2,40 @@
 //
 //   npm run render -- <recipe.json | file.pracdraw.json | file.svg> [--out <dir>] [--name <slug>] [--scale 1|2|4]
 //                     [--labels shown|text|blank|letters] [--mono] [--answer-key] [--transparent]
-//                     [--variants] [--no-png] [--no-svg] [--explain]
+//                     [--variants] [--student] [--no-png] [--no-svg] [--explain]
 //   npm run render -- --template <id> [same flags]
 //   npm run render -- --list templates | symbols
 //   npm run render -- --symbol <id>
+//   npm run render -- --find <words>
 //
 // A recipe (src/model/recipe.ts) or a saved diagram is opened in the built editor (dist/index.html, from file://, in
 // headless Chromium), and the pictures come from the editor's own test hook, so they are exactly the editor's: the SVG
-// with the editable document in its metadata, the PNG, and the document itself. Exit code 1: the input has an error
-// (nothing is written). Exit code 2: the browser or the build failed. Warnings do not change the exit code. The same
-// input gives the same bytes. It needs no network: a request to anywhere but the built file stops it.
+// with the editable document in its metadata, the PNG, and the document itself.
+//
+// Exit code 1: the command or its input is wrong (one line on the error output, or the numbered list of the problems of a
+// recipe), found before the browser starts, and nothing is written. Exit code 2: the browser or the build failed. Warnings
+// do not change the exit code. The same input gives the same bytes. It needs no network: a request to anywhere but the
+// built file stops it.
+//
+// The name of a picture says what is in it: <name>, then -blank, -letters or -letters-key for the labels (text has no
+// suffix), then -mono when it is photocopy-safe. --variants writes every label mode; --student writes the copies for
+// students only (PNG, no answers).
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join, resolve } from 'node:path'
+import { accessSync, constants, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Page } from '@playwright/test'
+import { answerKey } from '../src/export/answerKey.ts'
+import { MAX_AREA, MAX_SIDE, safeScale } from '../src/export/canvas.ts'
 import { exportName, saveText } from '../src/export/files.ts'
-import type { ExportOptions } from '../src/export/picture.ts'
-import { docFromSvg } from '../src/export/svg.ts'
+import { exportDoc, showsKey, type ExportOptions } from '../src/export/picture.ts'
+import { docFromSvg, svgMetadata } from '../src/export/svg.ts'
 import { FONT, SCRIPT } from '../src/kernel/nodes.ts'
 import { parseMarkup } from '../src/kernel/text.ts'
-import { estimateWidth, type Measure } from '../src/model/bounds.ts'
-import { checkDoc, describeDoc } from '../src/model/check.ts'
-import { parseDoc } from '../src/model/parse.ts'
+import { docBounds, drawnBox, type Measure, estimateWidth } from '../src/model/bounds.ts'
+import { MAX_LISTED, checkDoc, describeDoc, listed, measuredTexts } from '../src/model/check.ts'
+import { SYMBOL_SIZE, parseDoc } from '../src/model/parse.ts'
 import { compileRecipe, isRecipe, nearestNames, suggestSymbols, type Problem } from '../src/model/recipe.ts'
 import type { Doc } from '../src/model/types.ts'
 import { SYMBOLS, geometry, hasSymbol, labelText, symbolDef } from '../src/symbols/registry.ts'
@@ -37,24 +47,33 @@ const DIST = join(ROOT, 'dist', 'index.html')
 /** Where relative paths on the command line are relative to: the directory `npm run` was started in. */
 const CWD = process.env.INIT_CWD ?? process.cwd()
 
+/** The longest name for the files, in characters. */
+const NAME_LIMIT = 100
+/** A picture wider or taller than this, in units, is not a lesson diagram: it is a wrong number. */
+const PICTURE_LIMIT = 4000
+
 const USAGE = `Usage:
   npm run render -- <recipe.json | file.pracdraw.json | file.svg> [flags]
   npm run render -- --template <id> [flags]
   npm run render -- --list templates | symbols
   npm run render -- --symbol <id>
+  npm run render -- --find <words>
 
 Flags:
   --out <dir>        where the files go (default ./lesson-diagrams)
-  --name <slug>      the file name stem (default: the name of the input file, or the template id)
+  --name <slug>      the file name stem (default: the name of the input file, or the template id; at most ${NAME_LIMIT} characters)
   --scale 1|2|4      PNG pixels for each unit (default 2)
   --labels <mode>    shown (as the diagram is saved, the default), text, blank or letters
-  --mono             photocopy-safe: black line only, dashes for liquids
-  --answer-key       with --labels letters: the answer key under the diagram
+  --mono             photocopy-safe: black line only, dashes for liquids (every file of the run, named -mono)
+  --answer-key       with --labels letters: the answer key under the diagram (the file is named -letters-key)
   --transparent      a transparent background instead of white
-  --variants         also write the text, blank, letters (with the answer key) and photocopy-safe versions
+  --variants         every label mode: <name> (text), -blank, -letters (no key), -letters-key (with the key), and -mono
+  --student          PNG files for students only: no SVG, no saved diagram (both hold the label texts), no key.
+                     With --labels blank or letters, or with --variants (the blank and letters copies)
   --no-png, --no-svg leave that file out
   --explain          also show how each part was placed, and every anchor with its kind and direction
-Files: <name>.svg (the editable document is in its metadata), <name>.png and <name>.pracdraw.json.`
+Files: <name>.svg (the editable document is in its metadata), <name>.png and <name>.pracdraw.json, with the suffixes above.
+--find <words> lists the symbols and templates that match: npm run render -- --find filter funnel`
 
 /** Something that stops the command: the message goes to the error output (nothing if it is empty) and the exit code is `code`. */
 class Failure extends Error {
@@ -63,6 +82,14 @@ class Failure extends Error {
     super(message)
     this.code = code
   }
+}
+
+// A reader that closes the pipe early (`--list symbols | head -3`) is no error.
+for (const stream of [process.stdout, process.stderr]) {
+  stream.on('error', (e: NodeJS.ErrnoException) => {
+    if (e.code === 'EPIPE') process.exit(0)
+    throw e
+  })
 }
 
 // ---------------------------------------------------------------- the command line
@@ -77,12 +104,14 @@ interface Args {
   answerKey: boolean
   transparent: boolean
   variants: boolean
+  student: boolean
   png: boolean
   svg: boolean
   explain: boolean
   template?: string
   list?: string
   symbol?: string
+  find?: string[]
   help: boolean
 }
 
@@ -95,6 +124,7 @@ function parseArgs(argv: string[]): Args {
     answerKey: false,
     transparent: false,
     variants: false,
+    student: false,
     png: true,
     svg: true,
     explain: false,
@@ -103,14 +133,16 @@ function parseArgs(argv: string[]): Args {
   const rest = [...argv]
   const take = (flag: string, inline: string | undefined): string => {
     const v = inline ?? rest.shift()
-    if (v === undefined || v.startsWith('--')) throw new Failure(`${flag} needs a value.\n\n${USAGE}`)
+    if (v === undefined || v.startsWith('--')) throw new Failure(`${flag} needs a value: npm run render -- --help`)
     return v
   }
+  let finding = false
   while (rest.length) {
     const arg = rest.shift()!
     const eq = arg.startsWith('--') ? arg.indexOf('=') : -1
     const flag = eq > 0 ? arg.slice(0, eq) : arg
     const inline = eq > 0 ? arg.slice(eq + 1) : undefined
+    if (flag !== '--find' && flag.startsWith('-')) finding = false
     switch (flag) {
       case '--out':
         a.out = take(flag, inline)
@@ -142,6 +174,9 @@ function parseArgs(argv: string[]): Args {
       case '--variants':
         a.variants = true
         break
+      case '--student':
+        a.student = true
+        break
       case '--no-png':
         a.png = false
         break
@@ -160,17 +195,35 @@ function parseArgs(argv: string[]): Args {
       case '--symbol':
         a.symbol = take(flag, inline)
         break
+      case '--find':
+        a.find = inline === undefined ? [] : [inline]
+        finding = inline === undefined
+        break
       case '--help':
       case '-h':
         a.help = true
         break
       default:
-        if (arg.startsWith('-')) throw new Failure(`Unknown flag ${arg}.\n\n${USAGE}`)
+        if (finding && !arg.startsWith('-')) {
+          a.find!.push(arg)
+          break
+        }
+        if (arg.startsWith('-')) throw new Failure(`Unknown flag ${arg}: the flags are listed by npm run render -- --help`)
         if (a.input !== undefined) throw new Failure(`Only one input file at a time (got ${a.input} and ${arg}).`)
         a.input = arg
     }
   }
   return a
+}
+
+/** The usage errors that are known from the flags alone. */
+function checkFlags(a: Args): void {
+  if (a.student && a.answerKey) throw new Failure('--student never writes the answer key: leave out --answer-key.')
+  if (a.student && !a.png) throw new Failure('--student writes PNG files only: leave out --no-png.')
+  if (a.student && a.labels === 'text') {
+    throw new Failure('--student writes copies with no label text: use --labels blank or --labels letters, or --variants for both.')
+  }
+  if (a.answerKey && !a.variants && a.labels !== 'letters' && a.labels !== 'shown') throw new Failure('--answer-key goes with letters: add --labels letters.')
 }
 
 // ---------------------------------------------------------------- listings
@@ -188,6 +241,66 @@ function listSymbols(): void {
       console.log(`  ${s.id.padEnd(w)}  ${s.name}  ${s.size.w}x${s.size.h}  ${s.resize}${s.aliases?.length ? `  (${s.aliases.join(', ')})` : ''}`)
     }
   }
+}
+
+interface Plan {
+  id: string
+  title: string
+  group: string
+  refs: string
+  uses: string[]
+  notes: string
+}
+
+/** The words of an id such as "roundBottomFlask", for a search: "round bottom flask". */
+const spaced = (id: string): string => id.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+
+/**
+ * The symbols and the templates that match every word: in the id, the name, the aliases or the pack of a symbol; in the id,
+ * the title, the group, the practicals or the set-up note of a template. One line for each hit, best first.
+ */
+function find(words: readonly string[]): void {
+  const wanted = words.map((w) => w.toLowerCase()).filter(Boolean)
+  if (!wanted.length) throw new Failure('--find needs words: npm run render -- --find filter funnel')
+  const notes = new Map<string, Plan>()
+  try {
+    const plans = JSON.parse(readFileSync(join(ROOT, 'spec', 'templates.json'), 'utf8')) as { templates: Plan[] }
+    for (const p of plans.templates) notes.set(p.id, p)
+  } catch {
+    // The notes are a help: without them the titles are searched.
+  }
+  type Hit = { score: number; line: string }
+  const hits: Hit[] = []
+  for (const d of SYMBOLS) {
+    const main = `${spaced(d.id)} ${d.name}`.toLowerCase()
+    const aliases = (d.aliases ?? []).join(' ').toLowerCase()
+    const all = `${main} ${aliases}`
+    if (!wanted.every((w) => all.includes(w))) continue
+    const inMain = wanted.filter((w) => main.includes(w)).length
+    const alias = (d.aliases ?? []).filter((x) => wanted.some((w) => x.toLowerCase().includes(w)))
+    const exact = main.split(' ').includes(wanted.join('')) || d.id.toLowerCase() === wanted.join('')
+    hits.push({
+      score: (exact ? 100 : 0) + inMain * 10 + (main.startsWith(wanted[0]) ? 5 : 0),
+      line: `symbol    ${d.id}  ${d.name}  (${d.pack})${alias.length && inMain < wanted.length ? `  also called: ${alias.join(', ')}` : ''}`,
+    })
+  }
+  for (const t of TEMPLATES) {
+    const plan = notes.get(t.id)
+    const main = `${spaced(t.id)} ${t.title}`.toLowerCase()
+    const all = `${main} ${t.group} ${t.refs} ${plan?.notes ?? ''} ${(plan?.uses ?? []).join(' ')}`.toLowerCase()
+    if (!wanted.every((w) => all.includes(w))) continue
+    const inMain = wanted.filter((w) => main.includes(w)).length
+    hits.push({ score: inMain * 10 - 1, line: `template  ${t.id}  ${t.title}  (${t.group})` })
+  }
+  hits.sort((x, y) => y.score - x.score || x.line.localeCompare(y.line))
+  if (!hits.length) {
+    const near = suggestSymbols(wanted.join(' '), 5)
+    console.log(`Nothing matches "${wanted.join(' ')}".${near.length ? ` The nearest symbols: ${near.map((d) => `${d.id} (${d.name})`).join(', ')}.` : ''}`)
+    console.log('Try one word, or a shorter word: npm run render -- --find funnel. The whole list: npm run render -- --list symbols')
+    return
+  }
+  for (const h of hits.slice(0, 40)) console.log(h.line)
+  if (hits.length > 40) console.log(`and ${hits.length - 40} more: use more words`)
 }
 
 const directionText = (dir: number): string => ({ '-90': 'up', '90': 'down', '0': 'right', '180': 'left' })[String(dir)] ?? `${dir} degrees`
@@ -224,12 +337,15 @@ function describeSymbol(def: SymbolDef): void {
 
 // ---------------------------------------------------------------- problems
 
+/** The problems as a numbered list: where, what, and the hint that names the fix. At most 25, and a count of the rest. */
 function printProblems(problems: Problem[], to: (s: string) => void): void {
-  problems.forEach((p, i) => {
+  const { shown, more } = listed(problems)
+  shown.forEach((p, i) => {
     to(`  ${i + 1}. ${p.level}${p.path ? ` at ${p.path}` : ''}`)
     to(`     ${p.message}`)
     if (p.hint) to(`     hint: ${p.hint}`)
   })
+  if (more) to(`  and ${more} more`)
 }
 
 // ---------------------------------------------------------------- the input
@@ -244,12 +360,70 @@ interface Loaded {
   stem: string
 }
 
-function stemOf(file: string): string {
-  const base = basename(file).replace(/\.(pracdraw\.json|recipe\.json|json|svg)$/i, '')
-  return base.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'diagram'
+/** A name for files from a name or a path: its last part, without .json or .svg, with only letters, digits, . _ and -. */
+function cleanName(raw: string): string {
+  const base = basename(raw).replace(/\.(pracdraw\.json|recipe\.json|json|svg)$/i, '')
+  return base.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '')
+}
+
+/** The stem of the file names: --name, or the name of the input; an error when it is empty or too long. */
+function stemOf(a: Args, fallback: string): string {
+  if (a.name !== undefined) {
+    if (a.name === '') throw new Failure('--name must not be empty.')
+    const clean = cleanName(a.name)
+    if (a.name.length > NAME_LIMIT) throw new Failure(`--name is ${a.name.length} characters, and the most is ${NAME_LIMIT}.`)
+    if (!clean) throw new Failure(`--name "${a.name}" has nothing left after cleaning: use letters, digits, . _ or -.`)
+    return clean
+  }
+  if (fallback.length > NAME_LIMIT) throw new Failure(`The name of the input is ${fallback.length} characters, too long for file names: give --name <slug>.`)
+  return fallback || 'diagram'
 }
 
 const warnings = (messages: string[]): Problem[] => messages.map((message) => ({ level: 'warning', path: '', message, hint: '' }))
+
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/** A saved diagram with a part of an impossible size: the editor would crash or take a size of its own, so it is not drawn. */
+function sizeProblems(value: unknown): Problem[] {
+  const out: Problem[] = []
+  const items = isObject(value) && isObject(value.items) ? value.items : {}
+  for (const [id, it] of Object.entries(items)) {
+    if (!isObject(it) || it.type !== 'symbol') continue
+    for (const key of ['w', 'h'] as const) {
+      const v = it[key]
+      if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0 || (v >= SYMBOL_SIZE.min && v <= SYMBOL_SIZE.max)) continue
+      out.push({
+        level: 'error',
+        path: `items.${id}.${key}`,
+        message: `The ${key === 'w' ? 'width' : 'height'} of the part "${id}" (${typeof it.symbol === 'string' ? it.symbol : 'symbol'}) is ${v} u.`,
+        hint: `A part is from ${SYMBOL_SIZE.min} to ${SYMBOL_SIZE.max} u: a thermometer is about 200 u tall, a beaker 120. Open the file in a text editor and put a number in "${key}" that a part can have.`,
+      })
+    }
+  }
+  return out
+}
+
+/** The input is a file that can be read: not a folder, not missing, not locked. The text of the file. */
+function readInput(file: string, given: string): string {
+  if (!existsSync(file)) throw new Failure(`There is no file "${given}".`)
+  if (statSync(file).isDirectory())
+    throw new Failure(`"${given}" is a folder: give a recipe (.json), a saved diagram (.pracdraw.json) or an SVG that PracDraw wrote.`)
+  try {
+    return readFileSync(file, 'utf8')
+  } catch (e) {
+    throw new Failure(`Cannot read "${given}": ${(e as NodeJS.ErrnoException).code ?? 'unreadable'}.`)
+  }
+}
+
+function rejected(file: string, problems: Problem[]): Failure {
+  const errors = problems.filter((p) => p.level === 'error').length
+  const rest = problems.length - errors
+  const out: string[] = []
+  printProblems(problems, (s) => out.push(s))
+  return new Failure(
+    `${basename(file)} has ${errors} error${errors === 1 ? '' : 's'}${rest ? ` and ${rest} warning${rest === 1 ? '' : 's'}` : ''}. Nothing was written.\n${out.join('\n')}`,
+  )
+}
 
 function loadInput(a: Args): Loaded {
   if (a.template) {
@@ -263,15 +437,23 @@ function loadInput(a: Args): Loaded {
         `There is no template "${a.template}".${near.length ? ` Did you mean ${near.map((n) => `"${n}"`).join(', ')}?` : ''} List them with: npm run render -- --list templates`,
       )
     }
-    return { doc: t.build(), problems: [], explain: [], stem: t.id }
+    return { doc: t.build(), problems: [], explain: [], stem: stemOf(a, t.id) }
   }
   const file = resolve(CWD, a.input!)
-  if (!existsSync(file)) throw new Failure(`There is no file ${file}.`)
-  const text = readFileSync(file, 'utf8')
-  const stem = stemOf(file)
+  const text = readInput(file, a.input!)
+  const stem = stemOf(a, cleanName(file))
   if (/\.svg$/i.test(file) || /^﻿?\s*</.test(text)) {
+    const meta = svgMetadata(text)
+    if (meta) {
+      try {
+        const bad = sizeProblems(JSON.parse(meta))
+        if (bad.length) throw rejected(file, bad)
+      } catch (e) {
+        if (e instanceof Failure) throw e
+      }
+    }
     const r = docFromSvg(text)
-    if (!r.ok) throw new Failure(`${file} is not a diagram that PracDraw exported:\n${r.problems.map((p) => `  ${p}`).join('\n')}`)
+    if (!r.ok) throw new Failure(`${a.input} is not a diagram that PracDraw exported: ${r.problems.join(' ')}`)
     return { doc: r.doc, problems: warnings(r.problems), explain: [], stem }
   }
   let value: unknown
@@ -279,28 +461,46 @@ function loadInput(a: Args): Loaded {
     value = JSON.parse(text.replace(/^﻿/, ''))
   } catch (e) {
     throw new Failure(
-      `${file} is not valid JSON: ${(e as Error).message}\nA recipe is a JSON file { "parts": [ ... ] }. Check the commas and the double quotes.`,
+      `"${a.input}" is not valid JSON (${(e as Error).message}): a recipe is a JSON file { "parts": [ ... ] }, so check the commas and the double quotes.`,
     )
   }
   if (isRecipe(value)) {
     const r = compileRecipe(value)
-    if (!r.doc) {
-      const errors = r.problems.filter((p) => p.level === 'error').length
-      const rest = r.problems.length - errors
-      const out: string[] = []
-      printProblems(r.problems, (s) => out.push(s))
-      throw new Failure(
-        `${basename(file)} has ${errors} error${errors === 1 ? '' : 's'}${rest ? ` and ${rest} warning${rest === 1 ? '' : 's'}` : ''}. Nothing was written.\n${out.join('\n')}`,
-      )
-    }
+    if (!r.doc) throw rejected(file, r.problems)
     return { doc: r.doc, problems: r.problems, explain: r.explain, stem }
   }
+  const bad = sizeProblems(value)
+  if (bad.length) throw rejected(file, bad)
   const r = parseDoc(value)
-  if (!r.ok)
-    throw new Failure(
-      `${file} is neither a recipe (a JSON object with a list of "parts") nor a PracDraw diagram:\n${r.problems.map((p) => `  ${p}`).join('\n')}`,
-    )
+  if (!r.ok) {
+    throw new Failure(`"${a.input}" is neither a recipe (a JSON object with a list of "parts") nor a PracDraw diagram: ${r.problems.join(' ')}`)
+  }
   return { doc: r.doc, problems: warnings(r.problems), explain: [], stem }
+}
+
+/** A path as short as it can be: relative to where the command was run, unless that goes up. */
+function shown(path: string): string {
+  const r = relative(CWD, path)
+  return r && !r.startsWith('..') ? r : path
+}
+
+/** The folder for the files can be made: no file is in its way, and the nearest folder that exists can be written in. */
+function checkOut(out: string): string {
+  const full = resolve(CWD, out)
+  for (let at = full; ; at = dirname(at)) {
+    if (existsSync(at)) {
+      if (!statSync(at).isDirectory()) {
+        throw new Failure(at === full ? `--out "${out}" is a file, not a folder.` : `--out "${out}" cannot be made: "${shown(at)}" is a file, not a folder.`)
+      }
+      try {
+        accessSync(at, constants.W_OK)
+      } catch {
+        throw new Failure(`--out "${out}": there is no permission to write in "${shown(at)}".`)
+      }
+      return full
+    }
+    if (dirname(at) === at) return full
+  }
 }
 
 // ---------------------------------------------------------------- the browser
@@ -316,30 +516,28 @@ function newest(dir: string): number {
   return t
 }
 
-/** Build dist/index.html when it is missing, or older than the source it was built from. */
+/**
+ * Build dist/index.html when it is missing, or older than the source it was built from. `vite build` alone, not
+ * `npm run build`: the check of the types in front of it takes ten seconds, and the pictures do not need it.
+ */
 function ensureBuilt(): void {
   const stale = existsSync(DIST) && newest(join(ROOT, 'src')) > statSync(DIST).mtimeMs + 1000
   if (existsSync(DIST) && !stale) return
-  console.log(stale ? 'dist/index.html is older than src/: building it (npm run build).' : 'dist/index.html is missing: building it (npm run build).')
+  console.log(stale ? 'dist/index.html is older than src/: building it (vite build).' : 'dist/index.html is missing: building it (vite build).')
   try {
-    execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'inherit' })
+    execFileSync('npx', ['vite', 'build'], { cwd: ROOT, stdio: 'inherit' })
   } catch {
-    throw new Failure('npm run build failed, so there is no editor to draw with.', 2)
+    throw new Failure('vite build failed, so there is no editor to draw with: run npm run build in the pracdraw folder to see why.', 2)
   }
 }
 
 /**
- * The width of each text as the browser draws it (canvas measureText, scripts at 0.7 size), for the texts that `run`
- * asks for. The same sum as `measureText` in src/editor/measure.ts, run in the page.
+ * The width of each text as the browser draws it (canvas measureText, scripts at 0.7 size), for the texts that the checks,
+ * the description and the export measure. The same sum as `measureText` in src/editor/measure.ts, run in the page.
  */
-async function browserMeasure(page: Page, run: (measure: Measure) => void): Promise<Measure> {
-  const wanted = new Map<string, { size: number; text: string }>()
-  run((text, size) => {
-    wanted.set(`${size} ${text}`, { size, text })
-    return estimateWidth(text, size)
-  })
-  const jobs = [...wanted].map(([key, { size, text }]) => ({
-    key,
+async function browserMeasure(page: Page, texts: readonly { text: string; size: number }[]): Promise<Measure> {
+  const jobs = texts.map(({ text, size }) => ({
+    key: `${size} ${text}`,
     runs: parseMarkup(text).map((r) => ({ text: r.text, size: r.script === 'normal' ? size : size * SCRIPT.scale })),
   }))
   const script = `(() => {
@@ -356,38 +554,111 @@ async function browserMeasure(page: Page, run: (measure: Measure) => void): Prom
 
 // ---------------------------------------------------------------- the files
 
+/** What a picture shows: its labels, whether the answer key is under it, and whether it is photocopy-safe. */
+interface Pic {
+  labels: 'text' | 'blank' | 'letters'
+  key: boolean
+  mono: boolean
+}
+
 interface Planned {
   name: string
   kind: 'svg' | 'png'
+  pic: Pic
   options: Partial<ExportOptions>
 }
 
-/** The pictures to make: the one the flags ask for, then the variants. A file name is used once. */
+/** The picture that the flags ask for: the labels of the diagram unless --labels says, with the key when it is asked for, photocopy-safe when it is. */
+function basePic(doc: Doc, a: Args): Pic {
+  const own = a.labels === 'shown' ? doc.settings.labelMode : a.labels
+  return { labels: own, key: a.answerKey && own === 'letters', mono: a.mono || doc.settings.mono }
+}
+
+/** The pictures of a run. The one the flags ask for; with --variants every label mode; with --student only the copies with no answers. */
+function pictures(doc: Doc, a: Args): Pic[] {
+  const base = basePic(doc, a)
+  const mono = base.mono
+  if (a.student)
+    return a.variants
+      ? [
+          { labels: 'blank', key: false, mono },
+          { labels: 'letters', key: false, mono },
+        ]
+      : [base]
+  if (!a.variants) return [base]
+  const all: Pic[] = [
+    { labels: 'text', key: false, mono },
+    { labels: 'blank', key: false, mono },
+    { labels: 'letters', key: false, mono },
+    { labels: 'letters', key: true, mono },
+  ]
+  // The photocopy-safe copy of the picture as it is shown.
+  if (!mono) all.push({ ...base, mono: true })
+  return all
+}
+
+/** The name of a file: the stem, -blank, -letters or -letters-key for the labels, -mono when it is photocopy-safe. */
+function fileNameOf(doc: Doc, stem: string, pic: Pic, kind: 'svg' | 'png'): string {
+  const name = exportName({ ...doc, title: stem }, { format: kind, labels: pic.labels })
+  return name.replace(/\.(svg|png)$/, `${pic.key ? '-key' : ''}${pic.mono ? '-mono' : ''}.$1`)
+}
+
+/** What a picture is for, in a few words: the line that is printed after its name. */
+function purposeOf(pic: Pic, kind: 'svg' | 'png'): string {
+  const what =
+    pic.labels === 'text'
+      ? 'the labels as text: has the answers'
+      : pic.labels === 'blank'
+        ? 'student copy: a line to write on, no answers'
+        : pic.key
+          ? 'mark scheme: letters with the key under the diagram, has the answers'
+          : 'student copy: letters, no answers'
+  const mono = pic.mono ? ', photocopy-safe' : ''
+  return kind === 'svg' && pic.labels !== 'text' ? `${what}${mono}; the SVG holds the label texts, so give students the PNG` : `${what}${mono}`
+}
+
 function plan(doc: Doc, stem: string, a: Args): Planned[] {
-  const base: Partial<ExportOptions> = { background: a.transparent ? 'transparent' : 'white' }
-  const titled = { ...doc, title: stem }
-  const formats = [...(a.svg ? (['svg'] as const) : []), ...(a.png ? (['png'] as const) : [])]
+  const formats = [...(a.svg && !a.student ? (['svg'] as const) : []), ...(a.png ? (['png'] as const) : [])]
   const out: Planned[] = []
-  const add = (options: Partial<ExportOptions>, suffix = ''): void => {
+  for (const pic of pictures(doc, a)) {
     for (const kind of formats) {
-      const name = exportName(titled, { format: kind, labels: options.labels ?? 'shown' }).replace(/\.(svg|png)$/, `${suffix}.${kind}`)
-      if (!out.some((p) => p.name === name)) out.push({ name, kind, options: { ...base, ...options } })
+      const name = fileNameOf(doc, stem, pic, kind)
+      if (out.some((p) => p.name === name)) continue
+      out.push({
+        name,
+        kind,
+        pic,
+        options: { background: a.transparent ? 'transparent' : 'white', labels: pic.labels, answerKey: pic.key, mono: pic.mono ? 'on' : 'off' },
+      })
     }
-  }
-  add({ labels: a.labels, mono: a.mono ? 'on' : 'shown', answerKey: a.answerKey }, a.mono ? '-mono' : '')
-  if (a.variants) {
-    add({ labels: 'text' })
-    add({ labels: 'blank' })
-    add({ labels: 'letters', answerKey: true })
-    if (!doc.settings.mono) add({ labels: 'text', mono: 'on' }, '-mono')
   }
   return out
 }
 
-const pngSize = (png: Buffer): string => `${png.readUInt32BE(16)} × ${png.readUInt32BE(20)} px`
+/** The size of a picture in units, as `exportPicture` makes it, without drawing it. */
+function pictureSize(doc: Doc, pic: Pic, measure: Measure): { w: number; h: number } {
+  const o = { labels: pic.labels, mono: pic.mono ? ('on' as const) : ('off' as const), answerKey: pic.key }
+  const d = exportDoc(doc, o)
+  const drawn = showsKey(doc, o) ? drawnBox(d, measure) : null
+  const key = drawn ? answerKey(d, drawn, measure) : null
+  const b = docBounds(d, measure, key?.box ?? null)
+  const x = Math.floor(b.x),
+    y = Math.floor(b.y)
+  return { w: Math.max(1, Math.ceil(b.x + b.w) - x), h: Math.max(1, Math.ceil(b.y + b.h) - y) }
+}
+
+const pngSize = (png: Buffer): { w: number; h: number } => ({ w: png.readUInt32BE(16), h: png.readUInt32BE(20) })
 const svgSize = (svg: string): string => {
   const m = /<svg[^>]*\swidth="([\d.]+)"[^>]*\sheight="([\d.]+)"/.exec(svg)
   return m ? `${m[1]} × ${m[2]} px` : ''
+}
+
+/** What this render makes of the diagram, for the header of the description. */
+function renderNote(a: Args, base: Pic): string {
+  const parts = [`labels ${base.labels}${base.key ? ' with the key' : ''}`, `photocopy-safe ${base.mono ? 'on' : 'off'}`]
+  if (a.variants) parts.push(a.student ? 'the blank and letters copies' : 'and every other label mode')
+  if (a.student) parts.push('student copies')
+  return parts.join(', ')
 }
 
 // ---------------------------------------------------------------- main
@@ -400,6 +671,7 @@ async function main(): Promise<void> {
     if (a.list === 'symbols') return listSymbols()
     throw new Failure('--list takes "templates" or "symbols".')
   }
+  if (a.find !== undefined) return find(a.find)
   if (a.symbol !== undefined) {
     if (hasSymbol(a.symbol)) return describeSymbol(symbolDef(a.symbol))
     const near = suggestSymbols(a.symbol)
@@ -407,12 +679,20 @@ async function main(): Promise<void> {
       `There is no symbol "${a.symbol}".${near.length ? ` Nearest: ${near.map((d) => `${d.id} (${d.name})`).join(', ')}.` : ''} List them with: npm run render -- --list symbols`,
     )
   }
-  if (!a.input && !a.template) throw new Failure(`Give a recipe file, a saved diagram, or --template <id>.\n\n${USAGE}`)
+  if (!a.input && !a.template) throw new Failure('Give a recipe file, a saved diagram, or --template <id>: npm run render -- --help')
   if (a.input && a.template) throw new Failure('Give a file or --template, not both.')
+  checkFlags(a)
 
+  // Everything that can be wrong with the command and its input is found here, before the browser starts.
+  const dir = checkOut(a.out)
   const loaded = loadInput(a)
   const doc = loaded.doc
-  const stem = a.name ? stemOf(a.name) : loaded.stem
+  const stem = loaded.stem
+  const base = basePic(doc, a)
+  if (a.student && !a.variants && base.labels === 'text') {
+    throw new Failure('--student writes copies with no label text: use --labels blank or --labels letters, or --variants for both.')
+  }
+  if (a.answerKey && !a.variants && base.labels !== 'letters') throw new Failure('--answer-key goes with letters: add --labels letters.')
   ensureBuilt()
 
   let chromium: typeof import('@playwright/test').chromium
@@ -444,32 +724,67 @@ async function main(): Promise<void> {
       throw new Failure('dist/index.html is out of date (its test hook takes no options). Run: npm run build', 2)
     await page.evaluate(`window.__pracdraw.load(${JSON.stringify(doc)})`)
 
-    // The checks and the description, with the widths of the texts as this browser draws them.
-    const describe = (measure: Measure, verbose: boolean) => describeDoc(doc, { measure, verbose, problems: checkDoc(doc, measure) })
-    const measure = await browserMeasure(page, (m) => describe(m, a.explain))
-    const checks = checkDoc(doc, measure)
+    // The text widths as this browser draws them; then the checks, once.
+    const measure = await browserMeasure(page, measuredTexts(doc))
+    const checks: Problem[] = checkDoc(doc, measure)
+    const size = pictureSize(doc, base, measure)
+    if (size.w > PICTURE_LIMIT || size.h > PICTURE_LIMIT) {
+      checks.push({
+        level: 'warning',
+        path: '',
+        message: `The picture is ${size.w} × ${size.h} u, larger than ${PICTURE_LIMIT} u on a side: a lesson diagram is rarely more than 1200 u across.`,
+        hint: 'Bring the parts closer, or make two diagrams. A number that is 10 times too big (a dx of 3000 for 300) is the usual cause.',
+      })
+    }
 
-    const files: { name: string; data: Buffer | string; info: string }[] = []
+    const files: { name: string; data: Buffer | string; info: string; purpose: string }[] = []
     for (const p of plan(doc, stem, a)) {
       const options = JSON.stringify(p.options)
       if (p.kind === 'svg') {
         const svg = await page.evaluate<string>(`window.__pracdraw.svg(${options})`)
-        files.push({ name: p.name, data: svg, info: svgSize(svg) })
+        files.push({ name: p.name, data: svg, info: svgSize(svg), purpose: purposeOf(p.pic, 'svg') })
       } else {
         const url = await page.evaluate<string>(`window.__pracdraw.png(${a.scale}, ${options})`)
         const png = Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')
-        files.push({ name: p.name, data: png, info: pngSize(png) })
+        const px = pngSize(png)
+        files.push({ name: p.name, data: png, info: `${px.w} × ${px.h} px`, purpose: purposeOf(p.pic, 'png') })
+        // The editor keeps a PNG inside what a browser can draw: a big picture at a big scale is made smaller.
+        const unit = pictureSize(doc, p.pic, measure)
+        if (safeScale(unit.w, unit.h, a.scale) < a.scale - 1e-9) {
+          checks.push({
+            level: 'warning',
+            path: p.name,
+            message: `The PNG ${p.name} is ${px.w} × ${px.h} px, not ${a.scale} × the picture (${unit.w} × ${unit.h} u).`,
+            hint: `The editor keeps a PNG to ${MAX_SIDE} px on a side and ${MAX_AREA / 1e6} million pixels in all. Use a smaller --scale, or a smaller diagram.`,
+          })
+        }
       }
     }
-    files.push({ name: `${stem}.pracdraw.json`, data: `${saveText(doc)}\n`, info: 'the document' })
+    if (!a.student)
+      files.push({
+        name: `${stem}.pracdraw.json`,
+        data: `${saveText(doc)}\n`,
+        info: 'the document',
+        purpose: "the diagram, for editing: it holds the label texts, so it is the teacher's copy",
+      })
     if (outside.length) throw new Failure(`The editor asked for the network (${[...new Set(outside)].join(', ')}). It must not: nothing was written.`, 2)
 
-    const dir = resolve(CWD, a.out)
-    mkdirSync(dir, { recursive: true })
-    for (const f of files) writeFileSync(join(dir, f.name), f.data)
+    try {
+      mkdirSync(dir, { recursive: true })
+      for (const f of files) writeFileSync(join(dir, f.name), f.data)
+    } catch (e) {
+      throw new Failure(`Cannot write the files to "${a.out}": ${(e as NodeJS.ErrnoException).code ?? (e as Error).message}.`)
+    }
     for (const f of files) {
       const bytes = typeof f.data === 'string' ? Buffer.byteLength(f.data) : f.data.length
-      console.log(`wrote ${join(a.out, f.name)}  ${f.info}  ${bytes.toLocaleString('en-GB')} bytes`)
+      console.log(`wrote ${join(a.out, f.name)}  ${f.info}  ${bytes.toLocaleString('en-GB')} bytes  ${f.purpose}`)
+    }
+    if (a.student) {
+      console.log(
+        "student copies only: the SVG and the saved diagram (the source) are not written, because they hold the label texts. The teacher's copy comes from a normal run, without --student.",
+      )
+    } else if (files.some((f) => f.purpose.startsWith('student copy'))) {
+      console.log('Give students only the PNG files marked student copy: an SVG or the .pracdraw.json holds the label texts.')
     }
     console.log('network requests: 0')
     console.log('')
@@ -478,7 +793,7 @@ async function main(): Promise<void> {
       for (const line of loaded.explain) console.log(`  ${line}`)
       console.log('')
     }
-    console.log(describe(measure, a.explain))
+    console.log(describeDoc(doc, { measure, verbose: a.explain, problems: checks, render: renderNote(a, base) }))
     if (loaded.problems.length) {
       console.log('')
       console.log(`warnings from the input (${loaded.problems.length}):`)
@@ -486,7 +801,7 @@ async function main(): Promise<void> {
     }
     if (checks.length) {
       console.log('')
-      console.log('layout warnings, with hints:')
+      console.log(`layout warnings, with hints${checks.length > MAX_LISTED ? ` (the first ${MAX_LISTED} of ${checks.length})` : ''}:`)
       printProblems(checks, (s) => console.log(s))
     }
   } finally {

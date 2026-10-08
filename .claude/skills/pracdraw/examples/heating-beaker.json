@@ -21,7 +21,7 @@
     }
   ],
   "labels": {
-    "text": { "beaker": "250 cm3 beaker" },
+    "text": { "gauze": "wire gauze" },
     "extra": [{ "text": "water", "part": "beaker", "at": [30, 90] }]
   }
 }

@@ -52,10 +52,27 @@ function paramText(p: ParamDef): string {
   }
 }
 
+/**
+ * What a recipe writer needs to know about a symbol that its parameters and anchors do not say. Each note was checked in a
+ * picture (the numbers are from the symbol code).
+ */
+const SYMBOL_NOTES: Record<string, string> = {
+  filterPaper: 'in the 84 u filter funnel: size w 68 (the default 76 nearly touches the funnel wall)',
+  filterFunnel: 'the cavity includes the stem: amount up to 0.55 fills only the stem; filter paper w 68',
+  volumetricPipette: 'the mark is at 0.16 × height from the top, 9.5 u above neck: amount 0.845 puts the surface on it',
+  volumetricFlask: 'the mark is at 0.2 × height from the top, 15.6 u above neck: amount 0.806 puts the surface on it',
+  pipetteFiller: 'no hand holds it: it stands in the air above its pipette',
+  testTubeHolder: 'no hand holds it: the handle ends in the air; draw it behind the tube it grips',
+}
+
 function symbolRow(def: SymbolDef): string[] {
   const g = geometry(def.id, def.size.w, def.size.h)
   const cavities = (g.cavities ?? []).map((c) => (g.scale?.cavity === c.id ? `${c.id} (scale ${g.scale.v0}..${g.scale.v1} ${g.scale.unit})` : c.id))
-  const notes = [def.autoLabel === false ? 'no automatic label' : '', labelText(def) !== def.name.toLowerCase() ? `label "${labelText(def)}"` : '']
+  const notes = [
+    def.autoLabel === false ? 'no automatic label' : '',
+    labelText(def) !== def.name.toLowerCase() ? `label "${labelText(def)}"` : '',
+    SYMBOL_NOTES[def.id] ?? '',
+  ]
   return [
     `\`${def.id}\``,
     def.name,
@@ -75,14 +92,14 @@ function symbolsMd(): string {
     HEADER('the symbol code in src/symbols and spec/catalogue.json'),
     '# Symbols',
     '',
-    `${SYMBOLS.length} symbols in ${PACKS.length} packs. A recipe names one in \`"symbol"\` by its id. \`npm run render -- --symbol <id>\` shows one symbol in full, with the position and direction of each anchor.`,
+    `${SYMBOLS.length} symbols in ${PACKS.length} packs. A recipe names one in \`"symbol"\` by its id. \`npm run render -- --find <words>\` finds a symbol by the words of its name or its aliases; \`npm run render -- --symbol <id>\` shows one symbol in full, with the position and direction of each anchor.`,
     '',
     '- size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.',
     '- parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".',
     '- cavities: the keys of `"contents"`. A cavity with a scale also takes `"reading"`, when the symbol stands upright.',
     '- anchors: id (kind). A recipe names an anchor by its id, or by its kind when only one anchor of the symbol has that kind.',
     '',
-    'Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (and the `tip` of a tube or a jet); `round` sits in `cup`; `neck` is gripped by `grip`; `rod` carries `sleeve`; `port` and `terminal` take the ends of tubes and wires; `heat` is the top of a flame.',
+    'Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (and the `tip` of a tube or a jet); `round` sits in `cup`; `neck` is gripped by `grip`; `rod` carries `sleeve`; `port` goes with `port` (a spring and its hanger, the ends of tubes) and `terminal` takes a wire; `heat` is the top of a flame, and takes the bottom of a vessel (`base` or `round`).',
   ]
   for (const pack of PACKS) {
     const defs = SYMBOLS.filter((d) => d.pack === pack.id).sort((a, b) => a.id.localeCompare(b.id))
@@ -104,7 +121,7 @@ function templatesMd(): string {
     HEADER('spec/templates.json'),
     '# Templates',
     '',
-    `${plans.length} ready-made set-ups. Look here first: if the request is one of these, \`npm run render -- --template <id> --out <dir>\` writes it, and \`--explain\` lists its parts with their anchors. A template is not a recipe: to change one, write a recipe of your own with the same symbols.`,
+    `${plans.length} ready-made set-ups. Look here first: if the request is one of these, \`npm run render -- --template <id> --out <dir>\` writes it, and \`--explain\` lists its parts with their anchors. A template is not a recipe: to change one, write a recipe of your own with the same symbols (\`--template <id> --explain\` gives the world position of every anchor, so that offsets can be copied).`,
     '',
     'Each entry gives the id, the title, the practicals it serves, the symbols it uses, and how it is set up.',
   ]
