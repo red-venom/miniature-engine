@@ -8,7 +8,7 @@ Open `index.html` in a recent browser. It works from a file share, a USB stick o
 
 ### A ready-made diagram in three clicks
 
-1. Open the **Templates** tab in the library on the left. The chips filter the 40 templates by group: General, Chemistry, Biology, Physics.
+1. Open the **Templates** tab in the library on the left. The chips filter the 43 templates by group: General, Chemistry, Biology, Physics.
 2. Click a card. On an empty canvas the template becomes the diagram.
 3. Click **Copy image**, then paste into your slide or worksheet.
 
@@ -16,7 +16,7 @@ The empty canvas also offers three templates straight away: heating a liquid in 
 
 ### Your own set-up
 
-- **Add apparatus.** In the **Apparatus** tab, type in the search box (or press `/`) and press Enter, or click a tile, or drag a tile onto the canvas. The library has 96 items in 11 groups, plus ready-made tubes, wires, arrows and dimension lines.
+- **Add apparatus.** In the **Apparatus** tab, type in the search box (or press `/`) and press Enter, or click a tile, or drag a tile onto the canvas. The library has 123 items in 11 groups, plus ready-made tubes, wires, arrows and dimension lines.
 - **Put parts together.** Drag a part near its partner and it snaps: a beaker onto gauze, a bung into a flask's neck (the bung resizes to fit), a clamp onto a stand's rod, a thermometer onto the centre line of a beaker. Hold Ctrl (Cmd on a Mac) to drag without snapping.
 - **Fill a vessel.** Select it and use the **Contents** block in the inspector on the right: **Water**, or **Add layer** and pick a colour preset (solutions, indicators, precipitates, powders, chips, ice, gases). Drag the small bar at the surface to change the level. Liquids stay level when you turn a vessel.
 - **Set a reading.** Select a measuring cylinder, burette or thermometer and type a value in **Reading**: the liquid moves to that mark. For a gas syringe, Reading sets the plunger.
@@ -70,7 +70,7 @@ On a touchscreen, pinch with two fingers to zoom, and move two fingers together 
 
 ## For developers
 
-The build specification is `docs/SPEC.md`; `REPORT.md` records how release 1.0 was built and checked.
+The build specification is `docs/SPEC.md`; `REPORT.md` records how releases 1.0 and 1.1 were built and checked.
 
 ```
 npm ci
