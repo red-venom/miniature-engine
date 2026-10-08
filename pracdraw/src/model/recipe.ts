@@ -376,9 +376,48 @@ interface PartState {
   index: Map<string, number>
   /** The parts that were built, by id, in list order. */
   built: Map<string, PartRec>
+  /** The ids of the parts that each part is placed by or sized from (its "on", "near", "alignX", "alignY" and "size"). */
+  deps: Map<string, string[]>
 }
 
 const idList = (st: PartState): string => (st.names.length ? list(st.names) : 'none')
+
+/** The ids of the parts that the placement and the size of a part refer to: every "part" in `on`, `near`, `alignX`, `alignY` and `size`. */
+function placementRefs(o: Obj): string[] {
+  const found: string[] = []
+  const scan = (v: unknown, depth: number): void => {
+    if (depth > 6) return
+    if (Array.isArray(v)) for (const x of v) scan(x, depth + 1)
+    else if (isObj(v)) {
+      for (const [k, x] of Object.entries(v)) {
+        if (k === 'part' && typeof x === 'string') found.push(x)
+        else scan(x, depth + 1)
+      }
+    }
+  }
+  for (const key of ['on', 'near', 'alignX', 'alignY', 'size']) scan(o[key], 0)
+  return found
+}
+
+/**
+ * The placements that go round in a circle, when `me` names `first` and `first` depends on `me` (through any other
+ * parts): `[me, first, ..., me]`. Null when `first` does not depend on `me`.
+ */
+function placementCycle(st: PartState, me: string, first: string): string[] | null {
+  const seen = new Set<string>()
+  const walk = (id: string, trail: string[]): string[] | null => {
+    if (id === me) return [...trail, id]
+    if (seen.has(id)) return null
+    seen.add(id)
+    for (const next of st.deps.get(id) ?? []) {
+      const found = walk(next, [...trail, id])
+      if (found) return found
+    }
+    return null
+  }
+  const path = walk(first, [])
+  return path ? [me, ...path] : null
+}
 
 /** The anchor of a part that a name stands for, or null with a problem recorded. */
 function refAnchor(ctx: Ctx, path: string, p: PartRec, name: string): Anchor | null {
@@ -417,6 +456,15 @@ function refPart(st: PartState, path: string, id: string, current: number, what:
     return null
   }
   if (at > current) {
+    const cycle = placementCycle(st, me, id)
+    if (cycle) {
+      st.ctx.error(
+        path,
+        `The placements go round in a circle: ${cycle.map(quote).join(' -> ')}.`,
+        'A part can only refer to parts that do not depend on it, so moving one of them in the list does not help. Break the circle: give one of them an "at" (a point of the world) or a plain number for its "size", and list each part after the parts it refers to.',
+      )
+      return null
+    }
     st.ctx.error(
       path,
       `${what} names ${quote(id)}, which comes later in the list than ${quote(me)}.`,
@@ -1597,7 +1645,7 @@ export function compileRecipe(recipe: unknown): RecipeResult {
   }
 
   // The ids first, so that a reference can be told from a mistake, and a part that comes later from one that is missing.
-  const st: PartState = { ctx, ids: [], names: [], index: new Map(), built: new Map() }
+  const st: PartState = { ctx, ids: [], names: [], index: new Map(), built: new Map(), deps: new Map() }
   root.parts.forEach((p, i) => {
     const id = isObj(p) ? p.id : undefined
     let ok = false
@@ -1615,6 +1663,7 @@ export function compileRecipe(recipe: unknown): RecipeResult {
     if (ok) {
       st.index.set(id as string, i)
       st.names.push(id as string)
+      st.deps.set(id as string, placementRefs(p as Obj))
     }
     st.ids.push(ok ? (id as string) : '')
   })

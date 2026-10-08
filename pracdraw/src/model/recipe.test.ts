@@ -184,6 +184,8 @@ const error = (path: string, message: string, hint: string): Problem => ({ level
 const ALL_PRESET_NAMES = [...PRESETS, ...RECIPE_PRESETS].map((p) => p.name).join('; ')
 const LIST_SYMBOLS = 'The whole list is in reference/symbols.md, or run: npm run render -- --list symbols'
 const ANCHOR_KIND = 'A kind such as "surface" also works when only one anchor has that kind.'
+const CIRCLE =
+  'A part can only refer to parts that do not depend on it, so moving one of them in the list does not help. Break the circle: give one of them an "at" (a point of the world) or a plain number for its "size", and list each part after the parts it refers to.'
 
 describe('recipe: problems name the fix', () => {
   it('recipe-errors-name-the-fix', () => {
@@ -347,6 +349,44 @@ describe('recipe: problems name the fix', () => {
           ],
         },
         [error('parts[0].behind', 'The "behind" keys form a cycle: a -> b -> a.', 'Remove one of the "behind" keys in the cycle.')],
+      ],
+      [
+        'placements that go round in a circle say which parts are in it, not only that one comes later',
+        {
+          title: 't',
+          parts: [
+            { id: 'a', symbol: 'beaker', on: { part: 'c', anchor: 'base', own: 'base' } },
+            { id: 'b', symbol: 'beaker', on: { part: 'a', anchor: 'base', own: 'base' } },
+            { id: 'c', symbol: 'beaker', on: { part: 'b', anchor: 'base', own: 'base' } },
+          ],
+        },
+        [error('parts[0].on.part', 'The placements go round in a circle: "a" -> "c" -> "b" -> "a".', CIRCLE)],
+      ],
+      [
+        'a stand sized from its clamp, with the clamp placed on the stand, is a circle too',
+        {
+          title: 't',
+          parts: [
+            {
+              id: 'stand',
+              symbol: 'clampStand',
+              at: { x: 0, y: 0, anchor: 'base' },
+              size: {
+                h: {
+                  between: [
+                    { part: 'clamp', anchor: 'sleeve', dy: -40 },
+                    { part: 'clamp', anchor: 'sleeve' },
+                  ],
+                },
+              },
+            },
+            { id: 'clamp', symbol: 'bossClamp', on: { part: 'stand', anchor: 'rod', own: 'sleeve' } },
+          ],
+        },
+        [
+          error('parts[0].size.h.between[0].part', 'The placements go round in a circle: "stand" -> "clamp" -> "stand".', CIRCLE),
+          error('parts[0].size.h.between[1].part', 'The placements go round in a circle: "stand" -> "clamp" -> "stand".', CIRCLE),
+        ],
       ],
     ]
     for (const [what, recipe, expected] of cases) {
