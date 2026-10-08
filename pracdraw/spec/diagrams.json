@@ -3657,7 +3657,7 @@
       "https://filestore.aqa.org.uk/resources/chemistry/AQA-7405-REACTIONS-OF-METAL-IONS.PDF",
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/inorganic-chemistry"
     ],
-    "confidence": "secondary",
+    "confidence": "unverified",
     "notes": "The AQA teaching guide says some cobalt(II) colours are no longer required; vanadium colours still are."
   },
   {
@@ -4300,7 +4300,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry",
       "https://filestore.aqa.org.uk/resources/chemistry/AQA-7405-TN-CHROMATOGRAPHY.PDF"
     ],
-    "confidence": "secondary",
+    "confidence": "unverified",
     "notes": "AQA names gas chromatography and GC-MS. The AQA teaching guide on chromatography exists; the block drawing is a textbook convention."
   },
   {
@@ -4323,7 +4323,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry",
       "https://filestore.aqa.org.uk/resources/chemistry/AQA-7405-TN-CHROMATOGRAPHY.PDF"
     ],
-    "confidence": "secondary",
+    "confidence": "unverified",
     "notes": "Graph: outside PracDraw unless James brings graphs into scope."
   },
   {
