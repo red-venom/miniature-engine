@@ -1195,8 +1195,8 @@
       "https://www.chemguide.co.uk/14to16/electrolysis/solutions1.html",
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/flashcards/4-chemical-changes/4-3-electrolysis/"
     ],
-    "confidence": "checked",
-    "notes": "AQA asks students to show ion movement and to write half-equations (Higher Tier). The product rules are in 4.4.3.4."
+    "confidence": "secondary",
+    "notes": "AQA asks students to show ion movement and to write half-equations (Higher Tier). The product rules are in 4.4.3.4. The labelled cell picture is the usual teaching form; the AQA text I read does not print one."
   },
   {
     "id": "electrolysisMoltenApparatus",
@@ -1285,8 +1285,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/chemical-changes",
       "https://www.docbrown.info/page01/ExIndChem/electrochemistry05.htm"
     ],
-    "confidence": "checked",
-    "notes": "AQA asks why a mixture with cryolite is used and why the positive electrodes are replaced."
+    "confidence": "secondary",
+    "notes": "AQA asks why a mixture with cryolite is used and why the positive electrodes are replaced. The cell drawing is the usual teaching diagram; the AQA text I read gave the words, not a figure."
   },
   {
     "id": "copperRefining",
@@ -1423,9 +1423,12 @@
     "draw": "A box with an electrolyte in the middle and a porous electrode on each side. Hydrogen enters at the left electrode (negative), oxygen or air at the right (positive), and water leaves at the right. An outside circuit with a bulb or motor joins the electrodes, with arrows for the flow of electrons from the negative electrode to the positive electrode. For an acid electrolyte, hydrogen ions cross the electrolyte. Labels on every part. Option: half-equations beside each electrode (Higher Tier).",
     "params": "electrolyte (acid | alkaline), show half-equations (boolean), show electron arrows (boolean), load (bulb | motor)",
     "scienceChecks": "Hydrogen enters at the negative electrode and oxygen at the positive one. Electrons flow in the outside wire from the negative to the positive electrode. The only product is water. Half-equations balance for atoms and charge: 2H2 -> 4H+ + 4e-, O2 + 4H+ + 4e- -> 2H2O, overall 2H2 + O2 -> 2H2O.",
-    "sources": ["https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/energy-changes"],
-    "confidence": "checked",
-    "notes": "Chemistry only in 8462. The half-equation forms shown are the usual acid forms; AQA's own forms were not visible in the text I read, so check them."
+    "sources": [
+      "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/energy-changes",
+      "https://cdn.savemyexams.com/pdfs/ebtfTtE8t6DZ1isn.pdf"
+    ],
+    "confidence": "secondary",
+    "notes": "Chemistry only in 8462. AQA describes the fuel cell in words; the labelled diagram is from revision notes (a Cambridge O Level page shows one). The half-equation forms shown are the usual acid forms; AQA's own forms were not visible in the text I read, so check them."
   },
   {
     "id": "temperatureTimeGraph",
@@ -1675,11 +1678,11 @@
     "notes": "Graph: outside PracDraw unless James brings graphs into scope. Higher Tier; the AQA search summary names graphs of conditions in this section."
   },
   {
-    "id": "fractionatingColumn",
+    "id": "crudeOilFractionatingTower",
     "name": "Fractional distillation of crude oil (industrial column)",
     "subject": "chemistry",
     "level": "KS4",
-    "courses": ["8464", "8462"],
+    "courses": ["8464", "8462", "7405"],
     "specRefs": [],
     "topic": "Organic chemistry",
     "kind": "process",
@@ -1697,7 +1700,7 @@
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/using-earths-resources/lessons/fractional-distillation-of-crude-oil"
     ],
     "confidence": "checked",
-    "notes": "AQA asks students to explain the separation using the temperature gradient; examiners reported that students who referred to a labelled diagram gained from it. Carbon number ranges differ between sources, so they are parameters."
+    "notes": "AQA asks students to explain the separation using the temperature gradient; examiners reported that students who referred to a labelled diagram gained from it. Carbon number ranges differ between sources, so they are parameters. Not the laboratory fractionatingColumn symbol: this is the industrial tower. Fractional distillation of crude oil is also in the A-level course (my memory of 3.3.2.1; the section number was not seen)."
   },
   {
     "id": "displayedFormulaHydrocarbon",
@@ -2017,8 +2020,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/organic-chemistry",
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/organic-chemistry/lessons/chemical-tests-involving-alkanes-alkenes-and-alcohols"
     ],
-    "confidence": "checked",
-    "notes": "AQA asks students to recall the colour change."
+    "confidence": "secondary",
+    "notes": "AQA asks students to recall the colour change; the pair of tubes is the usual teaching picture."
   },
   {
     "id": "oilToPolymersFlow",
@@ -2543,8 +2546,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/using-resources",
       "https://www.docbrown.info/page01/AqueousChem/AqueousChem1.htm"
     ],
-    "confidence": "checked",
-    "notes": "Chemistry only. AQA exam questions ask students to complete this flow chart or to match substances to treatments."
+    "confidence": "secondary",
+    "notes": "Chemistry only. AQA lists the stages in this order, and an AQA question matches substances to treatments; the flow chart is the usual teaching form."
   },
   {
     "id": "phytomining",
@@ -2567,8 +2570,8 @@
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/10-using-resources/10-1-global-reserves-and-potable-water/10-1-5-alternative-methods-of-extracting-metals/",
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/using-earths-resources/lessons/alternative-methods-of-extracting-metals-phytomining-and-bioleaching"
     ],
-    "confidence": "checked",
-    "notes": "Chemistry only. Examiners reported that students confused phytomining with bioleaching."
+    "confidence": "secondary",
+    "notes": "Chemistry only. Examiners reported that students confused phytomining with bioleaching. The flow chart is the usual teaching form."
   },
   {
     "id": "bioleaching",
@@ -2591,7 +2594,7 @@
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/10-using-resources/10-1-global-reserves-and-potable-water/10-1-5-alternative-methods-of-extracting-metals/",
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/using-earths-resources/lessons/alternative-methods-of-extracting-metals-phytomining-and-bioleaching"
     ],
-    "confidence": "checked",
+    "confidence": "secondary",
     "notes": "Chemistry only. The two boxes are drawn with the same pattern as phytomining so students can compare them."
   },
   {
@@ -2614,7 +2617,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/using-resources",
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/10-using-resources/10-2-life-cycle-analysis-and-recycling/10-2-1-life-cycle-assessment/"
     ],
-    "confidence": "checked",
+    "confidence": "secondary",
     "notes": "AQA exam questions mostly give the data as a table (see lcaTable)."
   },
   {
@@ -2770,7 +2773,7 @@
     "params": "label mode, show the nutrients (boolean)",
     "scienceChecks": "Each salt contains the nutrient named: N in ammonium nitrate, P in the phosphate, K in the potassium salt. The acids used for phosphate rock are nitric or sulfuric acid.",
     "sources": ["https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/using-resources"],
-    "confidence": "checked",
+    "confidence": "unverified",
     "notes": "Chemistry only. AQA mentions the acid treatment of phosphate rock in the text; the pathway drawing is a teaching convention."
   },
   {
@@ -2789,7 +2792,10 @@
     "draw": "A bar chart with fertiliser types along the bottom and percentage by mass up the side, grouped bars for N, P and K. An AQA question asks students to draw the bars from a table and to explain why the percentages do not add to 100.",
     "params": "fertilisers, values, which bars are blank",
     "scienceChecks": "Each fertiliser's percentages sum to less than 100 because other elements are present.",
-    "sources": ["https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/using-resources"],
+    "sources": [
+      "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/using-resources",
+      "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2020/november/AQA-84622F-QP-NOV20.PDF"
+    ],
     "confidence": "checked",
     "notes": "Chart: outside PracDraw unless James brings charts into scope."
   },
@@ -2857,7 +2863,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry",
       "https://www.savemyexams.com/a-level/chemistry/aqa/17/revision-notes/1-physical-chemistry/1-1-atomic-structure/1-1-3-time-of-flight-mass-spectrometry/"
     ],
-    "confidence": "checked",
+    "confidence": "secondary",
     "notes": "AQA names the stages: ionisation, acceleration to give all ions constant kinetic energy, ion drift, detection and data analysis."
   },
   {
@@ -3423,7 +3429,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/inorganic-chemistry",
       "https://filestore.aqa.org.uk/resources/chemistry/specifications/AQA-7404-7405-SP-2015.PDF"
     ],
-    "confidence": "checked",
+    "confidence": "unverified",
     "notes": "Graph: outside PracDraw unless James brings graphs into scope. AQA asks for the trends in atomic radius, first ionisation energy and melting point of Na to Ar."
   },
   {
@@ -3977,10 +3983,11 @@
     "scienceChecks": "Six carbons and six hydrogens. Bond angles 120 degrees. The delocalised picture has six equal bonds. The p orbital picture has six lobes above and below the plane.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry",
+      "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2018/june/AQA-74052-W-MS-JUN18.PDF",
       "https://www.docbrown.info/page07/ASA2ptable2.htm"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "A 2018 AQA mark scheme credits an answer on the bonding and shape of the molecule: three bonds per carbon, p orbitals overlapping, planar, 120 degrees, bond length between single and double."
   },
   {
     "id": "benzeneEnthalpyLevels",
@@ -4340,7 +4347,7 @@
       "https://filestore.aqa.org.uk/resources/chemistry/AQA-7405-TN-CHROMATOGRAPHY.PDF",
       "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2018/june/AQA-74053-QP-JUN18.PDF"
     ],
-    "confidence": "checked",
+    "confidence": "unverified",
     "notes": "A new template from existing symbols (burette, clampStand, bossClamp, separatingFunnel, conicalFlask). An AQA paper asks how cyclohexene and cyclohexanol are separated by column chromatography on silica with hexane."
   },
   {
@@ -5216,7 +5223,7 @@
       "https://www.aqa.org.uk/subjects/science/gcse/science-8464/specification/biology-subject-content",
       "https://www.aqa.org.uk/subjects/biology/gcse/biology-8461/specification/subject-content/homeostasis-and-response"
     ],
-    "confidence": "checked",
+    "confidence": "unverified",
     "notes": "AQA says students explain how the parts of the arc relate to function."
   },
   {
@@ -5711,7 +5718,7 @@
     "params": "labels",
     "scienceChecks": "Live is brown and goes to the fuse; neutral is blue; earth is green and yellow.",
     "sources": ["https://www.aqa.org.uk/subjects/physics/gcse/physics-8463/specification/subject-content/electricity"],
-    "confidence": "checked",
+    "confidence": "unverified",
     "notes": "AQA states the colours of the three wires."
   },
   {
@@ -6281,7 +6288,133 @@
       "https://www.aqa.org.uk/subjects/physics/gcse/physics-8463/specification/subject-content/space-physics-physics-only",
       "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2021/november/AQA-84632H-WRE-NOV21.PDF"
     ],
+    "confidence": "unverified",
+    "notes": "AQA asks students to describe the life cycle (4.8.1.2); the flow diagram is the usual form."
+  },
+  {
+    "id": "fractionalDistillationLab",
+    "name": "Fractional distillation in the laboratory (ethanol and water)",
+    "subject": "chemistry",
+    "level": "KS4",
+    "courses": ["8464", "8462"],
+    "specRefs": [],
+    "topic": "Organic chemistry",
+    "kind": "template",
+    "covered": null,
+    "proposedPack": "organicApparatus",
+    "priority": "B",
+    "detail": "full",
+    "draw": "The distillation template with a fractionating column between the flask and the still head: a round-bottomed flask in a heating mantle, a vertical column packed with glass beads, a thermometer at the top with its bulb level with the side arm, a Liebig condenser sloping down with water in at the lower port, and a receiver flask. Labels: fractionating column, thermometer, condenser, water in, water out, collected liquid.",
+    "params": "mixture (ethanol and water | hexane and heptane), heating (mantle | gauze), packing (beads | none)",
+    "scienceChecks": "The system is open to the air at exactly one point (S13). The column is vertical. The thermometer bulb is level with the side arm. Cooling water enters at the lower port.",
+    "sources": [],
+    "confidence": "unverified",
+    "notes": "A new template from existing symbols (roundBottomFlask, fractionatingColumn, stillHead, thermometer, liebigCondenser, heatingMantle). From memory: AQA names fractional distillation for crude oil; the laboratory mixture is a classroom choice."
+  },
+  {
+    "id": "evaporationCrystallisation",
+    "name": "Evaporating a salt solution to obtain crystals",
+    "subject": "chemistry",
+    "level": "KS4",
+    "courses": ["8464", "8462"],
+    "specRefs": [],
+    "topic": "Chemical changes",
+    "kind": "covered",
+    "covered": "crystallisation",
+    "proposedPack": "apparatus",
+    "priority": "B",
+    "detail": "full",
+    "draw": "Use the crystallisation template: an evaporating basin of salt solution sitting in the mouth of a beaker of water (a water bath) on a gauze over a Bunsen burner. A second picture of the basin with crystals forming at the edge, and the crystallising dish left to cool. Labels: evaporating basin, water bath, solution, crystals.",
+    "params": "solution level, crystals on or off",
+    "scienceChecks": "The solution is heated gently and not to dryness. The basin sits on the beaker rim with its foot inside. Crystals form at the edge as the solution cools.",
+    "sources": [
+      "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/practical-assessment",
+      "https://filestore.aqa.org.uk/resources/chemistry/AQA-8462-PRACTICALS-HB.PDF"
+    ],
     "confidence": "checked",
-    "notes": ""
+    "notes": "The evaporation step of required practical 1 (making a salt). Also the dissolved-solids test of required practical 8."
+  },
+  {
+    "id": "formulaTriangle",
+    "name": "Formula triangle (moles, concentration and similar)",
+    "subject": "chemistry",
+    "level": "KS4",
+    "courses": ["8464", "8462"],
+    "specRefs": [],
+    "topic": "Quantitative chemistry",
+    "kind": "symbol",
+    "covered": null,
+    "proposedPack": "annotation",
+    "priority": "B",
+    "detail": "full",
+    "draw": "A triangle split by a horizontal line and a vertical line into three parts: one quantity at the top and two at the bottom. Covering one quantity shows the formula for it (the two at the bottom multiply; a top quantity divided by a bottom one gives the other). Used for moles = mass divided by relative formula mass, and concentration = mass divided by volume. Physics uses the same shape for V = I R, speed, density and others.",
+    "params": "formula (moles | concentration | gas volume | percentage yield | custom), quantity labels, hide one part (boolean)",
+    "scienceChecks": "The top quantity equals the product of the two bottom quantities. Covering the top shows a product; covering a bottom part shows the top divided by the other bottom part.",
+    "sources": [],
+    "confidence": "unverified",
+    "notes": "Not an AQA requirement; a very common classroom aid. One symbol serves chemistry and physics. From memory."
+  },
+  {
+    "id": "gasCollectionMethods",
+    "name": "Collecting a gas: over water, upward delivery, downward delivery and gas syringe",
+    "subject": "chemistry",
+    "level": "KS4",
+    "courses": ["8464", "8462"],
+    "specRefs": [],
+    "topic": "Chemical analysis",
+    "kind": "template",
+    "covered": null,
+    "proposedPack": "labTemplates",
+    "priority": "B",
+    "detail": "full",
+    "draw": "Four small set-ups, each a flask producing the gas with a bung and delivery tube. Over water: a trough with an upside-down measuring cylinder or tube full of water (the gas is insoluble). Downward delivery: an upright gas jar with the tube reaching the bottom (the gas is denser than air). Upward delivery: an upside-down gas jar with the tube reaching the top (the gas is less dense than air). Gas syringe: the syringe on the tube. A label gives an example gas for each.",
+    "params": "method (over water | downward delivery | upward delivery | gas syringe), gas label",
+    "scienceChecks": "A gas that dissolves in water is not collected over water. A gas denser than air (carbon dioxide, chlorine) goes by downward delivery and a gas lighter than air (hydrogen, ammonia) by upward delivery. The tube reaches the far end of the jar. Each system is open at exactly one point (S13).",
+    "sources": [
+      "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/practical-assessment",
+      "https://filestore.aqa.org.uk/resources/chemistry/AQA-8462-PRACTICALS-HB.PDF"
+    ],
+    "confidence": "unverified",
+    "notes": "AQA's required practical 5 uses over water and the gas syringe; the two delivery methods are a classroom convention from memory. A new template from existing symbols (conicalFlask, bung, gasJar, trough, measuringCylinder, gasSyringe)."
+  },
+  {
+    "id": "conductivityTest",
+    "name": "Testing whether a substance conducts electricity",
+    "subject": "chemistry",
+    "level": "KS4",
+    "courses": ["8464", "8462"],
+    "specRefs": [],
+    "topic": "Bonding, structure and the properties of matter",
+    "kind": "template",
+    "covered": null,
+    "proposedPack": "labTemplates",
+    "priority": "B",
+    "detail": "full",
+    "draw": "A circuit of a cell (or power supply), a lamp and two carbon electrodes on wires, the electrodes dipping into a beaker of the sample (a solution, or a crucible of the molten substance; for a solid, the electrodes touch the block). The lamp is lit or unlit, with a label saying what the result shows. Variants: solid salt, salt solution, molten salt, metal, graphite, sugar solution.",
+    "params": "sample (solid ionic | molten ionic | ionic solution | metal | graphite | sugar solution), lamp lit or not",
+    "scienceChecks": "The two electrodes dip into the sample and do not touch each other. The lamp is in series with the cell. The lamp is lit only for a sample with free ions or free electrons (molten or dissolved ionic compound, metal, graphite).",
+    "sources": ["https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"],
+    "confidence": "unverified",
+    "notes": "AQA asks why ionic compounds conduct when molten or dissolved and why metals and graphite conduct; the apparatus is the usual classroom one, from memory."
+  },
+  {
+    "id": "sigmaPiBonding",
+    "name": "Sigma and pi bonds (orbital overlap in ethene)",
+    "subject": "chemistry",
+    "level": "KS5",
+    "courses": ["7405"],
+    "specRefs": [],
+    "topic": "Organic chemistry (A-level)",
+    "kind": "symbol",
+    "covered": null,
+    "proposedPack": "atoms",
+    "priority": "C",
+    "detail": "full",
+    "draw": "Two carbon atoms with the plane of the molecule marked. The sigma bond as end-on overlap of orbitals along the line between the nuclei, drawn as two lobes joined, and the pi bond as sideways overlap of p orbitals above and below the plane, drawn as two lobes with a dashed outline joining them. The four hydrogens in the plane at 120 degrees.",
+    "params": "molecule (ethene | benzene | ethyne), show hydrogens (boolean), show the plane (boolean)",
+    "scienceChecks": "A double bond is one sigma and one pi bond. The pi lobes are above and below the plane of the sigma bonds. The molecule is planar with 120 degree angles.",
+    "sources": ["https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry"],
+    "confidence": "unverified",
+    "notes": "AQA examiners reported that students seldom explained the overlap of p orbitals; I did not confirm that students must draw the overlap. Uses the orbital shapes of orbitalShapes."
   }
 ]
