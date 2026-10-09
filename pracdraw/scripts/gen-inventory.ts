@@ -278,8 +278,6 @@ export function facts(d: Data): Record<string, string> {
     aChecked: String(l.checkedA.length),
     both: String(count(chem, (r) => r.courses.includes('8464') && r.courses.includes('8462'))),
     gcseOnly: String(count(chem, (r) => r.courses.includes('8462') && !r.courses.includes('8464') && r.level === 'KS4')),
-    symbols: String(d.symbols.length),
-    templates: String(d.templates.length),
     packIds: String(d.packIds.length),
     newPacks: String(newPackNames.size),
     libraryGroups: String(d.packIds.length + newPackNames.size),
@@ -456,6 +454,11 @@ function blocks(d: Data): Record<string, string> {
     'check-checked': checkBlock(d.rows, 'checked'),
     'rows-by-topic': topicsBlock(d.rows),
   }
+}
+
+/** The keys of the generated blocks (tables): each must appear once in the document. */
+export function blockKeys(d: Data): string[] {
+  return Object.keys(blocks(d))
 }
 
 // ---------- the markers ----------

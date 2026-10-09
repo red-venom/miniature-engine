@@ -2,7 +2,7 @@
 
 Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/diagrams.json`. This document is the version for people. Its tables and its numbers are written by `npm run gen:inventory` from that file: they sit between comments that start with `gen:` and are never edited by hand. `src/diagrams.test.ts` regenerates the document in memory and compares it with this file, so a change to the list without the document, or to the document without the list, fails the test. The text around the tables is written by hand and holds no number about the rows; the test fails when one is typed.
 
-**What to read.** James: read "Read this first", "Decisions for James" and "Build order" (about <!-- gen:n.readWords -->2,500<!-- /gen --> words). The rest is for the lead, for the pack authors and for looking things up. "Rows by topic" at the end lists every row.
+**What to read.** James: read "Read this first", "Decisions for James" and "Build order" (about <!-- gen:n.readWords -->2,600<!-- /gen --> words). The rest is for the lead, for the pack authors and for looking things up. "Rows by topic" at the end lists every row.
 
 **A scope list, not a recipe.** The inventory says which diagrams to draw, roughly how, and in what order. It does not specify any symbol. Before a pack is built, the lead and the author write its catalogue rows (size, resize mode, parameters, anchors, label, line roles), as they did for the apparatus; a row here gives none of these.
 
@@ -11,7 +11,7 @@ Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/dia
 **In short.**
 
 - The list has <!-- gen:n.total -->293<!-- /gen --> rows: <!-- gen:n.chem -->219<!-- /gen --> for chemistry (<!-- gen:n.chemKs4 -->131<!-- /gen --> at KS4 and <!-- gen:n.chemKs5 -->88<!-- /gen --> at KS5) and <!-- gen:n.outline -->74<!-- /gen --> outline rows for biology and physics.
-- <!-- gen:n.covered -->57<!-- /gen --> rows are already drawn by the <!-- gen:n.symbols -->123<!-- /gen --> symbols and <!-- gen:n.templates -->43<!-- /gen --> templates of the catalogue. <!-- gen:n.charts -->40<!-- /gen --> rows are graphs, tables and spectra, which the specification puts outside PracDraw. The other <!-- gen:n.new -->196<!-- /gen --> rows need something new.
+- <!-- gen:n.covered -->57<!-- /gen --> rows are already drawn by the symbols and templates of the catalogue. <!-- gen:n.charts -->40<!-- /gen --> rows are graphs, tables and spectra, which the specification puts outside PracDraw. The other <!-- gen:n.new -->196<!-- /gen --> rows need something new.
 - Steps 1 to <!-- gen:n.lastAStep -->8<!-- /gen --> of the build order hold all <!-- gen:n.aNew -->40<!-- /gen --> priority A rows that need new code.
 - Decisions 1 to 3 reverse things that the specification says PracDraw does not draw, and decisions 1 to 5 set how large the work is.
 - Confidence is weaker than it looks (see Confidence below). The first job for a person with the AQA PDF is "Rows to check against the AQA PDF".
@@ -56,7 +56,7 @@ Each decision gives the options and a recommendation, so that James can approve 
 
 **7. Particles are told apart by fill, not by colour (confirm).** Particles, atoms and regions are told apart by size and by a light-grey tint or a hatch fill, with a key, never by colour alone (rules S6 and S12), so that a photocopy reads. <!-- gen:n.tag.fill -->14<!-- /gen --> rows need this (tag `fill`), and the hazard symbols (tag `hazard`) get a plain black border instead of a red one. The kernel has no tint role and no hatch role: add one light-grey tint role and one hatch role, black-and-white safe, before step 3 (the lead's work). Recommended: yes.
 
-**8. Text inside symbols (rule S11).** Rule S11 allows only scale numbers, meter letters, readings, terminal signs and short fixed words, at 8 to 14 u. <!-- gen:n.tag.symbolText -->19<!-- /gen --> symbol rows need element symbols, charges or numbers inside the picture, at 12 to 18 u (tag `symbolText`: the displayed formulae, the dot-and-cross diagrams, the periodic table, nuclide notation, the lattices). Options: relax S11 for every symbol; relax it for the particle, molecule and structure packs only; keep it and make each of these rows a compound with labels. Recommended: relax S11 for those packs and keep it for apparatus (the lead edits the specification).
+**8. Text inside symbols (rule S11).** Rule S11 allows only scale numbers, meter letters, readings, terminal signs and short fixed words, at 8 to 14 u. <!-- gen:n.tag.symbolText -->19<!-- /gen --> symbol rows need element symbols, charges or numbers inside the picture, at 12 to 18 u (tag `symbolText`: the displayed formulae, the dot-and-cross diagrams, the periodic table, nuclide notation, the lattices), and a charge such as `2+` needs a rule for superscript text. Options: relax S11 for every symbol; relax it for the particle, molecule and structure packs only; keep it and make each of these rows a compound with labels. Recommended: relax S11 for those packs and keep it for apparatus (the lead edits the specification).
 
 **9. The periodic table is a symbol, not a chart (confirm).** It is a table, but a fixed grid of the elements with highlight parameters, so the list classes it as a symbol and builds it early. The first version may stop after the fourth period. Recommended: yes.
 

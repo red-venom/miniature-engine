@@ -13,13 +13,14 @@ import {
   BRIEF_NOTE,
   DOC_FILE,
   KEPT_NOTE,
+  MARKER,
   STEPS,
   TAGS,
+  blockKeys,
   generate,
   proseNumbers,
   readingWords,
   stepRows,
-  MARKER,
   type Data,
   type Row,
 } from '../scripts/gen-inventory'
@@ -274,6 +275,12 @@ describe('docs/diagram-inventory.md agrees with the file', () => {
       `docs/diagram-inventory.md differs from what gen-inventory writes from spec/diagrams.json now: run npm run gen:inventory (change the text outside the generated parts, never inside them). ${firstDifference(doc, made)}`,
     ).toBe(true)
     expect(generate(made, data) === made, 'generating twice changes the document').toBe(true)
+  })
+
+  it('has every generated table once, and the numbers that the text must not type (a table that is deleted would never be regenerated)', () => {
+    for (const key of blockKeys(data)) expect(doc.split(`<!-- gen:${key} -->`).length - 1, `the table "${key}" is not in the document exactly once`).toBe(1)
+    for (const key of ['n.total', 'n.lastAStep', 'n.aNew', 'n.readWords'])
+      expect(doc, `the number "${key}" is typed by hand or missing`).toContain(`<!-- gen:${key} -->`)
   })
 
   it('has the sections in the agreed order, with the appendix last', () => {
