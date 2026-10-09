@@ -97,12 +97,12 @@ export function ionicModel(n = 3): IonicModel {
  * (i - 1, j - 1, k + 2) fall (√2 - 1) spacings apart, 18.2 u at spacing 44, and two Cl- circles of radius 11 need 22 u: they overlap by
  * 3.8 u (the corner (0, 0, 2) and the face centre (1, 1, 0) are such a pair). The edges of two circles must be at least 4 u apart, so that the
  * white between two outlines is as wide as an outline: (√2 - 1) s >= 2 r(Cl-) + 4. The block with its outlines must also fit the box:
- * (2 + √2 / 2) s + 2 r(Cl-) + 2 <= 150. A spacing of 48.5 with radii 8 and 5.5 (the ratio of the brief, 11 to 7, is about 1.6) meets both.
+ * (2 + √2 / 2) s + 2 r(Cl-) + 2 <= 150. A spacing of 48.5 with radii 8 and 5 meets both, and keeps the ratio of the brief (11 to 7, about 1.6).
  */
 export const IONIC = {
   size: 150,
   spacing: 48.5,
-  radius: { 'Cl-': 8, 'Na+': 5.5 } satisfies Record<IonKind, number>,
+  radius: { 'Cl-': 8, 'Na+': 5 } satisfies Record<IonKind, number>,
 }
 
 export interface IonicPicture {

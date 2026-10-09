@@ -217,8 +217,8 @@ describe('ionicLattice3D: the picture of the model', () => {
     return { m, k, s, drawn, circles }
   }
 
-  it('uses a spacing of 48.5 u and radii of 8 (Cl-) and 5.5 (Na+) at the size 150, and scales them with the box', () => {
-    expect([IONIC.size, IONIC.spacing, IONIC.radius['Cl-'], IONIC.radius['Na+']]).toEqual([150, 48.5, 8, 5.5])
+  it('uses a spacing of 48.5 u and radii of 8 (Cl-) and 5 (Na+) at the size 150, and scales them with the box', () => {
+    expect([IONIC.size, IONIC.spacing, IONIC.radius['Cl-'], IONIC.radius['Na+']]).toEqual([150, 48.5, 8, 5])
     for (const h of sizes('ionicLattice3D')) {
       const { k, circles, m } = drawnIons(h)
       m.ions.forEach((ion, i) => expect(circles[i].r).toBeCloseTo(IONIC.radius[ion.kind] * k, 2))
