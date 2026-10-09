@@ -84,6 +84,12 @@ function textWidth(text: string, size = 15): number {
 const centred = (text: string, cx: number): number => Math.round(cx - textWidth(text) / 2)
 
 /**
+ * The width of a boss clamp whose jaws (opening `grip`) and whose boss are `distance` apart: the boss is 9 u from its end and the
+ * centre of the jaws 0.45 × the opening from the other end (bossClamp recipe).
+ */
+const clampWidth = (distance: number, grip: number): number => Math.round(distance + 9 + 0.45 * grip)
+
+/**
  * Stands and clamps stand behind what they hold, so they are made first and placed afterwards.
  * Here a stand made earlier moves so that its rod passes through the clamp's boss and its base is on the bench.
  */
@@ -377,7 +383,290 @@ const electrolysisMolten: TemplateDef = {
   },
 }
 
-export const labs: TemplateDef[] = [gasTests, carbonateTest, rustingTubes, simpleCell, conductivityTest, magnesiumInCrucible, electrolysisMolten]
+// ---------------------------------------------------------------- a Group 1 metal in water
+
+const groupOneWater: TemplateDef = {
+  id: 'groupOneWater',
+  title: 'Group 1 metal in water',
+  group: 'Chemistry',
+  refs: 'GCSE 4.1.2.4',
+  build() {
+    const b = new DocBuilder('Group 1 metal in water')
+    // A narrow trough, so that the few bubbles of the layer stay near the piece of metal.
+    const trough = b.at('trough', 'base', P(0, 0), { w: 190, contents: { main: [liquid(0.6, WATER, { bubbles: 'few' })] } })
+    // The piece floats: its lower edge is just under the surface, which is 56 u above the floor of the trough.
+    const metal = b.near('irregularSolid', trough, 'base', { dx: -30, dy: -63, w: 26, h: 20 })
+    // A burning splint is held over the bubbles, its flame over the piece.
+    const splint = b.at('splint', 'tip', P(metal.x - 6, metal.y - 62), { flip: true, w: 100 })
+    b.label('lithium', -120, -125, [metal, -9, 8])
+    b.label('water', -120, -40, [trough, -60, 80])
+    b.label('burning splint', 120, -125, [splint, -40, 4])
+    b.label('hydrogen', 130, -60, [trough, -8, 63.6])
+    return b.doc
+  },
+}
+
+// ---------------------------------------------------------------- fermentation
+
+const fermentationApparatus: TemplateDef = {
+  id: 'fermentationApparatus',
+  title: 'Fermentation of a sugar solution',
+  group: 'Chemistry',
+  refs: 'GCSE 4.7.2.2',
+  build() {
+    const b = new DocBuilder('Fermentation of a sugar solution')
+    // The warm water bath is a wide beaker, so that the flask stands in it. Its water is a little higher than the solution.
+    const bath = b.at('beaker', 'base', P(0, 0), { w: 150, h: 110, contents: { main: [liquid(0.62, WATER)] } })
+    const flask = b.on('conicalFlask', 'base', bath, 'base', {
+      dy: -2,
+      contents: { main: [liquid(0.4, CLOUDY_YELLOW, { cloudy: true, bubbles: 'few' })] },
+    })
+    // The thermometer stands in the bath beside the flask, its bulb 14 u above the bottom, at 35 degrees.
+    const thermo = b.on('thermometer', 'bulb', bath, 'base', { dx: -64, dy: -14, h: 180 })
+    setReading(thermo, 35)
+    const bung = b.on('bung', 'plug', flask, 'mouth')
+    // The tube of limewater stands in a rack. The rack is tall enough to leave the liquid in sight above its bar (150 u tube).
+    const rack = b.on('testTubeRack', 'base', bath, 'base', { dx: 330, w: 120, params: { holes: 3 } })
+    const limewater = b.on('testTube', 'bottom', rack, 'slot2', { h: 150, contents: { main: [liquid(0.55, CLOUDY, { cloudy: true, bubbles: 'few' })] } })
+    // The bung's tube is the only opening: it leaves the flask, arches over and dips into the limewater.
+    const hole = anchorWorld(bung, 'hole1'),
+      lw = anchorWorld(limewater, 'mouth'),
+      lb = anchorWorld(limewater, 'bottom')
+    b.connector('glassTube', [v(hole.x, hole.y + 30), v(hole.x, hole.y - 52, 12), v(lw.x, hole.y - 52, 12), v(lw.x, lb.y - 8)])
+    b.label('thermometer', -110, -190, [thermo, -4.5, 40])
+    b.label('bung', 95, -165, [bung, 17, 12])
+    b.label('conical flask', 95, -120, [flask, 28, 52])
+    b.label('yeast and sugar solution', 95, -65, [flask, 24, 125])
+    b.label('warm water', 95, -22, [bath, 62, 95])
+    b.label('delivery tube', 110, -260, P(hole.x + 60, hole.y - 52 - 3.5))
+    b.label('limewater', 390, -170, [limewater, 9, 80])
+    return b.doc
+  },
+}
+
+// ---------------------------------------------------------------- collecting a gas by delivery
+
+const gasCollection: TemplateDef = {
+  id: 'gasCollection',
+  title: 'Collecting a gas by delivery',
+  group: 'Chemistry',
+  refs: 'GCSE 4.8.2',
+  build() {
+    const b = new DocBuilder('Collecting a gas by delivery')
+    const generator = { lumps: lumps(0.1, GRANULES), solution: liquid(0.3, COLOURLESS, { bubbles: 'few' }) }
+    // Downward delivery: the tube reaches the bottom of an upright jar, and the gas, which is denser than air, fills it from there.
+    const flask1 = b.at('conicalFlask', 'base', P(0, 0), { contents: { main: [generator.lumps, generator.solution] } })
+    const bung1 = b.on('bung', 'plug', flask1, 'mouth')
+    const jar1 = b.on('gasJar', 'base', flask1, 'base', { dx: 200 })
+    const hole1 = anchorWorld(bung1, 'hole1'),
+      mouth1 = anchorWorld(jar1, 'mouth'),
+      floor1 = anchorWorld(jar1, 'base')
+    b.connector('glassTube', [v(hole1.x, hole1.y + 30), v(hole1.x, hole1.y - 50, 12), v(floor1.x, hole1.y - 50, 12), v(floor1.x, floor1.y - 14)])
+    // Upward delivery: an upside-down jar stands on a lid on the bung, and the tube reaches the top of the jar. The gas, which is
+    // lighter than air, collects at the top and pushes the air out of the open mouth below.
+    const flask2 = b.on('conicalFlask', 'base', flask1, 'base', { dx: 430, contents: { main: [generator.lumps, generator.solution] } })
+    const bung2 = b.on('bung', 'plug', flask2, 'mouth')
+    const lid = b.on('lid', 'under', bung2, 'hole1', { w: 100, params: { holes: 1 } })
+    const jar2 = b.on('gasJar', 'mouth', lid, 'hole1', { rot: 180 })
+    const hole2 = anchorWorld(bung2, 'hole1'),
+      top2 = anchorWorld(jar2, 'base')
+    b.connector('glassTube', [v(hole2.x, hole2.y + 30), v(hole2.x, top2.y + 14)])
+    // The gas that each method collects is named in the jar; the notes under the pictures say why.
+    b.label('bung', -95, -165, [bung1, -17, 12])
+    b.label('conical flask', -95, -70, [flask1, -35, 100])
+    b.label('delivery tube', 40, -265, P(60, hole1.y - 50 - 3.5))
+    b.label('gas jar', 262, -140, [jar1, 36, 60])
+    b.label('carbon dioxide', 262, -90, [jar1, 28, 110])
+    // The second jar is turned over, so the right-hand wall is at x = -36 in its own frame, and the closed end is at y = 170.
+    b.label('hydrogen', 530, -265, [jar2, -28, 140])
+    b.label('inverted gas jar', 530, -215, [jar2, -36, 100])
+    b.label('lid', 530, -130, [lid, 48, 4])
+    b.label('bung', 530, -90, [bung2, 17, 12])
+    b.label('conical flask', 530, -40, [flask2, 30, 100])
+    const note = (text: string, cx: number) => b.label(text, centred(text, cx), 50)
+    note('downward delivery:\nfor a gas denser than air', 90)
+    note('upward delivery:\nfor a gas less dense than air', 430)
+    void mouth1
+    return b.doc
+  },
+}
+
+// ---------------------------------------------------------------- cracking
+
+const crackingApparatus: TemplateDef = {
+  id: 'crackingApparatus',
+  title: 'Cracking a hydrocarbon in the laboratory',
+  group: 'Chemistry',
+  refs: 'GCSE 4.7.1.2',
+  build() {
+    const b = new DocBuilder('Cracking a hydrocarbon in the laboratory')
+    // The stands and clamps stand behind everything, so they are made first and placed once the tubes are.
+    const stand = b.symbol('clampStand', { w: 100, flip: true })
+    const clamp = b.symbol('bossClamp', { params: { grip: 38 } })
+    const standT = b.symbol('clampStand', { w: 110 })
+    const clampT = b.symbol('bossClamp', { flip: true, params: { grip: 26 } })
+    const mat = b.at('heatproofMat', 'under', P(17, 0), { w: 100 })
+    const burner = b.on('bunsenBurner', 'base', mat, 'top')
+    // The boiling tube lies level, 4 u over the tip of the flame, closed end to the left. The catalyst is a thin row of chips
+    // along its lower wall.
+    const tube = b.on('boilingTube', 'bottom', burner, 'flame', { rot: 90, dx: -92, dy: -21, contents: { main: [lumps(0.18, GRANULES)] } })
+    // The mineral wool, soaked in paraffin, plugs the closed end.
+    const wool = b.near('cottonWool', tube, 'bottom', { rot: 90, w: 28, h: 28, dx: 22 })
+    const bung = b.on('bung', 'plug', tube, 'mouth', { rot: 90 })
+    // The clamp grips the neck, near the mouth. Its arm runs back behind the tube to the stand at the closed end.
+    const bench = anchorWorld(mat, 'under').y
+    moveAnchorTo(clamp, 'grip', anchorWorld(tube, 'neck'))
+    const rodX = anchorWorld(tube, 'bottom').x - 30
+    clamp.w = clampWidth(anchorWorld(tube, 'neck').x - rodX, 38)
+    moveAnchorTo(clamp, 'grip', anchorWorld(tube, 'neck'))
+    stand.h = Math.round(bench - (anchorWorld(clamp, 'sleeve').y - 36))
+    standUnder(stand, clamp, bench)
+    // The trough stands on the bench to the right. The delivery tube runs along its floor into the mouth of an upside-down test
+    // tube that is full of water, 14 u above the floor.
+    const trough = b.on('trough', 'base', mat, 'under', { dx: 275, w: 210, contents: { main: [liquid(0.6, WATER)] } })
+    const gasTube = b.on('testTube', 'mouth', trough, 'base', { rot: 180, h: 120, dx: 20, dy: -14, contents: { main: [liquid(1, WATER)] } })
+    // The test tube is clamped above the rim of the trough, from a stand on the right of the trough, clear of its wall.
+    const gm = anchorWorld(gasTube, 'mouth')
+    const rodT = anchorWorld(trough, 'base').x + 105 + 40
+    clampT.w = clampWidth(rodT - gm.x, 26)
+    moveAnchorTo(clampT, 'grip', P(gm.x, gm.y - 94))
+    standT.h = Math.round(bench - (anchorWorld(clampT, 'sleeve').y - 36))
+    standUnder(standT, clampT, bench)
+    const hole = anchorWorld(bung, 'hole1')
+    const inside = toWorld(bung, P(0, 34)),
+      out = toWorld(bung, P(0, -14)),
+      floor = anchorWorld(trough, 'base').y
+    b.connector('glassTube', [v(inside.x, inside.y), v(out.x, out.y, 12), v(gm.x - 115, out.y, 12), v(gm.x - 115, floor - 6, 12), v(gm.x, floor - 6, 12), v(gm.x, gm.y - 24)])
+    // The labels of the tube stand in a staircase over it, each text to the right of its leader, so that no leader crosses
+    // another leader or a text.
+    b.label('clamp stand', -122, -150, [stand, -26, 40], { side: 'left' })
+    b.label('mineral wool soaked\nin paraffin', -20, -274, [wool, -13, 14], { side: 'right' })
+    b.label('catalyst', 30, -232, [tube, 14, 60], { side: 'right' })
+    b.label('boiling tube', 70, -207, [tube, -17, 53], { side: 'right' })
+    b.label('bung', 105, -182, [bung, -13, 2], { side: 'right' })
+    b.label('delivery tube', 215, -170, P(185, out.y - 3.5), { side: 'right' })
+    b.label('Bunsen\nburner', 70, -62, [burner, 14, 50])
+    b.label('heatproof mat', -30, 42, [mat, -35, 6])
+    b.label('trough of water', 160, 42, [trough, -50, 95])
+    b.label('test tube\nfull of\nwater', 340, -160, [gasTube, -12, 108])
+    b.label('take the delivery tube out of the water before stopping the heating', centred('take the delivery tube out of the water before stopping the heating', 150), 82)
+    void hole
+    return b.doc
+  },
+}
+
+// ---------------------------------------------------------------- the products of burning a fuel
+
+const combustionProducts: TemplateDef = {
+  id: 'combustionProducts',
+  title: 'Products of burning a fuel',
+  group: 'Chemistry',
+  refs: 'GCSE 4.7.1; Trilogy 5.7.1',
+  build() {
+    const b = new DocBuilder('Products of burning a fuel')
+    // The stand and its clamp stand behind everything, so they are made first and placed once the funnel is.
+    const stand = b.symbol('clampStand', { w: 100, flip: true })
+    const clamp = b.symbol('bossClamp', { params: { grip: 14 } })
+    const burner = b.at('spiritBurner', 'base', P(0, 0), { contents: { main: [liquid(0.5, COLOURLESS)] } })
+    // An upside-down funnel over the flame takes the gases from it into its stem.
+    const funnel = b.on('filterFunnel', 'rim', burner, 'flame', { rot: 180, dy: -14 })
+    // The clamp grips the stem, from the stand on the left.
+    const stem = anchorWorld(funnel, 'stem')
+    const bench = anchorWorld(burner, 'base').y
+    moveAnchorTo(clamp, 'grip', P(stem.x, stem.y + 38))
+    clamp.w = clampWidth(110, 14)
+    moveAnchorTo(clamp, 'grip', P(stem.x, stem.y + 38))
+    stand.h = Math.round(bench - (anchorWorld(clamp, 'sleeve').y - 35))
+    standUnder(stand, clamp, bench)
+    // The ice bath: a beaker of ice and a little water, with the U-tube standing in it.
+    const ice = b.on('beaker', 'base', burner, 'base', { dx: 260, w: 140, h: 110, contents: { main: [lumps(0.55, ICE), liquid(0.05, WATER)] } })
+    const utube = b.near('uTube', ice, 'base', { dy: -77, contents: { main: [liquid(0.12, WATER)] } })
+    const bungL = b.on('bung', 'plug', utube, 'mouthL', { w: 27.2 })
+    const bungR = b.on('bung', 'plug', utube, 'mouthR', { w: 27.2 })
+    // The limewater: a wide test tube (34 u, so that the standard two-hole bung fits) stands in a small beaker, to keep it upright.
+    const holder = b.on('beaker', 'base', ice, 'base', { dx: 190, w: 70, h: 90 })
+    const limewater = b.on('testTube', 'bottom', holder, 'base', { dy: -2, w: 34, h: 130, contents: { main: [liquid(0.5, CLOUDY, { cloudy: true })] } })
+    const bung = b.on('bung', 'plug', limewater, 'mouth', { params: { holes: 2 } })
+    // Glass tubes pass through the bungs and rubber tubing joins them: the gases go from the funnel down the left arm of the U-tube
+    // (the cold glass in the ice makes the water vapour condense), up the right arm, and down to the bottom of the limewater, and
+    // the pump draws them on through the second tube of the bung.
+    const top = (it: SymbolItem, hole: string) => anchorWorld(it, hole)
+    const hL = top(bungL, 'hole1'),
+      hR = top(bungR, 'hole1'),
+      hIn = top(bung, 'hole1'),
+      hOut = top(bung, 'hole2'),
+      lb = anchorWorld(limewater, 'bottom')
+    const glass = (x: number, y0: number, y1: number) => b.connector('glassTube', [v(x, y0), v(x, y1)])
+    glass(hL.x, hL.y + 30, hL.y - 24)
+    glass(hR.x, hR.y + 30, hR.y - 24)
+    glass(hIn.x, lb.y - 10, hIn.y - 24)
+    glass(hOut.x, hOut.y + 24, hOut.y - 24)
+    // The rubber tubing slips 10 u over the top of each glass tube.
+    const arch = hL.y - 56
+    b.connector('rubberTube', [v(stem.x, stem.y + 15), v(stem.x, arch, 16), v(hL.x, arch, 16), v(hL.x, hL.y - 14)])
+    b.connector('rubberTube', [v(hR.x, hR.y - 14), v(hR.x, arch, 16), v(hIn.x, arch, 16), v(hIn.x, hIn.y - 14)])
+    b.connector('rubberTube', [v(hOut.x, hOut.y - 14), v(hOut.x, hOut.y - 60, 16), v(hOut.x + 80, hOut.y - 60)])
+    b.label('to pump', hOut.x + 88, hOut.y - 55)
+    // The labels stand in the space between the burner and the ice bath, and beyond the limewater.
+    b.label('funnel', 70, -125, [funnel, -27, 20], { side: 'right' })
+    b.label('fuel', 70, -55, [burner, 35, 64], { side: 'right' })
+    b.label('ice', 150, -35, [ice, -63, 65], { side: 'left' })
+    b.label('condensate', 150, -5, [utube, -35, 138], { side: 'left' })
+    b.label('limewater', 500, -60, [limewater, 8, 90], { side: 'right' })
+    b.label('clamp stand', -122, -130, [stand, -26, 80], { side: 'left' })
+    return b.doc
+  },
+}
+
+// ---------------------------------------------------------------- fractional distillation
+
+const fractionalDistillationLab: TemplateDef = {
+  id: 'fractionalDistillationLab',
+  title: 'Fractional distillation in the laboratory',
+  group: 'Chemistry',
+  refs: 'GCSE 4.7.1.1; Trilogy 5.7.1',
+  build() {
+    const b = new DocBuilder('Fractional distillation in the laboratory')
+    // As the distillation template. The column raises the still head, so the flask, the mantle and the column are a little smaller
+    // than there: then the receiver adaptor still reaches the neck of a collecting flask that stands on the bench.
+    // The neck stand is on the right of the flask, so that the labels of the flask, the column and the mantle have the left side.
+    const neckStand = b.symbol('clampStand', { w: 100, h: 200 })
+    const neckClamp = b.symbol('bossClamp', { w: 72, flip: true, params: { grip: 34 } })
+    const mantle = b.at('heatingMantle', 'base', P(0, 0), { w: 150, h: 90 })
+    const bench = anchorWorld(mantle, 'base').y
+    const flask = b.on('roundBottomFlask', 'bottom', mantle, 'cup', { w: 100, h: 125, contents: { main: [lumps(0.05, GRANULES), liquid(0.4, COLOURLESS)] } })
+    moveAnchorTo(neckClamp, 'grip', anchorWorld(flask, 'neck'))
+    standUnder(neckStand, neckClamp, bench)
+    // The column stands on the flask, with its cone in the neck; the still head stands on the column.
+    const column = b.on('fractionatingColumn', 'bottom', flask, 'mouth', { h: 124 })
+    const head = b.on('stillHead', 'bottom', column, 'top')
+    b.on('thermometerAdaptor', 'plug', head, 'top')
+    // The bulb's centre is level with the side arm. The thermometer shows the boiling point of ethanol.
+    const thermo = b.on('thermometer', 'bulb', head, 'top', { dy: 47, h: 150 })
+    setReading(thermo, 78)
+    const condStand = b.symbol('clampStand', { h: 280 })
+    const condClamp = b.symbol('bossClamp', { w: 76, rot: 18, params: { grip: 38 } })
+    const condenser = b.on('liebigCondenser', 'socket', head, 'arm', { rot: 18, contents: { jacket: [liquid(1, WATER)] } })
+    moveAnchorTo(condClamp, 'grip', P(condenser.x, condenser.y))
+    condStand.h = Math.round(bench - (anchorWorld(condClamp, 'sleeve').y - 40))
+    standUnder(condStand, condClamp, bench)
+    // The collecting flask has no bung: its mouth is the one opening, with the outlet of the adaptor in its neck.
+    const collect = b.symbol('conicalFlask', { w: 80, h: 140, contents: { main: [liquid(0.12, COLOURLESS)] } })
+    const receiver = b.on('receiverAdaptor', 'in', condenser, 'cone')
+    moveAnchorTo(collect, 'base', P(anchorWorld(receiver, 'out').x, bench))
+    b.label('thermometer', -50, -430, [thermo, -4.5, 30])
+    b.label('fractionating column', -50, -215, [column, -17, 90])
+    b.label('round-bottomed flask', -70, -115, [flask, -50, 60])
+    b.label('heating mantle', -90, -30, [mantle, -75, 60])
+    b.label('water out', 130, -350, [condenser, -83, 4], { side: 'right' })
+    b.label('Liebig condenser', 300, -330, [condenser, 60, 18], { side: 'right' })
+    b.label('water in', 292, -125, [condenser, 83, 66], { side: 'left', leaderEnd: 'arrow' })
+    b.label('collected liquid', 470, -40, [collect, 15, 125], { side: 'right' })
+    return b.doc
+  },
+}
+
+export const labs: TemplateDef[] = [gasTests, carbonateTest, rustingTubes, simpleCell, conductivityTest, magnesiumInCrucible, electrolysisMolten, groupOneWater, fermentationApparatus, gasCollection, crackingApparatus, combustionProducts, fractionalDistillationLab]
 
 // Used by the templates that follow.
 void anchorOf
