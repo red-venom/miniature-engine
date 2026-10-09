@@ -610,6 +610,7 @@ export function triangleLayout(h: number): TriangleLayout {
     apexY = 1,
     baseY = h - 1,
     half = 60 * k - 1,
+    // The horizontal line is 59 % of the way down: low enough that the top part holds the longest preset text ("actual") at 16 u.
     y = apexY + 0.59 * (baseY - apexY),
     halfAt = (yy: number) => (half * (yy - apexY)) / (baseY - apexY),
     e = halfAt(y)
