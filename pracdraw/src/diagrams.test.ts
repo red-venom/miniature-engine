@@ -1,38 +1,39 @@
 // diagrams.test.ts — the diagram inventory in spec/diagrams.json against its own rules and against docs/diagram-inventory.md.
 // The inventory is a plan, not code: it lists every diagram type that a KS4 science lesson or a KS5 chemistry lesson asks for,
-// and what the next packs must draw. Nothing here draws anything. The document states the counts and lists every row by topic;
-// this test fails when the document and the file disagree.
+// and what the next packs must draw. Nothing here draws anything. The tables and numbers of the document are written by
+// `npm run gen:inventory` from the file; this test regenerates them in memory and compares them with the document byte for byte,
+// so a change to the file without the document (or the other way round) fails, and so does a number about the rows typed by hand.
 
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import catalogue from '../spec/catalogue.json'
 import inventory from '../spec/diagrams.json'
 import plan from '../spec/templates.json'
-
-interface Row {
-  id: string
-  name: string
-  subject: string
-  level: string
-  courses: string[]
-  specRefs: string[]
-  topic: string
-  kind: string
-  covered: string | null
-  proposedPack: string
-  priority: string
-  detail: string
-  draw: string
-  params: string
-  scienceChecks: string
-  sources: string[]
-  confidence: string
-  notes: string
-}
+import {
+  BRIEF_NOTE,
+  DOC_FILE,
+  KEPT_NOTE,
+  STEPS,
+  TAGS,
+  generate,
+  proseNumbers,
+  readingWords,
+  stepRows,
+  MARKER,
+  type Data,
+  type Row,
+} from '../scripts/gen-inventory'
+import { PACKS } from './editor/search'
 
 const rows = inventory as unknown as Row[]
-const doc = readFileSync(resolve(__dirname, '../docs/diagram-inventory.md'), 'utf8')
+const doc = readFileSync(DOC_FILE, 'utf8')
+const data: Data = {
+  rows,
+  symbols: catalogue.symbols.map((s) => s.id),
+  later: catalogue.later.map((s) => s.id),
+  templates: plan.templates.map((t) => t.id),
+  packIds: PACKS.map((p) => p.id),
+}
 
 const FIELDS = [
   'id',
@@ -63,29 +64,53 @@ const CONFIDENCES = ['checked', 'secondary', 'unverified']
 const CHEMISTRY_COURSES = ['8464', '8462', '7405']
 const BIOLOGY_COURSES = ['Trilogy', 'GCSE Biology']
 const PHYSICS_COURSES = ['Trilogy', 'GCSE Physics']
+const HEADINGS = [
+  'Read this first',
+  'Decisions for James',
+  'Build order',
+  'Before the first pack',
+  'Counts',
+  'What each pack would draw',
+  'Confidence and limits',
+  'Rows to check against the AQA PDF',
+  'How this was made',
+  'Rows by topic (appendix)',
+]
 
-const known = new Set([...catalogue.symbols.map((s) => s.id), ...plan.templates.map((t) => t.id)])
+const known = new Set([...data.symbols, ...data.templates])
 const isAqa = (url: string) => /^https:\/\/([a-z]+\.)*aqa\.org\.uk\//.test(url)
-const count = (key: keyof Row): Record<string, number> => {
-  const out: Record<string, number> = {}
-  for (const r of rows) out[String(r[key])] = (out[String(r[key])] ?? 0) + 1
-  return out
+
+/**
+ * A row may not reuse the id of a symbol or template of the catalogue, except that a `covered` row may have the id of the
+ * symbol or template it names (a pack that is built turns its row into a covered row of the same name).
+ */
+const idClash = (r: Pick<Row, 'id' | 'kind' | 'covered'>, ids: Set<string>): boolean => ids.has(r.id) && !(r.kind === 'covered' && r.covered === r.id)
+
+/** The name of the course that a reference such as "8464 5.10.1.3" belongs to, in the `courses` of a row of that subject. */
+const courseOf = (r: Row, code: string): string => {
+  if (r.subject === 'chemistry') return code
+  if (code === '8461') return 'GCSE Biology'
+  if (code === '8463') return 'GCSE Physics'
+  if (code === '8464') return 'Trilogy'
+  return code
 }
 
 describe('spec/diagrams.json: fields and values', () => {
-  it('is a non-empty array of rows with exactly the agreed fields in the agreed order', () => {
+  it('is a non-empty array of rows with exactly the agreed fields in the agreed order (`tags` last, when present)', () => {
     expect(Array.isArray(inventory)).toBe(true)
     expect(rows.length).toBeGreaterThan(100)
-    for (const r of rows) expect(Object.keys(r), r.id).toEqual(FIELDS)
+    for (const r of rows) expect(Object.keys(r), r.id).toEqual(r.tags === undefined ? FIELDS : [...FIELDS, 'tags'])
   })
 
-  it('has text in every text field and arrays where arrays belong', () => {
+  it('has text in every text field, a `draw` of at least 40 characters, and arrays where arrays belong', () => {
     for (const r of rows) {
       for (const k of ['id', 'name', 'topic', 'proposedPack', 'draw', 'params', 'scienceChecks'] as const) {
         expect(typeof r[k] === 'string' && r[k].trim() !== '', `${r.id}.${k} is empty`).toBe(true)
       }
+      expect(r.draw.trim().length, `${r.id}.draw is shorter than 40 characters`).toBeGreaterThanOrEqual(40)
       expect(typeof r.notes, `${r.id}.notes`).toBe('string')
       expect(Array.isArray(r.courses) && r.courses.length > 0 && r.courses.every((c) => typeof c === 'string' && c !== ''), `${r.id}.courses`).toBe(true)
+      expect(new Set(r.courses).size, `${r.id} lists a course twice`).toBe(r.courses.length)
       expect(Array.isArray(r.specRefs) && r.specRefs.every((s) => typeof s === 'string'), `${r.id}.specRefs`).toBe(true)
       expect(Array.isArray(r.sources) && r.sources.every((s) => typeof s === 'string'), `${r.id}.sources`).toBe(true)
     }
@@ -114,8 +139,15 @@ describe('spec/diagrams.json: fields and values', () => {
     }
   })
 
-  it('does not reuse the id of a symbol or a template that is already in the catalogue', () => {
-    for (const r of rows) expect(known.has(r.id), `${r.id} is an id of spec/catalogue.json or spec/templates.json`).toBe(false)
+  it('does not reuse the id of a symbol or template of the catalogue, unless it is the covered row of that very symbol or template', () => {
+    for (const r of rows)
+      expect(idClash(r, known), `${r.id} is an id of spec/catalogue.json or spec/templates.json and is not the covered row of it`).toBe(false)
+    // The rule itself, both ways: a row of a pack that has been built may keep its name, and no other row may take a catalogue id.
+    const ids = new Set(['bohrAtom', 'beaker'])
+    expect(idClash({ id: 'bohrAtom', kind: 'covered', covered: 'bohrAtom' }, ids)).toBe(false)
+    expect(idClash({ id: 'bohrAtom', kind: 'symbol', covered: null }, ids)).toBe(true)
+    expect(idClash({ id: 'bohrAtom', kind: 'covered', covered: 'beaker' }, ids)).toBe(true)
+    expect(idClash({ id: 'someNewRow', kind: 'symbol', covered: null }, ids)).toBe(false)
   })
 
   it('names a short pack in lowerCamelCase', () => {
@@ -123,6 +155,20 @@ describe('spec/diagrams.json: fields and values', () => {
       expect(r.proposedPack, r.id).toMatch(/^[a-z][A-Za-z]*$/)
       expect(r.proposedPack.length, r.id).toBeLessThanOrEqual(20)
     }
+  })
+
+  it('gives `tags`, when present, as a non-empty list from the fixed list with none twice', () => {
+    for (const r of rows) {
+      if (r.tags === undefined) continue
+      expect(Array.isArray(r.tags) && r.tags.length > 0, `${r.id}.tags`).toBe(true)
+      expect(new Set(r.tags).size, `${r.id} repeats a tag`).toBe(r.tags.length)
+      for (const t of r.tags) expect(TAGS, `${r.id} tag ${t}`).toContain(t)
+    }
+    for (const t of TAGS)
+      expect(
+        rows.some((r) => r.tags?.includes(t)),
+        `no row carries the tag ${t}`,
+      ).toBe(true)
   })
 })
 
@@ -136,10 +182,11 @@ describe('spec/diagrams.json: kinds, courses and levels', () => {
     }
   })
 
-  it('gives every chart row priority C or a note (charts are outside PracDraw until James decides)', () => {
+  it('gives every chart row priority C or a note of at least 20 characters (charts are outside PracDraw until James decides)', () => {
     const charts = rows.filter((r) => r.kind === 'chart')
     expect(charts.length).toBeGreaterThan(10)
-    for (const r of charts) expect(r.priority === 'C' || r.notes.trim() !== '', `${r.id} is a chart row with priority ${r.priority} and no note`).toBe(true)
+    for (const r of charts)
+      expect(r.priority === 'C' || r.notes.trim().length >= 20, `${r.id} is a chart row with priority ${r.priority} and no note of 20 characters`).toBe(true)
   })
 
   it('keeps chemistry rows full, with course codes, and KS5 rows to A-level 7405 and priority B or C', () => {
@@ -168,18 +215,24 @@ describe('spec/diagrams.json: kinds, courses and levels', () => {
     }
   })
 
-  it('has specification references of the form "<course code> <section number>" and none twice in a row', () => {
+  it('has specification references of the form "<course code> <section number>", none twice, each for a course that the row lists', () => {
     for (const r of rows) {
       expect(new Set(r.specRefs).size, `${r.id} repeats a reference`).toBe(r.specRefs.length)
-      for (const ref of r.specRefs) expect(ref, `${r.id}`).toMatch(/^(8461|8462|8463|8464|7405) \d+(\.\d+)*$/)
+      for (const ref of r.specRefs) {
+        expect(ref, `${r.id}`).toMatch(/^(8461|8462|8463|8464|7405) \d+(\.\d+)*$/)
+        expect(r.courses, `${r.id} has the reference ${ref}, but its courses do not include ${courseOf(r, ref.split(' ')[0])}`).toContain(
+          courseOf(r, ref.split(' ')[0]),
+        )
+      }
     }
   })
 
-  it('has https links as sources, an AQA link on every checked row and a revision-site link on every secondary row', () => {
+  it('has https links as sources, an AQA link on every checked row and on every row with a reference, and a revision-site link on every secondary row', () => {
     for (const r of rows) {
       for (const s of r.sources) expect(s, `${r.id} source`).toMatch(/^https:\/\/[^\s]+$/)
       expect(new Set(r.sources).size, `${r.id} repeats a source`).toBe(r.sources.length)
       if (r.confidence === 'checked') expect(r.sources.some(isAqa), `${r.id} is checked but cites no aqa.org.uk page`).toBe(true)
+      if (r.specRefs.length > 0) expect(r.sources.some(isAqa), `${r.id} has a specification reference but cites no aqa.org.uk page`).toBe(true)
       if (r.confidence === 'secondary')
         expect(
           r.sources.some((s) => !isAqa(s)),
@@ -187,53 +240,159 @@ describe('spec/diagrams.json: kinds, courses and levels', () => {
         ).toBe(true)
     }
   })
+
+  it('keeps the rows that lessons use but AQA does not name at priority C, and the geometry-brief rows among the symbols of priority A', () => {
+    const kept = rows.filter((r) => r.notes.startsWith(KEPT_NOTE))
+    expect(kept.length).toBeGreaterThan(0)
+    for (const r of kept) expect(r.priority, `${r.id} is kept because lessons use it, so it is priority C`).toBe('C')
+    const brief = rows.filter((r) => r.notes.includes(BRIEF_NOTE))
+    expect(brief.length).toBeGreaterThan(0)
+    for (const r of brief) expect(r.kind === 'symbol' && r.priority === 'A', `${r.id} needs a geometry brief, so it is a symbol of priority A`).toBe(true)
+  })
+
+  it('puts every row in exactly one step of the build order', () => {
+    const steps = stepRows(rows)
+    expect([...steps.values()].reduce((n, s) => n + s.length, 0)).toBe(rows.length)
+    for (const s of STEPS) expect(steps.get(s.n)?.length, `step ${s.n} picks no row`).toBeGreaterThan(0)
+  })
 })
 
 describe('docs/diagram-inventory.md agrees with the file', () => {
-  /** The "Counts" section: lines `| dimension | value | rows |`. */
-  const stated = (() => {
-    const section = doc.split(/^## /m).find((s) => s.startsWith('Counts')) ?? ''
-    const out: Record<string, Record<string, number>> = {}
-    for (const m of section.matchAll(/^\| (total|subject|level|kind|priority|confidence|pack) \| ([^|]+?) \| (\d+) \|$/gm)) {
-      ;(out[m[1]] ??= {})[m[2]] = Number(m[3])
-    }
-    return out
-  })()
-
-  it('states the counts that the file has', () => {
-    expect(stated.total, 'the Counts section has no total line').toBeDefined()
-    expect(stated.total?.rows).toBe(rows.length)
-    for (const key of ['subject', 'level', 'kind', 'priority', 'confidence'] as const) expect(stated[key], `Counts has no ${key} lines`).toEqual(count(key))
-    expect(stated.pack, 'Counts has no pack lines').toEqual(count('proposedPack'))
+  it('is exactly what `npm run gen:inventory` writes now', () => {
+    const made = generate(doc, data)
+    expect(
+      made === doc,
+      'docs/diagram-inventory.md differs from what gen-inventory writes from spec/diagrams.json now: run npm run gen:inventory (and edit the text outside the generated parts, not inside them)',
+    ).toBe(true)
+    expect(generate(made, data) === made, 'generating twice changes the document').toBe(true)
   })
 
-  /** The tables under "Rows by topic": lines `| `id` | name | kind | pack | priority | confidence | description |`. */
-  const listed = (() => {
-    const section = doc.split(/^## /m).find((s) => s.startsWith('Rows by topic')) ?? ''
-    const out = new Map<string, { kind: string; pack: string; priority: string; confidence: string; text: string }>()
-    for (const m of section.matchAll(/^\| `([A-Za-z0-9]+)` \| (.*?) \| (\w+) \| (\w+) \| ([ABC]) \| (\w+) \| (.*) \|$/gm)) {
-      out.set(m[1], { kind: m[3], pack: m[4], priority: m[5], confidence: m[6], text: m[7] })
-    }
-    return out
-  })()
+  it('has the sections in the agreed order, with the appendix last', () => {
+    expect([...doc.matchAll(/^## (.+)$/gm)].map((m) => m[1])).toEqual(HEADINGS)
+  })
 
-  it('lists every row once, with the kind, pack, priority and confidence of the file', () => {
-    expect([...listed.keys()].sort()).toEqual(rows.map((r) => r.id).sort())
-    for (const r of rows) {
-      const d = listed.get(r.id)
-      expect(d, r.id).toBeDefined()
-      if (!d) continue
-      expect(d.kind, `${r.id} kind`).toBe(r.kind)
-      expect(d.pack, `${r.id} pack`).toBe(r.proposedPack)
-      expect(d.priority, `${r.id} priority`).toBe(r.priority)
-      expect(d.confidence, `${r.id} confidence`).toBe(r.confidence)
-      if (r.covered) expect(d.text, `${r.id} should name the template or symbol that covers it`).toContain(`\`${r.covered}\``)
+  it('types no number about the rows by hand (a number comes from a generated part, or is a course code, a section, a step or a decision)', () => {
+    expect(proseNumbers(doc), 'numbers typed by hand in the text; make each one a <!-- gen:n.KEY --> part or reword').toEqual([])
+    // the check itself
+    expect(proseNumbers('The list has 287 rows.')).toHaveLength(1)
+    expect(proseNumbers('Steps 1 to 7 and decision 3 follow 7405 3.1.8.1 in KS4 on 9 October 2026, at 8 to 14 u.')).toEqual([])
+  })
+
+  it('names in backticks only ids that exist: rows, symbols, templates, Later symbols, packs, fields, tags and values', () => {
+    const ok = new Set<string>([
+      ...rows.map((r) => r.id),
+      ...known,
+      ...data.later,
+      ...rows.map((r) => r.proposedPack),
+      ...FIELDS,
+      ...TAGS,
+      ...CONFIDENCES,
+      ...KINDS,
+      'tags',
+      'exists',
+      'new',
+      'none',
+    ])
+    const prose = doc.replace(MARKER, ' ')
+    const dangling = [...prose.matchAll(/`([a-z][A-Za-z0-9]*)`/g)].map((m) => m[1]).filter((t) => !ok.has(t))
+    expect(dangling, 'ids in the text that are not rows, symbols, templates, packs, fields or tags').toEqual([])
+  })
+
+  it('has a paragraph for each step of the build order, and a recommendation under each decision', () => {
+    for (const s of STEPS) expect(doc, `no paragraph for step ${s.n}`).toContain(`- **Step ${s.n}.**`)
+    const decisions = doc
+      .slice(doc.indexOf('\n## Decisions for James'), doc.indexOf('\n## Build order'))
+      .split(/^\*\*(?=\d+\. )/m)
+      .slice(1)
+    expect(decisions.length).toBeGreaterThanOrEqual(8)
+    for (const d of decisions) {
+      expect(d, d.slice(0, 40)).toContain('Recommended:')
+      if (d.includes('(confirm)')) expect(d, d.slice(0, 40)).toContain('Recommended: yes')
     }
   })
 
-  it('has the sections that the brief asks for', () => {
-    for (const heading of ['Counts', 'Rows by topic', 'Build order', 'Decisions for James', 'Rows to check against the AQA PDF']) {
-      expect(doc, heading).toMatch(new RegExp(`^## ${heading}`, 'm'))
+  it('states the number of words that James reads as the document has them, to the nearest hundred', () => {
+    const stated = /\(about <!-- gen:n\.readWords -->([\d,]+)<!-- \/gen --> words\)/.exec(doc)?.[1]
+    expect(stated).toBeDefined()
+    expect(Number((stated ?? '').replace(',', ''))).toBe(readingWords(doc))
+  })
+})
+
+describe('the document test catches drift: each of these breaks fails the comparison', () => {
+  const copy = (): Data => structuredClone(data)
+  const rowOf = (d: Data, id: string): Row => {
+    const r = d.rows.find((x) => x.id === id)
+    if (!r) throw new Error(`no row ${id}`)
+    return r
+  }
+  /** A pair of the document and the data that disagree: the comparison of the test must fail on it. */
+  const breaks: [string, string, Data][] = []
+  const docBreak = (name: string, change: (d: string) => string): number => breaks.push([name, change(doc), data])
+  const dataBreak = (name: string, change: (d: Data) => void): number => {
+    const d = copy()
+    change(d)
+    return breaks.push([name, doc, d])
+  }
+
+  // 1 a number in the prose
+  docBreak('the total in the text is changed by hand', (d) => d.replace(/(<!-- gen:n\.total -->)\d+/, (_all, head: string) => `${head}999`))
+  // 2 a row name
+  dataBreak('a row is renamed', (d) => void (rowOf(d, 'bohrAtom').name += ' (renamed)'))
+  // 3 a row moved to another topic
+  dataBreak('a row moves to another topic', (d) => void (rowOf(d, 'bohrAtom').topic = 'Energy changes'))
+  // 4 a changed description
+  dataBreak('a description changes', (d) => void (rowOf(d, 'bohrAtom').draw = `Changed. ${rowOf(d, 'bohrAtom').draw}`))
+  // 5 a number in a decision
+  docBreak('a number in a decision is changed by hand', (d) => d.replace(/(<!-- gen:n\.tag\.3d -->)\d+/, (_all, head: string) => `${head}99`))
+  // 6 a pack count
+  dataBreak('a row moves to another pack', (d) => void (rowOf(d, 'bohrAtom').proposedPack = 'structures'))
+  // 7 a rows-to-check entry (in the file, and in the document)
+  dataBreak('a checked row of priority A becomes secondary', (d) => void (rowOf(d, 'bohrAtom').confidence = 'secondary'))
+  docBreak('a row is deleted from a rows-to-check table', (d) => d.replace(/^\| `heatingCurve` \|.*\n/m, ''))
+  // 8 a build-order cell
+  docBreak('a cell of the build-order table is changed by hand', (d) =>
+    d.replace(/^(\| 1 \| New templates \(KS4\) \| [^|]+\| )\d+/m, (_all, head: string) => `${head}99`),
+  )
+  // more
+  dataBreak('a row is added', (d) => void d.rows.push({ ...rowOf(d, 'bohrAtom'), id: 'aNewRow', name: 'A new row' }))
+  dataBreak(
+    'a row is removed',
+    (d) =>
+      void d.rows.splice(
+        d.rows.findIndex((r) => r.id === 'bohrAtom'),
+        1,
+      ),
+  )
+  dataBreak('a tag is removed', (d) => void delete rowOf(d, 'ionicLattice3D').tags)
+  dataBreak('a priority changes', (d) => void (rowOf(d, 'diamondStructure').priority = 'B'))
+  dataBreak('the note of a kept row changes', (d) => void (rowOf(d, 'blastFurnace').notes = 'Changed.'))
+  dataBreak('a row changes course', (d) => void (rowOf(d, 'haberProcess').courses = ['8464', '8462']))
+  docBreak('a table cell of the pack table is changed by hand', (d) =>
+    d.replace(/^(\| atoms \| chemistry \| new \| )\d+/m, (_all, head: string) => `${head}99`),
+  )
+  docBreak('a row is deleted by hand from the appendix', (d) => d.replace(/^\| `bohrAtom` \|.*\n/m, ''))
+  docBreak('a generated part is left empty', (d) => d.replace(/<!-- gen:counts -->[\s\S]*?<!-- \/gen -->/, '<!-- gen:counts --><!-- /gen -->'))
+
+  /** Whether the document made from the data is the text given. An error while making it counts as a disagreement. */
+  const agrees = (text: string, d: Data): boolean => {
+    try {
+      return generate(text, d) === text
+    } catch {
+      return false
     }
+  }
+  it('agrees for the real document and the real data (so that every break below is the break and nothing else)', () => {
+    expect(agrees(doc, data)).toBe(true)
+  })
+  for (const [name, text, d] of breaks) {
+    it(`fails when ${name}`, () => {
+      expect(agrees(text, d), `the comparison does not notice that ${name}`).toBe(false)
+    })
+  }
+
+  it('refuses a generated part that it does not know, or that is not closed', () => {
+    expect(() => generate('<!-- gen:n.nothing -->1<!-- /gen -->', data)).toThrow(/unknown number/)
+    expect(() => generate('<!-- gen:nothing --><!-- /gen -->', data)).toThrow(/unknown block/)
+    expect(() => generate('<!-- gen:n.total -->1', data)).toThrow(/not closed/)
   })
 })
