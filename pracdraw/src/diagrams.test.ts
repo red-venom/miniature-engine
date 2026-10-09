@@ -8,7 +8,6 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import catalogue from '../spec/catalogue.json'
 import inventory from '../spec/diagrams.json'
-import plan from '../spec/templates.json'
 import {
   BRIEF_NOTE,
   DOC_FILE,
@@ -25,14 +24,16 @@ import {
   type Row,
 } from '../scripts/gen-inventory'
 import { PACKS } from './editor/search'
+import { SYMBOLS } from './symbols/registry'
+import { TEMPLATES } from './templates'
 
 const rows = inventory as unknown as Row[]
 const doc = readFileSync(DOC_FILE, 'utf8')
 const data: Data = {
   rows,
-  symbols: catalogue.symbols.map((s) => s.id),
+  symbols: SYMBOLS.map((s) => s.id),
   later: catalogue.later.map((s) => s.id),
-  templates: plan.templates.map((t) => t.id),
+  templates: TEMPLATES.map((t) => t.id),
   packIds: PACKS.map((p) => p.id),
 }
 

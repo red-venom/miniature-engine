@@ -2,12 +2,16 @@
 // Authors add symbols to their pack file. Nobody needs to edit this file.
 
 import { annotation } from './annotation'
+import { atoms } from './atoms'
 import { biology } from './biology'
 import { circuit } from './circuit'
 import { containers } from './containers'
+import { dotcross } from './dotcross'
 import { electrochemistry } from './electrochemistry'
+import { energy } from './energy'
 import { filtering } from './filtering'
 import { heating } from './heating'
+import { matter } from './matter'
 import { measuring } from './measuring'
 import { organic } from './organic'
 import { physics } from './physics'
@@ -29,6 +33,10 @@ export const SYMBOLS: SymbolDef[] = [
   ...biology,
   ...circuit,
   ...annotation,
+  ...atoms,
+  ...dotcross,
+  ...matter,
+  ...energy,
 ]
 
 const byId = new Map(SYMBOLS.map((s) => [s.id, s]))

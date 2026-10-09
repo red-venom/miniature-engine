@@ -2,7 +2,7 @@
 
 # Symbols
 
-123 symbols in 11 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+123 symbols in 14 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -189,6 +189,21 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `indicatorPaper` | Indicator paper | litmus paper, pH paper, universal indicator paper | 14 × 60 | free, min 6 × 10 | colour: "red" or "blue" or "green" or "orange" or "yellow" or "purple", default "red" |  |  |  |
 | `magnesiumRibbon` | Metal ribbon | magnesium ribbon, magnesium strip | 60 × 12 | free, min 24 × 8 |  |  |  | label "magnesium ribbon" |
 
+## Atoms and ions
+
+| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+## Particles
+
+| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+## Energy
+
+| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
 ## Not drawn yet
 
-These 18 symbols are planned and are not in the editor, so a recipe cannot use them: Dropping bottle (containers), Petri dish (side view) (containers), Thiele tube (organic), Ground-glass stopper (organic), Tongs (support), Beehive shelf (support), Cork ring (support), Mortar and pestle (support), Ray box (physics), Glass block (physics), Lens (physics), Plane mirror (physics), Protractor (measuring), Visking tubing (biology), Potometer (biology), Forceps (biology), Scalpel (biology), Hazard symbols (9) (annotation).
+These 17 symbols are planned and are not in the editor, so a recipe cannot use them: Dropping bottle (containers), Petri dish (side view) (containers), Thiele tube (organic), Ground-glass stopper (organic), Tongs (support), Beehive shelf (support), Cork ring (support), Mortar and pestle (support), Ray box (physics), Glass block (physics), Lens (physics), Plane mirror (physics), Protractor (measuring), Visking tubing (biology), Potometer (biology), Forceps (biology), Scalpel (biology).

@@ -28,7 +28,7 @@ describe('searchSymbols', () => {
     expect(firstNotStarting === -1 || lastStarting < firstNotStarting).toBe(true)
     expect(b[0].name).toBe('Beaker')
   })
-  it('lists the eleven packs in the order of section 12', () => {
+  it('lists the packs in the order of section 12, with the particle packs after them', () => {
     expect(PACKS.map((p) => p.id)).toEqual([
       'containers',
       'measuring',
@@ -41,6 +41,9 @@ describe('searchSymbols', () => {
       'biology',
       'circuit',
       'annotation',
+      'atoms',
+      'matter',
+      'energy',
     ])
   })
 })

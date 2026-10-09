@@ -9,6 +9,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { PACKS } from '../src/editor/search.ts'
+import { SYMBOLS } from '../src/symbols/registry.ts'
+import { TEMPLATES } from '../src/templates/index.ts'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const DOC_FILE = resolve(ROOT, 'docs', 'diagram-inventory.md')
@@ -540,13 +542,14 @@ const json = <T>(file: string): T => JSON.parse(readFileSync(resolve(ROOT, 'spec
 
 /** The data that the document is made from, read from the files. */
 export function loadData(): Data {
-  const catalogue = json<{ symbols: { id: string }[]; later: { id: string }[] }>('catalogue.json')
-  const plan = json<{ templates: { id: string }[] }>('templates.json')
+  const catalogue = json<{ later: { id: string }[] }>('catalogue.json')
+  // What is built, not what is planned: a row may share its id with a symbol only when it is the covered row of that symbol, and a
+  // symbol that is planned but not built does not draw anything yet.
   return {
     rows: json<Row[]>('diagrams.json'),
-    symbols: catalogue.symbols.map((s) => s.id),
+    symbols: SYMBOLS.map((s) => s.id),
     later: catalogue.later.map((s) => s.id),
-    templates: plan.templates.map((t) => t.id),
+    templates: TEMPLATES.map((t) => t.id),
     packIds: PACKS.map((p) => p.id),
   }
 }

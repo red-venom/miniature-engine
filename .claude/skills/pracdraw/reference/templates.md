@@ -2,7 +2,7 @@
 
 # Templates
 
-43 ready-made set-ups. Look here first: if the request is one of these, `npm run render -- --template <id> --out <dir>` writes it, and `--explain` lists its parts with their anchors. A template is not a recipe: to change one, write a recipe of your own with the same symbols (`--template <id> --explain` gives the world position of every anchor, so that offsets can be copied).
+57 ready-made set-ups. Look here first: if the request is one of these, `npm run render -- --template <id> --out <dir>` writes it, and `--explain` lists its parts with their anchors. A template is not a recipe: to change one, write a recipe of your own with the same symbols (`--template <id> --explain` gives the world position of every anchor, so that offsets can be copied).
 
 Each entry gives the id, the title, the practicals it serves, the symbols it uses, and how it is set up.
 
@@ -165,6 +165,90 @@ Each entry gives the id, the title, the practicals it serves, the symbols it use
 - practicals: General
 - symbols: `heatproofMat`, `bunsenBurner`, `clampStand`, `bossClamp`, `boilingTube`, `bung`, `testTubeRack`, `testTube`
 - set-up: Boiling tube held by the clamp, sloping with its mouth a little higher than its closed end. Green powder at the closed end, above the Bunsen flame. One-hole bung. Delivery tube from the bung down into a test tube of limewater (Colourless solution 50 %, few bubbles) that stands in a rack (holes 3).
+
+### gasTests: Tests for common gases
+
+- practicals: GCSE 4.8.2; Trilogy 5.8.2
+- symbols: `testTube`, `splint`, `indicatorPaper`, `bung`, `testTubeRack`
+- set-up: Four small pictures in a row, each a test tube with a one-line result label under it: hydrogen (a lit splint at the mouth, 'squeaky pop'); oxygen (a glowing splint in the tube, 'relights'); carbon dioxide (a bung and delivery tube dipping into a second tube of limewater, 'turns cloudy', Cloudy preset); chlorine (damp litmus paper at the mouth of a tube of Pale green gas, 'bleached'). Tubes in a rack.
+
+### carbonateTest: Test for a carbonate
+
+- practicals: GCSE 4.8.2; A-level RP 4
+- symbols: `testTubeRack`, `testTube`, `dropper`, `bung`
+- set-up: A test tube of the solid carbonate (White powder) with dilute acid added from a dropper above it, bubbles few, a bung and a delivery tube dipping into a second test tube of limewater that is cloudy. Both tubes in a rack. Labels: carbonate, acid, delivery tube, limewater.
+
+### simpleCell: Simple cell
+
+- practicals: GCSE 4.5.2.1
+- symbols: `beaker`, `electrode`, `instrumentBox`, `crocodileClip`
+- set-up: A beaker of electrolyte (Colourless solution 60 %) with two different metal strips (the electrode symbol, metal strip, not touching). A crocodile clip on the top of each strip and wires to a meter box titled voltmeter with its two terminals. Plus and minus signs on the strips. Labels: the two metals, the electrolyte, the voltmeter.
+
+### rustingTubes: Rusting experiment
+
+- practicals: GCSE 4.10
+- symbols: `testTubeRack`, `testTube`, `nail`, `bung`
+- set-up: Four test tubes in a rack, each with an iron nail standing in it: tap water, open to the air; boiled water under a layer of oil (no air); anhydrous calcium chloride under a bung (no water); salt solution (rusts faster). Rust is not drawn on the nail: show it as a thin Orange-brown precipitate powder layer at the foot of tubes 1 and 4. Labels say what is in each tube and the result.
+
+### conductivityTest: Testing a substance for conduction
+
+- practicals: GCSE 4.2.2
+- symbols: `cCell`, `cLamp`, `electrode`, `beaker`, `crocodileClip`
+- set-up: A cell and a lamp in a circuit of wires with two carbon electrodes (the electrode symbol, dark role) dipping in a beaker of the sample (Colourless solution 60 %). The lamp has its lit marks when it conducts (use the lamp symbol as it is; the label says lit or unlit). Labels: carbon electrodes, solution, lamp, cell.
+
+### electrolysisMolten: Electrolysis of a molten compound
+
+- practicals: GCSE 4.4.3.2
+- symbols: `heatproofMat`, `bunsenBurner`, `tripod`, `pipeclayTriangle`, `crucible`, `clampStand`, `bossClamp`, `electrode`, `crocodileClip`, `powerSupply`
+- set-up: A crucible on a pipeclay triangle on a tripod over a Bunsen burner on a heatproof mat; the molten compound as a liquid layer (Yellow preset, 50 %). Two graphite electrodes held from a clamp stand, dipping in without touching each other or the bottom; crocodile clips and wires to a power supply. Label: do this in a fume cupboard.
+
+### groupOneWater: Group 1 metal in water
+
+- practicals: GCSE 4.1.2.4
+- symbols: `trough`, `irregularSolid`, `splint`
+- set-up: A trough of water (Water 60 %) with a small piece of metal (the irregularSolid symbol made small, pale grey) on the surface and a few bubbles (few) in the water under it. A burning splint above the bubbles. Labels: water, lithium (or the metal), hydrogen.
+
+### magnesiumInCrucible: Heating magnesium in a crucible
+
+- practicals: GCSE 4.3.1; Trilogy RP 1
+- symbols: `heatproofMat`, `bunsenBurner`, `tripod`, `pipeclayTriangle`, `crucible`, `magnesiumRibbon`
+- set-up: A lidded crucible on a pipeclay triangle on a tripod, a Bunsen burner under it with the blue flame, on a heatproof mat. A coil of magnesium ribbon inside the crucible. A label: lift the lid briefly to let air in. Labels: crucible, lid, magnesium, pipeclay triangle, Bunsen burner.
+
+### reversibleHeating: Heating hydrated copper sulfate
+
+- practicals: GCSE 4.6.2
+- symbols: `heatproofMat`, `bunsenBurner`, `boilingTube`, `testTubeHolder`, `dropper`
+- set-up: Left: a boiling tube held by a test-tube holder, sloping with its mouth lower than the closed end, blue crystals (Blue crystals preset) at the closed end, a Bunsen under them, droplets of water near the mouth. Right: the tube with white powder (White powder) and a dropper above it adding water. Labels: hydrated copper sulfate, anhydrous copper sulfate, water, dropper.
+
+### crackingApparatus: Cracking a hydrocarbon in the laboratory
+
+- practicals: GCSE 4.7.1.2
+- symbols: `heatproofMat`, `bunsenBurner`, `clampStand`, `bossClamp`, `boilingTube`, `cottonWool`, `bung`, `trough`, `testTube`
+- set-up: A boiling tube lying nearly level, held by a clamp, with mineral wool soaked in paraffin (the cottonWool symbol) at the closed end and pieces of catalyst (Chips or granules preset) in the middle, heated strongly by a Bunsen burner on a heatproof mat. A bung and a delivery tube lead to a trough of water; a test tube full of water stands upside down over the end of the tube to collect the gas. A label says to take the delivery tube out of the water before stopping the heating.
+
+### fermentationApparatus: Fermentation of a sugar solution
+
+- practicals: GCSE 4.7.2.2
+- symbols: `beaker`, `conicalFlask`, `bung`, `testTube`, `thermometer`
+- set-up: A conical flask of sugar solution and yeast (Cloudy yellow 40 %, bubbles few) closed with a bung and a delivery tube that dips into limewater (cloudy) in a test tube; the flask stands in a beaker of warm water with a thermometer in it (35 degrees). Labels: yeast and sugar solution, delivery tube, limewater, warm water.
+
+### combustionProducts: Products of burning a fuel
+
+- practicals: GCSE 4.7.1; Trilogy 5.7.1
+- symbols: `spiritBurner`, `filterFunnel`, `clampStand`, `bossClamp`, `uTube`, `beaker`, `testTube`, `bung`
+- set-up: A spirit burner under an upside-down filter funnel held by a clamp stand. A tube from the funnel to a U-tube standing in a beaker of ice and water (a liquid collects in its bend), a second tube to a test tube of limewater (turning cloudy), and the end of the line labelled: to a pump. Labels: fuel, funnel, ice, condensate, limewater, to pump.
+
+### fractionalDistillationLab: Fractional distillation in the laboratory
+
+- practicals: GCSE 4.7.1.1; Trilogy 5.7.1
+- symbols: `heatingMantle`, `roundBottomFlask`, `fractionatingColumn`, `stillHead`, `thermometerAdaptor`, `thermometer`, `liebigCondenser`, `receiverAdaptor`, `conicalFlask`, `clampStand`, `bossClamp`
+- set-up: As the distillation template with a fractionating column (packed with beads, the fractionatingColumn symbol) between the flask and the still head: a round-bottomed flask in a heating mantle, the column above it, still head with the thermometer in its adaptor (bulb level with the side arm), a Liebig condenser sloping down (water in at the lower port), a receiver adaptor and a collecting flask. Labels: fractionating column, thermometer, condenser, water in, water out, collected liquid.
+
+### gasCollection: Collecting a gas by delivery
+
+- practicals: GCSE 4.8.2
+- symbols: `conicalFlask`, `bung`, `gasJar`, `lid`
+- set-up: Two small set-ups, each a conical flask with a bung and a delivery tube. Downward delivery: an upright gas jar with the tube reaching the bottom (for a gas denser than air, label: carbon dioxide). Upward delivery: an upside-down gas jar with the tube reaching the top (for a gas less dense than air, label: hydrogen), with a lid under it. Collection over water and with a gas syringe are the templates rateGasOverWater and rateGasSyringe.
 
 ## Biology
 

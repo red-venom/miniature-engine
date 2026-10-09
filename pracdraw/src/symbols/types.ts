@@ -111,7 +111,20 @@ export type ParamDef =
   | { key: string; label: string; type: 'text'; default: string }
 
 export type PackId =
-  'containers' | 'measuring' | 'heating' | 'support' | 'filtering' | 'organic' | 'electrochemistry' | 'physics' | 'biology' | 'circuit' | 'annotation'
+  | 'containers'
+  | 'measuring'
+  | 'heating'
+  | 'support'
+  | 'filtering'
+  | 'organic'
+  | 'electrochemistry'
+  | 'physics'
+  | 'biology'
+  | 'circuit'
+  | 'annotation'
+  | 'atoms'
+  | 'matter'
+  | 'energy'
 
 export type ResizeMode = 'free' | 'uniform' | 'width' | 'height' | 'none'
 

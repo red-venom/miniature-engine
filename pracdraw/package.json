@@ -21,7 +21,8 @@
     "progress": "tsx scripts/progress.ts",
     "release:a": "RELEASE=A vitest run src/spec.test.ts",
     "release:a:symbols": "RELEASE=A vitest run src/spec.test.ts -t \"symbols match the catalogue\"",
-    "release:b": "RELEASE=B vitest run src/spec.test.ts"
+    "release:b": "RELEASE=B vitest run src/spec.test.ts",
+    "release:c": "RELEASE=C vitest run src/spec.test.ts"
   },
   "dependencies": {
     "react": "^19.2.8",

@@ -76,6 +76,7 @@ Release 1.0 is the editor, 96 symbols and 40 templates. Release 1.1 adds 27 symb
 | --- | --- | --- |
 | 1.0 | The editor (sections 9 to 13). All priority A symbols: 96, of which 18 are in the kit. All priority A templates: 40, of which 1 is in the kit. | `npm run check` and `npm run release:a` pass. The phase 10 gate passes. |
 | 1.1 | Priority B symbols: 27. Priority B templates: 3. | `npm run release:b` passes. |
+| 1.2 | The particle packs of the diagram inventory (`docs/diagram-inventory.md`): atoms and ions, the particle box and the small symbols of phases 14 and 15; the molecule and structure packs follow when James has approved the pilot sheet. Priority C in the catalogue. | `npm run release:c` passes. Every item has a reviewer pass. |
 | Later | The 18 items in the "Later" table of the Symbol catalogue tab. | Not part of this build. |
 
 Release 1.0 has a template for 20 of the 21 AQA Combined Science: Trilogy required practicals and for all 12 A-level Chemistry required practicals. The exception is Trilogy practical 6 (reaction time), which has no apparatus set-up to draw. Two Trilogy practicals are covered in part: practical 13 has the distillation but not the pH and dissolved-solids tests, and practical 17 has the irregular solid and the liquid but not the regular solid.
@@ -83,8 +84,9 @@ Release 1.0 has a template for 20 of the 21 AQA Combined Science: Trilogy requir
 These are out of scope for both releases. Do not build them.
 
 - Accounts, cloud storage, sharing links, live collaboration.
-- 3D views, animation, pouring liquids.
-- Skeletal formulae, graphs, tables.
+- Animation, pouring liquids.
+- 3D views, except the oblique projection of rule S14 in the structure and molecule packs of release 1.2.
+- Skeletal formulae, graphs, tables. (Displayed formulae, which draw every atom and every bond, are in scope for the molecule packs of release 1.2.)
 - Phone layouts. The minimum window is 900 × 600 px.
 - Import of the user's own symbols or pictures.
 - A dark canvas. Other languages.
@@ -97,19 +99,20 @@ Every symbol must look as if the same hand drew it. The reference picture below 
 
 | Rule | Text |
 | --- | --- |
-| S1 | Section view. Glass is one line. Vessels are open at the top. No wall thickness, no shading, no perspective. |
+| S1 | Section view. Glass is one line. Vessels are open at the top. No wall thickness, no shading, no perspective. The one exception is rule S14: a structure that is three-dimensional by nature is drawn in the oblique projection. |
 | S2 | Three line weights: main 2 u (outlines, wires), heavy 3 u (tripod top, clamp jaws), detail 1.25 u (graduations, small parts, leaders, liquid surfaces). Colour #111111. Round caps and joins. |
 | S3 | Line thickness never scales. A resized symbol is redrawn at the new size. |
 | S4 | Glass corners are rounded, radius 3 to 16 u. Three things stay sharp: rims, cut stem ends, and the join of a straight taper (a funnel cone to its stem, a burette to its jet). |
 | S5 | Rims turn out 2.5 to 5 u on test tubes, flasks and beakers. |
-| S6 | Apparatus is black line on white. Rubber is grey #c9c9c9. Carbon and masses are dark grey #4a4a4a. Only contents, flames and test colours (indicator paper, chromatography spots, spotting-tile wells) have colour. |
+| S6 | Apparatus is black line on white. Rubber is grey #c9c9c9. Carbon and masses are dark grey #4a4a4a. Only contents, flames and test colours (indicator paper, chromatography spots, spotting-tile wells) have colour. In the particle packs, particles and regions that a key tells apart have a light-grey tint #e4e4e4 (role `tint`); photocopy-safe mode draws them white with hatch lines (role `hatch`) instead. A solid dot is role `ink`. |
 | S7 | A liquid is one flat pale tint with a 1.25 u surface line. No gradients and no highlights. |
 | S8 | A symmetric object is exactly symmetric about x = 0. |
 | S9 | Parts fit at default size. Shared sizes: neck and mouth 34 u, glass tube 7 u, bung hole 9 u. A ground-glass socket is 34 u wide at its mouth. A cone is 34 u wide at its shoulder and narrows to 28 u over 24 u. |
 | S10 | Draw the parts a student would label, and nothing more. |
-| S11 | Text inside a symbol is only scale numbers, meter letters, readings, terminal signs and short fixed words (the heat arrow, a meter title). Arial, 8 to 14 u. |
+| S11 | Text inside a symbol is only scale numbers, meter letters, readings, terminal signs and short fixed words (the heat arrow, a meter title). Arial, 8 to 14 u. The particle, molecule and structure packs may also put element symbols, charges and numbers inside a symbol, Arial 12 to 18 u, with indices in the label markup (`Na^+`, `Cl^-`, `O_2`). |
 | S12 | Photocopy-safe mode must stay readable. No meaning may depend on colour alone. |
 | S13 | Joined glassware that is heated (reflux, distillation) is open to the air at exactly one point. Every joint is drawn sealed, with no gap. |
+| S14 | A structure that is three-dimensional by nature (a crystal lattice, a cage, a ball-and-stick model) is drawn in one oblique projection (cabinet): the front face is true shape; the depth axis runs up and to the right at 45° and is drawn at half its true length; lines that are hidden are dashed (role `dashed`); atoms and ions are plain circles with no shading (S1), told apart by size and by tint or hatch (S6). No perspective. |
 
 A reviewer checks each symbol against this list on the four contact sheets: plain, filled, photocopy-safe and turned, and anchors. The reviewer is never the author.
 
@@ -282,6 +285,9 @@ A symbol never names a line width, and it names a colour only as a `tint`. It gi
 | `paper` | white fill, no line | glass parts that are not a cavity but must hide what is behind |
 | `solid` | 2 u line, white fill | metal, wood, plastic |
 | `rubber` | 2 u line, grey fill | bungs, mats, teats |
+| `tint` | 2 u line, light-grey fill #e4e4e4 (white when photocopy-safe) | particles, atoms and regions that a key tells apart. Pair it with a `hatch` prim of the same shape (`hatchD` in `src/kernel/hatch.ts` draws the lines). |
+| `hatch` | 1 u hairlines, drawn in photocopy-safe mode only | the stand-in for a tint on a photocopy |
+| `ink` | solid ink fill, no line, in both modes | electron dots, small markers |
 | `dark` | 2 u line, dark grey fill (black when photocopy-safe) | carbon rods, masses |
 | `flame`, `flameCore` | 1.25 u line, pale blue fill or the part's `tint` (white when photocopy-safe) | flames. A luminous flame (safety flame, spirit burner, burning splint) sets the tint #f7d26a, which `pilots.ts` exports as `SAFETY_FLAME`. |
 | `mesh` | 4.5 u dashed line | gauze |
@@ -382,7 +388,9 @@ A symbol with a `scale` shows a "Reading" field when it is upright (`rot` = 0, n
 | Black powder | powder | #5a5a5a |
 | Green powder (copper carbonate) | powder | #9fcfae |
 | Blue precipitate (copper(II) hydroxide) | powder | #8fbfe8 |
+| Pale green precipitate (iron(II) hydroxide) | powder | #b9d6a3 |
 | Orange-brown precipitate (iron(III) hydroxide) | powder | #c9824a |
+| Pink-brown deposit (copper) | powder | #c58a63 |
 | Cream precipitate (silver bromide) | powder | #f3ecd0 |
 | Yellow precipitate (silver iodide) | powder | #f2e26b |
 | Brick-red precipitate (Benedict's test) | powder | #c8553d |
@@ -765,6 +773,10 @@ Every gate also needs `npm run check` to be green.
 | 9. Templates A | The 39 remaining priority A templates. Visual review. | `npm run release:a` passes. Every template has a reviewer pass. Browser test `gallery-inserts-template`. |
 | 10. Release 1.0 | Empty state, help, touch, access, budgets, user README, final build. | Browser tests `job-1` to `job-5` for the five jobs in section 2, `drag-budget`, `keyboard-only`, `controls-have-names`. The budgets in section 6. `REPORT.md`. |
 | 11. Release 1.1 | 27 priority B symbols and 3 priority B templates. | `npm run release:b` passes. Every item has a reviewer pass. |
+| 12. Lesson pipeline | The recipe format and compiler, the layout checks, `npm run render`, hook options, the `pracdraw` skill (`docs/lesson-pipeline.md`). | Gate review of 11 gate tests; an acceptance run of five lesson diagrams from the skill alone; two visual rounds. See `REPORT.md` section 9. |
+| 13. Diagram inventory | `spec/diagrams.json`, `docs/diagram-inventory.md` (generated by `npm run gen:inventory`), `src/diagrams.test.ts`. | Two reviewers; the document equals what the generator writes. |
+| 14. Groundwork for the particle packs | The `tint`, `hatch` and `ink` roles, the hatch helper, rules S1, S6, S11 and S14, the packs `atoms`, `matter` and `energy`, the element data, `release:c`. | `npm run check` passes; no existing picture changes. |
+| 15. Particle packs, first wave | Atoms and ions, the particle box, the small symbols and 14 apparatus templates of the inventory (steps 1 to 4). | `npm run release:c` passes. Every item has a reviewer pass. A pilot sheet of four structure pictures for James. |
 
 These gate tests need a definition. The names of the others say what they test.
 

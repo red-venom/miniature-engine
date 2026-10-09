@@ -9,6 +9,7 @@ Releases 1.0 and 1.1 were built by a lead agent with sub-agents, as section 15 o
 | `reviewer.md` | A visual reviewer of symbols and templates | The reviewer never changes code. It writes one line for each symbol or template. |
 | `editor.md` | The track E agent (editor, model, export, UI, browser tests) | One agent at a time. |
 | `gate-reviewer.md` | A reviewer of gate tests | Checks that each test proves what the specification says. |
+| `geometry-brief.md` | A template that the lead fills in for a hard picture | One page: parts and counts, the construction, the projection, the edges, the fills, the parameters, the checks. Written before an author draws it. |
 | `inventory-author.md` | An author of the diagram inventory (`spec/diagrams.json`) | Research only: no drawing code. Rows are added to the file and the document is written by `npm run gen:inventory`. |
 | `inventory-reviewer.md` | A reviewer of the inventory | Two reviewers share five jobs: the test, the document and pack-readiness; coverage and row accuracy. |
 
