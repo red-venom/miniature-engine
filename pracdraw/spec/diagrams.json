@@ -21,7 +21,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table"
     ],
     "confidence": "secondary",
-    "notes": "The same particle box serves the states-of-matter row (particleStates): one symbol with two uses."
+    "notes": "The same particle box serves the states-of-matter row (particleStates): one symbol with two uses.",
+    "tags": ["fill"]
   },
   {
     "id": "atomModels",
@@ -45,7 +46,8 @@
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/developing-a-model-for-atoms"
     ],
     "confidence": "checked",
-    "notes": "Read in the AQA summary of 4.1.1.3. A search summary also reported an AQA paper that asks which diagram shows the plum pudding model; I could not tell which paper, so it is not listed as a source. The AQA pages were read through the search tool, not as the PDF."
+    "notes": "Read in the AQA summary of 4.1.1.3. A search summary also reported an AQA paper that asks which diagram shows the plum pudding model; I could not tell which paper, so it is not listed as a source. The AQA pages were read through the search tool, not as the PDF.",
+    "tags": ["fill"]
   },
   {
     "id": "alphaScattering",
@@ -95,7 +97,8 @@
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/modern-periodic-table-and-electron-configuration"
     ],
     "confidence": "checked",
-    "notes": "4.1.1.7 asks for the first twenty elements as numbers and as a diagram. The AQA wording was read through the search tool."
+    "notes": "4.1.1.7 asks for the first twenty elements as numbers and as a diagram. The AQA wording was read through the search tool.",
+    "tags": ["symbolText"]
   },
   {
     "id": "ionShell",
@@ -119,7 +122,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": "Same engine as bohrAtom. The brackets and charge are the marks examiners look for."
+    "notes": "Same engine as bohrAtom. The brackets and charge are the marks examiners look for.",
+    "tags": ["dotCross", "symbolText"]
   },
   {
     "id": "nuclideNotation",
@@ -143,7 +147,8 @@
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/isotopes-and-relative-atomic-mass"
     ],
     "confidence": "secondary",
-    "notes": "AQA 4.1.1.5 asks students to work out the particle numbers from the two numbers; the exact AQA figure was not visible in the text I read."
+    "notes": "AQA 4.1.1.5 asks students to work out the particle numbers from the two numbers; the exact AQA figure was not visible in the text I read. A symbol, not a label feature: it draws its own small text, so the label markup needs no stacked-index form. The text inside it is larger than rule S11 allows (see the text decision).",
+    "tags": ["symbolText"]
   },
   {
     "id": "isotopeNuclei",
@@ -190,7 +195,8 @@
       "https://www.docbrown.info/page03/3_34ptable.htm"
     ],
     "confidence": "checked",
-    "notes": "It is a table, but a fixed 118-cell layout with highlight parameters, so it is classed as a symbol, not a chart. James to confirm."
+    "notes": "It is a table, but a fixed 118-cell layout with highlight parameters, so it is classed as a symbol, not a chart. James to confirm. Needs a verified data file of the 118 elements (symbol, atomic number, name, relative atomic mass, group, period, block) in spec/elements.json, and the list of cell pairs that the stepped divider runs between; the drawing and the data are best built separately.",
+    "tags": ["fill", "symbolText"]
   },
   {
     "id": "mendeleevTable",
@@ -374,11 +380,11 @@
     "topic": "Bonding, structure and the properties of matter",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bonding",
+    "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "Two forms. Transfer: the metal atom and the non-metal atom as circles for their outer shells, the metal's electrons as dots and the non-metal's as crosses, with curved arrows showing the electrons moving across. Ions: each ion inside large square brackets with its charge top right outside them; the metal ion shows its full inner shell only (or no outer electrons), the non-metal ion a full outer shell of dots and crosses. For MgCl2 or Na2O the second ion is drawn beside the first with the ratio visible. Inner shells are optional and, when drawn, appear as plain circles.",
-    "params": "metal (Li | Na | K | Mg | Ca), non-metal (O | S | F | Cl | Br), stage (transfer | ions), show inner shells (boolean), mark style (dot and cross | all dots)",
+    "draw": "Two forms. Transfer: the metal atom and the non-metal atom as circles for their outer shells, the metal's electrons as dots and the non-metal's as crosses, with curved arrows showing the electrons moving across. Ions: each ion inside large square brackets with its charge top right outside them; the metal ion shows no outer electrons (its inner shells are optional and ignored in marking), the non-metal ion a full outer shell of dots and crosses. For MgCl2 or Na2O the second ion is drawn beside the first with the ratio visible. Inner shells are optional and, when drawn, appear as plain circles.",
+    "params": "metal (Li | Na | K | Mg | Ca), non-metal (O | S | F | Cl | Br), stage (transfer | ions), show inner shells (boolean), marks (dot and cross, the default | another pair of clearly different marks)",
     "scienceChecks": "Electrons lost by the metal atoms equal electrons gained by the non-metal atoms. Each ion has the electron structure of a noble gas. The charge follows the group number (group 1 +1, group 2 +2, group 6 -2, group 7 -1). The numbers of ions give a neutral compound.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter",
@@ -386,7 +392,8 @@
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/structure-and-bonding/lessons/giant-ionic-structures"
     ],
     "confidence": "checked",
-    "notes": "AQA 4.2.1.2 limits the examples to Group 1 and 2 metals with Group 6 and 7 non-metals. Brackets and charges are what a mark scheme rewards. Decision for James: whether every picture uses dots for one atom and crosses for the other, and whether another pair of marks is allowed for photocopy-safe prints."
+    "notes": "AQA 4.2.1.2 limits the examples to Group 1 and 2 metals with Group 6 and 7 non-metals. A second reader found no AQA mark scheme text that shows square brackets, so that brackets and charges are what a mark scheme rewards is unconfirmed; the AQA mark schemes seen credit the transfer statements and the ion charges. See the dot-and-cross decision for James: the recommended default is dots for one atom and crosses for the other, all in black, so that no second version is needed.",
+    "tags": ["dotCross", "symbolText"]
   },
   {
     "id": "covalentDotCross",
@@ -398,11 +405,11 @@
     "topic": "Bonding, structure and the properties of matter",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bonding",
+    "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "One circle for the outer shell of each atom, overlapping where atoms are bonded. Each shared pair sits in the overlap as one dot and one cross. The other outer electrons of each atom stay on its own circle as dots or crosses, with lone pairs drawn as pairs. The central atom is in the middle for H2O, NH3, CH4 and CO2. Double and triple bonds have two and three pairs in the overlap. Inner shells are never drawn. A second layout puts the atoms apart with the shared pairs between them.",
-    "params": "molecule (H2 | Cl2 | O2 | N2 | HCl | H2O | NH3 | CH4 are the eight in the specification; CO2 | HF | F2 | C2H4 | C2H6 as extras), layout (overlapping circles | circles apart), mark style (dot and cross | all dots)",
+    "draw": "One circle for the outer shell of each atom, overlapping where atoms are bonded. Each shared pair sits in the overlap as one dot and one cross. The other outer electrons of each atom stay on its own circle as dots or crosses, with lone pairs drawn as pairs. The central atom is in the middle for H2O, NH3, CH4 and CO2; C2H4 and C2H6 have two central carbon atoms side by side, each with its hydrogens around it. Double and triple bonds have two and three pairs in the overlap. Inner shells are never drawn. A second layout puts the atoms apart with the shared pairs between them. Marks: the central atom (or the first atom of the formula) uses crosses and the atoms bonded to it use dots, and in a molecule of two identical atoms one atom uses dots and the other crosses, all in black, so that a picture is photocopy-safe without a second version.",
+    "params": "molecule from the small-molecule library, which is named here and shared by displayedFormulaSmall, ballAndStickModel and balancedEquationModels: H2, Cl2, O2, N2, HCl, H2O, NH3 and CH4 (the eight in the specification), and CO2, HF, F2, C2H4 and C2H6 as extras; layout (overlapping circles | circles apart); marks (dot and cross, the default | another pair of clearly different marks)",
     "scienceChecks": "Every atom ends with a full outer shell (2 for hydrogen, 8 for the others). The shared pairs equal the usual valency (H 1, Cl 1, O 2, N 3, C 4). The total outer electrons equal the sum over the atoms (8 for H2O, 8 for NH3, 8 for CH4). Lone pairs are shown. Each shared pair has one dot and one cross.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter",
@@ -411,7 +418,8 @@
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-ocr/units/structure-and-bonding/lessons/forming-covalent-bonds"
     ],
     "confidence": "checked",
-    "notes": "AQA names eight molecules. Examiners expect lone pairs to be shown. A dot-and-cross shows no shape; that limitation is part of the specification."
+    "notes": "AQA names eight molecules. Examiners expect lone pairs to be shown. A dot-and-cross shows no shape; that limitation is part of the specification. AQA wording, as a second reader's search summary reports it for 4.2.1.2: use different symbols for the electrons of each atom (dots and crosses, or any clearly distinguished marks), show the outer shell electrons only, and inner shells are ignored in marking. Needs a geometry brief before it is built. The brief must give the atoms and bond orders of every molecule in both layouts, the circle radius and the width of the overlap for bond order 1 to 3, and the electron positions in the overlap and on the free arc.",
+    "tags": ["dotCross", "symbolText"]
   },
   {
     "id": "displayedFormulaSmall",
@@ -426,8 +434,8 @@
     "proposedPack": "molecules",
     "priority": "A",
     "detail": "full",
-    "draw": "Atom symbols in 15 u text joined by single lines, double lines or triple lines, laid out flat with the bonds at right angles or at 120 degrees (the 2D convention, not the real shape). Hydrogen atoms are shown. Used for H2, HCl, H2O, NH3, CH4, CO2, N2, O2 and the first alkanes.",
-    "params": "molecule (from a list of 12 small molecules), show lone pairs (boolean), show the molecular formula under it (boolean)",
+    "draw": "Atom symbols in 15 u text joined by single lines, double lines or triple lines, laid out flat with the bonds at right angles or at 120 degrees (the 2D convention, not the real shape). Hydrogen atoms are shown. Draws the molecules of the small-molecule library named in covalentDotCross; the alkanes are in displayedFormulaHydrocarbon.",
+    "params": "molecule (from the small-molecule library named in covalentDotCross), show lone pairs (boolean), show the molecular formula under it (boolean)",
     "scienceChecks": "Each atom has the number of bonds of its valency (H 1, O 2, N 3, C 4, Cl 1). The count of each element equals the molecular formula. Double and triple bonds drawn as two and three parallel lines.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter",
@@ -435,7 +443,8 @@
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/2-bonds-structure-and-properties-of-matter/2-1-ionic-covalent-and-metallic-bond/2-1-4-covalent-bonding/"
     ],
     "confidence": "checked",
-    "notes": "The same bond graph also feeds the ball-and-stick and the organic displayed-formula rows. One molecule engine, several drawings."
+    "notes": "The same bond graph also feeds the ball-and-stick and the organic displayed-formula rows. One molecule engine, several drawings. Same engine as displayedFormulaHydrocarbon and displayedFormulaFunctional.",
+    "tags": ["symbolText"]
   },
   {
     "id": "ballAndStickModel",
@@ -451,7 +460,7 @@
     "priority": "A",
     "detail": "full",
     "draw": "Spheres joined by sticks, drawn as circles with a small highlight line (no shading, no gradient, S7) and sticks as two parallel lines in an oblique view. Methane tetrahedral, ammonia pyramidal, water bent, carbon dioxide linear, hydrogen chloride two balls on one stick. Atoms are told apart by size and by a hatch or grey fill, with a key (symbol and fill) beside the model.",
-    "params": "molecule (from the list of 12 small molecules), view (front | oblique), show key (boolean), show element labels on the balls (boolean)",
+    "params": "molecule (from the small-molecule library named in covalentDotCross), view (front | oblique), show key (boolean), show element labels on the balls (boolean)",
     "scienceChecks": "The number of balls of each element equals the formula. Each ball has its valency of sticks. Bond angles in the model: 109.5 for CH4, about 107 for NH3, about 104.5 for H2O, 180 for CO2 (HCl has one bond, so it has no bond angle). Key matches the fills used.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter",
@@ -459,7 +468,8 @@
       "https://www.docbrown.info/page04/4_72bond3h.htm"
     ],
     "confidence": "checked",
-    "notes": "AQA asks students to name limitations of ball-and-stick models (the sticks suggest physical links, sizes are not to scale). Decision for James: how a 3D model is drawn in a 2D line style (oblique projection)."
+    "notes": "AQA asks students to name limitations of ball-and-stick models (the sticks suggest physical links, sizes are not to scale). Decision for James: how a 3D model is drawn in a 2D line style (oblique projection).",
+    "tags": ["3d", "fill", "symbolText"]
   },
   {
     "id": "spaceFillingModel",
@@ -479,7 +489,8 @@
     "scienceChecks": "The number of circles of each element equals the formula. Circle sizes follow the relative sizes of the atoms (H smaller than O smaller than Cl).",
     "sources": ["https://www.docbrown.info/page04/4_72bond1d.htm"],
     "confidence": "secondary",
-    "notes": "Not named in the AQA specification; kept because lessons use it. AQA 4.2.1.4 names dot-and-cross, ball-and-stick and 2D and 3D models only; the space-filling model appears beside them when students compare models."
+    "notes": "Not named in the AQA specification; kept because lessons use it. AQA 4.2.1.4 names dot-and-cross, ball-and-stick and 2D and 3D models only; the space-filling model appears beside them when students compare models.",
+    "tags": ["fill"]
   },
   {
     "id": "ionicLattice2D",
@@ -503,7 +514,8 @@
       "https://www.chemguide.co.uk/atoms/structures/ionicstruct.html"
     ],
     "confidence": "checked",
-    "notes": "AQA names only sodium chloride, but asks students to deduce the formula from a diagram."
+    "notes": "AQA names only sodium chloride, but asks students to deduce the formula from a diagram.",
+    "tags": ["symbolText"]
   },
   {
     "id": "ionicLattice3D",
@@ -529,7 +541,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": "Decision for James: the style of 3D structures in a 2D line drawing. Oblique projection with dashed hidden lines is proposed; the same projection serves diamond, ice and iodine. A-level 7405 3.1.3.4 names this structure among those students draw with a stated number of particles, so the extent parameter must be exact."
+    "notes": "Decision for James: the style of 3D structures in a 2D line drawing. Oblique projection with dashed hidden lines is proposed; the same projection serves diamond, ice and iodine. A-level 7405 3.1.3.4 names this structure among those students draw with a stated number of particles, so the extent parameter must be exact.",
+    "tags": ["3d", "symbolText"]
   },
   {
     "id": "metallicBonding",
@@ -577,7 +590,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "",
+    "tags": ["fill"]
   },
   {
     "id": "diamondStructure",
@@ -602,7 +616,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "The specification asks students to explain the properties of diamond, not to draw it; exam figures still show it for recognition. A-level 7405 3.1.3.4 names this structure among those students draw with a stated number of particles, so the extent parameter must be exact."
+    "notes": "The specification asks students to explain the properties of diamond, not to draw it; exam figures still show it for recognition. A-level 7405 3.1.3.4 names this structure among those students draw with a stated number of particles, so the extent parameter must be exact. Needs a geometry brief before it is built. The brief must say what the cluster of 14 is (the cubic cell has 18 atoms: 8 at the corners, 6 at the face centres and 4 inside), give the oblique projection numbers, the rule for atoms that project onto each other and for rear bonds (lighter or dashed), the stub length and direction, and the layout of the flat network.",
+    "tags": ["3d"]
   },
   {
     "id": "graphiteStructure",
@@ -617,9 +632,9 @@
     "proposedPack": "structures",
     "priority": "A",
     "detail": "full",
-    "draw": "Three stacked layers drawn as flat parallelograms in oblique view, each a network of carbon hexagons with atoms at the corners. The top layer is fully drawn, the lower ones are simpler. The gap between layers has dotted lines for the weak forces. Optional dots above one layer for the delocalised electrons. Labels: layer, weak forces, delocalised electron.",
-    "params": "layers (2 to 4), hexagons per layer shown (4 to 7), show weak forces (boolean), show delocalised electrons (boolean)",
-    "scienceChecks": "Every atom in a layer has three bonds at 120 degrees and every ring has six atoms. The spacing between layers is clearly larger than a bond. The weak forces are dotted or dashed, never drawn as bonds.",
+    "draw": "Three stacked layers (the default; the parameter allows 2 to 4), each drawn as a flat parallelogram patch of the hexagon net in oblique view with an atom at every corner. Edge atoms end in short stubs, as in diamond, to show that the net goes on. The top layer is drawn in full and the layers below show the same patch in lighter lines (the hidden-line role). The gap between layers has dotted lines for the weak forces. Optional dots above one layer for the delocalised electrons. Labels: layer, weak forces, delocalised electron.",
+    "params": "layers (2 to 4, default 3), patch (2 by 2 = 4 hexagons | 2 by 3 = 6 hexagons | 3 by 3 = 9 hexagons), show weak forces (boolean), show delocalised electrons (boolean)",
+    "scienceChecks": "Every atom inside a patch has three bonds at 120 degrees, and an edge atom has two bonds and a stub. Every ring has six atoms. The spacing between layers is clearly larger than a bond. The weak forces are dotted or dashed, never drawn as bonds.",
     "sources": [
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/chemistry-of-carbon/lessons/diamond-and-graphite",
       "https://www.docbrown.info/page04/4_72bond4b.htm",
@@ -627,7 +642,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "A-level 7405 3.1.3.4 names this structure among those students draw with a stated number of particles, so the extent parameter must be exact."
+    "notes": "A-level 7405 3.1.3.4 names this structure among those students draw with a stated number of particles, so the extent parameter must be exact. Needs a geometry brief before it is built. The brief must give the oblique transform, the number and position of the dotted weak-force lines and of the delocalised-electron dots, and the layer offset (a straight stack or each layer shifted). Graphene, graphite and the nanotube share one hexagon-net generator: build graphene first.",
+    "tags": ["3d"]
   },
   {
     "id": "grapheneSheet",
@@ -666,8 +682,8 @@
     "proposedPack": "structures",
     "priority": "A",
     "detail": "full",
-    "draw": "A ball of 60 carbon atoms joined by lines: 12 pentagons and 20 hexagons, each pentagon surrounded by hexagons. Two views: the visible hemisphere with the rear half in a lighter line, or a flat Schlegel-style network with the outer face as the big outline. Label 'C60'. Hollow.",
-    "params": "view (ball | flat network), show atoms (boolean), shade the pentagons (boolean)",
+    "draw": "A ball of 60 carbon atoms joined by lines: 12 pentagons and 20 hexagons, each pentagon surrounded by hexagons. One view: the visible hemisphere with the rear half in a lighter line (the hidden-line role). Label 'C60'. Hollow.",
+    "params": "show atoms (boolean), shade the pentagons (boolean)",
     "scienceChecks": "60 vertices, 90 edges, 12 pentagons and 20 hexagons (the vertices minus the edges plus the faces equal 2). Every atom has three bonds. Each pentagon touches only hexagons.",
     "sources": [
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-foundation-aqa/units/chemistry-of-carbon/lessons/graphene-and-fullerenes",
@@ -675,7 +691,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": "The hardest of the carbon pictures to draw by hand; it should be a generated symbol, not hand-edited."
+    "notes": "The hardest of the carbon pictures to draw by hand; it should be a generated symbol, not hand-edited. Needs a geometry brief before it is built. The brief must give the 60 vertices (a truncated icosahedron), the view direction, the hidden-line rule for the rear half, and how the pentagons are shaded (a fill role). A flat Schlegel view was dropped from this row: no source seen shows it and it needs a second algorithm (a planar embedding). A 2022 Higher paper showed C70, so a table that holds only C60 cannot draw every fullerene a paper shows (unchecked).",
+    "tags": ["3d", "fill"]
   },
   {
     "id": "carbonNanotube",
@@ -699,7 +716,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "",
+    "tags": ["3d"]
   },
   {
     "id": "silicaStructure",
@@ -722,7 +740,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "",
+    "tags": ["3d", "fill"]
   },
   {
     "id": "polymerChains",
@@ -734,7 +753,7 @@
     "topic": "Bonding, structure and the properties of matter",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "structures",
+    "proposedPack": "molecules",
     "priority": "B",
     "detail": "full",
     "draw": "Several long zig-zag chains of carbon atoms side by side, with hydrogen stubs. Linear chains (HDPE) lie close and parallel. Branched chains (LDPE) have short side chains that keep neighbours apart. Cross-linked chains (thermosetting) have short bridges between chains. Dotted lines between chains show the weak forces. Optional repeating unit in square brackets.",
@@ -781,7 +800,7 @@
     "topic": "Bonding, structure and the properties of matter",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "matter",
+    "proposedPack": "structures",
     "priority": "B",
     "detail": "full",
     "draw": "Cubes of side 1, 2 and 3 units (or one cube cut into 8 smaller cubes) in an oblique view, with grid squares on the visible faces, the side length on an edge, and a line of text under each giving the surface area, the volume and the ratio. The same cubes show why a powder reacts faster than a lump.",
@@ -794,7 +813,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": "4.2.4 may be chemistry only (not in Trilogy). Course membership is from my memory of the chemistry-only labels and should be checked. The same drawing serves the surface-area factor in rates."
+    "notes": "4.2.4 may be chemistry only (not in Trilogy). Course membership is from my memory of the chemistry-only labels and should be checked. The same drawing serves the surface-area factor in rates.",
+    "tags": ["3d"]
   },
   {
     "id": "sizeScaleLadder",
@@ -908,7 +928,8 @@
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/calculations-involving-masses/lessons/conservation-of-mass"
     ],
     "confidence": "secondary",
-    "notes": "Uses the ball-and-stick engine of the molecules pack."
+    "notes": "Uses the ball-and-stick engine of the molecules pack.",
+    "tags": ["fill"]
   },
   {
     "id": "limitingReactantModels",
@@ -928,7 +949,8 @@
     "scienceChecks": "Products formed = the smallest of (available divided by coefficient) times the product coefficient. Leftover counts are not negative. Atoms are conserved from the before box to the after box. Worked example: 6 H2 and 3 N2 give 4 NH3 with 1 N2 left over. Two N2 need exactly 6 H2, so 6 H2 with 2 N2 leaves nothing over and is not a limiting-reactant picture.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Higher Tier idea; the picture is from memory of how teachers show it. The AQA search summary names limiting reactants but not a diagram."
+    "notes": "Higher Tier idea; the picture is from memory of how teachers show it. The AQA search summary names limiting reactants but not a diagram.",
+    "tags": ["fill"]
   },
   {
     "id": "concentrationParticles",
@@ -1120,7 +1142,7 @@
     "topic": "Chemical changes",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "plants",
     "priority": "C",
     "detail": "full",
     "draw": "A tall furnace outline, wide in the middle and narrower at top and bottom. Inlets: iron ore, coke and limestone at the top, hot air blown in near the bottom. Outlets: waste gases at the top, molten slag (the lighter layer) and molten iron (the heavier layer) tapped at the bottom. Temperature rises downwards (arrows). Key reactions as labels: carbon burns to carbon dioxide; carbon dioxide and carbon give carbon monoxide; iron(III) oxide and carbon monoxide give iron and carbon dioxide; limestone breaks down and the calcium oxide forms slag with silica.",
@@ -1167,7 +1189,7 @@
     "topic": "Chemical changes",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "analysis",
+    "proposedPack": "annotation",
     "priority": "A",
     "detail": "full",
     "draw": "A horizontal strip divided into 15 cells numbered 0 to 14, coloured red, orange, yellow, green (7) then blue and purple, with a bracket for acidic below 7, neutral at 7 and alkaline above 7. Optional examples at their positions (lemon juice, water, soap, bleach). Colours are test colours; every cell also carries its number so the picture survives photocopying.",
@@ -1305,7 +1327,7 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.4.3.3"],
     "topic": "Chemical changes",
-    "kind": "process",
+    "kind": "compound",
     "covered": null,
     "proposedPack": "cells",
     "priority": "A",
@@ -1642,7 +1664,8 @@
       "https://www.docbrown.info/page03/3_31rates2.htm"
     ],
     "confidence": "secondary",
-    "notes": "AQA defines equilibrium as equal forward and reverse rates in a closed system. The picture form is a teaching convention."
+    "notes": "AQA defines equilibrium as equal forward and reverse rates in a closed system. The picture form is a teaching convention.",
+    "tags": ["fill"]
   },
   {
     "id": "equilibriumConcentrationGraph",
@@ -1743,7 +1766,7 @@
     "topic": "Organic chemistry",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "plants",
     "priority": "A",
     "detail": "full",
     "draw": "A tall column drawn as a vertical rectangle with horizontal trays, hot at the bottom and cool at the top (a temperature arrow). Crude oil is heated in a furnace and the vapour enters near the bottom. Pipes on the right take off fractions at different heights: refinery gases at the top, then petrol, naphtha, kerosene, diesel oil, fuel oil, and bitumen at the bottom. Beside the pipes, arrows for the trends: boiling point, chain length and viscosity increase downwards; flammability increases upwards.",
@@ -1766,7 +1789,7 @@
     "courses": ["8464", "8462", "7405"],
     "specRefs": [],
     "topic": "Organic chemistry",
-    "kind": "compound",
+    "kind": "symbol",
     "covered": null,
     "proposedPack": "molecules",
     "priority": "A",
@@ -1781,7 +1804,8 @@
       "https://www.docbrown.info/page04/OilProducts05.htm"
     ],
     "confidence": "checked",
-    "notes": "AQA asks for fully displayed formulae of the first four alkenes. The same engine serves A-level, which adds skeletal formulae. Unverified: whether Trilogy (8464) requires displayed formulae of alkenes. The requirement read is in 8462 4.7.2.1, which is chemistry only; 8464 stays in the courses because displayed alkanes are asked in both."
+    "notes": "AQA asks for fully displayed formulae of the first four alkenes. The same engine serves A-level, which adds skeletal formulae. Unverified: whether Trilogy (8464) requires displayed formulae of alkenes. The requirement read is in 8462 4.7.2.1, which is chemistry only; 8464 stays in the courses because displayed alkanes are asked in both. One engine with displayedFormulaSmall and displayedFormulaFunctional: a molecule library of bond graphs, drawn as displayed formulae; the three rows differ in the families they list.",
+    "tags": ["symbolText"]
   },
   {
     "id": "displayedFormulaFunctional",
@@ -1791,7 +1815,7 @@
     "courses": ["8462", "7405"],
     "specRefs": [],
     "topic": "Organic chemistry",
-    "kind": "compound",
+    "kind": "symbol",
     "covered": null,
     "proposedPack": "molecules",
     "priority": "A",
@@ -1805,7 +1829,8 @@
       "https://www.docbrown.info/page04/OilProducts03.htm"
     ],
     "confidence": "checked",
-    "notes": "Chemistry only in 8462 (4.7.2). AQA asks students to complete a part-drawn ethanol formula and to circle an alcohol group."
+    "notes": "Chemistry only in 8462 (4.7.2). AQA asks students to complete a part-drawn ethanol formula and to circle an alcohol group. One engine with displayedFormulaSmall and displayedFormulaHydrocarbon (a molecule library of bond graphs).",
+    "tags": ["symbolText"]
   },
   {
     "id": "esterDisplayed",
@@ -2089,7 +2114,7 @@
     "topic": "Organic chemistry",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "Boxes joined by arrows: crude oil, fractional distillation, long-chain fractions, cracking, alkenes and shorter alkanes, polymerisation, polymers. Each arrow is labelled with the process. An exam mark scheme lists these three stages in order.",
@@ -2250,7 +2275,7 @@
     "topic": "Chemical analysis",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "analysis",
+    "proposedPack": "annotation",
     "priority": "B",
     "detail": "full",
     "draw": "Five Bunsen flames side by side, each with the flame colour of one metal ion and the name below: lithium crimson, sodium yellow, potassium lilac, calcium orange-red, copper green. Colours are test colours (S6). Each flame also has its colour written under it so that the picture survives photocopying.",
@@ -2339,7 +2364,7 @@
     "topic": "Chemical analysis",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "A flow chart of tests with boxes and yes/no arrows: flame test, then sodium hydroxide, then the acid tests for carbonate, halide and sulfate, ending in the ions identified. A student completes it from observations.",
@@ -2429,7 +2454,7 @@
     "topic": "Chemistry of the atmosphere",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "scenes",
     "priority": "A",
     "detail": "full",
     "draw": "The Sun at the top, the Earth's surface at the bottom and a band for the atmosphere across the middle. Arrows: short-wave radiation from the Sun passing through the atmosphere to the surface; long-wave (infrared) radiation leaving the surface upwards; part of it absorbed by the greenhouse gases in the band and re-emitted in all directions, some back down to the surface, some out to space. Labels: carbon dioxide, methane, water vapour; the temperature of the surface rising. A second panel with more greenhouse gas has a thicker band and more arrows returning.",
@@ -2477,7 +2502,7 @@
     "topic": "Chemistry of the atmosphere",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "scenes",
     "priority": "B",
     "detail": "full",
     "draw": "A power station or car on the left burning a fuel, with sulfur dioxide and oxides of nitrogen rising into a cloud; the gases dissolve in water droplets; rain falls on a limestone building, a lake and trees. Each arrow is labelled with the change (sulfur dioxide from sulfur in fuel, nitrogen oxides from nitrogen and oxygen at a high temperature, dissolving to make acid).",
@@ -2501,7 +2526,7 @@
     "topic": "Chemistry of the atmosphere",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "plants",
     "priority": "C",
     "detail": "full",
     "draw": "A tube cut away to show a honeycomb ceramic block coated with a metal catalyst, exhaust gases entering on the left (carbon monoxide, oxides of nitrogen, unburnt hydrocarbons) and cleaner gases leaving on the right (carbon dioxide, nitrogen, water). Arrows and labels only.",
@@ -2521,7 +2546,7 @@
     "topic": "Chemistry of the atmosphere",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "Two short chains of boxes and arrows. First: dead plankton and plants buried under sediment, then heat and pressure over millions of years, then crude oil, natural gas and coal. Second: shells and skeletons of sea creatures settling, then compressing and cementing, then limestone (calcium carbonate). A note that the carbon dioxide taken from the air was locked in these stores.",
@@ -2541,7 +2566,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "A",
     "detail": "full",
     "draw": "A flow diagram from left to right: a fresh water source (a reservoir or river), screening to remove large objects, a settling tank (sedimentation), filter beds of sand and gravel, then sterilising with chlorine (or ozone or ultraviolet light), then a storage tower and supply. Each stage is a labelled box with an arrow, and a short note on what it removes: large objects, solids, microbes.",
@@ -2566,7 +2591,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "plants",
     "priority": "B",
     "detail": "full",
     "draw": "Salt water enters on the left, passes a high-pressure pump and meets a membrane drawn as a dashed barrier across a pipe. Fresh water leaves on one side of the membrane and a more concentrated salt solution (brine) leaves on the other. Optional particle dots: salt ions held back, water molecules passing through. A label says the process needs a lot of energy.",
@@ -2589,7 +2614,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "A",
     "detail": "full",
     "draw": "A flow chart with two branches. Raw sewage goes to screening and grit removal, then to sedimentation. The settled sewage sludge goes down one branch to anaerobic digestion; the liquid effluent goes along the other to aerobic biological treatment, then is released. Each box labelled, with arrows.",
@@ -2613,7 +2638,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "B",
     "detail": "full",
     "draw": "Boxes and arrows: plants grown on soil with a low metal content, the plants absorb metal compounds, the plants are harvested, burned, giving ash that contains metal compounds, and the metal is extracted from the ash (by displacement or by electrolysis). A small plant icon in the first box.",
@@ -2638,7 +2663,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "B",
     "detail": "full",
     "draw": "Boxes and arrows: low-grade copper ore, bacteria added, a leachate solution containing metal compounds is produced, and the metal is extracted from the leachate (displacement or electrolysis). A small bacteria icon.",
@@ -2663,7 +2688,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "B",
     "detail": "full",
     "draw": "A cycle or a row of four boxes: extracting and processing raw materials, manufacturing and packaging, use and operation during the lifetime, disposal at the end of life (with recycling feeding back to the first box). Each box has space for a note or a number for energy, water, waste and carbon dioxide.",
@@ -2709,7 +2734,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "A loop of boxes: collect, sort, melt or reprocess, manufacture a new product, use, collect again. Arrows labelled with energy saved against extraction from ore.",
@@ -2753,7 +2778,7 @@
     "topic": "Using resources",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "structures",
+    "proposedPack": "cells",
     "priority": "B",
     "detail": "full",
     "draw": "Sacrificial protection: part of a steel hull or pipe with a block of zinc (or magnesium) attached by a metal contact and an arrow showing the zinc dissolving instead of the iron. Galvanising: a cross-section of iron with a layer of zinc on top, a scratch down to the iron, and a note that the zinc still protects. A comparison with a tin coating, where the barrier fails when scratched, is optional.",
@@ -2785,7 +2810,8 @@
     "scienceChecks": "The reinforcement sits inside the matrix and does not touch the surface in the cut-away.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Nice-to-have. AQA's text lists composites among materials; I did not see a diagram requirement."
+    "notes": "Nice-to-have. AQA's text lists composites among materials; I did not see a diagram requirement.",
+    "tags": ["fill"]
   },
   {
     "id": "haberProcess",
@@ -2797,7 +2823,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "A",
     "detail": "full",
     "draw": "Boxes and arrows from left to right: hydrogen (from natural gas) and nitrogen (from the air) in the ratio 3 to 1 enter a compressor, then the reactor (iron catalyst, about 450 degrees C, about 200 atmospheres), then a cooler or condenser where ammonia liquefies and is taken off at the bottom. A return pipe carries unreacted nitrogen and hydrogen back to the compressor. The equation N2 + 3H2 reversible arrow 2NH3 is written under the reactor.",
@@ -2822,7 +2848,7 @@
     "topic": "Using resources",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "Boxes and arrows: ammonia reacting with nitric acid to give ammonium nitrate; phosphate rock treated with nitric, sulfuric or phosphoric acid to give soluble phosphates; potassium chloride or sulfate from mining; the three combined into an NPK fertiliser. Each box labelled with the nutrient (N, P or K).",
@@ -2863,12 +2889,12 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Bonding, structure and the properties of matter",
-    "kind": "symbol",
+    "kind": "compound",
     "covered": null,
-    "proposedPack": "structures",
+    "proposedPack": "molecules",
     "priority": "B",
     "detail": "full",
-    "draw": "Four to six small molecules (methane, water, carbon dioxide or iodine) arranged in a loose pattern. The covalent bonds inside each molecule are solid lines. The weak forces between neighbouring molecules are dotted lines with the label 'weak forces between molecules'. A second picture of a giant covalent structure beside it, with only solid lines, for comparison.",
+    "draw": "Four to eight small molecules (methane, water, carbon dioxide or iodine) arranged in a loose pattern. The covalent bonds inside each molecule are solid lines. The weak forces between neighbouring molecules are dotted lines with the label 'weak forces between molecules'. A second picture of a giant covalent structure beside it, with only solid lines, for comparison.",
     "params": "molecule (methane | water | carbon dioxide | iodine | ammonia), molecules shown (4 to 8), compare with a giant structure (boolean)",
     "scienceChecks": "Bonds inside a molecule are solid lines and forces between molecules are dotted. The atom counts of each molecule match its formula. The molecules do not overlap.",
     "sources": [
@@ -2877,7 +2903,8 @@
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/2-bonds-structure-and-properties-of-matter/2-1-ionic-covalent-and-metallic-bond/2-1-4-covalent-bonding/"
     ],
     "confidence": "secondary",
-    "notes": "Explains why simple molecular substances melt and boil at low temperatures. Uses the ball-and-stick engine."
+    "notes": "Explains why simple molecular substances melt and boil at low temperatures. Uses the ball-and-stick engine.",
+    "tags": ["fill"]
   },
   {
     "id": "hazardSymbols",
@@ -2897,7 +2924,8 @@
     "scienceChecks": "There are nine pictograms. Each has a distinct inner picture and the diamond outline. The name matches the picture.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Not named in the AQA specification; kept because lessons use it. Students identify rather than draw hazard symbols. Already in the Later table of the catalogue (hazardSymbols). A red border would break the black-line rule (S6); see the colour decision for James. From memory."
+    "notes": "Not named in the AQA specification; kept because lessons use it. Students identify rather than draw hazard symbols. Already in the Later table of the catalogue (hazardSymbols). A red border would break the black-line rule (S6); see the colour decision for James. From memory.",
+    "tags": ["hazard"]
   },
   {
     "id": "heatingLiquidBeaker",
@@ -2932,7 +2960,7 @@
     "topic": "Physical chemistry (A-level)",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "B",
     "detail": "full",
     "draw": "A block diagram from left to right: sample inlet, ionisation (electron gun or electrospray), acceleration between charged plates, a long flight tube kept under vacuum, a detector, then a data system. Two ion paths of different mass are drawn with arrival marks, the lighter one arriving first. Each block has its name and a one-line job.",
@@ -2990,7 +3018,8 @@
       "https://www.docbrown.info/page07/ASA2ptable2a.htm"
     ],
     "confidence": "unverified",
-    "notes": "AQA asks for the configurations of atoms and ions up to Z = 36 in terms of shells and sub-shells. No AQA text read by either reader says that box diagrams are required; teachers use them for Hund's rule. Lowered to unverified."
+    "notes": "AQA asks for the configurations of atoms and ions up to Z = 36 in terms of shells and sub-shells. No AQA text read by either reader says that box diagrams are required; teachers use them for Hund's rule. Lowered to unverified.",
+    "tags": ["symbolText"]
   },
   {
     "id": "subshellEnergyLevels",
@@ -3002,7 +3031,7 @@
     "topic": "Physical chemistry (A-level)",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "energy",
+    "proposedPack": "atoms",
     "priority": "C",
     "detail": "full",
     "draw": "A vertical energy ladder with a short line for each sub-shell, ordered 1s, 2s, 2p, 3s, 3p, 4s, 3d, 4p, the gaps shrinking upwards so that 4s sits below 3d. Arrows for electrons on the lines for the chosen element.",
@@ -3013,7 +3042,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "",
+    "tags": ["symbolText"]
   },
   {
     "id": "orbitalShapes",
@@ -3033,7 +3063,8 @@
     "scienceChecks": "The three p orbitals are at right angles. An s orbital is spherical. The lobes of a p orbital are equal in size and touch at the nucleus.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Neither reader could confirm whether the AQA 7405 text asks students to draw orbital shapes. Teachers draw them when explaining sigma and pi bonds."
+    "notes": "Neither reader could confirm whether the AQA 7405 text asks students to draw orbital shapes. Teachers draw them when explaining sigma and pi bonds.",
+    "tags": ["3d"]
   },
   {
     "id": "ionisationEnergyGraph",
@@ -3068,11 +3099,11 @@
     "topic": "Physical chemistry (A-level)",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bonding",
+    "proposedPack": "atoms",
     "priority": "B",
     "detail": "full",
     "draw": "As the GCSE covalent dot-and-cross, but for ions and molecules with a dative bond: both electrons of the shared pair come from the donor and are drawn with the same mark; in a displayed formula the dative bond is an arrow pointing away from the donor. Examples: ammonium, oxonium, ammonia-boron trifluoride, carbon monoxide, aluminium chloride dimer. Expanded octets: sulfur hexafluoride (12 electrons), phosphorus pentachloride (10) and electron-deficient boron trifluoride (6). Ions are in square brackets with the charge.",
-    "params": "species (NH4+ | H3O+ | NH3BF3 | CO | Al2Cl6 | SF6 | PCl5 | BF3 | BeCl2), mark style (dot and cross | all dots), show dative arrow (boolean)",
+    "params": "species (NH4+ | H3O+ | NH3BF3 | CO | Al2Cl6 | SF6 | PCl5 | BF3 | BeCl2), marks (dot and cross, the default | another pair of clearly different marks), show dative arrow (boolean)",
     "scienceChecks": "Total valence electrons equal the sum of the atoms minus the charge. A dative bond has both electrons from one atom. The central atom has the electron count that its species shows (8, 10, 12, 6, or 4 for BeCl2). The ion charge appears outside the brackets.",
     "sources": [
       "https://www.chemguide.co.uk/atoms/bonding/dative.html",
@@ -3080,7 +3111,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "Same engine as covalentDotCross with a dative-bond option."
+    "notes": "Same engine as covalentDotCross with a dative-bond option.",
+    "tags": ["dotCross", "symbolText"]
   },
   {
     "id": "vseprShapes",
@@ -3104,7 +3136,8 @@
       "https://meacock.docbrown.info/page06/molecule_shapes.htm"
     ],
     "confidence": "checked",
-    "notes": "AQA asks students to deduce shapes of familiar and unfamiliar species with up to six electron pairs and draws POCl3 and ClF4- in exams."
+    "notes": "AQA asks students to deduce shapes of familiar and unfamiliar species with up to six electron pairs and draws POCl3 and ClF4- in exams.",
+    "tags": ["wedge", "symbolText"]
   },
   {
     "id": "bondPolarityDipoles",
@@ -3127,7 +3160,8 @@
       "https://www.savemyexams.com/a-level/chemistry/aqa/17/revision-notes/1-physical-chemistry/1-5-molecules-shapes-and-forces/1-5-3-types-of-forces-between-molecules/"
     ],
     "confidence": "checked",
-    "notes": "AQA asks students to use partial charges to show that a bond is polar."
+    "notes": "AQA asks students to use partial charges to show that a bond is polar.",
+    "tags": ["wedge"]
   },
   {
     "id": "intermolecularForceDiagrams",
@@ -3176,7 +3210,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "AQA lists ice among the structures students draw with specified numbers of particles."
+    "notes": "AQA lists ice among the structures students draw with specified numbers of particles.",
+    "tags": ["3d"]
   },
   {
     "id": "iodineLattice",
@@ -3200,7 +3235,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "In AQA's list of structures to draw. The exact crystal pattern drawn in mark schemes was not seen."
+    "notes": "In AQA's list of structures to draw. The exact crystal pattern drawn in mark schemes was not seen.",
+    "tags": ["3d"]
   },
   {
     "id": "magnesiumLattice",
@@ -3224,7 +3260,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "The GCSE metallicBonding row draws the simple version."
+    "notes": "The GCSE metallicBonding row draws the simple version.",
+    "tags": ["3d", "symbolText"]
   },
   {
     "id": "hessCycle",
@@ -3549,7 +3586,8 @@
     "scienceChecks": "P4 has four atoms, six bonds, each atom with three bonds. S8 has eight atoms in a ring, each with two bonds. The ring is not flat.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Needed to explain the melting points of the Period 3 non-metals. From memory; not seen in a source."
+    "notes": "Needed to explain the melting points of the Period 3 non-metals. From memory; not seen in a source.",
+    "tags": ["3d"]
   },
   {
     "id": "oxoacidStructures",
@@ -3572,7 +3610,8 @@
       "https://filestore.aqa.org.uk/resources/chemistry/specifications/AQA-7404-7405-SP-2015.PDF"
     ],
     "confidence": "checked",
-    "notes": "AQA says students must know the structures of the acids and anions formed when P4O10, SO2 and SO3 react with water."
+    "notes": "AQA says students must know the structures of the acids and anions formed when P4O10, SO2 and SO3 react with water.",
+    "tags": ["wedge"]
   },
   {
     "id": "p4o10Cage",
@@ -3592,7 +3631,8 @@
     "scienceChecks": "Four P and ten O atoms. Each P has three bridging O and one terminal O (four bonds counting the double bond). Each bridging O joins two P.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Nice-to-have. From memory."
+    "notes": "Nice-to-have. From memory.",
+    "tags": ["3d", "fill"]
   },
   {
     "id": "complexIonShapes",
@@ -3617,7 +3657,8 @@
       "https://www.savemyexams.com/a-level/chemistry/aqa/17/revision-notes/6-advanced-inorganic-chemistry-a-level-only/6-2-transition-metals-a-level-only/6-2-3-shapes-of-complex-ions/"
     ],
     "confidence": "checked",
-    "notes": "AQA mark schemes award marks for 6-coordinate and 4-coordinate diagrams. Large ligands such as chloride give tetrahedral complexes with four ligands."
+    "notes": "AQA mark schemes award marks for 6-coordinate and 4-coordinate diagrams. Large ligands such as chloride give tetrahedral complexes with four ligands.",
+    "tags": ["wedge", "symbolText"]
   },
   {
     "id": "ligandStructures",
@@ -3667,7 +3708,8 @@
       "https://www.savemyexams.com/a-level/chemistry/edexcel/17/revision-notes/6-advanced-inorganic-chemistry/6-2-principles-of-transition-metal-chemistry/6-2-7-cis-platin/"
     ],
     "confidence": "checked",
-    "notes": "AQA mark schemes award marks for cis and trans diagrams for square planar and octahedral complexes and describe cisplatin as the cis isomer."
+    "notes": "AQA mark schemes award marks for cis and trans diagrams for square planar and octahedral complexes and describe cisplatin as the cis isomer.",
+    "tags": ["wedge"]
   },
   {
     "id": "dOrbitalSplitting",
@@ -3703,7 +3745,7 @@
     "topic": "Inorganic chemistry (A-level)",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "A light source, a filter of the complementary colour, a cuvette with the sample, a detector and a meter in a row, with arrows for the light beam. Beside it a calibration graph of absorbance against concentration, a straight line through the origin, with the reading for an unknown marked.",
@@ -3723,7 +3765,7 @@
     "topic": "Inorganic chemistry (A-level)",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "molecules",
     "priority": "C",
     "detail": "full",
     "draw": "Three or four panels from left to right: reactant molecules approaching a row of metal atoms; the molecules adsorbed on the surface with their bonds weakened (dotted); the reaction on the surface; product molecules leaving the surface. Optional fifth panel: a poison blocking active sites. Arrows between the panels.",
@@ -3746,7 +3788,7 @@
     "topic": "Inorganic chemistry (A-level)",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "A branching scheme: the hexaaqua ion in the centre, an arrow with sodium hydroxide to the neutral hydroxide precipitate (colour and formula), a further arrow with excess hydroxide or ammonia to a dissolved complex (for aluminium, copper, iron(III)). Each species has its formula, charge and colour. For Cu2+, Fe2+, Fe3+ and Al3+.",
@@ -3777,7 +3819,8 @@
     "scienceChecks": "The 3+ ion has a larger charge-to-size ratio and gives the more acidic solution. The hydrolysis equation balances in atoms and charge.",
     "sources": ["https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/inorganic-chemistry"],
     "confidence": "unverified",
-    "notes": "AQA asks students to explain the acidity in terms of the charge-to-size ratio; the picture form is a teaching convention from memory."
+    "notes": "AQA asks students to explain the acidity in terms of the charge-to-size ratio; the picture form is a teaching convention from memory.",
+    "tags": ["wedge"]
   },
   {
     "id": "redoxTitrationManganate",
@@ -3820,7 +3863,8 @@
       "https://filestore.aqa.org.uk/resources/chemistry/specifications/AQA-7404-7405-SP-2015.PDF"
     ],
     "confidence": "checked",
-    "notes": "Skeletal formulae are out of scope in section 4 of the specification, so this is a decision for James. AQA asks students to draw structural, displayed and skeletal formulae from names and to name from drawings."
+    "notes": "Skeletal formulae are out of scope in section 4 of the specification, so this is a decision for James. AQA asks students to draw structural, displayed and skeletal formulae from names and to name from drawings.",
+    "tags": ["skeletal", "wedge"]
   },
   {
     "id": "structuralIsomers",
@@ -3843,7 +3887,8 @@
       "https://filestore.aqa.org.uk/resources/chemistry/specifications/AQA-7404-7405-SP-2015.PDF"
     ],
     "confidence": "checked",
-    "notes": "Uses the skeletal formula engine."
+    "notes": "Uses the skeletal formula engine.",
+    "tags": ["skeletal"]
   },
   {
     "id": "ezIsomers",
@@ -3867,7 +3912,8 @@
       "https://www.chemguide.co.uk/basicorg/isomerism/geometric.html"
     ],
     "confidence": "checked",
-    "notes": "An AQA paper asks students to draw the E and Z forms of a structural isomer of C5H10O that shows both E/Z and optical isomerism."
+    "notes": "An AQA paper asks students to draw the E and Z forms of a structural isomer of C5H10O that shows both E/Z and optical isomerism.",
+    "tags": ["skeletal"]
   },
   {
     "id": "opticalIsomers",
@@ -3891,7 +3937,8 @@
       "https://www.savemyexams.com/a-level/chemistry/cie/25/revision-notes/29-an-introduction-to-a-level-organic-chemistry/29-4-isomerism-optical/optical-isomers/"
     ],
     "confidence": "checked",
-    "notes": "AQA says students draw 3D representations of chiral centres and explain racemic mixtures."
+    "notes": "AQA says students draw 3D representations of chiral centres and explain racemic mixtures.",
+    "tags": ["wedge"]
   },
   {
     "id": "curlyArrow",
@@ -3915,7 +3962,8 @@
       "https://www.docbrown.info/page06/OrgMechsIntro.htm"
     ],
     "confidence": "checked",
-    "notes": "A new kind of connector for the editor (section 10 of the specification has four kinds, none of them curved). AQA says radical mechanisms need a dot for the unpaired electron and do not need curly arrows."
+    "notes": "Not a symbol: it needs a new connector kind in the editor (the lead's work; the specification lists four connector kinds and none is curved), and the whole mechanisms pack waits on it. The wedge and dash bond is the second editor task. AQA says radical mechanisms need a dot for the unpaired electron and do not need curly arrows.",
+    "tags": ["curlyArrow"]
   },
   {
     "id": "mechanismRadicalSubstitution",
@@ -3939,7 +3987,8 @@
       "https://www.docbrown.info/page06/OrgMechsIntro.htm"
     ],
     "confidence": "checked",
-    "notes": ""
+    "notes": "",
+    "tags": ["mechanism"]
   },
   {
     "id": "mechanismElectrophilicAddition",
@@ -3963,7 +4012,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "Listed in the AQA text as one of the mechanisms; the detail drawn is the usual textbook form."
+    "notes": "Listed in the AQA text as one of the mechanisms; the detail drawn is the usual textbook form.",
+    "tags": ["curlyArrow", "mechanism"]
   },
   {
     "id": "mechanismNucleophilicSubstitution",
@@ -3988,7 +4038,8 @@
       "https://www.docbrown.info/page06/halogenoalkanes4.htm"
     ],
     "confidence": "secondary",
-    "notes": "AQA 3.3.3.1 says to outline the mechanisms of nucleophilic substitution with hydroxide, cyanide and ammonia; the extracts read by two readers name neither SN1 nor SN2 and no transition state. The one-step arrows are what the AQA text supports; the SN1 branch and the double-dagger transition state come from revision sites (a Cambridge page and Chemguide) and are unverified for AQA. Lowered from checked."
+    "notes": "AQA 3.3.3.1 says to outline the mechanisms of nucleophilic substitution with hydroxide, cyanide and ammonia; the extracts read by two readers name neither SN1 nor SN2 and no transition state. The one-step arrows are what the AQA text supports; the SN1 branch and the double-dagger transition state come from revision sites (a Cambridge page and Chemguide) and are unverified for AQA. Lowered from checked.",
+    "tags": ["curlyArrow", "mechanism"]
   },
   {
     "id": "mechanismElimination",
@@ -4011,7 +4062,8 @@
       "https://www.savemyexams.com/a-level/chemistry/aqa/17/revision-notes/7-advanced-organic-chemistry-a-level-only/7-9-organic-mechanisms-a-level-only/7-9-1-organic-mechanisms/"
     ],
     "confidence": "checked",
-    "notes": ""
+    "notes": "",
+    "tags": ["curlyArrow", "mechanism"]
   },
   {
     "id": "mechanismDehydrationAlcohol",
@@ -4031,7 +4083,8 @@
     "scienceChecks": "Every curly arrow starts at a lone pair or a bond and ends at an atom or between two atoms. Atoms and charge are conserved in every step. The H+ taken in step 1 is regained in step 3, so the acid is a catalyst. The product is an alkene whose C=C joins the carbon that held the OH to a neighbour. A primary alcohol such as ethanol would give an unstable primary carbocation, so for ethanol the loss of water and of H+ is drawn as one step.",
     "sources": ["https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry"],
     "confidence": "checked",
-    "notes": "Added after review: AQA 3.3.5 says students outline the mechanism for the elimination of water from alcohols, and suggests making cyclohexene from cyclohexanol by distillation (a second reader's search summary). The apparatus row dehydrationEthanolApparatus draws the apparatus, not this mechanism."
+    "notes": "Added after review: AQA 3.3.5 says students outline the mechanism for the elimination of water from alcohols, and suggests making cyclohexene from cyclohexanol by distillation (a second reader's search summary). The apparatus row dehydrationEthanolApparatus draws the apparatus, not this mechanism.",
+    "tags": ["skeletal", "curlyArrow", "mechanism"]
   },
   {
     "id": "mechanismCarbonylAddition",
@@ -4054,7 +4107,8 @@
       "https://www.savemyexams.com/a-level/chemistry/aqa/17/revision-notes/7-advanced-organic-chemistry-a-level-only/7-9-organic-mechanisms-a-level-only/7-9-1-organic-mechanisms/"
     ],
     "confidence": "checked",
-    "notes": "AQA says aldehydes and unsymmetrical ketones form mixtures of enantiomers with KCN then acid and asks for an explanation."
+    "notes": "AQA says aldehydes and unsymmetrical ketones form mixtures of enantiomers with KCN then acid and asks for an explanation.",
+    "tags": ["curlyArrow", "mechanism"]
   },
   {
     "id": "mechanismAdditionElimination",
@@ -4077,7 +4131,8 @@
       "https://www.docbrown.info/page06/OrgMechsIntro.htm"
     ],
     "confidence": "secondary",
-    "notes": "In the AQA list of mechanisms for acyl chlorides and acid anhydrides; the detail is the usual textbook form."
+    "notes": "In the AQA list of mechanisms for acyl chlorides and acid anhydrides; the detail is the usual textbook form.",
+    "tags": ["curlyArrow", "mechanism"]
   },
   {
     "id": "mechanismElectrophilicSubstitution",
@@ -4102,7 +4157,8 @@
       "https://www.docbrown.info/page06/OrgMechs4c.htm"
     ],
     "confidence": "checked",
-    "notes": "AQA names nitration and acylation as the electrophilic substitution mechanisms."
+    "notes": "AQA names nitration and acylation as the electrophilic substitution mechanisms.",
+    "tags": ["curlyArrow", "mechanism"]
   },
   {
     "id": "benzeneStructure",
@@ -4126,7 +4182,8 @@
       "https://www.docbrown.info/page07/ASA2ptable2.htm"
     ],
     "confidence": "secondary",
-    "notes": "A 2018 AQA mark scheme credits an answer on the bonding and shape of the molecule: three bonds per carbon, p orbitals overlapping, planar, 120 degrees, bond length between single and double."
+    "notes": "A 2018 AQA mark scheme credits an answer on the bonding and shape of the molecule: three bonds per carbon, p orbitals overlapping, planar, 120 degrees, bond length between single and double.",
+    "tags": ["skeletal", "3d"]
   },
   {
     "id": "benzeneEnthalpyLevels",
@@ -4170,7 +4227,8 @@
       "https://www.docbrown.info/page06/rcoohderivs10.htm"
     ],
     "confidence": "checked",
-    "notes": "AQA exam questions ask students to draw the repeat unit of a polyester and a polyamide and to identify monomers from a chain."
+    "notes": "AQA exam questions ask students to draw the repeat unit of a polyester and a polyamide and to identify monomers from a chain.",
+    "tags": ["skeletal"]
   },
   {
     "id": "triglycerideSoap",
@@ -4193,7 +4251,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "",
+    "tags": ["skeletal"]
   },
   {
     "id": "aminoAcidZwitterion",
@@ -4260,7 +4319,8 @@
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "",
+    "tags": ["skeletal"]
   },
   {
     "id": "cisplatinDna",
@@ -4315,7 +4375,7 @@
     "topic": "Organic chemistry (A-level)",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "B",
     "detail": "full",
     "draw": "Boxes for compounds (names and skeletal formulae) joined by arrows, each arrow labelled above with the reagent and below with the conditions (for example reflux, ethanolic KOH, acidified dichromate). Typical starting points: alkene, halogenoalkane, alcohol, aldehyde, carboxylic acid, ester, amine, nitrile.",
@@ -4323,7 +4383,8 @@
     "scienceChecks": "Each arrow is a real conversion of the type named. The carbon count changes only through nitrile formation or similar. The reagent given matches the functional group change.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "AQA 3.3.14 asks students to design routes; I could not retrieve the text, so this is from memory."
+    "notes": "AQA 3.3.14 asks students to design routes; I could not retrieve the text, so this is from memory.",
+    "tags": ["skeletal"]
   },
   {
     "id": "nmrProton",
@@ -4429,7 +4490,7 @@
     "topic": "Organic chemistry (A-level)",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "Boxes left to right: carrier gas cylinder, injector (sample in), a long coiled column inside an oven, a detector, and a recorder. For GC-MS the detector is replaced by a mass spectrometer. A trace beside it.",
@@ -4519,7 +4580,7 @@
     "topic": "Organic chemistry (A-level)",
     "kind": "process",
     "covered": null,
-    "proposedPack": "process",
+    "proposedPack": "flow",
     "priority": "C",
     "detail": "full",
     "draw": "Boxes and arrows: ethene and steam mixed, a reactor with a phosphoric acid catalyst on silica at about 300 degrees and 60 to 70 atmospheres, a condenser separating ethanol from unreacted ethene, and a recycle pipe returning the ethene. Conditions as labels.",
@@ -4547,7 +4608,8 @@
     "scienceChecks": "Atoms are conserved. The chlorine radical is regenerated at the end of the cycle. The overall change is ozone turning into oxygen.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "From memory. A second reader reports that 7405 papers ask for the chlorine radical chain, but no address came back to cite, so the row stays unverified."
+    "notes": "From memory. A second reader reports that 7405 papers ask for the chlorine radical chain, but no address came back to cite, so the row stays unverified.",
+    "tags": ["mechanism"]
   },
   {
     "id": "standardSolutionPractical",
@@ -4905,7 +4967,7 @@
     "topic": "Cell biology",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioCells",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Section drawings of an animal cell, a plant cell and an algal cell with nucleus, cytoplasm, membrane, mitochondria, ribosomes, and (plants) cell wall, vacuole and chloroplasts.",
@@ -4928,7 +4990,7 @@
     "topic": "Cell biology",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioCells",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A rod-shaped cell with cell wall, membrane, cytoplasm, a loop of DNA, plasmids and a flagellum, with no nucleus.",
@@ -4948,7 +5010,7 @@
     "topic": "Cell biology",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioCells",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A clean outline drawing frame with a scale bar, a magnification label and label lines, for a student drawing of cells seen under a light microscope.",
@@ -4994,7 +5056,7 @@
     "topic": "Cell biology",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioCells",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A row of cells showing chromosomes copying, lining up, separating, and the cell dividing into two identical cells.",
@@ -5014,7 +5076,7 @@
     "topic": "Cell biology",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioCells",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A membrane with particles on both sides: arrows from high to low concentration (diffusion), water moving through a partially permeable membrane (osmosis), and a carrier using energy to move particles against the gradient.",
@@ -5060,7 +5122,7 @@
     "topic": "Organisation",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A body outline with mouth, oesophagus, stomach, liver, gall bladder, pancreas, small and large intestine, rectum and anus, labelled.",
@@ -5080,7 +5142,7 @@
     "topic": "Organisation",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A section of the heart with four chambers, valves and the four main vessels, and a loop diagram of blood going to the lungs and to the body.",
@@ -5100,7 +5162,7 @@
     "topic": "Organisation",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Trachea, bronchi, bronchioles and alveoli, and a close-up of an alveolus beside a capillary with arrows for oxygen and carbon dioxide.",
@@ -5120,7 +5182,7 @@
     "topic": "Organisation",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Red blood cells (biconcave, no nucleus), a white blood cell with a nucleus, and platelets, labelled.",
@@ -5143,7 +5205,7 @@
     "topic": "Organisation",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Cross-sections of the three vessels showing wall thickness, lumen and valves.",
@@ -5163,7 +5225,7 @@
     "topic": "Organisation",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A leaf in section with epidermis, palisade and spongy layers, a stoma with guard cells, and a stem section with xylem and phloem.",
@@ -5183,7 +5245,7 @@
     "topic": "Organisation",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioProcess",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A substrate fitting the active site of an enzyme, the products leaving, and a denatured enzyme whose site no longer fits.",
@@ -5249,7 +5311,7 @@
     "topic": "Infection and response",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioCells",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Four simple drawings of a virus particle, a bacterial cell, a fungal hypha or yeast cell and a protist, labelled.",
@@ -5269,7 +5331,7 @@
     "topic": "Infection and response",
     "kind": "process",
     "covered": null,
-    "proposedPack": "bioProcess",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Phagocytosis of a pathogen, antibodies binding antigens, and the vaccination sequence with memory cells.",
@@ -5312,7 +5374,7 @@
     "topic": "Bioenergetics",
     "kind": "process",
     "covered": null,
-    "proposedPack": "bioProcess",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Boxes and arrows linking light, carbon dioxide and water to glucose and oxygen, and glucose and oxygen back to carbon dioxide, water and energy.",
@@ -5352,7 +5414,7 @@
     "topic": "Homeostasis and response",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Stimulus, receptor, sensory neurone, synapse, relay neurone, motor neurone, effector and response, with arrows along the path.",
@@ -5375,7 +5437,7 @@
     "topic": "Homeostasis and response",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A section of the eye with cornea, iris, pupil, lens, ciliary muscles, retina, optic nerve and sclera.",
@@ -5395,7 +5457,7 @@
     "topic": "Homeostasis and response",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A kidney section and a nephron with filtration, selective reabsorption and the collecting duct.",
@@ -5415,7 +5477,7 @@
     "topic": "Homeostasis and response",
     "kind": "process",
     "covered": null,
-    "proposedPack": "bioProcess",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A loop of boxes: stimulus, receptor, coordination centre, effector, response, and the return to the set level, with two such loops for blood glucose.",
@@ -5435,7 +5497,7 @@
     "topic": "Homeostasis and response",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioOrgans",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A body outline with the pituitary, thyroid, pancreas, adrenals, ovaries and testes marked.",
@@ -5475,7 +5537,7 @@
     "topic": "Inheritance, variation and evolution",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioGenetics",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A grid of the parents' gametes along the top and side, offspring genotypes in the cells, with ratios and probabilities below.",
@@ -5498,7 +5560,7 @@
     "topic": "Inheritance, variation and evolution",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioGenetics",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Squares for males, circles for females, shaded for affected, joined by lines for partners and children.",
@@ -5518,7 +5580,7 @@
     "topic": "Inheritance, variation and evolution",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioGenetics",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A chromosome pair with alleles marked, and meiosis stages producing four different gametes.",
@@ -5538,7 +5600,7 @@
     "topic": "Inheritance, variation and evolution",
     "kind": "process",
     "covered": null,
-    "proposedPack": "bioProcess",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "A branching tree of species, a flow of selective breeding generations, and a classification ladder from kingdom to species.",
@@ -5558,7 +5620,7 @@
     "topic": "Ecology",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "bioEcology",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Organisms as labelled boxes or icons joined by arrows pointing from the food to the eater, with trophic levels marked.",
@@ -5581,7 +5643,7 @@
     "topic": "Ecology",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "bioEcology",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Horizontal bars stacked by trophic level, widths scaled to biomass, with the producer at the base.",
@@ -5601,7 +5663,7 @@
     "topic": "Ecology",
     "kind": "process",
     "covered": null,
-    "proposedPack": "bioProcess",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Boxes for the air (carbon dioxide), plants and algae, animals, decomposers and fossil fuels, joined by arrows labelled photosynthesis, feeding, respiration, decay and combustion.",
@@ -5624,7 +5686,7 @@
     "topic": "Ecology",
     "kind": "process",
     "covered": null,
-    "proposedPack": "bioProcess",
+    "proposedPack": "bio",
     "priority": "C",
     "detail": "outline",
     "draw": "Evaporation, condensation, precipitation and run-off linking the sea, clouds and land.",
@@ -5690,7 +5752,7 @@
     "topic": "Energy",
     "kind": "process",
     "covered": null,
-    "proposedPack": "physEnergy",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "Boxes for energy stores joined by labelled arrows for the way energy is transferred (mechanically, electrically, by heating, by radiation).",
@@ -5710,7 +5772,7 @@
     "topic": "Energy",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physEnergy",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "An arrow from the energy input that splits into a useful output arrow and a wasted output arrow, widths in proportion to the energy.",
@@ -5730,7 +5792,7 @@
     "topic": "Energy",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physEnergy",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A heated rod with vibrating particles, a convection current in a beaker with arrows, and radiation from a hot object.",
@@ -5873,7 +5935,7 @@
     "topic": "Electricity",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "physCircuits",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A plug opened up with live (brown), neutral (blue) and earth (green and yellow) wires, a fuse and the cable grip.",
@@ -5893,7 +5955,7 @@
     "topic": "Electricity",
     "kind": "process",
     "covered": null,
-    "proposedPack": "physCircuits",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A power station, step-up transformer, pylons, step-down transformer and homes in a line.",
@@ -5953,7 +6015,7 @@
     "topic": "Particle model of matter",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physParticles",
+    "proposedPack": "matter",
     "priority": "C",
     "detail": "outline",
     "draw": "A container with particles and arrows at the walls, shown at two volumes or temperatures.",
@@ -5973,7 +6035,7 @@
     "topic": "Atomic structure",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physNuclear",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A source with three arrows stopped by paper, aluminium and lead.",
@@ -6013,7 +6075,7 @@
     "topic": "Atomic structure",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physNuclear",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A neutron striking a large nucleus that splits into two smaller nuclei and more neutrons, which go on to split further nuclei.",
@@ -6033,7 +6095,7 @@
     "topic": "Forces",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "physForces",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "An object as a box with labelled arrows for weight, normal force, friction, drag or thrust.",
@@ -6056,7 +6118,7 @@
     "topic": "Forces",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physForces",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "Two forces drawn nose to tail to a stated scale with the resultant drawn from the start to the end, and its length and angle measured.",
@@ -6142,7 +6204,7 @@
     "topic": "Forces",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physForces",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "Two trolleys with velocity arrows before and after a collision, masses labelled.",
@@ -6162,7 +6224,7 @@
     "topic": "Forces",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physForces",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A bar split into thinking distance and braking distance, and a chart of how each changes with speed.",
@@ -6182,7 +6244,7 @@
     "topic": "Forces",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physForces",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A beam on a pivot with forces and distances, and a lever or gear train.",
@@ -6202,7 +6264,7 @@
     "topic": "Forces",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physForces",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A tank with arrows showing pressure on the walls increasing with depth, and an object with an upthrust arrow.",
@@ -6222,7 +6284,7 @@
     "topic": "Waves",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "physWaves",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A sine wave with wavelength and amplitude marked, and a spring with compressions and rarefactions.",
@@ -6262,7 +6324,7 @@
     "topic": "Waves",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physWaves",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A plane mirror with the normal, an incident ray and a reflected ray, and the angles marked.",
@@ -6285,7 +6347,7 @@
     "topic": "Waves",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physWaves",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A glass block with the normal, a ray bending towards the normal on entering and away on leaving, and a wavefront picture of the change in speed.",
@@ -6308,7 +6370,7 @@
     "topic": "Waves",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physWaves",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A lens with the principal axis, focal points, three construction rays and the image drawn at the meeting point, for an object inside and outside the focal length.",
@@ -6351,7 +6413,7 @@
     "topic": "Magnetism and electromagnetism",
     "kind": "symbol",
     "covered": null,
-    "proposedPack": "physFields",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "Field lines from north to south round a bar magnet, circles round a straight current-carrying wire, and parallel lines inside a solenoid, with direction arrows.",
@@ -6374,7 +6436,7 @@
     "topic": "Magnetism and electromagnetism",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physFields",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A wire between two magnet poles with the directions of the field, current and force, and a coil with a commutator and brushes.",
@@ -6397,7 +6459,7 @@
     "topic": "Magnetism and electromagnetism",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physFields",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "An alternator with a rotating coil and slip rings, and a transformer with primary and secondary coils on an iron core.",
@@ -6420,7 +6482,7 @@
     "topic": "Space physics",
     "kind": "compound",
     "covered": null,
-    "proposedPack": "physSpace",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "A planet orbiting the Sun in a near-circular path with arrows for the velocity and the gravitational force towards the centre.",
@@ -6440,7 +6502,7 @@
     "topic": "Space physics",
     "kind": "process",
     "covered": null,
-    "proposedPack": "physSpace",
+    "proposedPack": "phys",
     "priority": "C",
     "detail": "outline",
     "draw": "Boxes and arrows from a nebula to a protostar and main-sequence star, then red giant and white dwarf for a Sun-like star, or red supergiant, supernova and neutron star or black hole for a massive one.",
@@ -6491,7 +6553,8 @@
     "scienceChecks": "The top quantity equals the product of the two bottom quantities. Covering the top shows a product; covering a bottom part shows the top divided by the other bottom part.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Not named in the AQA specification; kept because lessons use it. A very common classroom aid, and one symbol serves chemistry and physics. From memory."
+    "notes": "Not named in the AQA specification; kept because lessons use it. A very common classroom aid, and one symbol serves chemistry and physics. From memory.",
+    "tags": ["symbolText"]
   },
   {
     "id": "gasCollectionMethods",
@@ -6554,6 +6617,7 @@
     "scienceChecks": "A double bond is one sigma and one pi bond. The pi lobes are above and below the plane of the sigma bonds. The molecule is planar with 120 degree angles.",
     "sources": ["https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/organic-chemistry"],
     "confidence": "unverified",
-    "notes": "AQA examiners reported that students seldom explained the overlap of p orbitals; Neither reader confirmed that students must draw the overlap. Uses the orbital shapes of orbitalShapes."
+    "notes": "AQA examiners reported that students seldom explained the overlap of p orbitals; Neither reader confirmed that students must draw the overlap. Uses the orbital shapes of orbitalShapes.",
+    "tags": ["3d"]
   }
 ]
