@@ -190,7 +190,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `hazardSymbol` | Hazard symbol | hazard, warning symbol, GHS pictogram, hazard pictogram | 70 × 70 | uniform, min 56 × 56 | hazard: "explosive" or "flammable" or "oxidising" or "gasUnderPressure" or "corrosive" or "toxic" or "harmful" or "health" or "environment", default "flammable"; name: boolean, default false |  |  |  |
 | `indicatorPaper` | Indicator paper | litmus paper, pH paper, universal indicator paper | 14 × 60 | free, min 6 × 10 | colour: "red" or "blue" or "green" or "orange" or "yellow" or "purple", default "red" |  |  |  |
 | `magnesiumRibbon` | Metal ribbon | magnesium ribbon, magnesium strip | 60 × 12 | free, min 24 × 8 |  |  |  | label "magnesium ribbon" |
-| `phScale` | pH scale | pH colours, universal indicator colours, acid alkali scale | 420 × 70 | free, min 360 × 62 | orientation: "horizontal" or "vertical", default "horizontal"; numbers: boolean, default true; brackets: boolean, default true; examples: boolean, default false |  |  | label "pH scale" |
+| `phScale` | pH scale | pH colours, universal indicator colours, acid alkali scale | 420 × 70 | free, min 360 × 62 | orientation: "horizontal" or "vertical", default "horizontal"; numbers: boolean, default true; brackets: boolean, default true; examples: boolean, default false |  |  | label "pH scale"; orientation vertical needs a tall box (for example w 70, h 420): the symbol does not swap the box for you |
 
 ## Atoms and ions
 

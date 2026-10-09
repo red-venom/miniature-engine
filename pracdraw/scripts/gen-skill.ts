@@ -64,6 +64,7 @@ const SYMBOL_NOTES: Record<string, string> = {
   volumetricFlask: 'the mark is at 0.2 × height from the top, 15.6 u above neck: amount 0.806 puts the surface on it',
   pipetteFiller: 'no hand holds it: it stands in the air above its pipette',
   testTubeHolder: 'no hand holds it: the handle ends in the air; draw it behind the tube it grips',
+  phScale: 'orientation vertical needs a tall box (for example w 70, h 420): the symbol does not swap the box for you',
 }
 
 function symbolRow(def: SymbolDef): string[] {
