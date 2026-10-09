@@ -720,3 +720,64 @@ describe('hazard symbol: the name', () => {
       }
   })
 })
+
+// ================================================================ the text of all three
+
+describe('annotation symbols: the size of their text (rule S11 as relaxed: 12 to 18 u)', () => {
+  it('keeps every text between 12 and 18 u, at every size and for every parameter, and never turns it', () => {
+    const sizes = (symbol: string, boxes: [number, number][], variants: Record<string, ParamValue>[]) => {
+      const out: number[] = []
+      for (const [w, h] of boxes)
+        for (const params of variants) {
+          const texts = geometry(symbol, w, h, params).texts ?? []
+          for (const t of texts) {
+            out.push(t.size)
+            expect(t.size, `${symbol} ${w}x${h} ${JSON.stringify(params)}: "${t.text}"`).toBeGreaterThanOrEqual(12)
+            expect(t.size, `${symbol} ${w}x${h} ${JSON.stringify(params)}: "${t.text}"`).toBeLessThanOrEqual(18)
+            expect(Object.keys(t).sort(), `${symbol} ${w}x${h}`).toEqual(['anchor', 'size', 'text', 'x', 'y']) // a text has no turn
+          }
+        }
+      return out
+    }
+    const long = 'A long text 123.45'
+    const pH = sizes(
+      'phScale',
+      [
+        [420, 70],
+        [360, 62],
+        [630, 105],
+        [420, 420],
+        [360, 300],
+      ],
+      [{}, { examples: true }, { orientation: 'vertical', examples: true }, { orientation: 'vertical' }],
+    )
+    const triangle = sizes(
+      'formulaTriangle',
+      [
+        [120, 110],
+        [108, 99],
+        [180, 165],
+      ],
+      [
+        ...PRESET_IDS.map((preset) => ({ preset })),
+        { preset: 'custom', top: long, left: long, right: long },
+        { preset: 'custom', top: '', left: 'x', right: 'y' },
+      ],
+    )
+    const hazards = sizes(
+      'hazardSymbol',
+      [
+        [70, 70],
+        [56, 56],
+        [105, 105],
+      ],
+      IDS.map((hazard) => ({ hazard, name: true })),
+    )
+    // The sizes that are used are the ones the design says: 12 u for the words and the names, up to 16 u in a cell and in a triangle of the default size.
+    expect(Math.max(...pH)).toBe(16)
+    expect(Math.min(...pH)).toBe(12)
+    expect(Math.max(...triangle)).toBe(18)
+    expect(Math.min(...triangle)).toBe(12)
+    expect(new Set(hazards)).toEqual(new Set([12]))
+  })
+})
