@@ -24,11 +24,15 @@ const DEFAULT_SVG: ExportOptions = { ...DEFAULT_EXPORT, format: 'svg' }
 /** The picture of the default export: on white, labels and photocopy-safe as shown, text measured as drawn. */
 export const defaultPicture = (doc: Doc): Picture => exportPicture(doc, DEFAULT_EXPORT, measureText)
 
-/** A data: URL of the default PNG export at a scale, at once. */
-export const pngDataUrl = (doc: Doc, scale: number): string => pngCanvas(doc, DEFAULT_EXPORT, measureText, scale).toDataURL('image/png')
+/**
+ * A data: URL of a PNG export at a scale, at once. `options` are merged over the default export (the export dialog's
+ * controls: labels, answer key, photocopy-safe, background); with none it is the default export.
+ */
+export const pngDataUrl = (doc: Doc, scale: number, options: Partial<ExportOptions> = {}): string =>
+  pngCanvas(doc, { ...DEFAULT_EXPORT, ...options, format: 'png' }, measureText, scale).toDataURL('image/png')
 
-/** The default SVG export, with the document as metadata. */
-export const svgText = (doc: Doc): string => exportSvg(doc, DEFAULT_SVG, measureText)
+/** An SVG export with the document as metadata. `options` are merged over the default export; with none it is the default export. */
+export const svgText = (doc: Doc, options: Partial<ExportOptions> = {}): string => exportSvg(doc, { ...DEFAULT_SVG, ...options, format: 'svg' }, measureText)
 
 // ---------------------------------------------------------------- the fallback dialog and the banner
 

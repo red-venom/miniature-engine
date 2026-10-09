@@ -63,6 +63,10 @@ Everything works from the keyboard. Tab reaches every control. Press `/`, type a
 
 On a touchscreen, pinch with two fingers to zoom, and move two fingers together to pan. A double tap acts as a double-click, and the handles are easier to hit. To drag a part out of the library, move your finger sideways first: a move up or down scrolls the list. In a narrow window the library drawer closes when the drag leaves it, so you can drop anywhere on the canvas.
 
+### Diagrams for lessons, made by Claude
+
+PracDraw can also draw with no person at the editor. A short description of the apparatus (a recipe) goes in; the pictures for a lesson come out: a PNG, an SVG and the saved diagram, which opens in the editor for a hand-made change. Claude uses this to build custom diagrams. See `docs/lesson-pipeline.md` for the recipe format and the command (`npm run render`), and `.claude/skills/pracdraw/SKILL.md` for the skill that Claude reads.
+
 ### Good to know
 
 - The 14 circuit symbols follow descriptions of the AQA symbol figure; they have not yet been checked against the figure itself.

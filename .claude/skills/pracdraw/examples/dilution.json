@@ -1,0 +1,35 @@
+{
+  "title": "Diluting a solution",
+  "note": "No hand or person symbol exists, so the pipette and its filler stand in the air. A pipette with amount 0.845 has its surface on the drawn mark (the neck anchor is about 10 u below the mark).",
+  "parts": [
+    {
+      "id": "beaker",
+      "symbol": "beaker",
+      "at": { "x": 0, "y": 0, "anchor": "base" },
+      "contents": { "main": [{ "preset": "Blue (copper sulfate)", "amount": 0.6 }] }
+    },
+    {
+      "id": "flask",
+      "symbol": "volumetricFlask",
+      "on": { "part": "beaker", "anchor": "base", "own": "base", "dx": 170 }
+    },
+    {
+      "id": "pipette",
+      "symbol": "volumetricPipette",
+      "on": { "part": "beaker", "anchor": "base", "own": "tip", "dy": -16 },
+      "contents": { "main": [{ "preset": "Blue (copper sulfate)", "amount": 0.845 }] }
+    },
+    {
+      "id": "filler",
+      "symbol": "pipetteFiller",
+      "near": { "part": "pipette", "anchor": "neck", "dy": -78 }
+    }
+  ],
+  "labels": {
+    "text": { "filler": "filler", "flask": "flask" },
+    "extra": [
+      { "text": "stock solution", "part": "beaker", "at": [-30, 95] },
+      { "text": "mark", "part": "flask", "at": [8, 42], "textAt": [45, -40] }
+    ]
+  }
+}

@@ -36,6 +36,13 @@ export interface ContentOpts {
   pivot: Pt
   /** Photocopy-safe mode: no colour fills; liquids are rows of dashes. */
   mono: boolean
+  /**
+   * How a liquid is drawn in photocopy-safe mode. `dashes` (the default): staggered rows of short dashes under the
+   * surface line. `level`: the surface line only, for a cavity that has a scale, where dashes between the ticks would
+   * read as a second scale. `thread`: dashes where they fit, and a line down the centre of every span too narrow for a
+   * dash, for the thread of a thermometer.
+   */
+  monoLiquid?: 'dashes' | 'level' | 'thread'
   /** Seed for bubbles, stipple and lumps. Use a hash of the item id so the drawing never shimmers. */
   seed: number
   ink?: string
@@ -100,10 +107,12 @@ export function buildContents(cavity: Pt[][], layers: Layer[], o: ContentOpts): 
       if (men) for (const [xa, xb] of surface) d += meniscusPatch(xa, xb, yTop)
       if (!o.mono) fills.push({ d, fill: layer.colour })
       else {
-        marks.push({ d: dashRows(W, yTop, yFloor), stroke: ink, sw: 1 })
-        marks.push({ d: centreLines(W, yTop, yFloor), stroke: ink, sw: 1.25 })
+        const style = o.monoLiquid ?? 'dashes'
+        if (style !== 'level') marks.push({ d: dashRows(W, yTop, yFloor), stroke: ink, sw: 1 })
+        if (style === 'thread') marks.push({ d: centreLines(W, yTop, yFloor), stroke: ink, sw: 1.25 })
       }
-      if (hi < FULL || !isLast) {
+      // The surface line. In `level` style it is the only mark, so it is drawn even when the cavity is full.
+      if (hi < FULL || !isLast || (o.mono && o.monoLiquid === 'level')) {
         const s = men
           ? surface.map(([xa, xb]) => `M${f(xa)} ${f(yTop - MENISCUS)}Q${f((xa + xb) / 2)} ${f(yTop + MENISCUS)} ${f(xb)} ${f(yTop - MENISCUS)}`).join('')
           : flat(surface, yTop)
@@ -145,14 +154,15 @@ function dashRows(W: Pt[][], yTop: number, yBottom: number): string {
   return d
 }
 
-/** A span narrower than this holds no dash: a thermometer thread, a jet, a stem. */
+/** A span narrower than this holds no dash. */
 const NARROW = 2 * DASH.inset + DASH.len
 /** A narrow run shorter than this is the tip of a rounded bottom, not a tube: it gets no line. */
 const MIN_RUN = 6
 
 /**
- * Photocopy-safe liquid in a span too narrow for a dash: one line down the centre of the span, from the surface to the
- * bottom. Without it a thermometer or a burette jet would show no liquid, and its reading would be lost (rule S12).
+ * Photocopy-safe liquid of a thread (the `thread` style): in each span too narrow for a dash, one line down the centre of
+ * the span, from the surface to the bottom. Without it a thermometer would show no liquid, and its reading would be lost
+ * (rule S12). It is for a thermometer thread only: in a burette jet or a pipette stem the line reads as a third wall.
  */
 function centreLines(W: Pt[][], yTop: number, yBottom: number): string {
   const step = 1.5

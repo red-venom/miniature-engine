@@ -44,6 +44,12 @@ export interface SymbolText {
 export interface Cavity {
   id: string
   polys: Pt[][]
+  /**
+   * A thread: a cavity so thin that its liquid is a line (the red thread of a thermometer). In photocopy-safe mode its
+   * liquid is a line down its centre, so that the reading survives. No other cavity gets such a line: in a jet or a stem
+   * it would read as a third wall.
+   */
+  thread?: boolean
 }
 
 export type AnchorKind =

@@ -320,7 +320,7 @@ const thermometer: SymbolDef = {
         { d: outer.d(), role: 'outline' },
       ],
       texts,
-      cavities: [{ id: 'main', polys: thread.polys(0.05) }],
+      cavities: [{ id: 'main', polys: thread.polys(0.05), thread: true }],
       scale: { cavity: 'main', unit: '°C', v0: -10, y0: yLow, v1: 110, y1: yHigh },
       anchors: [{ id: 'bulb', kind: 'tip', x: 0, y: h, dir: 90 }],
     }

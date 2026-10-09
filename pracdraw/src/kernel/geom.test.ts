@@ -73,7 +73,7 @@ describe('clipping', () => {
 describe('contents', () => {
   // A flask-like cavity: wide body, narrow neck. Local frame, 100 wide × 150 high.
   const cav = [[P(-15, 0), P(-15, 50), P(-50, 150), P(50, 150), P(15, 50), P(15, 0)]]
-  const opts = (rot: number, mono = false) => ({ rot, flip: false, pivot: P(0, 75), mono, seed: 7 })
+  const opts = (rot: number, mono = false, monoLiquid?: 'dashes' | 'level' | 'thread') => ({ rot, flip: false, pivot: P(0, 75), mono, seed: 7, monoLiquid })
   it('keeps the surface level for every rotation', () => {
     for (const rot of [0, 35, 90, 180, 270]) {
       const surface = buildContents(cav, [{ kind: 'liquid', amount: 0.4, colour: '#cfe8f7' }], opts(rot)).find((p) => p.stroke)!
@@ -144,11 +144,11 @@ describe('contents', () => {
     expect(buildContents(cav, layers, opts(0)).some((p) => p.stroke && p.d.includes('Q'))).toBe(true)
     expect(buildContents(cav, [{ ...layers[0], meniscus: false }, layers[1]], opts(0)).some((p) => p.stroke && p.d.includes('Q'))).toBe(false)
   })
-  it('keeps a liquid in a narrow tube visible in photocopy-safe mode, from the level to the bottom', () => {
+  it('keeps the liquid of a thread visible in photocopy-safe mode, from the level to the bottom', () => {
     // A thermometer thread: 2.6 u wide, too narrow for a row of dashes. Upright, and turned 30°.
     const thread = [[P(-1.3, 0), P(-1.3, 150), P(1.3, 150), P(1.3, 0)]]
     for (const rot of [0, 30]) {
-      const o = { ...opts(rot, true) }
+      const o = { ...opts(rot, true, 'thread') }
       const b = bounds(thread[0].map((p) => xf(P(p.x, p.y - 75), rot)))
       const level = b.y1 - 0.5 * (b.y1 - b.y0)
       const prims = buildContents(thread, [{ kind: 'liquid', amount: 0.5, colour: '#d33333' }], o)
@@ -163,9 +163,9 @@ describe('contents', () => {
       expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(0.9 * (b.y1 - level))
     }
   })
-  it('adds no mark at the narrow tip of a round-bottomed tube in photocopy-safe mode', () => {
+  it('adds no mark at the narrow tip of a round-bottomed tube in the thread style', () => {
     const tubeCav = [new Path().M(-12, 0).L(-12, 138).A(12, 12, 138, false).L(12, 0).Z().polys()[0]]
-    const prims = buildContents(tubeCav, [{ kind: 'liquid', amount: 0.5, colour: '#cfe8f7' }], { ...opts(0, true), pivot: P(0, 75) })
+    const prims = buildContents(tubeCav, [{ kind: 'liquid', amount: 0.5, colour: '#cfe8f7' }], { ...opts(0, true, 'thread'), pivot: P(0, 75) })
     const ys = prims
       .filter((p) => p.stroke && !/h7/.test(p.d))
       .flatMap((p) =>
@@ -175,6 +175,24 @@ describe('contents', () => {
       )
     // Only the surface line: nothing near the bottom of the tube (local y 150 = world y 75).
     expect(Math.max(...ys)).toBeLessThan(60)
+  })
+  it('draws no centre line in a narrow jet or stem unless the cavity is a thread', () => {
+    // A burette jet or a pipette stem: 5 u wide inside, 150 u long. Its centre line would read as a third wall.
+    const jet = [[P(-2.5, 0), P(-2.5, 150), P(2.5, 150), P(2.5, 0)]]
+    const prims = buildContents(jet, [{ kind: 'liquid', amount: 0.5, colour: '#cfe8f7' }], opts(0, true))
+    const strokes = prims.filter((p) => p.stroke)
+    expect(strokes).toHaveLength(1) // the surface line only
+    expect(strokes[0].d).toMatch(/^M-2\.5 0L2\.5 0$/)
+  })
+  it('draws only the level of a liquid in a cavity that has a scale, even when it is full', () => {
+    // Dashes between the ticks of a burette read as a second scale.
+    for (const amount of [0.4, 1]) {
+      const prims = buildContents(cav, [{ kind: 'liquid', amount, colour: '#cfe8f7' }], opts(0, true, 'level'))
+      expect(prims.some((p) => p.stroke && /h7/.test(p.d))).toBe(false)
+      expect(prims.some((p) => p.stroke)).toBe(true) // the surface line, drawn at the top of a full cavity too
+    }
+    // The ordinary style still draws the dashes.
+    expect(buildContents(cav, [{ kind: 'liquid', amount: 0.4, colour: '#cfe8f7' }], opts(0, true)).some((p) => p.stroke && /h7/.test(p.d))).toBe(true)
   })
   it('uses no colour in photocopy-safe mode', () => {
     const prims = buildContents(

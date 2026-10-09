@@ -4,6 +4,7 @@
 // (rule 7). Pure: no DOM. It never throws.
 
 import type { Layer, LayerKind } from '../kernel/contents'
+import { hasSymbol, symbolDef } from '../symbols/registry'
 import { MIGRATIONS, migrate, type Migration } from './migrate'
 import {
   DEFAULT_SETTINGS,
@@ -60,6 +61,9 @@ function num(o: Obj, key: string, range: Range = 'any'): number {
 }
 
 const above0 = (o: Obj, key: string) => num(o, key, 'above0')
+
+/** The size of a symbol, in units: the editor allows no more or less, and a thermometer of 1e9 u crashes the browser while it is drawn. */
+export const SYMBOL_SIZE = { min: 1, max: 5000 }
 
 function text(o: Obj, key: string): string {
   const v = o[key]
@@ -153,7 +157,24 @@ function readContents(v: unknown): Record<string, Layer[]> {
   return out
 }
 
-function readSymbol(id: Id, o: Obj): SymbolItem {
+/**
+ * One side of a symbol: a number above 0 (anything else leaves the item out), and from 1 to 5000. A number that is above 0
+ * but outside that takes the size of the symbol's definition and is listed; a symbol that is not known has none, so the
+ * item is left out.
+ */
+function readSymbolSize(o: Obj, key: 'w' | 'h', id: Id, problems: string[]): number {
+  const v = above0(o, key)
+  if (v >= SYMBOL_SIZE.min && v <= SYMBOL_SIZE.max) return v
+  const symbol = o.symbol
+  if (typeof symbol !== 'string' || !hasSymbol(symbol)) throw new Bad(`"${key}" must be from ${SYMBOL_SIZE.min} to ${SYMBOL_SIZE.max}`)
+  const fallback = symbolDef(symbol).size[key]
+  problems.push(
+    `The ${key === 'w' ? 'width' : 'height'} of the part "${id}" (${symbol}) was ${v}, outside ${SYMBOL_SIZE.min} to ${SYMBOL_SIZE.max} u: it is now ${fallback}.`,
+  )
+  return fallback
+}
+
+function readSymbol(id: Id, o: Obj, problems: string[]): SymbolItem {
   return withOptional<SymbolItem>(
     {
       id,
@@ -163,8 +184,8 @@ function readSymbol(id: Id, o: Obj): SymbolItem {
       y: num(o, 'y'),
       rot: num(o, 'rot'),
       flip: flag(o, 'flip'),
-      w: above0(o, 'w'),
-      h: above0(o, 'h'),
+      w: readSymbolSize(o, 'w', id, problems),
+      h: readSymbolSize(o, 'h', id, problems),
       params: readParams(o.params),
       contents: readContents(o.contents),
     },
@@ -226,12 +247,12 @@ function readShape(id: Id, o: Obj): ShapeItem {
   )
 }
 
-function readItem(id: string, v: unknown): Item {
+function readItem(id: string, v: unknown, problems: string[]): Item {
   if (!isObj(v)) throw new Bad('it is not an item')
   if (v.id !== id) throw new Bad(`its "id" must be "${id}", the name it is listed under`)
   switch (v.type) {
     case 'symbol':
-      return readSymbol(id, v)
+      return readSymbol(id, v, problems)
     case 'connector':
       return readConnector(id, v)
     case 'label':
@@ -301,7 +322,9 @@ export function parseDoc(value: unknown, migrations: Readonly<Record<number, Mig
   for (const [id, v] of Object.entries(raw.items)) {
     try {
       if (!id || id === '__proto__') throw new Bad('its id is not a name')
-      items[id] = readItem(id, v)
+      const notes: string[] = [] // what was put right in the item: listed only when the item is kept
+      items[id] = readItem(id, v, notes)
+      problems.push(...notes)
     } catch (e) {
       if (!(e instanceof Bad)) throw e
       problems.push(`Left out item "${id}" (${what(v)}): ${e.message}.`)
