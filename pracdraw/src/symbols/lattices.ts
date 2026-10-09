@@ -4,6 +4,18 @@
 // Each picture is a pure model (what is there: ions or atoms with a kind and a place in 3D, bonds with their two ends) and a pure
 // picture of that model (circles and lines in the symbol's frame). The symbol only turns the picture into paths, so that
 // lattices.science.test.ts can test the science on the model and then check that the drawing agrees with it.
+//
+// DEPARTURES FROM THE CATALOGUE BRIEF (the `draw` text of the two rows in spec/catalogue.json). The lead has accepted each one; the reason
+// is written at the constant that holds the number.
+//   1. ionicLattice3D: spacing 48.8 u and radii 7.5 and 4.8 u, not 44, 11 and 7: with the brief's numbers two Cl- circles overlap (IONIC).
+//   2. diamondStructure: the cluster is turned 20 degrees about the vertical axis. The brief allowed at most 15; the limit moved from 15 to
+//      20 because the nearest circles are 5.5 u apart at 15 degrees and 10.9 u apart at 20, and at 20 the stubs clear the bonds down to the
+//      minimum size (DIAMOND.turn).
+//   3. diamondStructure: a bond is thin when its middle lies behind the central atom (z > 0), not when it is more than 0.5 u behind it
+//      (DIAMOND.rear).
+//   4. diamondStructure: a stub is a fixed 5 u long past the circle edge, not 0.4 of a bond, and it does not scale with the box (rule S3);
+//      the parameter `stubs` is on by default, so that the picture shows four bonds on each carbon atom and a lattice that goes on
+//      (DIAMOND.stub; the catalogue row has to say `stubs:boolean=true`, or src/spec.test.ts fails on that one point).
 
 import { P, bounds, dist, f, type Pt } from '../kernel/geom'
 import { bool, circle, tinted } from './kit'
@@ -176,20 +188,26 @@ export const TETRAHEDRAL: readonly Vec3[] = [
 ]
 
 /**
- * At the default size 160: u, the radius of an atom (u), and how far a stub reaches (a fraction of the bond length).
+ * At the default size 160: u, the radius of an atom (u), the turn (degrees), how far a stub reaches past the edge of its circle (u), and
+ * where a bond counts as being at the rear (u).
  *
  * `turn`: before it is projected, the cluster is turned about the vertical axis by this many degrees, its right-hand side swinging away
- * from the viewer. The brief allows up to 15 degrees, for circles that overlap. Straight on (turn 0) the cubic axes line up with the
- * projection: the neighbour N2 and the outer atom O43 fall 2 u apart (the circles overlap), and five atoms (O41, N4, C0, N1, O14) lie on
- * one straight line. At 15 degrees, the most the brief allows and the least that clears every overlap (turns from -30 to 30 were tried),
- * the nearest circles are 5.5 u apart, no bond passes within 7 u of another circle, and no two bonds at an atom are less than 64 degrees
- * apart. The other way round (-15) a bond runs through a circle.
+ * from the viewer. The brief allowed up to 15 degrees, for circles that overlap; the limit moved from 15 to 20. Straight on (turn 0) the
+ * cubic axes line up with the projection: the neighbour N2 and the outer atom O43 fall 2 u apart (the circles overlap), and five atoms
+ * (O41, N4, C0, N1, O14) lie on one straight line. Turns from -30 to 30 were tried. At 15 degrees the nearest circles are 5.5 u apart,
+ * and at the minimum size a stub passes 0.7 u from a bond. At 20 degrees the nearest circles are 10.9 u apart, no bond passes within 11.4 u
+ * of another circle, no two bonds at an atom are less than 63.9 degrees apart, and at the minimum size 120 every stub is 3.8 u or more from
+ * every bond. The other way round (-20) circles overlap and a bond runs through a circle.
+ *
+ * `stub`: a stub is a mark, and a mark does not scale with the symbol (rule S3): it is this long past the edge of its circle at every
+ * size, along the way that the missing bond runs in the picture, so that all 36 are alike. The brief had 0.4 of a bond, a different length
+ * for each of the four directions (and at a turn of 15 degrees three stubs touched or crossed a bond).
  *
  * `rear`: a bond is thin (drawn farther away) when its middle is farther from the viewer than this (u, from the plane of the central atom).
  * The brief says 0.5. With the turn, 0.5 leaves C0-N4 thick although N4 lies behind C0, so the cut here is 0: the bonds whose middle is
  * behind the central atom are the thin ones, which gives 8 thin bonds and 8 thick ones, and the central atom two of each.
  */
-export const DIAMOND = { size: 160, unit: 24, radius: 7, turn: 15, stub: 0.4, rear: 0 }
+export const DIAMOND = { size: 160, unit: 24, radius: 7, turn: 20, stub: 5, rear: 0 }
 
 /** A point of a model turned about the vertical axis by `deg` degrees, so that its right-hand side (+x) swings away from the viewer (+z). */
 export function turned(p: Vec3, deg: number): Vec3 {
@@ -277,7 +295,8 @@ export interface DiamondPicture {
 /**
  * The cluster in the symbol's frame at box height h (every distance and radius scaled by h / 160), centred in the box.
  * Position = oblique(x, y, z) of the turned model. A bond is the straight line between its atoms, trimmed to the circle edges. A stub
- * starts at the edge of its atom and ends DIAMOND.stub of a bond length from the centre of the atom, along its direction.
+ * starts at the edge of its atom and runs DIAMOND.stub u beyond it (the same at every size), along the way that the missing bond runs in
+ * the picture; its depth is that of its atom.
  */
 export function diamondPicture(m: DiamondModel, h: number = DIAMOND.size, withStubs = false): DiamondPicture {
   const k = h / DIAMOND.size
@@ -294,12 +313,21 @@ export function diamondPicture(m: DiamondModel, h: number = DIAMOND.size, withSt
   })
   if (withStubs)
     m.stubs.forEach((stub, index) => {
-      const from = m.atoms[stub.atom].view
-      const reach = turned(stub.dir, m.turn)
-      const tip = put([from[0] + DIAMOND.stub * reach[0], from[1] + DIAMOND.stub * reach[1], from[2] + DIAMOND.stub * reach[2]])
-      const end = P(tip.x + shift.x, tip.y + shift.y)
-      const ends = trimmed(circles[stub.atom], { c: end, r: 0 })
-      if (ends) items.push({ type: 'stub', index, p: ends[0], q: end, z: from[2] + (DIAMOND.stub * reach[2]) / 2 })
+      const at = m.atoms[stub.atom].view,
+        reach = turned(stub.dir, m.turn)
+      const here = put(at),
+        far = put([at[0] + reach[0], at[1] + reach[1], at[2] + reach[2]]) // where the missing bond would end
+      const way = dist(here, far),
+        c = circles[stub.atom]
+      const ux = (far.x - here.x) / way,
+        uy = (far.y - here.y) / way
+      items.push({
+        type: 'stub',
+        index,
+        p: P(c.c.x + ux * c.r, c.c.y + uy * c.r),
+        q: P(c.c.x + ux * (c.r + DIAMOND.stub), c.c.y + uy * (c.r + DIAMOND.stub)),
+        z: at[2],
+      })
     })
   // Painter: far to near. At equal depth the model order stands, with bonds and stubs before atoms.
   const rank = { stub: 0, bond: 1, atom: 2 }
@@ -316,9 +344,9 @@ const diamondStructure: SymbolDef = {
   size: { w: DIAMOND.size, h: DIAMOND.size },
   resize: 'uniform',
   min: { w: 120, h: 120 },
-  params: [{ key: 'stubs', label: 'Stubs on outer atoms', type: 'boolean', default: false }],
+  params: [{ key: 'stubs', label: 'Stubs on outer atoms', type: 'boolean', default: true }],
   build({ h, p }) {
-    const pic = diamondPicture(diamondModel(), h, bool(p.stubs, false))
+    const pic = diamondPicture(diamondModel(), h, bool(p.stubs, true))
     const prims: Prim[] = pic.items.map((it): Prim => {
       if (it.type === 'atom') {
         const { c, r } = pic.circles[it.index]

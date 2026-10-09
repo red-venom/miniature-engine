@@ -2,6 +2,10 @@
 // (diamondStructure). The models (ions or atoms with a kind and a place in 3D, bonds with their two ends) are tested against the SCIENCE
 // lines of the brief (spec/catalogue.json) and the inventory rows (spec/diagrams.json). Then the drawing that geometry() gives is checked
 // against the model: every circle and every bond line is where the model puts it, and nothing else is drawn.
+//
+// The numbers differ from the brief in four places, all accepted by the lead (the list is in the header of lattices.ts): the ionic spacing
+// and radii; the diamond turn, 20 degrees (the brief's limit of 15 moved to 20); the cut for a rear bond, z > 0; and the stubs, a fixed 5 u
+// past the circle edge and on by default.
 
 import { describe, expect, it } from 'vitest'
 import { P, dist, type Pt } from '../kernel/geom'
@@ -58,6 +62,13 @@ function toSegment(p: Pt, a: Pt, b: Pt): number {
     dy = b.y - a.y,
     t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)))
   return dist(p, P(a.x + t * dx, a.y + t * dy))
+}
+
+/** How far one segment is from another: 0 when they cross or touch, else the least distance from an end of one to the other. */
+function segmentGap(a: Pt, b: Pt, c: Pt, d: Pt): number {
+  const side = (p: Pt, q: Pt, r: Pt) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x)
+  if (side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0) return 0
+  return Math.min(toSegment(a, c, d), toSegment(b, c, d), toSegment(c, a, b), toSegment(d, a, b))
 }
 
 /** How far a point is from the line through two points. */
@@ -563,9 +574,9 @@ describe('diamondStructure: the model of a cluster of 17 carbon atoms', () => {
   })
 
   describe('is turned about the vertical axis for the picture', () => {
-    it('by no more than the 15 degrees the brief allows, and about the vertical axis: y stays, lengths stay, the right-hand side swings away', () => {
+    it('by no more than the 20 degrees the lead allows (the brief said 15), and about the vertical axis: y stays, lengths stay, the right-hand side swings away', () => {
       expect(DIAMOND.turn).toBeGreaterThan(0)
-      expect(DIAMOND.turn).toBeLessThanOrEqual(15)
+      expect(DIAMOND.turn).toBeLessThanOrEqual(20)
       expect(m.turn).toBe(DIAMOND.turn)
       for (const p of [...D, [2, -1, 3], [-4, 2, 0]] as Vec3[]) {
         const q = turned(p, DIAMOND.turn)
@@ -617,8 +628,8 @@ describe('diamondStructure: the picture of the model', () => {
 
   /**
    * What the drawing should show, from the model and the brief: u = 24 at the size 160, radius 7, the cluster turned and projected by
-   * oblique(x, y, z), centred in the box; a bond is the line between its circle edges, a stub runs from the edge of its atom to 0.4 of the way
-   * to the atom at the other end of the missing bond.
+   * oblique(x, y, z), centred in the box; a bond is the line between its circle edges; a stub runs from the edge of its atom, 5 u past it
+   * (at every size), the way that the missing bond runs in the picture; its depth is that of its atom.
    */
   function expected(h: number, withStubs: boolean) {
     const k = h / 160,
@@ -637,20 +648,18 @@ describe('diamondStructure: the picture of the model', () => {
     const circles = raw.map((d) => ({ ...d, c: P(d.c.x + dx, d.c.y + dy) }))
     const bonds = m.bonds.map((b) => ({ a: b.a, b: b.b, z: (raw[b.a].z + raw[b.b].z) / 2, rear: (raw[b.a].z + raw[b.b].z) / 2 > 0 }))
     const stubs = (withStubs ? m.stubs : []).map((s) => {
-      const from = circles[s.atom].c,
-        far = place(plus(m.atoms[s.atom].pos, s.dir))
-      const zFar = turn(plus(m.atoms[s.atom].pos, s.dir))[2]
-      return {
-        atom: s.atom,
-        tip: P(from.x + 0.4 * (far.x + dx - from.x), from.y + 0.4 * (far.y + dy - from.y)),
-        z: raw[s.atom].z + 0.2 * (zFar - raw[s.atom].z), // the middle of the stub
-      }
+      const here = place(m.atoms[s.atom].pos),
+        far = place(plus(m.atoms[s.atom].pos, s.dir)) // where the missing bond would end
+      const way = Math.hypot(far.x - here.x, far.y - here.y),
+        c = circles[s.atom].c,
+        reach = 7 * k + 5 // from the centre of the atom: its radius, which scales, and the 5 u of the stub, which do not
+      return { atom: s.atom, tip: P(c.x + ((far.x - here.x) / way) * reach, c.y + ((far.y - here.y) / way) * reach), z: raw[s.atom].z }
     })
     return { k, circles, bonds, stubs }
   }
 
   /** The drawing of the cluster, matched to the model: the circle of each atom, the line of each bond and the line of each stub. */
-  function drawn(h: number, withStubs = false) {
+  function drawn(h: number, withStubs: boolean) {
     const want = expected(h, withStubs)
     const d = read(geometry('diamondStructure', h, h, { stubs: withStubs }))
     const taken = new Set<number>()
@@ -684,13 +693,13 @@ describe('diamondStructure: the picture of the model', () => {
     return { k: want.k, d, circles, bonds, stubs }
   }
 
-  it('uses the numbers of the brief: size 160, u = 24, radius 7, stubs 0.4 of a bond', () => {
-    expect([DIAMOND.size, DIAMOND.unit, DIAMOND.radius, DIAMOND.stub]).toEqual([160, 24, 7, 0.4])
+  it('uses the numbers of the brief, size 160, u = 24 and radius 7, and a stub 5 u past the circle (the lead changed it from 0.4 of a bond)', () => {
+    expect([DIAMOND.size, DIAMOND.unit, DIAMOND.radius, DIAMOND.stub]).toEqual([160, 24, 7, 5])
   })
 
   it('is in the oblique projection of rule S14: the front keeps its shape, and a step of depth moves a circle up and to the right at 45 degrees by half the step', () => {
     for (const h of sizes('diamondStructure')) {
-      const x = drawn(h),
+      const x = drawn(h, false),
         u = 24 * x.k,
         half = 0.5 * Math.SQRT1_2 // half a step of depth, at 45 degrees: this far right and this far up
       for (let i = 0; i < 17; i++)
@@ -703,24 +712,25 @@ describe('diamondStructure: the picture of the model', () => {
     }
   })
 
-  it('draws the model: 17 white circles of radius 7 (scaled with the box) at the places of the atoms, 16 bond lines, and nothing else', () => {
+  it('draws the model: 17 white circles of radius 7 (scaled with the box) at the places of the atoms, 16 bond lines, and with stubs off nothing else', () => {
     for (const h of sizes('diamondStructure')) {
-      const x = drawn(h)
+      const x = drawn(h, false)
       expect(x.d.circles).toHaveLength(17)
       expect(x.d.lines).toHaveLength(16)
       expect(x.d.hatches).toHaveLength(0)
       for (const c of x.d.circles) expect([c.role, c.r]).toEqual(['solid', 7 * x.k])
-      expect(geometry('diamondStructure', h, h).prims).toHaveLength(17 + 16)
+      expect(geometry('diamondStructure', h, h, { stubs: false }).prims).toHaveLength(17 + 16)
     }
   })
 
-  it('draws a bond thin (role detail) when it is at the rear and heavy (role outline) when it is not, 8 of each', () => {
-    for (const h of sizes('diamondStructure')) {
-      const x = drawn(h)
-      for (const b of x.bonds) expect(b.line.role, `${m.atoms[b.a].pos} - ${m.atoms[b.b].pos} at ${h}`).toBe(b.rear ? 'detail' : 'outline')
-      expect(x.bonds.filter((b) => b.line.role === 'detail')).toHaveLength(8)
-      expect(x.bonds.filter((b) => b.line.role === 'outline')).toHaveLength(8)
-    }
+  it('draws a bond thin (role detail) when it is at the rear and heavy (role outline) when it is not, 8 of each, with stubs on or off', () => {
+    for (const h of sizes('diamondStructure'))
+      for (const withStubs of [false, true]) {
+        const x = drawn(h, withStubs)
+        for (const b of x.bonds) expect(b.line.role, `${m.atoms[b.a].pos} - ${m.atoms[b.b].pos} at ${h}`).toBe(b.rear ? 'detail' : 'outline')
+        expect(x.bonds.filter((b) => b.line.role === 'detail')).toHaveLength(8)
+        expect(x.bonds.filter((b) => b.line.role === 'outline')).toHaveLength(8)
+      }
   })
 
   it('draws far to near: nothing comes after anything that is nearer to the viewer', () => {
@@ -748,7 +758,7 @@ describe('diamondStructure: the picture of the model', () => {
 
   it('draws no bond through a circle that is not at one of its ends: the line stays at least 7 u from every other circle (7 u scaled with the box)', () => {
     for (const h of sizes('diamondStructure')) {
-      const x = drawn(h)
+      const x = drawn(h, false)
       for (const b of x.bonds)
         x.circles.forEach((c, i) => {
           if (i === b.a || i === b.b) return
@@ -760,7 +770,7 @@ describe('diamondStructure: the picture of the model', () => {
   })
 
   it('draws no two bonds of an atom less than 60 degrees apart, so that the directions can be told apart in the picture', () => {
-    const x = drawn(DIAMOND.size)
+    const x = drawn(DIAMOND.size, false)
     x.circles.forEach((c, i) => {
       const ways = x.bonds
         .filter((b) => b.a === i || b.b === i)
@@ -780,18 +790,17 @@ describe('diamondStructure: the picture of the model', () => {
     for (const h of sizes('diamondStructure')) for (const withStubs of [false, true]) expectCentredInBox(drawn(h, withStubs).d.circles, h, `size ${h}`)
   })
 
-  it('shows no stubs by default; with stubs on it adds 36 thin lines, 3 on each outer atom, each from the edge of its atom to 0.4 of a bond along the missing bond', () => {
-    expect(drawn(DIAMOND.size).d.lines).toHaveLength(16)
+  it('shows the 36 stubs by default and none with stubs off: 3 on each outer atom, thin, each 5 u long past the edge of its atom at every size, along the missing bond', () => {
     for (const h of sizes('diamondStructure')) {
+      expect(read(geometry('diamondStructure', h, h)).lines, `by default at ${h}`).toHaveLength(16 + 36)
+      expect(read(geometry('diamondStructure', h, h, { stubs: false })).lines, `with stubs off at ${h}`).toHaveLength(16)
       const x = drawn(h, true)
       expect(x.d.lines).toHaveLength(16 + 36)
       expect(x.stubs).toHaveLength(36)
       for (const s of x.stubs) {
         expect(s.line.role).toBe('detail')
-        // clear of every circle but its own
-        x.circles.forEach((c, i) => {
-          if (i !== s.atom) expect(toSegment(c.c, s.line.p, s.line.q) - c.r, `at ${h}`).toBeGreaterThanOrEqual(4 * x.k - 1e-6)
-        })
+        // a mark does not scale with the box (rule S3): 5 u at every size
+        expect(dist(s.line.p, s.line.q), `the stub of the atom at ${m.atoms[s.atom].pos} at ${h}`).toBeCloseTo(5, 1)
       }
       m.atoms.forEach((a, i) => expect(x.stubs.filter((s) => s.atom === i)).toHaveLength(a.shell === 2 ? 3 : 0))
       // the same direction gives the same stub on every atom: a parallel projection
@@ -802,6 +811,26 @@ describe('diamondStructure: the picture of the model', () => {
         expect(reach).toHaveLength(9)
         for (const r of reach) expect(same(r, reach[0], 0.05)).toBe(true)
       }
+    }
+  })
+
+  it('keeps every stub 2 u or more from every bond, from every circle that is not its own and from every other stub, at every size', () => {
+    for (const h of sizes('diamondStructure')) {
+      const x = drawn(h, true)
+      x.stubs.forEach((s, i) => {
+        const where = `the stub of the atom at ${m.atoms[s.atom].pos} at ${h}`
+        for (const b of x.bonds)
+          expect(segmentGap(s.line.p, s.line.q, b.line.p, b.line.q), `${where} and the bond ${m.atoms[b.a].pos} - ${m.atoms[b.b].pos}`).toBeGreaterThanOrEqual(
+            2,
+          )
+        x.circles.forEach((c, n) => {
+          if (n !== s.atom) expect(toSegment(c.c, s.line.p, s.line.q) - c.r, `${where} and the atom at ${m.atoms[n].pos}`).toBeGreaterThanOrEqual(2)
+        })
+        x.stubs.forEach((t, j) => {
+          if (j !== i)
+            expect(segmentGap(s.line.p, s.line.q, t.line.p, t.line.q), `${where} and the stub of the atom at ${m.atoms[t.atom].pos}`).toBeGreaterThanOrEqual(2)
+        })
+      })
     }
   })
 })
