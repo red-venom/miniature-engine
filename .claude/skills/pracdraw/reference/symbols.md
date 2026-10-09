@@ -212,7 +212,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 
 | id | name | aliases | size | resize | parameters | cavities | anchors | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `diamondStructure` | Diamond (giant covalent) | giant covalent, carbon structure, tetrahedral carbon, diamond lattice, diamond cluster | 160 × 160 | uniform, min 120 × 120 | stubs: boolean, default false |  |  | label "diamond" |
+| `diamondStructure` | Diamond (giant covalent) | giant covalent, carbon structure, tetrahedral carbon, diamond lattice, diamond cluster | 160 × 160 | uniform, min 120 × 120 | stubs: boolean, default true |  |  | label "diamond" |
 | `fullereneC60` | Buckminsterfullerene (C60) | C60, fullerene, buckyball, football molecule, giant molecule | 150 × 150 | uniform, min 105 × 105 | pentagons: boolean, default false |  |  | label "buckminsterfullerene" |
 | `graphiteStructure` | Graphite (layers) | giant covalent, carbon layers, hexagonal layers, graphite lattice | 250 × 212 | uniform, min 170 × 144 | layers: number 2..4, default 3; forces: boolean, default true |  |  | label "graphite" |
 | `ionicLattice3D` | Ionic lattice (3D) | sodium chloride lattice, giant ionic lattice, NaCl structure, ionic crystal, ionic lattice | 150 × 150 | uniform, min 120 × 120 | bonds: boolean, default true |  |  | label "ionic lattice" |
