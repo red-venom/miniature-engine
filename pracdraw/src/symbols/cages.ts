@@ -5,7 +5,7 @@
 // the atoms with their 3D positions, the bonds with their two ends, and, for the ball, the faces. The drawing never invents a part.
 
 import { P, bounds, dist, f, type Pt } from '../kernel/geom'
-import { bool, circle, num } from './kit'
+import { bool, circle, num, tinted } from './kit'
 import { oblique } from './oblique'
 import type { Geometry, Prim, SymbolDef } from './types'
 
@@ -272,4 +272,230 @@ const graphiteStructure: SymbolDef = {
   },
 }
 
-export const cages: SymbolDef[] = [graphiteStructure]
+// ================================================================ C60
+
+export const PHI = (1 + Math.sqrt(5)) / 2
+
+type V3 = [number, number, number]
+const dot3 = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+const cross3 = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+const sub3 = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+const norm3 = (a: V3): number => Math.hypot(a[0], a[1], a[2])
+const unit3 = (a: V3): V3 => {
+  const l = norm3(a)
+  return [a[0] / l, a[1] / l, a[2] / l]
+}
+/** The even permutations of (a, b, c): the three cyclic ones. */
+const cyclic = ([a, b, c]: V3): V3[] => [
+  [a, b, c],
+  [b, c, a],
+  [c, a, b],
+]
+/** All sign choices of a triple (a zero stays zero, so it gives one choice, not two). */
+const signed = (v: V3): V3[] => {
+  const out: V3[] = []
+  for (const sx of v[0] === 0 ? [1] : [1, -1])
+    for (const sy of v[1] === 0 ? [1] : [1, -1]) for (const sz of v[2] === 0 ? [1] : [1, -1]) out.push([sx * v[0], sy * v[1], sz * v[2]])
+  return out
+}
+
+/** One carbon atom of the molecule: the truncated icosahedron of edge length 2. */
+export interface C60Atom {
+  id: number
+  x: number
+  y: number
+  z: number
+}
+export interface C60Bond {
+  a: number
+  b: number
+}
+/** A pentagon or hexagon: `dir` is the unit vector from the middle of the ball to the middle of the face; `atoms` go round the ring. */
+export interface C60Face {
+  kind: 'pentagon' | 'hexagon'
+  dir: V3
+  atoms: number[]
+}
+export interface C60Molecule {
+  atoms: C60Atom[]
+  bonds: C60Bond[]
+  faces: C60Face[]
+}
+
+/** The distance from the middle of the ball to an atom, for an edge of 2. */
+export const C60_RADIUS = Math.sqrt(10 + 9 * PHI)
+
+let molecule: C60Molecule | undefined
+/**
+ * The molecule, from the formula of the brief. Atoms: the even (cyclic) permutations of (0, 1, 3 phi), (1, 2 + phi, 2 phi) and
+ * (phi, 2, 2 phi + 1) with every choice of signs. Bonds: the pairs of atoms 2 apart. Faces: the 12 pentagons are along the directions
+ * (0, 1, phi) and its cyclic permutations; the 20 hexagons along (1, 1, 1) and the cyclic permutations of (0, phi, 1/phi). (The brief writes
+ * (0, 1/phi, phi) for the last twelve, which is the mirror image of the family that this set of atoms has: it picks out one atom, not a hexagon.)
+ * The atoms of a face are the ones whose projection on its direction is the largest.
+ */
+export function c60Molecule(): C60Molecule {
+  if (molecule) return molecule
+  const atoms: C60Atom[] = []
+  for (const base of [
+    [0, 1, 3 * PHI],
+    [1, 2 + PHI, 2 * PHI],
+    [PHI, 2, 2 * PHI + 1],
+  ] as V3[])
+    for (const c of cyclic(base)) for (const [x, y, z] of signed(c)) atoms.push({ id: atoms.length, x, y, z })
+  const at = (i: number): V3 => [atoms[i].x, atoms[i].y, atoms[i].z]
+  const bonds: C60Bond[] = []
+  for (const p of atoms) for (const q of atoms) if (p.id < q.id && Math.abs(norm3(sub3(at(p.id), at(q.id))) - 2) < 1e-9) bonds.push({ a: p.id, b: q.id })
+  const faces: C60Face[] = []
+  const face = (kind: C60Face['kind'], d: V3) => {
+    const dir = unit3(d),
+      along = atoms.map((_, i) => dot3(at(i), dir)),
+      top = Math.max(...along)
+    const ids = atoms.filter((_, i) => along[i] > top - 1e-9).map((a) => a.id)
+    // Round the ring: by the angle about the middle of the face.
+    const mid: V3 = [0, 1, 2].map((k) => ids.reduce((sum, i) => sum + at(i)[k], 0) / ids.length) as V3
+    const e1 = unit3(sub3(at(ids[0]), mid)),
+      e2 = cross3(dir, e1)
+    const angle = (i: number) => Math.atan2(dot3(sub3(at(i), mid), e2), dot3(sub3(at(i), mid), e1))
+    faces.push({ kind, dir, atoms: [...ids].sort((p, q) => angle(p) - angle(q)) })
+  }
+  for (const c of cyclic([0, 1, PHI])) for (const d of signed(c)) face('pentagon', d)
+  for (const d of signed([1, 1, 1])) face('hexagon', d)
+  for (const c of cyclic([0, PHI, 1 / PHI])) for (const d of signed(c)) face('hexagon', d)
+  molecule = { atoms, bonds, faces }
+  return molecule
+}
+
+/** How the ball is turned to the viewer. */
+export interface C60Turn {
+  /** The direction of the pentagon that is turned to the viewer. */
+  pentagon: V3
+  /** Before the tilt, a corner of that pentagon points this way on the page: degrees anticlockwise from the right, so 90 is up and -90 is down. */
+  corner: number
+  /** Then the ball is tilted about x (positive: the top comes towards the viewer) and about y (positive: the front goes to the right), in degrees. */
+  tiltX: number
+  tiltY: number
+  /**
+   * A face faces the viewer when the cosine of the angle between its normal and the line of sight is more than this. 0 is every face that is
+   * turned to the viewer at all; a little more leaves out the faces seen almost edge-on, which would be slivers with two lines 1 or 2 u apart.
+   */
+  facing: number
+}
+export const C60_TURN: C60Turn = { pentagon: [0, 1, PHI], corner: -90, tiltX: 14, tiltY: 10, facing: 0.3 }
+
+type Matrix = [V3, V3, V3]
+const apply = (m: Matrix, v: V3): V3 => [dot3(m[0], v), dot3(m[1], v), dot3(m[2], v)]
+const times = (a: Matrix, b: Matrix): Matrix => [0, 1, 2].map((i) => [0, 1, 2].map((j) => a[i][0] * b[0][j] + a[i][1] * b[1][j] + a[i][2] * b[2][j])) as Matrix
+function rotation(axis: V3, degrees: number): Matrix {
+  const [x, y, z] = unit3(axis),
+    c = Math.cos((degrees * Math.PI) / 180),
+    s = Math.sin((degrees * Math.PI) / 180),
+    t = 1 - c
+  return [
+    [t * x * x + c, t * x * y - s * z, t * x * z + s * y],
+    [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+    [t * x * z - s * y, t * y * z + s * x, t * z * z + c],
+  ]
+}
+
+/** The ball as the viewer sees it: x to the right, y up, z towards the viewer, the middle of the ball at the origin, an edge 2 long. */
+export interface C60View {
+  atoms: C60Atom[]
+  /** `hidden`: the bond lies on no face that faces the viewer, so an opaque ball hides it. */
+  bonds: (C60Bond & { hidden: boolean })[]
+  faces: (C60Face & { normal: V3; facing: boolean })[]
+  /** The atoms at the ends of the bonds that are not hidden, far to near: the atoms that the picture draws. */
+  shown: number[]
+}
+
+export function c60View(turn: C60Turn = C60_TURN, m: C60Molecule = c60Molecule()): C60View {
+  // Turn the pentagon to the viewer along the shortest way, then about the line of sight so that a corner of it points the way `corner` says.
+  const n = unit3(turn.pentagon),
+    axis = cross3(n, [0, 0, 1])
+  let to: Matrix =
+    norm3(axis) < 1e-12
+      ? [
+          [1, 0, 0],
+          [0, 1, 0],
+          [0, 0, 1],
+        ]
+      : rotation(axis, (Math.acos(n[2]) * 180) / Math.PI)
+  const front = m.faces.find((fc) => fc.kind === 'pentagon' && dot3(apply(to, fc.dir), [0, 0, 1]) > 1 - 1e-9)!
+  const p0 = apply(to, [m.atoms[front.atoms[0]].x, m.atoms[front.atoms[0]].y, m.atoms[front.atoms[0]].z])
+  to = times(rotation([0, 0, 1], turn.corner - (Math.atan2(p0[1], p0[0]) * 180) / Math.PI), to)
+  const matrix = times(rotation([0, 1, 0], turn.tiltY), times(rotation([1, 0, 0], turn.tiltX), to))
+  const atoms = m.atoms.map((a): C60Atom => {
+    const [x, y, z] = apply(matrix, [a.x, a.y, a.z])
+    return { id: a.id, x, y, z }
+  })
+  const faces = m.faces.map((fc) => {
+    const normal = apply(matrix, fc.dir)
+    return { ...fc, normal, facing: normal[2] > turn.facing }
+  })
+  // A bond is seen when it is a side of a face that faces the viewer.
+  const seen = new Set<string>()
+  for (const fc of faces)
+    if (fc.facing)
+      fc.atoms.forEach((a, i) => {
+        const b = fc.atoms[(i + 1) % fc.atoms.length]
+        seen.add(`${Math.min(a, b)}-${Math.max(a, b)}`)
+      })
+  const bonds = m.bonds.map((b) => ({ ...b, hidden: !seen.has(`${b.a}-${b.b}`) }))
+  const shown = [...new Set(bonds.filter((b) => !b.hidden).flatMap((b) => [b.a, b.b]))].sort((p, q) => atoms[p].z - atoms[q].z || p - q)
+  return { atoms, bonds, faces, shown }
+}
+
+/** At the default size 150: the ball has the radius 0.44 w and an atom the radius 3.8 u (its outline is 2 u whatever the size). */
+export const C60_DRAW = { box: 150, ball: 0.44, atomR: 3.8 }
+
+const meanZ = (view: C60View, ids: number[]): number => ids.reduce((s, i) => s + view.atoms[i].z, 0) / ids.length
+
+/** The geometry of the ball for a box of w by h u: orthographic, far to near. */
+export function c60Geometry(w: number, h: number, pentagons: boolean, turn: C60Turn = C60_TURN): Geometry {
+  const view = c60View(turn)
+  const k = Math.min(w / C60_DRAW.box, h / C60_DRAW.box)
+  const u = (C60_DRAW.ball * C60_DRAW.box * k) / C60_RADIUS, // u for one unit of the model
+    r = C60_DRAW.atomR * k
+  const raw = view.atoms.map((a) => P(a.x * u, -a.y * u))
+  const b = circleBounds(
+    view.shown.map((i) => raw[i]),
+    r,
+  )
+  const by = P(-(b.x0 + b.x1) / 2, h / 2 - (b.y0 + b.y1) / 2)
+  const at = (i: number) => P(raw[i].x + by.x, raw[i].y + by.y)
+  const prims: Prim[] = []
+  // The pentagons are tinted polygons behind the bonds.
+  if (pentagons)
+    for (const fc of view.faces.filter((q) => q.facing && q.kind === 'pentagon').sort((p, q) => meanZ(view, p.atoms) - meanZ(view, q.atoms)))
+      prims.push(...tinted(fc.atoms.map((i, j) => `${j ? 'L' : 'M'}${f(at(i).x)} ${f(at(i).y)}`).join('') + 'Z'))
+  const lines = view.bonds
+    .filter((q) => !q.hidden)
+    .sort((p, q) => view.atoms[p.a].z + view.atoms[p.b].z - (view.atoms[q.a].z + view.atoms[q.b].z) || p.a - q.a || p.b - q.b)
+    .map(({ a, b: c }) => {
+      const p = at(a),
+        q = at(c),
+        len = dist(p, q) || 1,
+        dx = ((q.x - p.x) / len) * r,
+        dy = ((q.y - p.y) / len) * r
+      return `M${f(p.x + dx)} ${f(p.y + dy)}L${f(q.x - dx)} ${f(q.y - dy)}`
+    })
+  prims.push({ d: lines.join(''), role: 'outline' })
+  prims.push({ d: view.shown.map((i) => circle(at(i).x, at(i).y, r)).join(''), role: 'solid' })
+  return { prims }
+}
+
+const fullereneC60: SymbolDef = {
+  id: 'fullereneC60',
+  name: 'Buckminsterfullerene (C60)',
+  aliases: ['C60', 'fullerene', 'buckyball', 'football molecule', 'giant molecule'],
+  label: 'buckminsterfullerene',
+  pack: 'structures',
+  size: { w: 150, h: 150 },
+  resize: 'uniform',
+  min: { w: 105, h: 105 },
+  params: [{ key: 'pentagons', label: 'Shade pentagons', type: 'boolean', default: false }],
+  build({ w, h, p }) {
+    return c60Geometry(w, h, bool(p.pentagons, false))
+  },
+}
+
+export const cages: SymbolDef[] = [graphiteStructure, fullereneC60]

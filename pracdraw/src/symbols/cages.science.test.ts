@@ -4,20 +4,29 @@
 import { describe, expect, it } from 'vitest'
 import { P, dist, type Pt } from '../kernel/geom'
 import {
+  C60_DRAW,
+  C60_RADIUS,
+  C60_TURN,
   DASH,
   FORCE_SITES,
   GRAPHITE,
   GRAPHITE_BRIEF,
   GRAPHITE_STYLE,
+  PHI,
+  c60Geometry,
+  c60Molecule,
+  c60View,
   circleBounds,
   clampLayers,
   graphiteGeometry,
   graphiteModel,
   honeycombPatch,
+  type C60Turn,
   type GraphiteStyle,
 } from './cages'
 import { oblique } from './oblique'
 import { geometry } from './registry'
+import { primNodes } from '../render/render'
 import type { Geometry, Prim } from './types'
 
 // ---------------------------------------------------------------- reading a drawing
@@ -347,5 +356,361 @@ describe('graphite: the drawing agrees with the model', () => {
         expect(bonds.filter((b) => crosses(line, b)).length, `dotted line ${i}`).toBeLessThanOrEqual(1)
       })
     }
+  })
+})
+
+// ================================================================ C60
+
+type V3 = [number, number, number]
+const sub3 = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+const dot3 = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+const cross3 = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+const len3 = (a: V3): number => Math.hypot(a[0], a[1], a[2])
+const rad = (deg: number): number => (deg * Math.PI) / 180
+
+/** All the cycles of `n` atoms in a graph, each once, as sorted lists of atoms. */
+function cyclesOf(neighbours: number[][], n: number): number[][] {
+  const found = new Map<string, number[]>()
+  const walk = (start: number, path: number[]) => {
+    const last = path[path.length - 1]
+    if (path.length === n) {
+      if (neighbours[last].includes(start))
+        found.set(
+          [...path].sort((a, b) => a - b).join(),
+          [...path].sort((a, b) => a - b),
+        )
+      return
+    }
+    for (const next of neighbours[last]) if (next > start && !path.includes(next)) walk(start, [...path, next])
+  }
+  neighbours.forEach((_, start) => walk(start, [start]))
+  return [...found.values()]
+}
+
+describe('C60: the molecule (the full model, before any view)', () => {
+  const m = c60Molecule()
+  const at = (i: number): V3 => [m.atoms[i].x, m.atoms[i].y, m.atoms[i].z]
+  const key = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`
+  const neighbours = m.atoms.map(() => [] as number[])
+  for (const { a, b } of m.bonds) {
+    neighbours[a].push(b)
+    neighbours[b].push(a)
+  }
+  const pentagons = m.faces.filter((f) => f.kind === 'pentagon'),
+    hexagons = m.faces.filter((f) => f.kind === 'hexagon')
+
+  it('has 60 atoms, all different, on a sphere, from the three families of the formula (edge 2, phi = (1 + sqrt 5) / 2)', () => {
+    expect(PHI).toBeCloseTo((1 + Math.sqrt(5)) / 2, 12)
+    expect(m.atoms).toHaveLength(60)
+    for (let i = 0; i < 60; i++) for (let j = i + 1; j < 60; j++) expect(len3(sub3(at(i), at(j)))).toBeGreaterThan(1.9)
+    for (const a of m.atoms) expect(len3(at(a.id))).toBeCloseTo(Math.sqrt(10 + 9 * PHI), 9) // one distance from the middle
+    expect(C60_RADIUS).toBeCloseTo(4.9563, 3)
+    // The three families: 12 atoms with a zero coordinate, 24 with the coordinate 2 phi or its permutations, 24 with phi, 2 and 2 phi + 1.
+    const has = (x: number) => (a: { x: number; y: number; z: number }) => [a.x, a.y, a.z].some((c) => Math.abs(Math.abs(c) - x) < 1e-9)
+    expect(m.atoms.filter(has(0))).toHaveLength(12)
+    expect(m.atoms.filter(has(3 * PHI))).toHaveLength(12)
+    expect(m.atoms.filter(has(2 + PHI))).toHaveLength(24)
+    expect(m.atoms.filter(has(2 * PHI + 1))).toHaveLength(24)
+  })
+
+  it('has 90 bonds of one length, 2: the pairs of atoms that close, and no other pair closer than 3', () => {
+    expect(m.bonds).toHaveLength(90)
+    const keys = new Set(m.bonds.map((b) => key(b.a, b.b)))
+    expect(keys.size).toBe(90)
+    for (const { a, b } of m.bonds) expect(len3(sub3(at(a), at(b)))).toBeCloseTo(2, 9)
+    for (let i = 0; i < 60; i++) for (let j = i + 1; j < 60; j++) if (!keys.has(key(i, j))) expect(len3(sub3(at(i), at(j)))).toBeGreaterThan(3)
+  })
+
+  it('has 12 pentagons and 20 hexagons: rings of 5 and 6 atoms joined by bonds, flat, with every side 2', () => {
+    expect(pentagons).toHaveLength(12)
+    expect(hexagons).toHaveLength(20)
+    const keys = new Set(m.bonds.map((b) => key(b.a, b.b)))
+    for (const f of m.faces) {
+      expect(f.atoms).toHaveLength(f.kind === 'pentagon' ? 5 : 6)
+      expect(new Set(f.atoms).size).toBe(f.atoms.length)
+      f.atoms.forEach((a, i) => {
+        expect(keys.has(key(a, f.atoms[(i + 1) % f.atoms.length])), `${f.kind} side`).toBe(true)
+        expect(dot3(at(a), f.dir)).toBeCloseTo(dot3(at(f.atoms[0]), f.dir), 9) // all in one plane, square to `dir`
+      })
+      expect(len3(f.dir)).toBeCloseTo(1, 9)
+    }
+  })
+
+  it('has exactly the faces that the bonds make: the 5-rings and the flat 6-rings of the bond graph are the pentagons and hexagons (no other)', () => {
+    const asKey = (atoms: number[]) => [...atoms].sort((a, b) => a - b).join()
+    // every 5-cycle of the graph is a pentagon of the model, and the other way round
+    const five = cyclesOf(neighbours, 5).map((c) => c.join())
+    expect(five.sort()).toEqual(pentagons.map((f) => asKey(f.atoms)).sort())
+    // a 6-cycle of the graph that lies in a plane is a hexagon of the model
+    const flat = cyclesOf(neighbours, 6).filter((c) => {
+      const centre = c.map(at).reduce((s, p) => [s[0] + p[0] / 6, s[1] + p[1] / 6, s[2] + p[2] / 6] as V3, [0, 0, 0] as V3)
+      const n = cross3(sub3(at(c[0]), centre), sub3(at(c[1]), centre))
+      const normal = len3(n) > 1e-9 ? n : cross3(sub3(at(c[0]), centre), sub3(at(c[2]), centre))
+      return c.every((i) => Math.abs(dot3(sub3(at(i), centre), normal)) < 1e-9)
+    })
+    expect(flat.map((c) => c.join()).sort()).toEqual(hexagons.map((f) => asKey(f.atoms)).sort())
+  })
+
+  it('puts every atom on 3 bonds, 1 pentagon and 2 hexagons', () => {
+    for (const a of m.atoms) {
+      expect(neighbours[a.id], `atom ${a.id}`).toHaveLength(3)
+      expect(
+        pentagons.filter((f) => f.atoms.includes(a.id)),
+        `atom ${a.id} pentagons`,
+      ).toHaveLength(1)
+      expect(
+        hexagons.filter((f) => f.atoms.includes(a.id)),
+        `atom ${a.id} hexagons`,
+      ).toHaveLength(2)
+    }
+  })
+
+  it('puts every bond on two faces and no two pentagons side by side: each pentagon touches only hexagons', () => {
+    const onBond = new Map<string, string[]>()
+    for (const f of m.faces)
+      f.atoms.forEach((a, i) => {
+        const k = key(a, f.atoms[(i + 1) % f.atoms.length])
+        onBond.set(k, [...(onBond.get(k) ?? []), f.kind])
+      })
+    expect(onBond.size).toBe(90)
+    for (const kinds of onBond.values()) expect(kinds).toHaveLength(2)
+    const pairs = [...onBond.values()].map((k) => k.sort().join('+'))
+    expect(pairs.filter((p) => p === 'hexagon+pentagon')).toHaveLength(60) // 12 pentagons of 5 sides
+    expect(pairs.filter((p) => p === 'hexagon+hexagon')).toHaveLength(30)
+    expect(pairs.filter((p) => p === 'pentagon+pentagon')).toHaveLength(0)
+  })
+
+  it("satisfies Euler's formula for a closed surface: atoms - bonds + faces = 2", () => {
+    expect(m.atoms.length - m.bonds.length + m.faces.length).toBe(2)
+  })
+})
+
+describe('C60: the view', () => {
+  const view = c60View()
+  const at = (i: number): V3 => [view.atoms[i].x, view.atoms[i].y, view.atoms[i].z]
+  /** The outward unit normal of a face, from the positions of its atoms in the view (not from the `normal` that the model holds). */
+  function normalOf(atoms: number[]): V3 {
+    const ps = atoms.map(at)
+    let n: V3 = [0, 0, 0]
+    ps.forEach((p, i) => {
+      const q = ps[(i + 1) % ps.length]
+      n = [n[0] + (p[1] - q[1]) * (p[2] + q[2]), n[1] + (p[2] - q[2]) * (p[0] + q[0]), n[2] + (p[0] - q[0]) * (p[1] + q[1])]
+    })
+    const centre = ps.reduce((s, p) => [s[0] + p[0], s[1] + p[1], s[2] + p[2]] as V3, [0, 0, 0] as V3)
+    const unit = n.map((x) => x / len3(n)) as V3
+    return dot3(unit, centre) < 0 ? (unit.map((x) => -x) as V3) : unit
+  }
+
+  it('is a rigid turn of the molecule: the same distances, the middle of the ball at the origin', () => {
+    const m = c60Molecule()
+    for (let i = 0; i < 60; i++) expect(len3(at(i))).toBeCloseTo(C60_RADIUS, 9)
+    for (const { a, b } of m.bonds) expect(len3(sub3(at(a), at(b)))).toBeCloseTo(2, 9)
+    expect(view.bonds).toHaveLength(90)
+    expect(view.faces).toHaveLength(32)
+  })
+
+  it('turns a pentagon to the viewer, then tilts the ball 14 degrees about x and 10 degrees about y', () => {
+    expect(C60_TURN.tiltX).toBe(14)
+    expect(C60_TURN.tiltY).toBe(10)
+    const front = [...view.faces].sort((a, b) => b.normal[2] - a.normal[2])[0]
+    expect(front.kind).toBe('pentagon')
+    // (0, 0, 1) turned about x by 14 degrees, then about y by 10 degrees
+    const expected: V3 = [Math.cos(rad(14)) * Math.sin(rad(10)), -Math.sin(rad(14)), Math.cos(rad(14)) * Math.cos(rad(10))]
+    normalOf(front.atoms).forEach((x, i) => expect(x).toBeCloseTo(expected[i], 9)) // from the positions of its atoms in the view
+    front.normal.forEach((x, i) => expect(x).toBeCloseTo(expected[i], 9))
+    // without the tilt the pentagon is square to the viewer and a corner of it points the way `corner` says
+    const flat = c60View({ ...C60_TURN, tiltX: 0, tiltY: 0 })
+    const f0 = flat.faces.find((f) => f.normal[2] > 1 - 1e-9)!
+    expect(f0.kind).toBe('pentagon')
+    const corner = f0.atoms
+      .map((i) => flat.atoms[i])
+      .sort((a, b) => Math.cos(rad(C60_TURN.corner)) * (b.x - a.x) + Math.sin(rad(C60_TURN.corner)) * (b.y - a.y))[0]
+    expect(Math.atan2(corner.y, corner.x)).toBeCloseTo(rad(C60_TURN.corner), 9)
+  })
+
+  it('has the faces that face the viewer: those whose outward normal, from the atoms in the view, points at the viewer by more than `facing`', () => {
+    for (const f of view.faces) {
+      const n = normalOf(f.atoms)
+      n.forEach((x, i) => expect(x).toBeCloseTo(f.normal[i], 9))
+      expect(f.facing, `${f.kind} with normal z ${n[2].toFixed(3)}`).toBe(n[2] > C60_TURN.facing)
+    }
+    // no face is close to the threshold: the set does not depend on rounding
+    for (const f of view.faces) expect(Math.abs(f.normal[2] - C60_TURN.facing)).toBeGreaterThan(0.05)
+    expect(view.faces.filter((f) => f.facing).length).toBeGreaterThan(8)
+    expect(view.faces.filter((f) => f.facing).length).toBeLessThan(16)
+  })
+
+  it('hides a bond exactly when it lies on no face that faces the viewer, and shows exactly the atoms at the ends of the other bonds', () => {
+    const facing = view.faces.filter((f) => f.facing)
+    for (const b of view.bonds) expect(b.hidden, `bond ${b.a}-${b.b}`).toBe(!facing.some((f) => f.atoms.includes(b.a) && f.atoms.includes(b.b)))
+    const ends = new Set(view.bonds.filter((b) => !b.hidden).flatMap((b) => [b.a, b.b]))
+    expect(new Set(view.shown)).toEqual(ends)
+    expect(view.shown).toHaveLength(ends.size)
+    // every atom of a face that faces the viewer is shown
+    for (const f of facing) for (const a of f.atoms) expect(view.shown).toContain(a)
+    // far to near
+    for (let i = 1; i < view.shown.length; i++) expect(view.atoms[view.shown[i]].z).toBeGreaterThanOrEqual(view.atoms[view.shown[i - 1]].z)
+  })
+
+  it('agrees with an opaque ball: a bond is seen when the point on it, moved towards the viewer, is outside the ball', () => {
+    const m = c60Molecule()
+    // The ball is the set of points that are inside every face plane (it is convex). A point on a bond that is nudged towards the viewer
+    // leaves the ball exactly when it is not covered by the ball in front of it.
+    const outside = (p: V3) => view.faces.some((f) => dot3(p, f.normal) > dot3(at(f.atoms[0]), f.normal) + 1e-9)
+    const all = c60View({ ...C60_TURN, facing: 0 }) // every face turned to the viewer at all
+    for (const b of all.bonds) {
+      const mid: V3 = [0, 1, 2].map((k) => (at(b.a)[k] + at(b.b)[k]) / 2) as V3
+      expect(outside([mid[0], mid[1], mid[2] + 1e-6]), `bond ${b.a}-${b.b}`).toBe(!b.hidden)
+    }
+    // and the picture only ever shows bonds that the opaque ball shows: a bond left out by `facing` is one that is almost edge-on
+    for (const b of view.bonds) if (!b.hidden) expect(all.bonds.find((q) => q.a === b.a && q.b === b.b)!.hidden).toBe(false)
+    const cut = view.bonds.filter((b, i) => b.hidden && !all.bonds[i].hidden)
+    for (const b of cut)
+      for (const f of view.faces.filter((q) => q.atoms.includes(b.a) && q.atoms.includes(b.b))) expect(f.normal[2]).toBeLessThanOrEqual(C60_TURN.facing)
+    expect(m.bonds).toHaveLength(90)
+  })
+})
+
+describe('C60: the drawing agrees with the model', () => {
+  const sizes = [150, 105, 225] // the default, the minimum, 1.5 times
+  /** The scale (u for one unit of the model) of a picture, from the two shown atoms that are farthest apart on the page. */
+  function scaleOf(view: ReturnType<typeof c60View>, circles: { c: Pt; r: number }[]): number {
+    const flat = view.shown.map((i) => P(view.atoms[i].x, -view.atoms[i].y))
+    let far: [number, number] = [0, 1]
+    for (let i = 0; i < flat.length; i++) for (let j = i + 1; j < flat.length; j++) if (dist(flat[i], flat[j]) > dist(flat[far[0]], flat[far[1]])) far = [i, j]
+    return dist(circles[far[0]].c, circles[far[1]].c) / dist(flat[far[0]], flat[far[1]])
+  }
+
+  for (const pentagons of [false, true])
+    for (const w of sizes)
+      it(`draws every atom and bond that the view shows, and no other (${w} x ${w}, pentagons ${pentagons})`, () => {
+        const view = c60View()
+        const g = c60Geometry(w, w, pentagons)
+        const circles = circlesIn(prim(g, 'solid'))
+        expect(circles).toHaveLength(view.shown.length)
+        const k = w / C60_DRAW.box
+        const r = C60_DRAW.atomR * k
+        for (const c of circles) expect(c.r).toBeCloseTo(r, 2)
+        // orthographic, with the ball radius 0.44 w: one unit of the model is 0.44 w / C60_RADIUS u
+        const u = scaleOf(view, circles)
+        expect(u * C60_RADIUS).toBeCloseTo(C60_DRAW.ball * w, 1)
+        // atom i is at (x, -y) u, centred in the box (the circles are the far-to-near list of `shown`)
+        const raw = view.shown.map((i) => P(view.atoms[i].x * u, -view.atoms[i].y * u))
+        const b = circleBounds(raw, r)
+        const by = P(-(b.x0 + b.x1) / 2, w / 2 - (b.y0 + b.y1) / 2)
+        circles.forEach((c, i) => expect(near(c.c, P(raw[i].x + by.x, raw[i].y + by.y)), `atom ${view.shown[i]} at ${c.c.x},${c.c.y}`).toBe(true))
+        const d = circleBounds(
+          circles.map((c) => c.c),
+          r,
+        )
+        expect(d.x0).toBeGreaterThanOrEqual(-w / 2 - 0.02)
+        expect(d.x1).toBeLessThanOrEqual(w / 2 + 0.02)
+        expect(d.y0).toBeGreaterThanOrEqual(-0.02)
+        expect(d.y1).toBeLessThanOrEqual(w + 0.02)
+        // one line for each bond that is not hidden, from the edge of one circle to the edge of the other, far to near; none for a hidden bond
+        const slot = new Map(view.shown.map((id, i) => [id, i]))
+        const lines = linesIn(prim(g, 'outline'))
+        const visible = view.bonds.filter((q) => !q.hidden)
+        expect(lines).toHaveLength(visible.length)
+        const drawn = lines.map(([p, q]) => {
+          const ends = [0, 1].map((e) => circles.findIndex((c) => Math.abs(dist([p, q][e], c.c) - r) < 0.03))
+          return ends
+        })
+        const wanted = new Set(visible.map((q) => [slot.get(q.a)!, slot.get(q.b)!].sort((x, y) => x - y).join()))
+        expect(new Set(drawn.map((e) => e.sort((x, y) => x - y).join()))).toEqual(wanted)
+        expect(new Set(drawn.map((e) => e.sort((x, y) => x - y).join())).size).toBe(visible.length)
+        lines.forEach(([p, q], i) => {
+          const [a, c] = drawn[i]
+          expect(a).toBeGreaterThanOrEqual(0)
+          expect(c).toBeGreaterThanOrEqual(0)
+          expect(distToSegment(p, [circles[a].c, circles[c].c])).toBeLessThan(0.03) // on the line between the two centres
+          expect(distToSegment(q, [circles[a].c, circles[c].c])).toBeLessThan(0.03)
+        })
+        for (const q of view.bonds.filter((x) => x.hidden && slot.has(x.a) && slot.has(x.b)))
+          expect(wanted.has([slot.get(q.a)!, slot.get(q.b)!].sort((x, y) => x - y).join()), `hidden bond ${q.a}-${q.b} drawn`).toBe(false)
+        // far to near: the circles, and the lines by the middle of the bond
+        for (let i = 1; i < circles.length; i++) expect(view.atoms[view.shown[i]].z).toBeGreaterThanOrEqual(view.atoms[view.shown[i - 1]].z)
+        const depth = drawn.map(([a, c]) => view.atoms[view.shown[a]].z + view.atoms[view.shown[c]].z)
+        for (let i = 1; i < depth.length; i++) expect(depth[i]).toBeGreaterThanOrEqual(depth[i - 1] - 1e-9)
+        // the pentagons: a tinted polygon (and its hatch) behind the bonds for each pentagon that faces the viewer, and only then
+        const tints = g.prims.filter((p) => p.role === 'tint'),
+          hatches = g.prims.filter((p) => p.role === 'hatch')
+        const facingPentagons = view.faces.filter((q) => q.facing && q.kind === 'pentagon')
+        expect(tints).toHaveLength(pentagons ? facingPentagons.length : 0)
+        expect(hatches.length).toBeLessThanOrEqual(tints.length)
+        expect(hatches.length).toBeGreaterThan(pentagons ? 0 : -1)
+        if (pentagons) {
+          const wantedPolys = new Set(
+            facingPentagons.map((q) =>
+              q.atoms
+                .map((a) => slot.get(a)!)
+                .sort((x, y) => x - y)
+                .join(),
+            ),
+          )
+          const polys = tints.map((t) =>
+            [...t.d.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)]
+              .map((m) => circles.findIndex((c) => near(c.c, P(Number(m[1]), Number(m[2])), 0.03)))
+              .sort((x, y) => x - y)
+              .join(),
+          )
+          expect(new Set(polys)).toEqual(wantedPolys)
+          // behind the bonds: every tint and hatch comes before the first bond line
+          const first = g.prims.findIndex((p) => p.role === 'outline')
+          g.prims.forEach((p, i) => {
+            if (p.role === 'tint' || p.role === 'hatch') expect(i).toBeLessThan(first)
+          })
+        }
+        // nothing else: no text, no dashes
+        expect(g.texts ?? []).toEqual([])
+        expect(g.prims.every((p) => ['outline', 'solid', 'tint', 'hatch'].includes(p.role))).toBe(true)
+        expect(g.prims.at(-1)!.role).toBe('solid')
+      })
+
+  it('is what the registry draws for the symbol, with `pentagons` read from the parameters', () => {
+    for (const pentagons of [false, true])
+      expect(JSON.stringify(geometry('fullereneC60', 150, 150, { pentagons }))).toBe(JSON.stringify(c60Geometry(150, 150, pentagons)))
+    expect(geometry('fullereneC60', 150, 150).prims.some((p) => p.role === 'tint')).toBe(false) // the default shades nothing
+  })
+
+  it('shows the pentagons as a hatch, not only a tint, on a photocopy', () => {
+    const g = c60Geometry(150, 150, true)
+    const colour = primNodes(g.prims, false).over,
+      mono = primNodes(g.prims, true).over
+    const pentagonsFacing = c60View().faces.filter((f) => f.facing && f.kind === 'pentagon').length
+    expect(g.prims.filter((p) => p.role === 'tint')).toHaveLength(pentagonsFacing)
+    expect(mono.length - colour.length).toBe(g.prims.filter((p) => p.role === 'hatch').length) // the hatch lines exist on the photocopy only
+    expect(g.prims.filter((p) => p.role === 'hatch').length).toBeGreaterThanOrEqual(pentagonsFacing - 1) // a pentagon seen edge-on may be too thin for a line
+  })
+
+  it('draws no two atoms overlapping, with their outlines 2 u apart or more at the default size (the closest pair is 5 u apart without `facing`)', () => {
+    const gap = (turn: C60Turn, w = 150) => {
+      const view = c60View(turn)
+      const circles = circlesIn(prim(c60Geometry(w, w, false, turn), 'solid'))
+      expect(circles).toHaveLength(view.shown.length)
+      let min = Infinity
+      for (let i = 0; i < circles.length; i++) for (let j = i + 1; j < circles.length; j++) min = Math.min(min, dist(circles[i].c, circles[j].c))
+      return { min, r: circles[0].r }
+    }
+    for (const w of sizes) {
+      const { min, r } = gap(C60_TURN, w)
+      expect(min, `closest pair at ${w}`).toBeGreaterThan(2 * r) // no two circles overlap
+    }
+    const { min, r } = gap(C60_TURN)
+    expect(min - 2 * (r + 1)).toBeGreaterThanOrEqual(2) // the outlines do not touch
+    // The brief draws every face that is turned to the viewer at all: that is 16 faces and 40 atoms, and the closest two atoms are less than 2 r apart.
+    const brief = gap({ ...C60_TURN, facing: 0, corner: -90 })
+    expect(brief.min).toBeLessThan(2 * brief.r)
+    expect(c60View({ ...C60_TURN, facing: 0 }).shown).toHaveLength(40)
+  })
+
+  it('runs no bond over an atom that is not at its end', () => {
+    const g = c60Geometry(150, 150, false)
+    const circles = circlesIn(prim(g, 'solid'))
+    for (const line of linesIn(prim(g, 'outline')))
+      for (const c of circles) {
+        const ends = line.some((p) => Math.abs(dist(p, c.c) - c.r) < 0.03)
+        if (!ends) expect(distToSegment(c.c, line), 'a bond runs over an atom').toBeGreaterThan(c.r + 1 + 1)
+      }
   })
 })
