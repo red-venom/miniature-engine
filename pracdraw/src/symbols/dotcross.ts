@@ -16,7 +16,7 @@ import type { Prim, SymbolDef, SymbolText } from './types'
 
 // ---------------------------------------------------------------- marks
 
-/** The three marks of an electron: a solid dot, a cross, and a small open ring (the third pair, for a teacher who wants no crosses). */
+/** The three marks of an electron: a solid dot, a cross, and a small open ring (for a teacher who wants dots and rings instead of dots and crosses). */
 export type MarkKind = 'dot' | 'cross' | 'ring'
 /** The `marks` parameter. Always black (decision 4), so that one picture serves slides and photocopies. */
 export type MarksChoice = 'default' | 'swapped' | 'ring'
@@ -152,26 +152,32 @@ export const METRICS: Record<CovalentLayout, Metrics> = {
   overlap: { atom: 33, hydrogen: 23, lens: [0, 14, 22, 24] },
   apart: { atom: 24, hydrogen: 17, lens: [0, 13, 20, 22] },
 }
-/** Distance between the two marks of a pair, and between the rows of a multiple bond. A dot is 5.2 u wide and a cross 5.4 u. */
-export const PAIR = 8
-/** Size of the element symbol in the centre of a circle, and the room that the drawing leaves round its edge. */
+/** Distance between the two marks of a pair, and between the rows of a multiple bond. A dot is 5.2 u wide and a cross 5.4 u, so 8 u leaves 2.7 u between them. */
+const PAIR = 8
+/** Size of the element symbol in the centre of a circle (rule S11: 12 to 18 u). */
 export const SYMBOL_SIZE = 15
 /** In an ionic diagram with the inner shells drawn the symbol sits in the innermost circle, so it is set smaller. */
 export const INNER_SYMBOL_SIZE = 12
-export const MARGIN = 8
-/** The drawing is never made smaller than this against its natural size (the marks do not shrink), nor larger than the other limit. */
-export const K_MIN = 0.85
-export const K_MAX = 1.6
+/** The room that a diagram leaves between the edge of its circles and the edge of its box. */
+const MARGIN = 8
+/**
+ * How far a diagram may be scaled against its natural size, which is the smallest at which the marks and the symbols still have room: the marks do not shrink
+ * with the circles (rule S3), so a diagram is never made much smaller than natural, and never so large that the marks look lost. A box that is larger than
+ * the diagram needs leaves white space round it.
+ */
+const K_MIN = 0.85
+const K_MAX = 1.6
 /** The same limits for the ionic diagrams. */
-export const ION_K_MIN = 0.6
-export const ION_K_MAX = 1.5
-/** How far along a circle a gap in its line reaches beyond the centre of a lone-pair mark, in u. */
-export const GAP = 6
+const ION_K_MIN = 0.6
+const ION_K_MAX = 1.5
+/** How far along a circle a gap in its line reaches beyond the centre of a mark on it, in u: the mark sits in a gap of the line, as in a ring of beads. */
+const GAP = 6
 
 /**
  * Where each atom sits, as the angle (degrees, clockwise from +x on the screen: 0 is right, 90 is down) of the atom as seen from the atom it is bonded to
- * on the way from the centre. The entry for the centre itself is not used. A dot-and-cross diagram shows no shape, so water is bent (104°) only because a
- * bent picture does not say that it is straight, and ammonia has its lone pair on top.
+ * on the way from the centre. The entry for the centre itself is not used. A dot-and-cross diagram shows no shape and this is no model of one: water is
+ * bent (the real angle, 104°) so that the picture does not say that the molecule is straight, ammonia has its lone pair on top, methane its four
+ * hydrogen atoms on a cross.
  */
 const ANGLES: Record<string, number[]> = {
   H2: [0, 0],
@@ -342,9 +348,11 @@ export function covalentDiagram(id: string, layout: string, marks: string, w: nu
     let across = P(-u.y, u.x)
     if (across.y > 1e-9 || (Math.abs(across.y) <= 1e-9 && across.x < 0)) across = P(-across.x, -across.y)
     if (bond.order === 1) {
-      // One pair, one mark above the other: the narrowest strip that holds it, so that the small circle of hydrogen keeps room for its symbol.
-      out.push({ x: mid.x + (across.x * PAIR) / 2, y: mid.y + (across.y * PAIR) / 2, mark: kind(a), atom: a, bond: bi })
-      out.push({ x: mid.x - (across.x * PAIR) / 2, y: mid.y - (across.y * PAIR) / 2, mark: kind(b), atom: b, bond: bi })
+      // One pair, one mark above the other (or beside it, for a vertical bond): the narrowest strip that holds it, so that the small circle of hydrogen
+      // keeps room for its symbol. The atom with the first kind of mark (the crosses) is always the one above, or on the right.
+      const [up, down] = tree.depth[a] % 2 === 0 ? [a, b] : [b, a]
+      out.push({ x: mid.x + (across.x * PAIR) / 2, y: mid.y + (across.y * PAIR) / 2, mark: kind(up), atom: up, bond: bi })
+      out.push({ x: mid.x - (across.x * PAIR) / 2, y: mid.y - (across.y * PAIR) / 2, mark: kind(down), atom: down, bond: bi })
     } else {
       // Two or three pairs: a row for each pair, the mark of the atom on its own side, the rows one above the other.
       for (let j = 0; j < bond.order; j++) {
@@ -525,7 +533,7 @@ export interface IonicDiagram {
 }
 
 /** Sizes at natural scale, in u: the circle of the outer shell, the room between it and its bracket, and the gaps between neighbours. */
-export const ION = { r: 30, pad: 8, gap: 34, gapIons: 28, gapAround: 40, rowGap: 30, rowGapIons: 6 }
+const ION = { r: 30, pad: 8, gap: 34, gapIons: 28, gapAround: 40, rowGap: 30, rowGapIons: 6 }
 /** The size of the charge (a superscript, so it is drawn 0.7 times as big) and how far its baseline lies below the top of the bracket. */
 const CHARGE_SIZE = 18
 const CHARGE_DY = 12.8
@@ -843,7 +851,7 @@ export type TableGroups = 'ks4' | 'iupac' | 'none'
 export type Block = 's' | 'p' | 'd'
 
 /** The non-metals among the first 36 elements. Boron, silicon and germanium (the semi-metals) are drawn on the non-metal side of the stepped line. */
-export const NON_METALS_OF_TABLE = ['H', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar', 'Ge', 'As', 'Se', 'Br', 'Kr']
+export const TABLE_NON_METALS = ['H', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar', 'Ge', 'As', 'Se', 'Br', 'Kr']
 
 /**
  * The pairs of cells that the stepped line runs between, as [column, row] of each (column = IUPAC group, row = period): boron above aluminium, aluminium
@@ -880,12 +888,8 @@ export interface TableCell {
   side: number
 }
 
-/** What is drawn in the cell and where: a text and its place. */
-export interface TableText {
-  cell: number
-  kind: 'number' | 'symbol' | 'mass'
-  text: string
-}
+/** The three things that a cell can say: its atomic number (small, above), its symbol, its relative atomic mass (small, below). */
+export type CellTextKind = 'number' | 'symbol' | 'mass'
 
 export interface TableHighlight {
   kind: 'element' | 'group' | 'period'
@@ -938,7 +942,7 @@ export function tableModel(p: Record<string, unknown>, w: number, h: number): Ta
     symbol: e.symbol,
     col: e.group,
     row: period(e),
-    metal: !NON_METALS_OF_TABLE.includes(e.symbol),
+    metal: !TABLE_NON_METALS.includes(e.symbol),
     block: blockOf(e),
     x: left + (e.group - 1) * side,
     y: top + (period(e) - 1) * side,
@@ -972,9 +976,9 @@ export function tableModel(p: Record<string, unknown>, w: number, h: number): Ta
 }
 
 /** The texts of one cell: the atomic number above, the symbol, or the relative atomic mass below, as `content` says. */
-export function cellTexts(c: TableCell, content: TableContent): { kind: TableText['kind']; text: string }[] {
+export function cellTexts(c: TableCell, content: TableContent): { kind: CellTextKind; text: string }[] {
   const e = ELEMENTS[c.z - 1]
-  const out: { kind: TableText['kind']; text: string }[] = []
+  const out: { kind: CellTextKind; text: string }[] = []
   if (content === 'number' || content === 'both') out.push({ kind: 'number', text: String(c.z) })
   if (content === 'symbol' || content === 'both') out.push({ kind: 'symbol', text: c.symbol })
   if (content === 'mass') out.push({ kind: 'mass', text: massText(e.ar) })

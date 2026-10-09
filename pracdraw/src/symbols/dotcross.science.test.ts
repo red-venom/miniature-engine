@@ -175,6 +175,19 @@ describe('covalent dot-and-cross: the model', () => {
     expect(kinds('H2O', 'ring')).toEqual(['ring', 'dot', 'dot'])
   })
 
+  it('shows the pair of a single bond with the crosses (the first atom, or the one bonded to it by an even number of bonds) above, or on the right of a vertical bond', () => {
+    for (const { label, d } of covalentCases()) {
+      d.molecule.bonds.forEach((b, bi) => {
+        if (b.order !== 1) return
+        const [x, y] = d.marks.filter((q) => q.bond === bi)
+        const cross = x.mark === 'cross' ? x : y,
+          other = cross === x ? y : x
+        const above = cross.y < other.y - 0.5 || (Math.abs(cross.y - other.y) <= 0.5 && cross.x > other.x)
+        expect(above, `${label} bond ${bi}`).toBe(true)
+      })
+    }
+  })
+
   it('uses the same two marks in every picture of one choice, and only dots, crosses and rings, never a colour', () => {
     for (const choice of MARKS) {
       const used = new Set<string>()
