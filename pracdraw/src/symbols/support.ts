@@ -284,6 +284,24 @@ const spatula: SymbolDef = {
   },
 }
 
+const nail: SymbolDef = {
+  id: 'nail',
+  name: 'Nail',
+  aliases: ['iron nail', 'metal rod', 'pin'],
+  pack: 'support',
+  size: { w: 12, h: 110 },
+  resize: 'height',
+  min: { w: 12, h: 30 },
+  build({ h }) {
+    const hw = 6, // the flat round head is 12 wide and 3 high, seen from the side
+      sw = 2, // the shank is 4 wide
+      y0 = h - 8 // the shank narrows to a point over the last 8 u
+    // One outline for the head and the shank, so that no line separates them. The point stays sharp (rule S4).
+    const outline = roundPoly([v(-hw, 0, 1), v(hw, 0, 1), v(hw, 3, 1), v(sw, 3), v(sw, y0), v(0, h), v(-sw, y0), v(-sw, 3), v(-hw, 3, 1)], true)
+    return { prims: [{ d: outline.d(), role: 'solid' }] }
+  },
+}
+
 const splint: SymbolDef = {
   id: 'splint',
   name: 'Splint',
@@ -578,6 +596,7 @@ export const support: SymbolDef[] = [
   lid,
   stirringRod,
   spatula,
+  nail,
   splint,
   filterPaper,
   chromatographyPaper,
