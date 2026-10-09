@@ -1004,11 +1004,24 @@ describe('alpha-particle scattering', () => {
     }
   })
 
-  it('builds the same model as it draws', () => {
-    const m = alphaModel(8, true)
-    const r = read(geometry('alphaScattering', 380, 230, { paths: 8 }))
-    expect(m.paths).toHaveLength(r.paths.length)
-    expect(samePoints(m.nuclei, r.atoms)).toBe(true)
+  it('draws the model: the same atoms and the same line for each path, with the kind of path that the model says', () => {
+    for (const [w, h, n, nuclei] of [
+      [380, 230, 8, true],
+      [300, 200, 12, false],
+      [570, 345, 5, true],
+    ] as [number, number, number, boolean][]) {
+      const m = alphaModel(n, nuclei, w, h)
+      const r = read(geometry('alphaScattering', w, h, { paths: n, nuclei }))
+      expect(r.paths, `${n} paths in ${w} × ${h}`).toHaveLength(m.paths.length)
+      expect(samePoints(m.nuclei, r.atoms)).toBe(true)
+      m.paths.forEach((p, i) => {
+        expect(r.paths[i].length, `path ${i}`).toBe(p.points.length)
+        r.paths[i].forEach((q, k) => expect(dist(q, p.points[k]), `path ${i}, point ${k}`).toBeLessThan(0.02))
+        // The kind of path that the model says is the one that is drawn.
+        const turn = Math.abs(turnOf(r.paths[i]))
+        expect(p.kind, `path ${i}`).toBe(turn < 1 ? 'straight' : turn > 90 ? 'reversed' : 'bent')
+      })
+    }
   })
 })
 
