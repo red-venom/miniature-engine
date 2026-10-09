@@ -120,9 +120,9 @@ interface Obstacle {
   vessel: boolean
 }
 
-const FILLED: readonly Role[] = ['solid', 'rubber', 'dark', 'flame', 'flameCore']
-const WALL_ROLES: readonly Role[] = ['outline', 'heavy', 'solid', 'rubber', 'dark']
-const INK_ROLES: readonly Role[] = [...WALL_ROLES, 'mesh', 'flame', 'flameCore']
+const FILLED: readonly Role[] = ['solid', 'rubber', 'tint', 'dark', 'ink', 'flame', 'flameCore']
+const WALL_ROLES: readonly Role[] = ['outline', 'heavy', 'solid', 'rubber', 'tint', 'dark']
+const INK_ROLES: readonly Role[] = [...WALL_ROLES, 'ink', 'mesh', 'flame', 'flameCore']
 
 function newObstacle(item: Item, what: string, pad: number): Obstacle {
   return {
@@ -182,6 +182,7 @@ function symbolObstacle(it: SymbolItem): Obstacle {
         if (pts.length > 2) obs.cover.push(pts)
         continue
       }
+      if (prim.role === 'hatch') continue // lines inside a tinted shape, in photocopy-safe mode only: the shape's own outline is the obstacle
       const closed = FILLED.includes(prim.role) && pts.length > 2 && Math.hypot(poly[0].x - poly[poly.length - 1].x, poly[0].y - poly[poly.length - 1].y) < 1e-6
       addLine(obs, pts, closed, INK_ROLES.includes(prim.role), WALL_ROLES.includes(prim.role))
       if (closed) obs.cover.push(pts)

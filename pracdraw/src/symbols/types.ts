@@ -16,6 +16,9 @@ export type Role =
   | 'paper' // white fill, no line: hides what is behind (use for solid glass parts that are not a cavity)
   | 'solid' // main line + white fill (metal and wood parts)
   | 'rubber' // main line + grey fill (bungs, mats, tubing ends)
+  | 'tint' // main line + light-grey fill (particles and regions that a key tells apart); photocopy-safe: white fill, so pair it with a 'hatch' prim
+  | 'hatch' // detail-weight parallel lines inside a tinted shape, drawn in photocopy-safe mode only (see kernel/hatch.ts)
+  | 'ink' // solid ink fill, no line (electron dots, small markers); the same in both modes
   | 'dark' // main line + dark fill (carbon rods, weights)
   | 'flame' // flame outer cone: pale blue, or its tint
   | 'flameCore' // flame inner cone: blue, or its tint
