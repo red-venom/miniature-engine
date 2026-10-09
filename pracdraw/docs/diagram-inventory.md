@@ -11,8 +11,8 @@ Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/dia
 **In short.**
 
 - The list has <!-- gen:n.total -->293<!-- /gen --> rows: <!-- gen:n.chem -->219<!-- /gen --> for chemistry (<!-- gen:n.chemKs4 -->131<!-- /gen --> at KS4 and <!-- gen:n.chemKs5 -->88<!-- /gen --> at KS5) and <!-- gen:n.outline -->74<!-- /gen --> outline rows for biology and physics.
-- <!-- gen:n.covered -->85<!-- /gen --> rows are already drawn by the symbols and templates of the catalogue. <!-- gen:n.charts -->40<!-- /gen --> rows are graphs, tables and spectra, which the specification puts outside PracDraw. The other <!-- gen:n.new -->168<!-- /gen --> rows need something new.
-- Steps 1 to <!-- gen:n.lastAStep -->8<!-- /gen --> of the build order hold all <!-- gen:n.aNew -->26<!-- /gen --> priority A rows that need new code.
+- <!-- gen:n.covered -->91<!-- /gen --> rows are already drawn by the symbols and templates of the catalogue. <!-- gen:n.charts -->40<!-- /gen --> rows are graphs, tables and spectra, which the specification puts outside PracDraw. The other <!-- gen:n.new -->162<!-- /gen --> rows need something new.
+- Steps 1 to <!-- gen:n.lastAStep -->8<!-- /gen --> of the build order hold all <!-- gen:n.aNew -->21<!-- /gen --> priority A rows that need new code.
 - Decisions 1 to 3 reverse things that the specification says PracDraw does not draw, and decisions 1 to 5 set how large the work is.
 - Confidence is weaker than it looks (see Confidence below). The first job for a person with the AQA PDF is "Rows to check against the AQA PDF".
 
@@ -23,12 +23,12 @@ Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/dia
 <!-- gen:kinds -->
 | Kind | What it is | Chemistry | Outline | Rows |
 | --- | --- | --- | --- | --- |
-| symbol | a new parametric symbol: one drawing made from parameters | 37 | 18 | 55 |
-| compound | a diagram of several new symbols and connectors, built from a recipe | 55 | 24 | 79 |
+| symbol | a new parametric symbol: one drawing made from parameters | 32 | 18 | 50 |
+| compound | a diagram of several new symbols and connectors, built from a recipe | 54 | 24 | 78 |
 | template | an apparatus set-up that is a recipe from symbols that exist (a new template; the small additions are listed under Build order) | 2 | 0 | 2 |
 | process | a flow, cycle or tower diagram | 23 | 9 | 32 |
 | chart | a graph, table or spectrum (outside PracDraw unless James decides) | 33 | 7 | 40 |
-| covered | an existing symbol or template already draws it (the row names it) | 69 | 16 | 85 |
+| covered | an existing symbol or template already draws it (the row names it) | 75 | 16 | 91 |
 | all |  | 219 | 74 | 293 |
 <!-- /gen -->
 
@@ -75,10 +75,10 @@ Each decision gives the options and a recommendation, so that James can approve 
 <!-- gen:steps -->
 | Step | What | Packs | Rows | A | B | C |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Covered rows (no new code) | `annotation`, `apparatus`, `atoms`, `energy`, `labTemplates`, `matter`, `organicApparatus`, `structures` | 85 | 32 | 33 | 20 |
+| 0 | Covered rows (no new code) | `annotation`, `apparatus`, `atoms`, `energy`, `labTemplates`, `matter`, `organicApparatus`, `structures` | 91 | 37 | 34 | 20 |
 | 1 | New templates (KS4) (built) |  | 0 | 0 | 0 | 0 |
 | 2 | Small symbols and the reaction profile (KS4) | `annotation` | 1 | 0 | 1 | 0 |
-| 3 | Atoms, ions and dot-and-cross diagrams (KS4) | `atoms` | 6 | 5 | 1 | 0 |
+| 3 | Atoms, ions and dot-and-cross diagrams (KS4) (built) |  | 0 | 0 | 0 | 0 |
 | 4 | The particle box | `matter` | 7 | 2 | 4 | 1 |
 | 5 | Molecules (KS4) | `molecules` | 15 | 7 | 7 | 1 |
 | 6 | Structures (KS4) | `structures` | 8 | 4 | 3 | 1 |
@@ -96,7 +96,7 @@ What each step draws, and why it is where it is:
 - **Step 0.** The required practicals and set-ups that the symbols and templates already draw. No code: check each recipe once.
 - **Step 1.** Built in release 1.2: its rows are covered rows now (step 0). It was the gas tests, the carbonate test, the simple cell, rusting tubes, the conductivity test, gas collection, molten electrolysis, cracking, laboratory fractional distillation, fermentation, Group 1 and water. The only new symbol is a nail; the rest is recipes. It brought A rows at once and tested the process for a new pack. The lead puts the new templates in one file per group (`labTemplates` and `organicApparatus`), so this is not a decision for James.
 - **Step 2.** The pH strip, flame colours, hazard symbols, the formula triangle and the reaction profile. Small, independent drawings; the reaction profile and the pH strip are cheap A rows.
-- **Step 3.** Bohr atoms and ions, nuclide notation, models of the atom, alpha scattering, isotopes, the periodic table, and the dot-and-cross diagrams. Every KS4 course starts here, and the electron-mark engine is built once. Needs decisions 4, 7 and 8.
+- **Step 3.** Built in release 1.2: its rows are covered rows now (step 0). It was Bohr atoms and ions, nuclide notation, models of the atom, alpha scattering, isotopes, the periodic table, and the dot-and-cross diagrams. Every KS4 course starts here, and the electron-mark engine was built once (decisions 4, 7 and 8).
 - **Step 4.** The particle box: states of matter, changes of state, concentration, collision theory, equilibrium and the rest. One engine; biology and physics reuse it.
 - **Step 5.** Displayed formulae, ball-and-stick and space-filling models, balanced equations drawn with models, alkene reactions, polymers, amino acids, cracking. One molecule engine and one small-molecule library; all the organic work and the KS5 formulae rest on it. It reverses the exclusion of structural formulae, and its ball-and-stick model is the first drawing that needs the oblique projection (decision 3).
 - **Step 6.** Ionic lattices, metallic bonding, alloys, diamond, graphite, graphene, C60, the nanotube, silica and the cubes for surface area to volume ratio. The hardest drawing: it reuses the oblique projection and needs the pilot sheet first (decision 3). Graphene, graphite and the nanotube share one hexagon-net generator, so build graphene first.
@@ -136,12 +136,12 @@ An inventory row is a scope, not a recipe. For each pack, the lead does the foll
 | subject | physics | 37 |
 | level | KS4 | 205 |
 | level | KS5 | 88 |
-| kind | symbol | 55 |
-| kind | compound | 79 |
+| kind | symbol | 50 |
+| kind | compound | 78 |
 | kind | template | 2 |
 | kind | process | 32 |
 | kind | chart | 40 |
-| kind | covered | 85 |
+| kind | covered | 91 |
 | priority | A | 61 |
 | priority | B | 115 |
 | priority | C | 117 |
@@ -155,19 +155,19 @@ Kind by priority, all subjects:
 <!-- gen:kind-priority -->
 | Kind | A | B | C | Total |
 | --- | --- | --- | --- | --- |
-| symbol | 12 | 17 | 26 | 55 |
-| compound | 9 | 37 | 33 | 79 |
+| symbol | 8 | 16 | 26 | 50 |
+| compound | 8 | 37 | 33 | 78 |
 | template | 0 | 2 | 0 | 2 |
 | process | 5 | 7 | 20 | 32 |
 | chart | 3 | 19 | 18 | 40 |
-| covered | 32 | 33 | 20 | 85 |
+| covered | 37 | 34 | 20 | 91 |
 | all | 61 | 115 | 117 | 293 |
 <!-- /gen -->
 
 Reading the numbers:
 
-- <!-- gen:n.covered -->85<!-- /gen --> rows are already covered by a symbol or a template. They need no new code, only a recipe and a check that the picture shows what the lesson needs. <!-- gen:n.charts -->40<!-- /gen --> rows are charts, which the specification puts outside PracDraw. The other <!-- gen:n.new -->168<!-- /gen --> rows need something new: <!-- gen:n.symbol -->55<!-- /gen --> symbols, <!-- gen:n.compound -->79<!-- /gen --> compounds, <!-- gen:n.template -->2<!-- /gen --> templates and <!-- gen:n.process -->32<!-- /gen --> process diagrams.
-- Of the chemistry rows, <!-- gen:n.newChem -->117<!-- /gen --> need something new (symbols, compounds, templates and process diagrams). The templates need no new drawing code beyond the small additions listed under Build order, so <!-- gen:n.newDrawingsChem -->115<!-- /gen --> chemistry drawings (symbols, compounds and process diagrams) need new code. Several rows share one engine (the Bohr atom and the ion, or all the displayed formulae), so the number of separate pieces of code is smaller than the number of drawings. My estimate, not a measurement, is <!-- gen:n.estLow -->46<!-- /gen --> to <!-- gen:n.estHigh -->69<!-- /gen --> separate pieces of code.
+- <!-- gen:n.covered -->91<!-- /gen --> rows are already covered by a symbol or a template. They need no new code, only a recipe and a check that the picture shows what the lesson needs. <!-- gen:n.charts -->40<!-- /gen --> rows are charts, which the specification puts outside PracDraw. The other <!-- gen:n.new -->162<!-- /gen --> rows need something new: <!-- gen:n.symbol -->50<!-- /gen --> symbols, <!-- gen:n.compound -->78<!-- /gen --> compounds, <!-- gen:n.template -->2<!-- /gen --> templates and <!-- gen:n.process -->32<!-- /gen --> process diagrams.
+- Of the chemistry rows, <!-- gen:n.newChem -->111<!-- /gen --> need something new (symbols, compounds, templates and process diagrams). The templates need no new drawing code beyond the small additions listed under Build order, so <!-- gen:n.newDrawingsChem -->109<!-- /gen --> chemistry drawings (symbols, compounds and process diagrams) need new code. Several rows share one engine (the Bohr atom and the ion, or all the displayed formulae), so the number of separate pieces of code is smaller than the number of drawings. My estimate, not a measurement, is <!-- gen:n.estLow -->44<!-- /gen --> to <!-- gen:n.estHigh -->65<!-- /gen --> separate pieces of code.
 
 ### Tags
 
@@ -357,11 +357,11 @@ Every row once, under its topic, for looking things up. The last column is the s
 | Row | Name | Kind | Pack | Pri | Confidence | Course | What it draws |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `particleElementCompoundMixture` | Particle diagram of an element, a compound or a mixture | covered | matter | A | secondary | 8464, 8462 | Covered by `particleBox`. Use the particleBox symbol: set `substance` (element, molecules, compound, mixtureElements, mixtureCompounds or mixtureElementCompound), `state` (gas, liquid or solid), `count` (6 to 40; a molecule counts as one) and, for a ... |
-| `atomModels` | Models of the atom: plum pudding, nuclear and shell | symbol | atoms | A | checked | 8464, 8462 | Plum pudding: a large circle with a pale fill, small electrons (marked with a minus sign) scattered inside it, and a label saying that the positive charge is spread through the ball. |
-| `alphaScattering` | Alpha-particle scattering experiment | compound | atoms | A | secondary | 8464, 8462 | On the left a source of alpha particles in a lead block with a narrow slit. A straight beam to a thin gold foil drawn as a vertical strip of small circles (the atoms) with a tiny nucleus dot in each. |
-| `bohrAtom` | Bohr model of an atom (electronic structure diagram) | symbol | atoms | A | checked | 8464, 8462 | Concentric circles for the shells (radii about 28, 48, 68 and 88 u), the nucleus at the centre labelled with the symbol or with the numbers of protons and neutrons, and electrons as small dots or crosses spaced evenly round each ... |
-| `nuclideNotation` | Nuclear (isotope) notation with mass number and atomic number | symbol | atoms | A | secondary | 8464, 8462 | The element symbol in 18 u text with two small stacked numbers at its left: the mass number above, the atomic number below, right-aligned with each other. |
-| `isotopeNuclei` | Isotopes drawn as nuclei (protons and neutrons) | symbol | atoms | B | secondary | 8464, 8462 | A tight cluster of circles for the nucleus: protons marked with a plus sign, neutrons plain. |
+| `atomModels` | Models of the atom: plum pudding, nuclear and shell | covered | atoms | A | checked | 8464, 8462 | Covered by `atomModels`. Use the atomModels symbol: `model` plumPudding (a large pale ball with the electrons spread through it and the positive charge not drawn as particles), nuclear (a very small nucleus and a few electrons on one wide ring) or shell ... |
+| `alphaScattering` | Alpha-particle scattering experiment | covered | atoms | A | secondary | 8464, 8462 | Covered by `alphaScattering`. Use the alphaScattering symbol: a lead block with a slit on the left, a beam to a thin gold foil drawn as a vertical strip of atoms with a small nucleus in each (`nuclei`), and a dashed detector screen round the foil. |
+| `bohrAtom` | Bohr model of an atom (electronic structure diagram) | covered | atoms | A | checked | 8464, 8462 | Covered by `bohrAtom`. Use the bohrAtom symbol: choose the element `z` (1 to 36) and, for an ion, the `charge` (-3 to +3). |
+| `nuclideNotation` | Nuclear (isotope) notation with mass number and atomic number | covered | atoms | A | secondary | 8464, 8462 | Covered by `nuclideNotation`. Use the nuclideNotation symbol: the element symbol (`z`, 1 to 36) in 24 u text with the mass number above the atomic number at its left, right-aligned with each other; `a` is the mass number (0 takes the commonest isotope); ... |
+| `isotopeNuclei` | Isotopes drawn as nuclei (protons and neutrons) | covered | atoms | B | secondary | 8464, 8462 | Covered by `isotopeNuclei`. Use the isotopeNuclei symbol: one to three isotopes of one element (`z`, 1 to 18; mass numbers `a1`, `a2` and `a3`, where 0 leaves one out) side by side, each as a tight hexagonal cluster of circles (protons grey with a plus ... |
 | `periodicTable` | Periodic table (outline with groups, periods and metal divider) | covered | atoms | A | checked | 8464, 8462 | Covered by `periodicTable`. Use the periodicTable symbol: the first 20 or the first 36 elements in 18 columns and 4 rows of square cells (the d block is ten cells, scandium to zinc). |
 | `mendeleevTable` | Mendeleev's early periodic table with gaps | chart | charts | C | unverified | 8464, 8462 | A table of rows and columns of element symbols in order of atomic weight with a few question marks where elements were then unknown (the gaps that predicted gallium and germanium). |
 | `subatomicParticlesTable` | Table of relative charge and mass of the subatomic particles | chart | charts | C | unverified | 8464, 8462 | A three-row table: proton (relative charge +1, relative mass 1), neutron (0, 1), electron (-1, very small, about 1/1835). |
@@ -374,7 +374,7 @@ Every row once, under its topic, for looking things up. The last column is the s
 
 | Row | Name | Kind | Pack | Pri | Confidence | Course | What it draws |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `ionShell` | Electron arrangement of an ion (shell diagram in brackets) | symbol | atoms | A | secondary | 8464, 8462 | The shell diagram of bohrAtom for the ion: a metal ion has lost its outer shell, a non-metal ion has the electrons it gained added to its outer shell. |
+| `ionShell` | Electron arrangement of an ion (shell diagram in brackets) | covered | atoms | A | secondary | 8464, 8462 | Covered by `bohrAtom`. Use the bohrAtom symbol with a `charge`: a metal ion has lost its outer shell, a non-metal ion has the electrons that it gained in its outer shell, all inside square brackets with the charge at the top right (Na+, Mg2+, Cl-, O2-). |
 | `particleStates` | Particle diagrams of a solid, a liquid and a gas | covered | matter | A | secondary | 8464, 8462 | Covered by `particleBox`. Use three particleBox parts side by side with `state` solid, liquid and gas (same substance and count, `motion` on if wanted), and label them with label items. |
 | `changeOfState` | Changes of state (melting, freezing, boiling, condensing, sublimation) | compound | matter | A | secondary | 8464, 8462 | Three particle boxes (solid, liquid, gas) in a row with a pair of labelled arrows between solid and liquid (melting above, freezing below) and between liquid and gas (boiling or evaporating above, condensing below). |
 | `heatingCurve` | Heating and cooling curve of a pure substance | chart | charts | A | unverified | 8464, 8462 | Axes: temperature (vertical) against time (horizontal). |

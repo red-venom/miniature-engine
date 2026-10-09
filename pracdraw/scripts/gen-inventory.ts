@@ -145,7 +145,7 @@ export const STEPS: Step[] = [
   { n: 0, title: 'Covered rows (no new code)', pick: (r) => r.kind === 'covered' },
   { n: 1, title: 'New templates (KS4)', pick: (r) => ks4chem(r) && r.kind === 'template', built: true },
   { n: 2, title: 'Small symbols and the reaction profile (KS4)', pick: (r) => ks4chem(r) && (r.proposedPack === 'annotation' || r.id === 'reactionProfile') },
-  { n: 3, title: 'Atoms, ions and dot-and-cross diagrams (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'atoms' },
+  { n: 3, title: 'Atoms, ions and dot-and-cross diagrams (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'atoms', built: true },
   { n: 4, title: 'The particle box', pick: (r) => r.proposedPack === 'matter' },
   { n: 5, title: 'Molecules (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'molecules' },
   { n: 6, title: 'Structures (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'structures' },

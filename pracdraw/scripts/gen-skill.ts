@@ -65,6 +65,11 @@ const SYMBOL_NOTES: Record<string, string> = {
   pipetteFiller: 'no hand holds it: it stands in the air above its pipette',
   testTubeHolder: 'no hand holds it: the handle ends in the air; draw it behind the tube it grips',
   phScale: 'orientation vertical needs a tall box (for example w 70, h 420): the symbol does not swap the box for you',
+  bohrAtom:
+    'size the box by the shells: 38 + 44 x shells (82, 126, 170, 214 u square); nucleus numbers need the larger nucleus; structure shrinks the atom by 14 u; a charge needs 18 u of room',
+  nuclideNotation: 'do not flip it: the numbers would move to the right of the symbol',
+  isotopeNuclei: 'do not flip it: the notation would be mirrored',
+  alphaScattering: 'the pattern of the paths is fixed, never random; it has no text: add the labels and the conclusion as plain text',
 }
 
 function symbolRow(def: SymbolDef): string[] {

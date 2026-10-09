@@ -2,7 +2,7 @@
 
 # Symbols
 
-136 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+141 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -197,8 +197,13 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 
 | id | name | aliases | size | resize | parameters | cavities | anchors | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `alphaScattering` | Alpha particle scattering | Rutherford scattering, gold foil experiment, Geiger-Marsden | 380 × 230 | free, min 300 × 200 | paths: number 5..12, default 8; nuclei: boolean, default true |  |  | the pattern of the paths is fixed, never random; it has no text: add the labels and the conclusion as plain text |
+| `atomModels` | Models of the atom | plum pudding, nuclear model, Rutherford model, Thomson model, atom model | 150 × 150 | uniform, min 110 × 110 | model: "plumPudding" or "nuclear" or "shell", default "plumPudding"; electrons: number 1..10, default 4; mark: "minus" or "dot" or "cross", default "minus" |  |  | label "plum pudding model" |
+| `bohrAtom` | Bohr atom | atom, electron shells, electronic structure, shell diagram, ion, Bohr model, electron configuration | 170 × 170 | uniform, min 82 × 82 | z: number 1..36, default 11; charge: number -3..3, default 0; nucleus: "symbol" or "numbers" or "blank", default "symbol"; mark: "dot" or "cross", default "dot"; outerOnly: boolean, default false; otherMarks: number 0..8, default 0; structure: boolean, default false |  |  | label "sodium atom"; size the box by the shells: 38 + 44 x shells (82, 126, 170, 214 u square); nucleus numbers need the larger nucleus; structure shrinks the atom by 14 u; a charge needs 18 u of room |
 | `covalentDotCross` | Covalent dot-and-cross diagram | dot and cross, covalent bonding diagram, dot-and-cross covalent, molecule | 220 × 160 | free, min 196 × 144 | molecule: "H2" or "Cl2" or "O2" or "N2" or "HCl" or "H2O" or "NH3" or "CH4" or "CO2" or "HF" or "F2" or "C2H4" or "C2H6", default "H2O"; layout: "overlap" or "apart", default "overlap"; marks: "default" or "swapped" or "ring", default "default" |  |  | label "water" |
 | `ionicDotCross` | Ionic dot-and-cross diagram | dot and cross, ionic bonding diagram, dot-and-cross ionic, ionic compound | 420 × 150 | free, min 404 × 140 | metal: "Li" or "Na" or "K" or "Mg" or "Ca" or "Al", default "Na"; nonMetal: "N" or "O" or "F" or "S" or "Cl" or "Br", default "Cl"; stage: "transfer" or "ions", default "ions"; inner: boolean, default false; marks: "default" or "swapped" or "ring", default "default" |  |  | label "sodium chloride" |
+| `isotopeNuclei` | Isotopes (nuclei) | isotopes, nucleus, protons and neutrons, nuclei | 300 × 150 | uniform, min 240 × 120 | z: number 1..18, default 17; a1: number 1..40, default 35; a2: number 0..40, default 37; a3: number 0..40, default 0; notation: boolean, default true; counts: boolean, default false |  |  | label "chlorine isotopes"; do not flip it: the notation would be mirrored |
+| `nuclideNotation` | Nuclide notation | isotope notation, mass number and atomic number, nuclide symbol | 96 × 50 | none | z: number 1..36, default 11; a: number 0..80, default 0; charge: number -3..3, default 0; counts: boolean, default false |  |  | label "sodium-23"; do not flip it: the numbers would move to the right of the symbol |
 | `periodicTable` | Periodic table | elements, periodic chart, groups and periods | 560 × 200 | uniform, min 476 × 170 | content: "symbol" or "number" or "both" or "mass" or "blank", default "symbol"; range: "first20" or "first36", default "first36"; hlGroup: number 0..18, default 0; hlPeriod: number 0..4, default 0; hlElement: number 0..36, default 0; divider: boolean, default true; shading: "none" or "metals" or "blocks", default "none"; groups: "ks4" or "iupac" or "none", default "ks4" |  |  |  |
 
 ## Particles

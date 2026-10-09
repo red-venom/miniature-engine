@@ -32,13 +32,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.1.1.3"],
     "topic": "Atomic structure and the periodic table",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "atomModels",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "Plum pudding: a large circle with a pale fill, small electrons (marked with a minus sign) scattered inside it, and a label saying that the positive charge is spread through the ball. Nuclear model: a very small central dot or circle for the nucleus (marked with a plus sign) and a few electrons on a wide ring or on separate rings far out. Shell model: the nucleus with the concentric shells of bohrAtom. Labels: nucleus, electron, shell. A line says 'not to scale' on the nuclear and shell pictures.",
-    "params": "model (plum pudding | nuclear | shell), number of electrons (1 to 10), show labels (boolean), electron mark (dot | cross | minus sign)",
+    "draw": "Use the atomModels symbol: `model` plumPudding (a large pale ball with the electrons spread through it and the positive charge not drawn as particles), nuclear (a very small nucleus and a few electrons on one wide ring) or shell (a small nucleus and the shells); `electrons` (1 to 10); `mark` minus (an electron is a small circle with a minus), dot or cross. Add the labels (nucleus, electron, shell) and \"not to scale\" with label items: the symbol has no text.",
+    "params": "model (plumPudding | nuclear | shell), electrons (1 to 10), mark (minus | dot | cross)",
     "scienceChecks": "The plum pudding picture has no separate nucleus. In the nuclear and shell pictures the nucleus is much smaller than the atom, and every electron is outside it. The electron count in the picture equals the count the parameter asks for.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table",
@@ -46,7 +46,7 @@
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/developing-a-model-for-atoms"
     ],
     "confidence": "checked",
-    "notes": "Read in the AQA summary of 4.1.1.3. A search summary also reported an AQA paper that asks which diagram shows the plum pudding model; I could not tell which paper, so it is not listed as a source. The AQA pages were read through the search tool, not as the PDF.",
+    "notes": "Read in the AQA summary of 4.1.1.3. A search summary also reported an AQA paper that asks which diagram shows the plum pudding model; I could not tell which paper, so it is not listed as a source. The AQA pages were read through the search tool, not as the PDF. Built in release 1.2 (src/symbols/atoms.ts). Read in the AQA summary of 4.1.1.3. A search summary also reported an AQA paper that asks which diagram shows the plum pudding model; I could not tell which paper, so it is not listed as a source. The AQA pages were read through the search tool, not as the PDF.",
     "tags": ["fill"]
   },
   {
@@ -57,13 +57,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.1.1.3"],
     "topic": "Atomic structure and the periodic table",
-    "kind": "compound",
-    "covered": null,
+    "kind": "covered",
+    "covered": "alphaScattering",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "On the left a source of alpha particles in a lead block with a narrow slit. A straight beam to a thin gold foil drawn as a vertical strip of small circles (the atoms) with a tiny nucleus dot in each. A curved detector screen round the foil. About eight alpha paths drawn as arrows: most go straight through, two or three bend a little, one bounces back. Each path that bends is bent away from the nucleus it passes (like charges repel).",
-    "params": "number of paths (5 to 12), show nuclei (boolean), show labels (boolean), show the plum pudding prediction in a second panel (boolean)",
+    "draw": "Use the alphaScattering symbol: a lead block with a slit on the left, a beam to a thin gold foil drawn as a vertical strip of atoms with a small nucleus in each (`nuclei`), and a dashed detector screen round the foil. `paths` (5 to 12) alpha paths with an arrowhead each: most go straight through, a few bend away from the nearest nucleus (more when closer), and one is turned back. The path pattern is fixed, never random. Add the labels and the conclusion as plain text: the symbol has no text.",
+    "params": "paths (5 to 12), nuclei (boolean)",
     "scienceChecks": "A path that passes closer to a nucleus is bent more. Every bent path bends away from the nucleus. No path enters a nucleus. Most paths are straight. At most one path reverses.",
     "sources": [
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/developing-a-model-for-atoms",
@@ -72,7 +72,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table"
     ],
     "confidence": "secondary",
-    "notes": "A drawn conclusion box ('most of the atom is empty space; the nucleus is small, dense and positive') is plain text."
+    "notes": "A drawn conclusion box ('most of the atom is empty space; the nucleus is small, dense and positive') is plain text. Built in release 1.2 (src/symbols/atoms.ts). A drawn conclusion box (\"most of the atom is empty space; the nucleus is small, dense and positive\") is plain text. The second panel with the plum pudding prediction is not built."
   },
   {
     "id": "bohrAtom",
@@ -82,13 +82,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.1.1.7"],
     "topic": "Atomic structure and the periodic table",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "bohrAtom",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "Concentric circles for the shells (radii about 28, 48, 68 and 88 u), the nucleus at the centre labelled with the symbol or with the numbers of protons and neutrons, and electrons as small dots or crosses spaced evenly round each ring. The shells fill 2, 8, 8, then the fourth shell (potassium and calcium). The structure can also be written as numbers (2,8,1) in a label.",
-    "params": "element (Z 1 to 20), show nucleus contents (boolean: symbol only | protons and neutrons), electron mark (dot | cross), outer shell only (boolean), number string label (boolean)",
+    "draw": "Use the bohrAtom symbol: choose the element `z` (1 to 36) and, for an ion, the `charge` (-3 to +3). Concentric shells filled 2, 8, 8, 2 with the electrons as dots or crosses spaced evenly on each ring, the nucleus in the middle (the element symbol, the numbers of protons and neutrons, or blank). `outerOnly` draws the outer shell alone; `otherMarks` gives that many of the outer electrons the other mark (the electrons that moved); `structure` writes the structure under the atom (2,8,1). An ion sits in large square brackets with its charge at the top right. Size the box by the shells: 38 + 44 x shells, that is 82, 126, 170 or 214 u square.",
+    "params": "z (1 to 36), charge (-3 to +3), nucleus (symbol | numbers | blank), mark (dot | cross), outerOnly (boolean), otherMarks (0 to 8), structure (boolean)",
     "scienceChecks": "The electrons on the shells sum to Z. The shells fill 2, 8, 8, 2 in order, and an outer shell has electrons only if the shell inside it is full. The shell count equals the period number. The outer-shell count equals the group number (groups 1 to 7); helium has 2.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table",
@@ -97,7 +97,7 @@
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/modern-periodic-table-and-electron-configuration"
     ],
     "confidence": "checked",
-    "notes": "4.1.1.7 asks for the first twenty elements as numbers and as a diagram. The AQA wording was read through the search tool.",
+    "notes": "4.1.1.7 asks for the first twenty elements as numbers and as a diagram. The AQA wording was read through the search tool. Built in release 1.2 (src/symbols/atoms.ts), with the element table of src/symbols/elements.ts. The label of an ion names it (\"chloride ion\", \"sodium ion\"). An atom that cannot take the charge asked for is drawn neutral.",
     "tags": ["symbolText"]
   },
   {
@@ -108,13 +108,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.2.1.2"],
     "topic": "Bonding, structure and the properties of matter",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "bohrAtom",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "The shell diagram of bohrAtom for the ion: a metal ion has lost its outer shell, a non-metal ion has the electrons it gained added to its outer shell. The whole picture sits inside large square brackets with the charge written top right outside them (Na+, Mg2+, Cl-, O2-). Optional before-and-after pair joined by an arrow, the atom on the left and the ion on the right. The electrons that moved are drawn with a different mark (crosses for the gained ones).",
-    "params": "element (Z 3 to 20), ion charge (automatic for the elements that form a simple ion: Li, Na, K 1+; Be, Mg, Ca 2+; Al 3+; N, P 3-; O, S 2-; F, Cl 1-; not offered for B, C, Si and the noble gases), show nucleus contents (boolean), show the atom before the ion (boolean), electron mark (dot | cross)",
+    "draw": "Use the bohrAtom symbol with a `charge`: a metal ion has lost its outer shell, a non-metal ion has the electrons that it gained in its outer shell, all inside square brackets with the charge at the top right (Na+, Mg2+, Cl-, O2-). Put the atom and the ion side by side (two bohrAtom parts and an arrow) for the before-and-after picture; `otherMarks` marks the electrons that moved with the other mark.",
+    "params": "z, charge, otherMarks, mark, structure (see bohrAtom)",
     "scienceChecks": "Electrons = Z minus the charge for a positive ion, Z plus the size of the charge for a negative ion. The ion's shells match the nearest noble gas (2 | 2,8 | 2,8,8). The sign of the charge matches the element: metals positive, non-metals negative. Charge = protons minus electrons.",
     "sources": [
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/2-bonds-structure-and-properties-of-matter/2-1-ionic-covalent-and-metallic-bond/2-1-2-ionic-bonding/",
@@ -122,7 +122,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": "Same engine as bohrAtom. The brackets and charge are the marks examiners look for.",
+    "notes": "Same engine as bohrAtom. The brackets and charge are the marks examiners look for. The same engine and symbol as bohrAtom. The before-and-after pair is two parts and an arrow in a recipe: it is not a separate symbol.",
     "tags": ["dotCross", "symbolText"]
   },
   {
@@ -133,13 +133,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.1.1.5"],
     "topic": "Atomic structure and the periodic table",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "nuclideNotation",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "The element symbol in 18 u text with two small stacked numbers at its left: the mass number above, the atomic number below, right-aligned with each other. An optional charge as a superscript at the right. An optional line under it, 'protons 11, neutrons 12, electrons 11'. The label markup has no stacked left-hand index, so this is a small text symbol.",
-    "params": "element (Z 1 to 36), mass number (A), charge (optional, -3 to +3), show the particle counts (boolean)",
+    "draw": "Use the nuclideNotation symbol: the element symbol (`z`, 1 to 36) in 24 u text with the mass number above the atomic number at its left, right-aligned with each other; `a` is the mass number (0 takes the commonest isotope); `charge` is a superscript at the right; `counts` writes the numbers of protons, neutrons and electrons under it. Do not flip it: the numbers would move to the right of the symbol.",
+    "params": "z (1 to 36), a (mass number; 0 = commonest), charge (-3 to +3), counts (boolean)",
     "scienceChecks": "Mass number >= atomic number. Neutrons = A - Z and is not negative. The atomic number matches the element symbol from a table of the first 36 elements. Electrons = Z minus the charge.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table",
@@ -147,7 +147,7 @@
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/isotopes-and-relative-atomic-mass"
     ],
     "confidence": "secondary",
-    "notes": "AQA 4.1.1.5 asks students to work out the particle numbers from the two numbers; the exact AQA figure was not visible in the text I read. A symbol, not a label feature: it draws its own small text, so the label markup needs no stacked-index form. The text inside it is larger than rule S11 allows (see the text decision).",
+    "notes": "AQA 4.1.1.5 asks students to work out the particle numbers from the two numbers; the exact AQA figure was not visible in the text I read. A symbol, not a label feature: it draws its own small text, so the label markup needs no stacked-index form. The text inside it is larger than rule S11 allows (see the text decision). Built in release 1.2 (src/symbols/atoms.ts). A flipped copy puts the numbers to the right of the symbol, which is wrong notation: the symbol keeps the text readable but a flip still mirrors its layout.",
     "tags": ["symbolText"]
   },
   {
@@ -158,20 +158,20 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.1.1.5"],
     "topic": "Atomic structure and the periodic table",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "isotopeNuclei",
     "proposedPack": "atoms",
     "priority": "B",
     "detail": "full",
-    "draw": "A tight cluster of circles for the nucleus: protons marked with a plus sign, neutrons plain. Two or three isotopes of one element side by side (for example hydrogen-1, -2 and -3, or chlorine-35 and -37), each under its nuclear notation. Clusters are packed hexagonally so that the number of circles is easy to count.",
-    "params": "element (Z 1 to 18), mass numbers (one to three values), show notation (boolean), show counts (boolean)",
+    "draw": "Use the isotopeNuclei symbol: one to three isotopes of one element (`z`, 1 to 18; mass numbers `a1`, `a2` and `a3`, where 0 leaves one out) side by side, each as a tight hexagonal cluster of circles (protons grey with a plus sign, neutrons white) mixed through the nucleus, with `notation` under each cluster (as nuclideNotation) and, if `counts` is on, the numbers of protons and neutrons. Do not flip it: the notation would be mirrored.",
+    "params": "z (1 to 18), a1, a2, a3 (mass numbers), notation (boolean), counts (boolean)",
     "scienceChecks": "The proton count equals Z in every cluster and the neutron count equals A - Z. Isotopes of one element have the same Z and different A. Circles do not overlap. The total circles equal A.",
     "sources": [
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/atomic-structure-and-the-periodic-table/lessons/isotopes-and-relative-atomic-mass",
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table"
     ],
     "confidence": "secondary",
-    "notes": ""
+    "notes": "Built in release 1.2 (src/symbols/atoms.ts). In photocopy-safe mode the hatch of a proton runs through its plus sign (the circle is too small for a hatch that leaves the plus clear)."
   },
   {
     "id": "periodicTable",
