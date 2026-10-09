@@ -25,9 +25,14 @@ import {
   type GraphiteStyle,
 } from './cages'
 import { oblique } from './oblique'
-import { geometry } from './registry'
-import { primNodes } from '../render/render'
+import { geometry, symbolDef } from './registry'
+import { primNode, primNodes } from '../render/render'
 import type { Geometry, Prim } from './types'
+
+/** The sizes of graphite that the registry tests build and that the pictures are checked at: the default, the minimum and 1.5 times the default. */
+const G_DEFAULT = { w: 250, h: 212 },
+  G_MINIMUM = { w: 170, h: 144 },
+  G_BIG = { w: 375, h: 318 }
 
 // ---------------------------------------------------------------- reading a drawing
 
@@ -234,11 +239,7 @@ describe('graphite: the drawing agrees with the model', () => {
     ['the symbol', GRAPHITE_STYLE],
     ['the numbers of the brief', GRAPHITE_BRIEF],
   ]
-  const sizes = [
-    { w: 200, h: 170 },
-    { w: 170, h: 144 }, // the minimum
-    { w: 300, h: 255 }, // 1.5 times
-  ]
+  const sizes = [G_DEFAULT, G_MINIMUM, G_BIG]
 
   for (const [styleName, style] of styles)
     for (const layers of [2, 3, 4])
@@ -319,77 +320,130 @@ describe('graphite: the drawing agrees with the model', () => {
             expect(g.prims.map((p) => p.role)).toEqual(['dashed', 'outline', 'detail', 'solid'].filter((role) => forces || role !== 'dashed'))
           })
 
+  it('has the default size 250 x 212 and, there, the picture of 200 x 170 at 1.25 times: a bond of 30 u, atoms of radius 4.375 u, lines still 2 u and 1.25 u', () => {
+    const def = symbolDef('graphiteStructure')
+    expect(def.size).toEqual(G_DEFAULT)
+    expect(GRAPHITE.box).toEqual(G_DEFAULT)
+    expect(def.min).toEqual(G_MINIMUM)
+    expect(def.resize).toBe('uniform')
+    // what is drawn at a size: the bond and the radius of an atom (from the atoms that are farthest apart), and how far the atoms stretch
+    const measure = (w: number, h: number) => {
+      const model = graphiteModel(3)
+      const g = graphiteGeometry(w, h, 3, true)
+      const circles = circlesIn(prim(g, 'solid'))
+      const unit = model.atoms.map((a) => oblique(a.x, a.y, a.z))
+      let far: [number, number] = [0, 1]
+      for (let i = 0; i < unit.length; i++)
+        for (let j = i + 1; j < unit.length; j++) if (dist(unit[i], unit[j]) > dist(unit[far[0]], unit[far[1]])) far = [i, j]
+      const xs = circles.map((c) => c.c.x),
+        ys = circles.map((c) => c.c.y)
+      return {
+        bond: dist(circles[far[0]].c, circles[far[1]].c) / dist(unit[far[0]], unit[far[1]]),
+        r: circles[0].r,
+        width: Math.max(...xs) - Math.min(...xs),
+        height: Math.max(...ys) - Math.min(...ys),
+        lines: g.prims.map((p) => primNode(p, false).sw), // the line width of each part: dotted lines, bonds, stubs, atoms
+      }
+    }
+    const now = measure(G_DEFAULT.w, G_DEFAULT.h),
+      before = measure(200, 170)
+    expect(now.bond).toBeCloseTo(30, 1)
+    expect(now.r).toBeCloseTo(4.375, 2)
+    // 200 x 170 was the default: a bond of 24 u and atoms of radius 3.5 u. The new default is that picture, 1.25 times as big.
+    expect(before.bond).toBeCloseTo(24, 1)
+    expect(before.r).toBeCloseTo(3.5, 2)
+    expect(now.width / before.width).toBeCloseTo(1.25, 3)
+    expect(now.height / before.height).toBeCloseTo(1.25, 3)
+    // the lines do not scale (rule S3): at either size the dotted lines and the stubs are 1.25 u, and the bonds and the atom outlines are 2 u
+    expect(now.lines).toEqual([1.25, 2, 1.25, 2])
+    expect(before.lines).toEqual(now.lines)
+  })
+
   it('is what the registry draws for the symbol, with `layers` and `forces` read from the parameters', () => {
     for (const layers of [2, 3, 4])
       for (const forces of [true, false]) {
-        const g = geometry('graphiteStructure', 200, 170, { layers, forces })
-        expect(JSON.stringify(g)).toBe(JSON.stringify(graphiteGeometry(200, 170, layers, forces)))
+        const g = geometry('graphiteStructure', G_DEFAULT.w, G_DEFAULT.h, { layers, forces })
+        expect(JSON.stringify(g)).toBe(JSON.stringify(graphiteGeometry(G_DEFAULT.w, G_DEFAULT.h, layers, forces)))
         expect(circlesIn(prim(g, 'solid'))).toHaveLength(layers * graphiteModel(2).atomsPerSheet)
       }
-    expect(circlesIn(prim(geometry('graphiteStructure', 200, 170), 'solid'))).toHaveLength(3 * 22) // the default: 3 layers
-    expect(prim(geometry('graphiteStructure', 200, 170), 'dashed')).not.toBe('') // and the forces are on
+    expect(circlesIn(prim(geometry('graphiteStructure', G_DEFAULT.w, G_DEFAULT.h), 'solid'))).toHaveLength(3 * 22) // the default: 3 layers
+    expect(prim(geometry('graphiteStructure', G_DEFAULT.w, G_DEFAULT.h), 'dashed')).not.toBe('') // and the forces are on
   })
 
-  it('keeps the sheets apart on the page, with a clear gap between them', () => {
-    for (const layers of [2, 3, 4]) {
-      const model = graphiteModel(layers)
-      const g = graphiteGeometry(200, 170, layers, true)
-      const circles = circlesIn(prim(g, 'solid'))
-      const r = circles[0].r
-      const rows = Array.from({ length: layers }, (_, k) => {
-        const ys = circles.filter((_, i) => model.atoms[i].sheet === k).map((c) => c.c.y)
-        return { top: Math.min(...ys) - r - 1, bottom: Math.max(...ys) + r + 1 }
-      })
-      for (let k = 0; k + 1 < layers; k++) expect(rows[k + 1].bottom, `sheet ${k + 1} above sheet ${k}`).toBeLessThan(rows[k].top - 8)
-    }
+  // What each size keeps clear, in u, for 2, 3 and 4 layers (four sheets are drawn smaller, and so closer, to fit the box):
+  // between the outlines of two atoms, between neighbouring sheets, between a bond and an atom that is not at its end, and between a dotted line and an atom.
+  const clear = [
+    { name: 'the default size', size: G_DEFAULT, atoms: 3, sheets: 15, bond: 6, dotted: 3.5 },
+    { name: 'the minimum size', size: G_MINIMUM, atoms: 1.5, sheets: 9, bond: 3.5, dotted: 2 },
+    { name: '1.5 times the default size', size: G_BIG, atoms: 6, sheets: 24, bond: 10, dotted: 6 },
+  ]
+  /** The outlines of the atoms, the rows of the sheets and the lines of a picture, read from its geometry. */
+  const read = (size: { w: number; h: number }, layers: number) => {
+    const model = graphiteModel(layers)
+    const g = graphiteGeometry(size.w, size.h, layers, true)
+    const circles = circlesIn(prim(g, 'solid'))
+    return { model, circles, r: circles[0].r, bonds: linesIn(prim(g, 'outline')), dotted: linesIn(prim(g, 'dashed')) }
+  }
+
+  for (const { name, size, atoms } of clear)
+    it(`draws no two atoms touching: the outlines of neighbouring atoms are at least ${atoms} u apart at ${name}, with four sheets too`, () => {
+      for (const layers of [2, 3, 4]) {
+        const { circles: c } = read(size, layers)
+        let min = Infinity
+        for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) min = Math.min(min, dist(c[i].c, c[j].c) - 2 * (c[i].r + 1))
+        expect(min, `${layers} layers`).toBeGreaterThanOrEqual(atoms)
+      }
+    })
+
+  it('draws, in the numbers of the brief, atoms that touch: a bond of 22 u and atoms of radius 4 u give outlines 1 u apart', () => {
+    // the brief is stated for 200 x 170: there, a bond along z is drawn 11 u long
+    const c = circlesIn(prim(graphiteGeometry(200, 170, 3, true, GRAPHITE_BRIEF), 'solid'))
+    expect(c[0].r).toBeCloseTo(4, 2)
+    let min = Infinity
+    for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) min = Math.min(min, dist(c[i].c, c[j].c) - 2 * (c[i].r + 1))
+    expect(min).toBeCloseTo(1, 1)
   })
 
-  it('draws no two atoms touching: the outlines of neighbouring atoms are 2.5 u apart or more, and 2 u at the smallest size (the brief is not: see GRAPHITE_BRIEF)', () => {
-    const gap = (style: GraphiteStyle, w = 200, layers = 3) => {
-      const g = graphiteGeometry(w, (w * 170) / 200, layers, true, style)
-      const c = circlesIn(prim(g, 'solid'))
-      let min = Infinity
-      for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) min = Math.min(min, dist(c[i].c, c[j].c) - 2 * (c[i].r + 1))
-      return min
-    }
-    expect(gap(GRAPHITE_STYLE)).toBeGreaterThanOrEqual(2.5)
-    expect(gap(GRAPHITE_STYLE, 300)).toBeGreaterThanOrEqual(2.5)
-    expect(gap(GRAPHITE_STYLE, 170)).toBeGreaterThanOrEqual(2) // the minimum size
-    expect(gap(GRAPHITE_STYLE, 170, 4)).toBeGreaterThanOrEqual(1.5) // and four sheets at the minimum size
-    expect(gap(GRAPHITE_STYLE, 200, 4)).toBeGreaterThanOrEqual(2) // four sheets are drawn a little smaller to fit the box
-    // with the numbers of the brief the two atoms of a bond that runs along z are drawn 11 u apart: their outlines are 1 u apart
-    expect(gap(GRAPHITE_BRIEF)).toBeCloseTo(1, 1)
-  })
-
-  it('runs no bond over an atom that is not at its end', () => {
-    for (const layers of [2, 3, 4]) {
-      const g = graphiteGeometry(200, 170, layers, true)
-      const circles = circlesIn(prim(g, 'solid'))
-      for (const line of linesIn(prim(g, 'outline')))
-        for (const c of circles) {
-          if (line.some((p) => Math.abs(dist(p, c.c) - c.r) < 0.03)) continue
-          expect(distToSegment(c.c, line), 'a bond runs over an atom').toBeGreaterThan(c.r + 1 + 0.5)
-        }
-    }
-  })
-
-  it('runs a dotted line over no atom and at most one bond of the sheets', () => {
-    for (const layers of [2, 3, 4]) {
-      const model = graphiteModel(layers)
-      const g = graphiteGeometry(200, 170, layers, true)
-      const circles = circlesIn(prim(g, 'solid'))
-      const bonds = linesIn(prim(g, 'outline'))
-      const r = circles[0].r
-      linesIn(prim(g, 'dashed')).forEach((line, i) => {
-        const { upper, lower } = model.forces[i]
-        circles.forEach((c, j) => {
-          if (j === upper || j === lower) return
-          expect(distToSegment(c.c, line), `dotted line ${i} and atom ${j}`).toBeGreaterThan(r + 1 + 0.6)
+  for (const { name, size, sheets } of clear)
+    it(`keeps the sheets apart on the page: at least ${sheets} u between the outlines of neighbouring sheets at ${name}`, () => {
+      for (const layers of [2, 3, 4]) {
+        const { model, circles, r } = read(size, layers)
+        const rows = Array.from({ length: layers }, (_, k) => {
+          const ys = circles.filter((_, i) => model.atoms[i].sheet === k).map((c) => c.c.y)
+          return { top: Math.min(...ys) - r - 1, bottom: Math.max(...ys) + r + 1 }
         })
-        expect(bonds.filter((b) => crosses(line, b)).length, `dotted line ${i}`).toBeLessThanOrEqual(1)
-      })
-    }
-  })
+        for (let k = 0; k + 1 < layers; k++)
+          expect(rows[k].top - rows[k + 1].bottom, `${layers} layers: sheet ${k + 1} above sheet ${k}`).toBeGreaterThanOrEqual(sheets)
+      }
+    })
+
+  for (const { name, size, bond } of clear)
+    it(`runs no bond over an atom that is not at its end: at least ${bond} u clear of its outline, at ${name}`, () => {
+      for (const layers of [2, 3, 4]) {
+        const { circles, bonds } = read(size, layers)
+        for (const line of bonds)
+          for (const c of circles) {
+            if (line.some((p) => Math.abs(dist(p, c.c) - c.r) < 0.03)) continue // an atom that the bond starts or ends on
+            expect(distToSegment(c.c, line) - c.r - 1, `${layers} layers: a bond runs near an atom`).toBeGreaterThanOrEqual(bond)
+          }
+      }
+    })
+
+  for (const { name, size, dotted } of clear)
+    it(`runs a dotted line over no atom, at least ${dotted} u clear of every atom outline, and over at most one bond of the sheets, at ${name}`, () => {
+      for (const layers of [2, 3, 4]) {
+        const { model, circles, r, bonds, dotted: lines } = read(size, layers)
+        expect(lines).toHaveLength(model.forces.length)
+        lines.forEach((line, i) => {
+          const { upper, lower } = model.forces[i]
+          circles.forEach((c, j) => {
+            if (j === upper || j === lower) return
+            expect(distToSegment(c.c, line) - r - 1, `${layers} layers: dotted line ${i} and atom ${j}`).toBeGreaterThanOrEqual(dotted)
+          })
+          expect(bonds.filter((b) => crosses(line, b)).length, `${layers} layers: dotted line ${i}`).toBeLessThanOrEqual(1)
+        })
+      }
+    })
 })
 
 // ================================================================ C60
