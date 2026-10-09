@@ -784,6 +784,28 @@ describe('isotopes drawn as nuclei', () => {
     }
   })
 
+  it('pairs the tint of the protons with its hatch (rule S12): every proton has hatch lines in it, a neutron has none', () => {
+    for (const [z, a1, a2, a3] of CASES) {
+      const g = geometry('isotopeNuclei', 300, 150, { z, a1, a2, a3 })
+      g.prims.forEach((p, i) => {
+        if (p.role === 'tint') expect(g.prims[i + 1]?.role, `z ${z}: the tint is followed by its hatch`).toBe('hatch')
+      })
+      const lines = polysOf(g, 'hatch').map(centre)
+      for (const c of clustersOf(g)) {
+        for (const p of c.protons)
+          expect(
+            lines.some((l) => dist(l, p) <= NUCLEON_R),
+            `z ${z}: a proton with no hatch`,
+          ).toBe(true)
+        for (const n of c.neutrons)
+          expect(
+            lines.some((l) => dist(l, n) <= NUCLEON_R - 0.5),
+            `z ${z}: a neutron with hatch`,
+          ).toBe(false)
+      }
+    }
+  })
+
   it('draws a plus sign in each proton and none in a neutron, and mixes both kinds through the cluster', () => {
     const g = geometry('isotopeNuclei', 300, 150, { z: 17, a1: 35, a2: 37 })
     const clusters = clustersOf(g)

@@ -859,24 +859,19 @@ const isotopeNuclei: SymbolDef = {
     })
     const neutrons: string[] = [],
       protons: string[] = [],
-      plus: string[] = [],
-      clear: string[] = []
+      plus: string[] = []
     const texts: SymbolText[] = []
     for (const c of m.clusters) {
       for (const n of c.circles) (n.proton ? protons : neutrons).push(circle(n.x, n.y, NUCLEON_R))
-      for (const n of c.circles) {
-        if (!n.proton) continue
-        plus.push(plusD(n.x, n.y, 2.4))
-        clear.push(circle(n.x, n.y, 3.2))
-      }
+      for (const n of c.circles) if (n.proton) plus.push(plusD(n.x, n.y, 2.4))
       // The notation of nuclideNotation, with its counts under it; or the counts alone under the cluster.
       if (m.notation) texts.push(...notationLayout(c.nuclide, c.cx, c.baseline, m.counts ? 'nucleus' : 'none').texts)
       else if (m.countsAt !== null) texts.push(...countTexts(c.nuclide, 'nucleus', c.cx, m.countsAt).texts)
     }
     const prims: Prim[] = []
     if (neutrons.length) prims.push({ d: neutrons.join(''), role: 'solid' })
-    // The hatch of a proton leaves its plus sign clear.
-    if (protons.length) prims.push(...tintedClear(protons.join(''), clear.join('')))
+    // A proton is a tint, and on a photocopy its hatch; the plus sign is drawn over both.
+    if (protons.length) prims.push(...tinted(protons.join('')))
     if (plus.length) prims.push({ d: plus.join(''), role: 'detail' })
     return { prims, texts }
   },
