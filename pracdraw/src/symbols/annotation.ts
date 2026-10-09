@@ -274,17 +274,21 @@ export const PH_LOW = 0,
   PH_HIGH = 14,
   PH_NEUTRAL = 7
 
+/** How strongly acidic or alkaline a pH is, in the words of the course. */
+export type PhStrength = 'strong acid' | 'weak acid' | 'neutral' | 'weak alkali' | 'strong alkali'
+
 /**
- * The band edges: the one table that says which test colour goes with which pH. Sources put the edges in different places (strong acid is pH 0 to 2 in
- * one and 1 to 3 in another); the specification takes 0 to 2, and this table is the only place to change that. Every pH lies in exactly one band.
+ * The band edges: the one table that says which test colour goes with which pH, and how strong that is. Sources put the edges in different places
+ * (strong acid is pH 0 to 2 in one and 1 to 3 in another); the specification takes 0 to 2, and this table is the only place to change that.
+ * Every pH lies in exactly one band, and the bands follow each other from red to purple.
  */
-export const PH_BANDS: readonly { colour: PhColour; from: number; to: number }[] = [
-  { colour: 'red', from: 0, to: 2 }, // strong acid
-  { colour: 'orange', from: 3, to: 4 }, // weak acid
-  { colour: 'yellow', from: 5, to: 6 }, // weak acid
-  { colour: 'green', from: 7, to: 7 }, // neutral
-  { colour: 'blue', from: 8, to: 11 }, // weak alkali
-  { colour: 'purple', from: 12, to: 14 }, // strong alkali
+export const PH_BANDS: readonly { colour: PhColour; strength: PhStrength; from: number; to: number }[] = [
+  { colour: 'red', strength: 'strong acid', from: 0, to: 2 },
+  { colour: 'orange', strength: 'weak acid', from: 3, to: 4 },
+  { colour: 'yellow', strength: 'weak acid', from: 5, to: 6 },
+  { colour: 'green', strength: 'neutral', from: 7, to: 7 },
+  { colour: 'blue', strength: 'weak alkali', from: 8, to: 11 },
+  { colour: 'purple', strength: 'strong alkali', from: 12, to: 14 },
 ]
 
 export type PhKind = 'acid' | 'neutral' | 'alkali'

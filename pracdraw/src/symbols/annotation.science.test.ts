@@ -135,7 +135,18 @@ describe('pH scale: the cells', () => {
 
   it('has one table of band edges: the bands follow each other and hold every pH once, and strong acid is pH 0 to 2', () => {
     expect(PH_BANDS.map((b) => b.colour)).toEqual(['red', 'orange', 'yellow', 'green', 'blue', 'purple'])
-    expect(PH_BANDS[0]).toEqual({ colour: 'red', from: 0, to: 2 })
+    expect(PH_BANDS[0]).toEqual({ colour: 'red', strength: 'strong acid', from: 0, to: 2 })
+    // How strong: strong acid is pH 0 to 2, weak acid 3 to 6, neutral 7, weak alkali 8 to 11 and strong alkali 12 to 14.
+    const phsOf = (strength: string) => PH_BANDS.filter((b) => b.strength === strength).flatMap((b) => range(b.from, b.to))
+    expect(phsOf('strong acid')).toEqual(range(0, 2))
+    expect(phsOf('weak acid')).toEqual(range(3, 6))
+    expect(phsOf('neutral')).toEqual([7])
+    expect(phsOf('weak alkali')).toEqual(range(8, 11))
+    expect(phsOf('strong alkali')).toEqual(range(12, 14))
+    // An acid is below 7 and an alkali above it.
+    for (const b of PH_BANDS)
+      for (const ph of range(b.from, b.to))
+        expect(b.strength.endsWith(phKind(ph) === 'acid' ? 'acid' : phKind(ph) === 'alkali' ? 'alkali' : 'neutral'), `pH ${ph}: ${b.strength}`).toBe(true)
     expect(PH_BANDS.flatMap((b) => range(b.from, b.to))).toEqual(range(0, 14))
     for (const b of PH_BANDS) for (const ph of range(b.from, b.to)) expect(PH_CELLS[ph].colour).toBe(b.colour)
   })
