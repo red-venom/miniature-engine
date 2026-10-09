@@ -359,6 +359,13 @@ const PH_NUMBER = 16,
 const PH_ABOVE = 22,
   PH_BELOW = 20
 
+/**
+ * The pH scale: a strip of 15 cells, each with its test colour and its number, and the brackets and example substances over and under it.
+ * Horizontal, the strip is as long as the box is wide and as high as the box leaves room for (22 u above it for the brackets, 20 u below for the
+ * examples), so the default box makes square cells of 28 u. Vertical, it runs down the height of the box with pH 0 at the top, on the centre line,
+ * with the brackets on its left and the examples on its right; it needs a box that is tall (a cell needs 12 u for its number: 180 u at least) and
+ * wide enough for the words (about 170 u). The text is upright either way.
+ */
 const phScale: SymbolDef = {
   id: 'phScale',
   name: 'pH scale',
@@ -658,11 +665,11 @@ const formulaTriangle: SymbolDef = {
   pack: 'annotation',
   size: { w: 120, h: 110 },
   resize: 'uniform',
-  min: { w: 96, h: 88 },
+  min: { w: 108, h: 99 },
   params: [
     {
       key: 'preset',
-      label: 'Formula',
+      label: 'Preset',
       type: 'choice',
       default: 'moles',
       options: [
@@ -1029,10 +1036,9 @@ const PICTURES: Record<HazardId, Picture> = {
   },
   toxic: (pen) => {
     // The skull, then the crossbones behind it: each bone stops where it meets the skull, with a gap.
-    const S = 1,
-      oy = -1.5
+    const oy = -1.5 // the skull is drawn this far above the middle of the diamond
     const skull = pen()
-      .frame(0, oy, S)
+      .frame(0, oy)
       .round([v(-9.2, -14, 9), v(9.2, -14, 9), v(9.2, -3, 4), v(5.2, 2, 1.2), v(5.2, 9, 1.5), v(-5.2, 9, 1.5), v(-5.2, 2, 1.2), v(-9.2, -3, 4)])
       .disc(-3.9, -4.2, 3, true)
       .disc(3.9, -4.2, 3, true)
@@ -1040,16 +1046,16 @@ const PICTURES: Record<HazardId, Picture> = {
       .poly([P(-2.3, 5.4), P(-1.2, 5.4), P(-1.2, 8), P(-2.3, 8)], true)
       .poly([P(1.2, 5.4), P(2.3, 5.4), P(2.3, 8), P(1.2, 8)], true)
       .d()
-    // Where the skull is, in the picture frame, and 1.7 u beyond it.
-    const gap = 1.7,
+    // Where the skull is (the round cranium and the narrower jaw), and 1.5 u beyond it: the bones do not come in here.
+    const gap = 1.5,
       halo = [
-        { cx: 0, cy: oy - 5 * S, r: 9.2 * S + gap },
-        { x0: -5.2 * S - gap, y0: oy + 1 * S - gap, x1: 5.2 * S + gap, y1: oy + 9 * S + gap },
+        { cx: 0, cy: oy - 5, r: 9.2 + gap },
+        { x0: -5.2 - gap, y0: oy + 1 - gap, x1: 5.2 + gap, y1: oy + 9 + gap },
       ]
     const bones = pen()
     for (const [a, b] of [
-      [P(-15, -9), P(13, 12)],
-      [P(15, -9), P(-13, 12)],
+      [P(-15.5, -10), P(13, 12)],
+      [P(15.5, -10), P(-13, 12)],
     ]) {
       const len = Math.hypot(b.x - a.x, b.y - a.y),
         dx = (b.x - a.x) / len,
@@ -1119,7 +1125,7 @@ const hazardSymbol: SymbolDef = {
   pack: 'annotation',
   size: { w: 70, h: 70 },
   resize: 'uniform',
-  min: { w: 52, h: 52 },
+  min: { w: 56, h: 56 },
   params: [
     {
       key: 'hazard',
