@@ -3,6 +3,12 @@
 //
 // Each picture has a pure model (exported, and tested in cages.science.test.ts) and a drawing that reads only the model:
 // the atoms with their 3D positions, the bonds with their two ends, and, for the ball, the faces. The drawing never invents a part.
+//
+// Where the pictures differ from the numbers of the catalogue `draw` text, and why (both are pilots for James to look at):
+//  - graphite: a bond of 24 u and atoms of radius 3.5 u, not 22 u and 4 u (GRAPHITE_BRIEF keeps the brief's numbers). A bond along z is
+//    drawn half as long, so with the brief's numbers its two atoms touch. Four sheets are drawn smaller so that they fit the box.
+//  - C60: a face counts as facing the viewer when its normal is more than 0.3 from edge-on (C60_TURN.facing; the brief has 0), because the
+//    faces seen almost edge-on make doubled lines and overlapping circles at the rim. The hexagon directions are those of this atom set.
 
 import { P, bounds, dist, f, type Pt } from '../kernel/geom'
 import { bool, circle, num, tinted } from './kit'
@@ -37,7 +43,7 @@ export interface GraphiteStyle {
 }
 /**
  * The numbers of the catalogue row: l = 22 u and atoms of radius 4 u. In the oblique projection a bond along z is drawn half as long (11 u),
- * so the outlines of its two atoms are 1 u apart and the bond between them is 3 u long: the atoms touch (see the report of phase 15).
+ * so the outlines of its two atoms are 1 u apart and the bond between them is 3 u long: the atoms touch (cages.science.test.ts shows it).
  */
 export const GRAPHITE_BRIEF: GraphiteStyle = { l: 22, atomR: 4 }
 /** What the symbol draws: a bond of 24 u and atoms of radius 3.5 u, so that the outlines of a bond along z are 3 u apart. */
@@ -129,10 +135,10 @@ export interface GraphiteModel {
 }
 
 /**
- * The atoms of a sheet that the dotted lines start from, as (hexagon, corner): the front-left corner and the back-right corner of the
- * patch, and the two atoms that are one hexagon in from them. A dotted line is vertical on the page, so it runs over whatever lies above the
- * atom it ends on. These four are the atoms whose lines cross no atom and at most one bond; the front-right and back-left corners are not
- * among them because their lines run over a whole row of atoms. The test checks this.
+ * The atoms of a sheet that the dotted lines start from, as (hexagon, corner): the front-left and the back-right corner of the patch, and the
+ * pair of atoms that the patch turns into each other when it is turned half a turn about its middle, so the four stand in two even pairs.
+ * A dotted line is vertical on the page, so it runs over whatever lies above the atom it ends on. The lines of these four cross no atom and
+ * at most one bond (the test checks it); the other two corners of the patch are not used, because their lines run over a whole row of atoms.
  */
 export const FORCE_SITES: readonly (readonly [number, number])[] = [
   [0, 3],
@@ -376,7 +382,9 @@ export interface C60Turn {
   tiltY: number
   /**
    * A face faces the viewer when the cosine of the angle between its normal and the line of sight is more than this. 0 is every face that is
-   * turned to the viewer at all; a little more leaves out the faces seen almost edge-on, which would be slivers with two lines 1 or 2 u apart.
+   * turned to the viewer at all (the brief); 0.3 leaves out the faces that are seen within 17.5 degrees of edge-on. Those are slivers with two
+   * lines a few u apart and atoms on top of each other at the rim: with 0 the closest two atoms are 5 u apart, with 0.3 they are 13.5 u apart.
+   * No face has a cosine between 0.214 and 0.413 in this view, so any value in that gap draws the same picture.
    */
   facing: number
 }

@@ -211,6 +211,22 @@ describe('graphite: the model', () => {
       for (let k = 1; k < n; k++) expect(new Set(model.forces.filter((f) => model.atoms[f.upper].sheet === k).map((f) => f.upper)).size).toBe(4)
     }
   })
+
+  it('puts the four force sites in two even pairs: the patch turned half a turn about its middle takes each of them to another', () => {
+    const xs = sheet0.map((a) => a.x),
+      zs = sheet0.map((a) => a.z)
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2,
+      cz = (Math.min(...zs) + Math.max(...zs)) / 2
+    // the patch itself is the same turned half a turn
+    for (const a of sheet0) expect(sheet0.some((b) => Math.abs(b.x - (2 * cx - a.x)) < 1e-9 && Math.abs(b.z - (2 * cz - a.z)) < 1e-9)).toBe(true)
+    const sites = m.forces.filter((f) => m.atoms[f.upper].sheet === 1).map((f) => m.atoms[f.upper])
+    expect(sites).toHaveLength(4)
+    for (const a of sites) {
+      const partner = sites.find((b) => Math.abs(b.x - (2 * cx - a.x)) < 1e-9 && Math.abs(b.z - (2 * cz - a.z)) < 1e-9)
+      expect(partner, `the partner of the atom at ${a.x.toFixed(2)}, ${a.z.toFixed(2)}`).toBeDefined()
+      expect(partner).not.toBe(a)
+    }
+  })
 })
 
 describe('graphite: the drawing agrees with the model', () => {
@@ -629,13 +645,12 @@ describe('C60: the drawing agrees with the model', () => {
         const lines = linesIn(prim(g, 'outline'))
         const visible = view.bonds.filter((q) => !q.hidden)
         expect(lines).toHaveLength(visible.length)
-        const drawn = lines.map(([p, q]) => {
-          const ends = [0, 1].map((e) => circles.findIndex((c) => Math.abs(dist([p, q][e], c.c) - r) < 0.03))
-          return ends
-        })
-        const wanted = new Set(visible.map((q) => [slot.get(q.a)!, slot.get(q.b)!].sort((x, y) => x - y).join()))
-        expect(new Set(drawn.map((e) => e.sort((x, y) => x - y).join()))).toEqual(wanted)
-        expect(new Set(drawn.map((e) => e.sort((x, y) => x - y).join())).size).toBe(visible.length)
+        // the two circles that each line runs between (the ones whose edge its ends are on), as the slots of `shown`
+        const drawn = lines.map((line) => line.map((end) => circles.findIndex((c) => Math.abs(dist(end, c.c) - r) < 0.03)))
+        const pair = (a: number, c: number) => [a, c].sort((x, y) => x - y).join()
+        const wanted = new Set(visible.map((q) => pair(slot.get(q.a)!, slot.get(q.b)!)))
+        expect(new Set(drawn.map(([a, c]) => pair(a, c)))).toEqual(wanted)
+        expect(new Set(drawn.map(([a, c]) => pair(a, c))).size).toBe(visible.length) // each bond once
         lines.forEach(([p, q], i) => {
           const [a, c] = drawn[i]
           expect(a).toBeGreaterThanOrEqual(0)
@@ -644,7 +659,10 @@ describe('C60: the drawing agrees with the model', () => {
           expect(distToSegment(q, [circles[a].c, circles[c].c])).toBeLessThan(0.03)
         })
         for (const q of view.bonds.filter((x) => x.hidden && slot.has(x.a) && slot.has(x.b)))
-          expect(wanted.has([slot.get(q.a)!, slot.get(q.b)!].sort((x, y) => x - y).join()), `hidden bond ${q.a}-${q.b} drawn`).toBe(false)
+          expect(
+            drawn.some(([a, c]) => pair(a, c) === pair(slot.get(q.a)!, slot.get(q.b)!)),
+            `hidden bond ${q.a}-${q.b} drawn`,
+          ).toBe(false)
         // far to near: the circles, and the lines by the middle of the bond
         for (let i = 1; i < circles.length; i++) expect(view.atoms[view.shown[i]].z).toBeGreaterThanOrEqual(view.atoms[view.shown[i - 1]].z)
         const depth = drawn.map(([a, c]) => view.atoms[view.shown[a]].z + view.atoms[view.shown[c]].z)
@@ -654,8 +672,8 @@ describe('C60: the drawing agrees with the model', () => {
           hatches = g.prims.filter((p) => p.role === 'hatch')
         const facingPentagons = view.faces.filter((q) => q.facing && q.kind === 'pentagon')
         expect(tints).toHaveLength(pentagons ? facingPentagons.length : 0)
-        expect(hatches.length).toBeLessThanOrEqual(tints.length)
-        expect(hatches.length).toBeGreaterThan(pentagons ? 0 : -1)
+        expect(hatches.length).toBeLessThanOrEqual(tints.length) // a shape too thin for a hatch line has only its tint
+        expect(hatches.length > 0).toBe(pentagons)
         if (pentagons) {
           const wantedPolys = new Set(
             facingPentagons.map((q) =>
