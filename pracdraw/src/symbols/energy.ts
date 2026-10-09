@@ -175,7 +175,8 @@ function verticalArrow(a: VArrow): { shaft: string; heads: string } {
   const start = a.both ? a.from + dir * ARROW_HEAD.length * 0.9 : a.from
   return {
     shaft: `M${f(a.x)} ${f(start)}L${f(a.x)} ${f(foot)}`,
-    heads: arrowHeadD(a.x, a.to, 0, dir, ARROW_HEAD.length, ARROW_HEAD.half) + (a.both ? arrowHeadD(a.x, a.from, 0, -dir, ARROW_HEAD.length, ARROW_HEAD.half) : ''),
+    heads:
+      arrowHeadD(a.x, a.to, 0, dir, ARROW_HEAD.length, ARROW_HEAD.half) + (a.both ? arrowHeadD(a.x, a.from, 0, -dir, ARROW_HEAD.length, ARROW_HEAD.half) : ''),
   }
 }
 
@@ -188,13 +189,25 @@ export function profilePrims(m: ProfileModel): { prims: Prim[]; texts: SymbolTex
   // The axes stop at the foot of their heads.
   const prims: Prim[] = [
     { d: `M${f(origin.x)} ${f(top.y + AXIS_HEAD.length * 0.9)}V${f(origin.y)}H${f(right.x - AXIS_HEAD.length * 0.9)}`, role: 'outline' },
-    { d: arrowHeadD(top.x, top.y, 0, -1, AXIS_HEAD.length, AXIS_HEAD.half) + arrowHeadD(right.x, right.y, 1, 0, AXIS_HEAD.length, AXIS_HEAD.half), role: 'ink' },
+    {
+      d: arrowHeadD(top.x, top.y, 0, -1, AXIS_HEAD.length, AXIS_HEAD.half) + arrowHeadD(right.x, right.y, 1, 0, AXIS_HEAD.length, AXIS_HEAD.half),
+      role: 'ink',
+    },
   ]
   const c = m.curve
-  prims.push({ d: bezierPath(bezierPath(new Path().M(c.start.x, c.start.y).L(c.rise.p0.x, c.rise.p0.y), c.rise), c.fall).L(c.end.x, c.end.y).d(), role: 'outline' })
+  prims.push({
+    d: bezierPath(bezierPath(new Path().M(c.start.x, c.start.y).L(c.rise.p0.x, c.rise.p0.y), c.rise), c.fall)
+      .L(c.end.x, c.end.y)
+      .d(),
+    role: 'outline',
+  })
   const lv = m.levelLine
   prims.push({ d: `M${f(lv.x0)} ${f(lv.y)}H${f(lv.x1)}`, role: 'dashed' })
-  if (m.catalysed) prims.push({ d: bezierPath(bezierPath(new Path().M(m.catalysed.rise.p0.x, m.catalysed.rise.p0.y), m.catalysed.rise), m.catalysed.fall).d(), role: 'dashed' })
+  if (m.catalysed)
+    prims.push({
+      d: bezierPath(bezierPath(new Path().M(m.catalysed.rise.p0.x, m.catalysed.rise.p0.y), m.catalysed.rise), m.catalysed.fall).d(),
+      role: 'dashed',
+    })
   const shafts: string[] = [],
     heads: string[] = []
   for (const a of [m.activation, m.change]) {

@@ -1,14 +1,20 @@
 // matter.ts — the particle box: states of matter, elements, compounds and mixtures as pictures of particles (release 1.2).
 //
 // The picture is drawn from a model. `particleModel(w, h, params)` is a pure function: from the parameters and a constant seed it returns
-// every particle (kind, centre, radius, the unit it belongs to), the bonds, and the motion arrows. Nothing in it is random between calls,
-// and no two circles overlap. `matter.science.test.ts` tests the model and checks that the drawing agrees with it.
+// every particle (kind, centre, radius, the unit it belongs to), the bonds and the motion arrows. The same parameters always give the same
+// model, and no two circles of the model overlap. `matter.science.test.ts` tests the model and checks that the drawing agrees with it.
 //
-// Kinds (rules S6 and S12): A is large and white (role `solid`), B is small and tinted with a hatch (`tinted()`), C is large and solid
-// ink (role `ink`). They differ by fill, and A and B by size too, so that the picture reads on a photocopy.
-// A unit is a free atom or a molecule: a group of atoms that touch and are bonded. `count` is the number of units.
+// Kinds (rules S6 and S12): A is large and white (role `solid`), B is small and tinted with a hatch (`tinted()`), C is large and solid ink
+// (role `ink`). They differ by fill, and A and B by size too, so that the picture reads on a photocopy.
+// A unit is a free atom or a molecule: a group of atoms that touch and are bonded. `count` is the number of units, so a molecule counts as one.
+//
+// The three states are three ways to place the units: a gas has them spread through the whole box with a gap of more than a circle between
+// any two; a liquid has them in a heap on the floor, touching and in no order; a solid has them in a lattice of rows that touch, from the floor.
+// Particles have the radii of `RADIUS` unless the box is too small for the count: then all three states draw them smaller by the same
+// factor (`scale`), so that three boxes of one substance, one count and one size show particles of one size.
 
 import { P, f, rng, type Pt } from '../kernel/geom'
+import { arrowHeadD } from './energy'
 import { bool, circle, num, rect, str, tinted } from './kit'
 import type { Prim, SymbolDef } from './types'
 
@@ -31,16 +37,21 @@ export interface BoxParams {
 export const RADIUS: Record<Kind, number> = { A: 7, B: 5, C: 7 }
 /** The gap between a circle on the floor or against a wall and the line of the box, in u. */
 export const INSET = 2
-/** The space that keeps one molecule apart from the next in a liquid or a solid, so that each can be seen. Bonded atoms touch; molecules do not quite. */
+/** How far a molecule keeps from the next one in a liquid or a solid, so that each can be seen. Bonded atoms touch; molecules nearly do. */
 export const MOLECULE_GAP = 3
-/** A gas has a gap of more than this many circle diameters between any two circles of different units. */
+/** In a gas, any two circles of different units are more than this many circle diameters apart. */
 export const GAS_GAP = 1.1
 /** The angle at the central atom of a molecule of three atoms (that of water). */
 const BOND_ANGLE = 104.5
 /** A constant seed: the same parameters always give the same picture. */
 const SEED = 0x7a11
-/** A unit of a liquid falls at this many random places, and takes the lowest. */
+/** A unit of a liquid falls at this many random places and takes the lowest. */
 const FALLS = 6
+/** How far a unit of a gas starts from the middle of its cell, in cells (the clamp then keeps it in the box): a gas that is not in rows. */
+const SCATTER = 2
+/** The scale of the particles falls by this factor at a time, and no further than `MIN_SCALE`, until the units fit the box. */
+const SHRINK = 0.94
+const MIN_SCALE = 0.3
 
 /** A kind of unit: its atoms in a fixed pose, relative to the middle of the unit (at full size), and which atoms are bonded. */
 export interface Template {
@@ -50,21 +61,23 @@ export interface Template {
   bonds: [number, number][]
 }
 
-/** The unit for a formula. The large kind is the single atom of AB2 and the pair of A2B (`big` is A or C). Its pose is a V that opens upwards. */
+/**
+ * The unit for a formula. `big` is the larger kind (A, or C in the second compound of a mixture). The single atom of AB2 and the pair of A2B
+ * are large, so AB2 is one large atom with two small ones, as water is. A unit of three atoms is a V that opens upwards.
+ */
 function compoundTemplate(formula: Formula, big: Kind): Template {
-  const rb = RADIUS.B,
-    rg = RADIUS[big]
   const name = formula.replace(/A/g, big)
-  if (formula === 'AB')
+  if (formula === 'AB') {
+    const d = RADIUS[big] + RADIUS.B
     return {
       formula: name,
       atoms: [
-        { kind: big, x: -(rb + rg) / 2, y: 0 },
-        { kind: 'B', x: (rb + rg) / 2, y: 0 },
+        { kind: big, x: -d / 2, y: 0 },
+        { kind: 'B', x: d / 2, y: 0 },
       ],
       bonds: [[0, 1]],
     }
-  // Three atoms: the single one at the foot of a V, the two others on its arms.
+  }
   const centre: Kind = formula === 'AB2' ? big : 'B',
     arm: Kind = formula === 'AB2' ? 'B' : big
   const d = RADIUS[centre] + RADIUS[arm],
@@ -93,7 +106,7 @@ const pairOf = (kind: Kind): Template => ({
   bonds: [[0, 1]],
 })
 
-/** The kinds of unit that a substance holds. A mixture holds two. */
+/** The kinds of unit that a substance holds: one, or two for a mixture. */
 export function constituents(substance: Substance, formula: Formula): Template[] {
   switch (substance) {
     case 'element':
@@ -112,7 +125,8 @@ export function constituents(substance: Substance, formula: Formula): Template[]
 }
 
 /** How many units each kind of unit gets: the count is shared as evenly as it can be, the first kind taking the odd one. */
-export const share = (count: number, parts: number): number[] => Array.from({ length: parts }, (_, i) => Math.floor(count / parts) + (i < count % parts ? 1 : 0))
+export const share = (count: number, parts: number): number[] =>
+  Array.from({ length: parts }, (_, i) => Math.floor(count / parts) + (i < count % parts ? 1 : 0))
 
 export interface Particle {
   kind: Kind
@@ -144,11 +158,11 @@ export interface ParticleModel {
   h: number
   params: BoxParams
   constituents: Template[]
-  /** How much smaller than full size the particles are drawn: 1 unless the box is too small for them. */
+  /** How much smaller than full size the particles are: 1 unless the box is too small for the count. */
   scale: number
   particles: Particle[]
   units: Unit[]
-  /** Pairs of bonded particles (indices into `particles`). They touch. A bond never joins two units. */
+  /** Pairs of bonded particles (indices into `particles`). Bonded particles touch. A bond never joins two units. */
   bonds: [number, number][]
   arrows: Arrow[]
 }
@@ -172,7 +186,7 @@ interface Body {
   y: number
   atoms: Atom[]
 }
-/** How far the circles of a body reach from (x, y) in each direction, and the radius of a circle about (x, y) that holds them all. */
+/** How far the circles of a body reach from (x, y) to the left, right, top and bottom, and the radius of a circle about (x, y) that holds them. */
 interface Reach {
   l: number
   r: number
@@ -187,7 +201,9 @@ interface Box {
   y1: number
 }
 
-export const reachOf = (b: Body): Reach => ({
+const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i)
+
+const reachOf = (b: Body): Reach => ({
   l: Math.max(...b.atoms.map((a) => a.r - a.x)),
   r: Math.max(...b.atoms.map((a) => a.r + a.x)),
   t: Math.max(...b.atoms.map((a) => a.r - a.y)),
@@ -197,9 +213,9 @@ export const reachOf = (b: Body): Reach => ({
 
 /**
  * A body for a template at scale `k`, turned by `angle` (radians, clockwise on the screen). The turn is rounded and made exact again, so
- * that every engine draws the same picture and the atoms of a molecule stay exactly as far apart as their radii say.
+ * that every engine draws the same picture and the atoms of a molecule stay as far apart as their radii say.
  */
-export function bodyOf(t: Template, constituent: number, k: number, angle: number): Body {
+function bodyOf(t: Template, constituent: number, k: number, angle: number): Body {
   const round6 = (v: number) => Math.round(v * 1e6) / 1e6
   let c = round6(Math.cos(angle)),
     s = round6(Math.sin(angle))
@@ -224,13 +240,16 @@ export function bodyOf(t: Template, constituent: number, k: number, angle: numbe
 }
 
 /** The atoms of a body where it stands. */
-export const placed = (b: Body): Atom[] => b.atoms.map((a) => ({ ...a, x: b.x + a.x, y: b.y + a.y }))
+const placed = (b: Body): Atom[] => b.atoms.map((a) => ({ ...a, x: b.x + a.x, y: b.y + a.y }))
+
+/** How near two circles of different units may come: the larger of their gaps. */
+const gapOf = (a: Circle, b: Circle): number => Math.max(a.pad ?? 0, b.pad ?? 0)
 
 /**
  * How far a rigid group of circles (offsets from `at`) can move along the unit vector (dx, dy) before one of its circles comes within
  * its gap of an obstacle, or leaves `box` (when there is one). Infinity when nothing is in the way.
  */
-export function travel(atoms: Circle[], at: Pt, dx: number, dy: number, obstacles: Circle[], box?: Box): number {
+function travel(atoms: Circle[], at: Pt, dx: number, dy: number, obstacles: Circle[], box?: Box): number {
   let best = Infinity
   for (const a of atoms) {
     const px = at.x + a.x,
@@ -244,7 +263,7 @@ export function travel(atoms: Circle[], at: Pt, dx: number, dy: number, obstacle
     for (const o of obstacles) {
       const qx = px - o.x,
         qy = py - o.y,
-        need = a.r + o.r + Math.max(a.pad ?? 0, o.pad ?? 0)
+        need = a.r + o.r + gapOf(a, o)
       const b = qx * dx + qy * dy, // the circles come closer when this is negative
         c = qx * qx + qy * qy - need * need
       if (b >= 0 && c > 0) continue
@@ -259,101 +278,131 @@ export function travel(atoms: Circle[], at: Pt, dx: number, dy: number, obstacle
   return Math.max(0, best)
 }
 
-const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i)
-
 /** The room for the edges of the circles: the box without the gap at its line, and without `clear` more. */
-export const innerBox = (w: number, h: number, clear = 0): Box => ({ x0: -w / 2 + INSET + clear, y0: INSET + clear, x1: w / 2 - INSET - clear, y1: h - INSET - clear })
+const innerBox = (w: number, h: number, clear = 0): Box => ({ x0: -w / 2 + INSET + clear, y0: INSET + clear, x1: w / 2 - INSET - clear, y1: h - INSET - clear })
+
+/** A shuffled copy (Fisher and Yates). */
+function shuffled<T>(items: T[], rnd: () => number): T[] {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
 
 // ---------------------------------------------------------------- solid: a lattice
 
-/** A rectangular lattice of units that touch, filling rows from the floor. Returns the bodies, or null when they do not fit the box. */
-export function lattice(groups: Body[][], box: Box): Body[] | null {
-  const parts = groups.filter((g) => g.length)
+/**
+ * A lattice of units that touch, in rows from the floor, every unit turned the same way. Each kind of unit of a mixture has a block of its own,
+ * and the blocks stand side by side. A top row that is not full is centred: it sits on the places of the row below, or, when it cannot be
+ * centred on them, in the hollows between them. Returns null when the units do not fit the box.
+ */
+function lattice(groups: Body[][], box: Box): Body[] | null {
   const far = 400
-  const blocks = parts.map((group) => {
-    const body = group[0],
-      reach = reachOf(body)
-    // One step along a row: a copy comes in from the right until it touches. One step up: a copy comes down on the three below it.
-    const dx = far - travel(body.atoms, P(far, 0), -1, 0, placed(body))
-    const row = [-dx, 0, dx].flatMap((x) => placed({ ...body, x }))
-    const dy = far - travel(body.atoms, P(0, -far), 0, 1, row)
-    // The ways to arrange n units in rows, widest first. A top row that is not full is centred, so the places left empty in it are even in number.
-    const options: { cols: number; rows: number; empty: number; width: number; height: number }[] = []
-    for (let cols = group.length; cols >= 1; cols--) {
-      const rows = Math.ceil(group.length / cols),
-        empty = cols * rows - group.length
-      if (rows > 1 && empty % 2) continue
-      const used = rows > 1 ? cols : group.length
-      options.push({ cols, rows, empty, width: (used - 1) * dx + reach.l + reach.r, height: (rows - 1) * dy + reach.t + reach.b })
-    }
-    return { group, reach, dx, dy, options }
-  })
-  // Blocks (one for each kind of unit) stand side by side with a gap of a circle between them.
-  const gap = 2 * Math.max(...parts.flatMap((g) => g[0].atoms.map((a) => a.r)))
-  const room = box.x1 - box.x0,
-    tall = box.y1 - box.y0
-  // The best choice has the fewest blocks with a top row that is not full, then the least height, then the most width.
-  let best: { pick: number[]; key: number[] } | undefined
+  const blocks = groups
+    .filter((g) => g.length)
+    .map((group) => {
+      const body = group[0],
+        reach = reachOf(body),
+        n = group.length
+      // One step along a row: a copy comes in from the right until it touches. One step up: a copy comes down on the row below it, directly
+      // above one unit, or (nested) between two.
+      const dx = far - travel(body.atoms, P(far, 0), -1, 0, placed(body))
+      const below = [-dx, 0, dx, 2 * dx].flatMap((x) => placed({ ...body, x }))
+      const dy = far - travel(body.atoms, P(0, -far), 0, 1, below)
+      const dyNested = far - travel(body.atoms, P(dx / 2, -far), 0, 1, below)
+      // The ways to arrange the units: in more than one row unless there are only a few units.
+      const plans = range(n)
+        .map((i) => n - i)
+        .flatMap((cols) => {
+          const rows = Math.ceil(n / cols),
+            empty = cols * rows - n
+          if (n > 3 && rows === 1) return []
+          const nested = rows > 1 && empty % 2 === 1
+          const rise = rows > 1 ? (rows - 2) * dy + (nested ? dyNested : dy) : 0 // from the first row to the top row
+          const used = rows > 1 ? cols : n
+          return [{ cols, rows, empty, rise, width: (used - 1) * dx + reach.l + reach.r, height: rise + reach.t + reach.b }]
+        })
+      return { group, reach, dx, dy, plans }
+    })
+  const gap = 2 * Math.max(...blocks.flatMap((b) => b.group[0].atoms.map((a) => a.r)))
+  // The best choice has the fewest blocks that are taller than they are wide, then the fewest with a top row that is not full, then the least
+  // height (the widest rows), then blocks of one height, then the fewest empty places, then the most width.
   const before = (a: number[], b: number[]) => {
-    const i = a.findIndex((v, j) => v !== b[j])
+    const i = a.findIndex((v, j) => Math.abs(v - b[j]) > 1e-9)
     return i >= 0 && a[i] < b[i]
   }
+  let best: { pick: number[]; key: number[] } | undefined
   const choose = (i: number, pick: number[], width: number) => {
     if (i === blocks.length) {
-      const chosen = pick.map((o, j) => blocks[j].options[o])
-      const height = Math.max(...chosen.map((o) => o.height))
-      const key = [chosen.filter((o) => o.empty).length, height, -width]
-      if (height <= tall && (!best || before(key, best.key))) best = { pick, key }
+      const chosen = pick.map((p, j) => blocks[j].plans[p])
+      const heights = chosen.map((p) => p.height)
+      const key = [
+        chosen.filter((p) => p.cols < p.rows).length,
+        chosen.filter((p) => p.empty).length,
+        Math.max(...heights),
+        Math.max(...heights) - Math.min(...heights),
+        chosen.reduce((m, p) => m + p.empty, 0),
+        -width,
+      ]
+      if (key[2] <= box.y1 - box.y0 && (!best || before(key, best.key))) best = { pick, key }
       return
     }
-    blocks[i].options.forEach((o, j) => {
-      const next = width + o.width + (i ? gap : 0)
-      if (next <= room) choose(i + 1, [...pick, j], next)
+    blocks[i].plans.forEach((p, j) => {
+      const next = width + p.width + (i ? gap : 0)
+      if (next <= box.x1 - box.x0) choose(i + 1, [...pick, j], next)
     })
   }
   choose(0, [], 0)
   if (!best) return null
-  const width = -best.key[2]
-  let left = (box.x0 + box.x1 - width) / 2
+  let left = (box.x0 + box.x1 + best.key[5]) / 2
   const out: Body[] = []
   blocks.forEach((b, i) => {
-    const o = b.options[best!.pick[i]]
+    const plan = b.plans[best!.pick[i]]
     let n = 0
-    for (let row = 0; row < o.rows; row++) {
-      const inRow = row === o.rows - 1 ? b.group.length - o.cols * (o.rows - 1) : o.cols
-      const first = o.rows > 1 ? (o.cols - inRow) / 2 : 0
+    for (let row = 0; row < plan.rows; row++) {
+      const top = row === plan.rows - 1
+      const inRow = top ? b.group.length - plan.cols * (plan.rows - 1) : plan.cols
+      const first = plan.rows > 1 ? (plan.cols - inRow) / 2 : 0
       for (let col = 0; col < inRow; col++) {
         const body = b.group[n++]
         body.x = left + b.reach.l + (first + col) * b.dx
-        body.y = box.y1 - b.reach.b - row * b.dy
+        body.y = box.y1 - b.reach.b - (top ? plan.rise : row * b.dy)
         out.push(body)
       }
     }
-    left += o.width + gap
+    left += plan.width + gap
   })
   return out
 }
 
-// ---------------------------------------------------------------- liquid and gas: units pushed apart
+// ---------------------------------------------------------------- gas: units pushed apart
 
 /**
- * Push every pair of units that are closer than their gap apart (`gap` at least), and keep the units inside `box`.
- * Returns the largest overlap found. `over` above 1 pushes a little too far.
+ * Push every pair of units that are closer than their gap (`gap` at least) apart, and keep the units inside `box`.
+ * Returns the largest overlap found. `over` above 1 pushes a little too far, so that the overlaps end.
  */
-export function pushApart(bodies: Body[], reach: Reach[], box: Box, gap: number, over: number): number {
+function pushApart(bodies: Body[], reach: Reach[], box: Box, gap: number, over: number): number {
+  const keepIn = () =>
+    bodies.forEach((b, i) => {
+      b.x = Math.min(Math.max(b.x, box.x0 + reach[i].l), box.x1 - reach[i].r)
+      b.y = Math.min(Math.max(b.y, box.y0 + reach[i].t), box.y1 - reach[i].b)
+    })
+  keepIn() // so that the overlaps that the box itself causes are found
   let worst = 0
   for (let i = 0; i < bodies.length; i++) {
     for (let j = i + 1; j < bodies.length; j++) {
       const a = bodies[i],
         b = bodies[j]
-      const pad = Math.max(gap, a.atoms[0].pad ?? 0, b.atoms[0].pad ?? 0)
-      if (Math.hypot(a.x - b.x, a.y - b.y) >= reach[i].round + reach[j].round + pad) continue
+      const apart = Math.max(gap, gapOf(a.atoms[0], b.atoms[0]))
+      if (Math.hypot(a.x - b.x, a.y - b.y) >= reach[i].round + reach[j].round + apart) continue
       for (const p of a.atoms) {
         for (const q of b.atoms) {
           const dx = a.x + p.x - (b.x + q.x),
             dy = a.y + p.y - (b.y + q.y)
           const d = Math.hypot(dx, dy),
-            need = p.r + q.r + pad
+            need = p.r + q.r + apart
           if (d >= need) continue
           worst = Math.max(worst, need - d)
           const push = ((need - d) / 2) * over,
@@ -367,44 +416,19 @@ export function pushApart(bodies: Body[], reach: Reach[], box: Box, gap: number,
       }
     }
   }
-  bodies.forEach((b, i) => {
-    b.x = Math.min(Math.max(b.x, box.x0 + reach[i].l), box.x1 - reach[i].r)
-    b.y = Math.min(Math.max(b.y, box.y0 + reach[i].t), box.y1 - reach[i].b)
-  })
+  keepIn()
   return worst
 }
 
 /**
- * Push the units apart until no two circles of different units are closer than their gap. At the end no two circles overlap by more than
- * 1e-7 u. False when the box is too small for them.
+ * The units spread through the whole box, no two circles of different units within `GAS_GAP` diameters of each other. False when the box is
+ * too small for them. Each unit starts in a cell of its own, so that the units are spread out evenly and still look random.
  */
-export function settle(bodies: Body[], box: Box, gap: number): boolean {
-  const reach = bodies.map(reachOf)
-  let worst = Infinity
-  for (let i = 0; i < 3000 && worst >= 1e-7; i++) {
-    worst = pushApart(bodies, reach, box, gap, 1.02)
-    if (i === 300 && worst > 1e-3) return false // it is not going to fit
-  }
-  return worst < 1e-7
-}
-
-/** A shuffled copy: Fisher and Yates. */
-function shuffled<T>(items: T[], rnd: () => number): T[] {
-  const out = [...items]
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
-}
-
-/** The units spread through the whole box, every pair of circles more than a circle apart. */
-export function gas(bodies: Body[], w: number, h: number, rnd: () => number): boolean {
+function gas(bodies: Body[], w: number, h: number, rnd: () => number): boolean {
   const gap = 2 * Math.max(...bodies.flatMap((b) => b.atoms.map((a) => a.r))) * GAS_GAP
   const box = innerBox(w, h, gap / 2)
   const wide = box.x1 - box.x0,
     tall = box.y1 - box.y0
-  // Each unit starts in a cell of its own, so that the picture is spread out evenly and still looks random.
   let cols = 1,
     cost = Infinity
   for (let c = 1; c <= bodies.length; c++) {
@@ -415,26 +439,34 @@ export function gas(bodies: Body[], w: number, h: number, rnd: () => number): bo
   const rows = Math.ceil(bodies.length / cols)
   const cells = shuffled(range(cols * rows), rnd)
   bodies.forEach((b, i) => {
-    b.x = box.x0 + ((cells[i] % cols) + rnd()) * (wide / cols)
-    b.y = box.y0 + (Math.floor(cells[i] / cols) + rnd()) * (tall / rows)
+    b.x = box.x0 + ((cells[i] % cols) + 0.5 + (rnd() - 0.5) * SCATTER) * (wide / cols)
+    b.y = box.y0 + (Math.floor(cells[i] / cols) + 0.5 + (rnd() - 0.5) * SCATTER) * (tall / rows)
   })
-  return settle(bodies, box, gap)
+  // Push until nothing overlaps. A box that is too small shows at once: the overlaps do not shrink. At the end none is left (to 1e-7 u).
+  const reach = bodies.map(reachOf)
+  let worst = Infinity
+  for (let pass = 0; pass < 500 && worst >= 1e-7; pass++) {
+    worst = pushApart(bodies, reach, box, gap, 1.02)
+    if ((pass === 40 && worst > 1.5) || (pass === 100 && worst > 0.01)) return false
+  }
+  return worst < 1e-7
 }
 
-/** How near two circles of different units may come: the gap of either. */
-const gapOf = (a: Circle, b: Circle): number => Math.max(a.pad ?? 0, b.pad ?? 0)
+// ---------------------------------------------------------------- liquid: a heap that falls
 
-/** The units in a heap on the floor, touching and in no order. */
-export function liquid(bodies: Body[], w: number, h: number, rnd: () => number): boolean {
+/**
+ * The units in a heap on the floor, touching and in no order. They are dropped one at a time. Each takes the lowest of a few random places
+ * at the top of the heap, rolls a little way into a hollow, and if it touches nothing but the floor, slides up to the nearest unit. So every
+ * unit touches the floor or another unit (within its gap). The heap is about six times as wide as it is deep and no wider than the box, and
+ * it fills the lower two thirds of the box at most. False when it is too full for that.
+ */
+function liquid(bodies: Body[], w: number, h: number, rnd: () => number): boolean {
   const room = innerBox(w, h)
-  // The heap is about six times as wide as it is deep, and no wider than the box. It fills the lower two thirds at most.
   const area = bodies.reduce((n, b) => n + b.atoms.reduce((m, a) => m + Math.PI * a.r * a.r, 0), 0) / 0.8
   const round = Math.max(...bodies.map((b) => reachOf(b).round))
   const width = Math.min(room.x1 - room.x0, Math.max(8 * round, Math.sqrt(6 * area)))
   const box: Box = { x0: -width / 2, x1: width / 2, y0: Math.max(room.y0, h / 3), y1: room.y1 }
   const done: Body[] = []
-  // One unit at a time falls from the top of the heap. It takes the lowest of a few random places, rolls a little way into a hollow, and
-  // if it touches nothing but the floor it slides up to the nearest unit. Every unit ends up touching the floor or another unit.
   for (const b of shuffled(bodies, rnd)) {
     const reach = reachOf(b),
       others = done.flatMap(placed)
@@ -450,8 +482,10 @@ export function liquid(bodies: Body[], w: number, h: number, rnd: () => number):
     if (at.y === -Infinity) return false // the heap is full
     for (const step of [5, 2.5]) {
       for (let n = 0; n < 20; n++) {
-        const next = [at.x - step, at.x + step].filter((x) => x >= lo && x <= hi).map((x) => ({ x, y: rest(x) }))
-        const lower = next.sort((p, q) => q.y - p.y)[0]
+        const lower = [at.x - step, at.x + step]
+          .filter((x) => x >= lo && x <= hi)
+          .map((x) => ({ x, y: rest(x) }))
+          .sort((p, q) => q.y - p.y)[0]
         if (!lower || lower.y <= at.y + 1e-9) break
         at = lower
       }
@@ -462,7 +496,7 @@ export function liquid(bodies: Body[], w: number, h: number, rnd: () => number):
     for (let n = 0; n < 4 && others.length && !touching(); n++) {
       const left = travel(b.atoms, P(b.x, b.y), -1, 0, others),
         right = travel(b.atoms, P(b.x, b.y), 1, 0, others)
-      const slide = Math.min(left, right) === left ? -left : right
+      const slide = left <= right ? -left : right
       if (!Number.isFinite(slide) || b.x + slide < lo || b.x + slide > hi) break
       b.x += slide
       b.y = fall(b.x, b.y)
@@ -472,10 +506,12 @@ export function liquid(bodies: Body[], w: number, h: number, rnd: () => number):
   return true
 }
 
+// ---------------------------------------------------------------- placing the units
+
 /** The units of the substance placed in the box at scale `k`, or null when they do not fit. */
-export function place(templates: Template[], counts: number[], state: State, w: number, h: number, k: number, rnd: () => number): Body[] | null {
-  const turned = state !== 'solid'
-  const groups = templates.map((t, i) => range(counts[i]).map(() => bodyOf(t, i, k, turned ? rnd() * 2 * Math.PI : 0)))
+function place(templates: Template[], counts: number[], state: State, w: number, h: number, k: number): Body[] | null {
+  const rnd = rng(SEED)
+  const groups = templates.map((t, i) => range(counts[i]).map(() => bodyOf(t, i, k, state === 'solid' ? 0 : rnd() * 2 * Math.PI)))
   if (state === 'solid') return lattice(groups, innerBox(w, h))
   const bodies = groups.flat()
   return (state === 'liquid' ? liquid(bodies, w, h, rnd) : gas(bodies, w, h, rnd)) ? bodies : null
@@ -483,21 +519,12 @@ export function place(templates: Template[], counts: number[], state: State, w: 
 
 // ---------------------------------------------------------------- motion arrows
 
-/** Length of a motion arrow in u, at full size: short in a solid or a liquid, longer in a gas. */
+/** The length of a motion arrow in u at full size: short in a solid or a liquid, longer in a gas. */
 export const ARROW_LENGTH = { short: 9, long: 20 }
-/** The head of a motion arrow: how long it is, and how wide each side of it. */
+/** The head of a motion arrow: its length and the half of its width. */
 const HEAD = { length: 5.5, half: 2.3 }
 /** How far an arrow keeps from every circle and from the line of the box. */
 const AWAY = 2.5
-
-/** The arrowhead at the tip (x, y) of an arrow that points along the unit vector (ux, uy): a closed triangle for the role `ink`. */
-export function headD(x: number, y: number, ux: number, uy: number, scale = 1): string {
-  const bx = x - ux * HEAD.length * scale,
-    by = y - uy * HEAD.length * scale,
-    hx = -uy * HEAD.half * scale,
-    hy = ux * HEAD.half * scale
-  return `M${f(x)} ${f(y)}L${f(bx + hx)} ${f(by + hy)}L${f(bx - hx)} ${f(by - hy)}Z`
-}
 
 /** The distance from (px, py) to the segment (ax, ay)–(bx, by). */
 function pointToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
@@ -509,10 +536,11 @@ function pointToSegment(px: number, py: number, ax: number, ay: number, bx: numb
 }
 
 /**
- * A short arrow on some of the units. It leaves the unit's surface in a direction that is free for its whole length and keeps `AWAY` from every
- * circle and from the line of the box, so that it never crosses a particle. A unit that is packed in has no free direction and gets none.
+ * A short arrow on some of the units. It leaves the unit's surface in a direction that is free for its whole length, and keeps `AWAY` from
+ * every circle, from the line of the box and from the other arrows, so that it never crosses a particle. A unit that is packed in has no
+ * free direction and gets no arrow.
  */
-export function motionArrows(bodies: Body[], state: State, w: number, h: number, k: number, rnd: () => number): Arrow[] {
+function motionArrows(bodies: Body[], state: State, w: number, h: number, k: number, rnd: () => number): Arrow[] {
   const length = ARROW_LENGTH[state === 'gas' ? 'long' : 'short'] * k
   const circles = bodies.flatMap(placed)
   const room = innerBox(w, h, 1 + HEAD.half)
@@ -520,7 +548,7 @@ export function motionArrows(bodies: Body[], state: State, w: number, h: number,
   bodies.forEach((b, u) => {
     if (rnd() > (state === 'gas' ? 0.75 : 0.5)) return
     const atoms = placed(b),
-      phase = rnd() * Math.PI * 2
+      phase = rnd() * 2 * Math.PI
     const valid: Arrow[] = []
     for (let i = 0; i < 16; i++) {
       const ux = Math.cos(phase + (i * Math.PI) / 8),
@@ -548,9 +576,8 @@ export function motionArrows(bodies: Body[], state: State, w: number, h: number,
       if (free < length + 4 * k) continue
       const tx = sx + ux * length,
         ty = sy + uy * length
-      // not near another arrow
-      if (out.some((o) => [0, 0.25, 0.5, 0.75, 1].some((t) => pointToSegment(sx + (tx - sx) * t, sy + (ty - sy) * t, o.x0, o.y0, o.x1, o.y1) < 5 * k))) continue
-      valid.push({ unit: u, x0: sx, y0: sy, x1: tx, y1: ty })
+      const near = out.some((o) => [0, 0.25, 0.5, 0.75, 1].some((t) => pointToSegment(sx + (tx - sx) * t, sy + (ty - sy) * t, o.x0, o.y0, o.x1, o.y1) < 5 * k))
+      if (!near) valid.push({ unit: u, x0: sx, y0: sy, x1: tx, y1: ty })
     }
     if (valid.length) out.push(valid[Math.floor(rnd() * valid.length)])
   })
@@ -559,34 +586,49 @@ export function motionArrows(bodies: Body[], state: State, w: number, h: number,
 
 // ---------------------------------------------------------------- the model
 
+/**
+ * The largest scale (by steps of `SHRINK`) at which the units fit the box as a gas. A gas needs the most room, so this is the scale of all three
+ * states of the substance. The answer is kept, because the three states ask for it, and so does every redraw of the same box.
+ */
+const gasScales = new Map<string, number>()
+function gasScale(templates: Template[], counts: number[], w: number, h: number): number {
+  const key = `${templates.map((t) => t.formula).join('+')}|${counts}|${w}|${h}`
+  let scale = gasScales.get(key)
+  if (scale === undefined) {
+    scale = 1
+    while (scale * SHRINK > MIN_SCALE && !place(templates, counts, 'gas', w, h, scale)) scale *= SHRINK
+    if (gasScales.size > 500) gasScales.clear()
+    gasScales.set(key, scale)
+  }
+  return scale
+}
+
 export function particleModel(w: number, h: number, params: BoxParams): ParticleModel {
   const templates = constituents(params.substance, params.formula)
   const counts = share(Math.max(1, Math.min(60, Math.round(params.count))), templates.length)
-  let bodies: Body[] | null = null
-  let scale = 1
-  // Particles keep their size unless the box is too small for them: then they are drawn a little smaller, until they fit.
-  while (!bodies && scale > 0.3) {
-    bodies = place(templates, counts, params.state, w, h, scale, rng(SEED))
-    if (!bodies) scale *= 0.94
-  }
-  if (!bodies) bodies = []
+  // Particles have their full size unless the box is too small for them. Then all three states draw them smaller by the same factor; a solid
+  // or a liquid that does not fit even at that scale takes a smaller one.
+  let scale = gasScale(templates, counts, w, h)
+  let bodies = place(templates, counts, params.state, w, h, scale)
+  while (!bodies && scale * SHRINK > MIN_SCALE) bodies = place(templates, counts, params.state, w, h, (scale *= SHRINK))
+  const placedBodies = bodies ?? []
   const particles: Particle[] = [],
     units: Unit[] = [],
     bonds: [number, number][] = []
-  bodies.forEach((b, u) => {
+  placedBodies.forEach((b, u) => {
     const first = particles.length
     for (const a of placed(b)) particles.push({ kind: a.kind, x: a.x, y: a.y, r: a.r, unit: u })
     units.push({ constituent: b.constituent, particles: b.atoms.map((_, i) => first + i) })
     for (const [i, j] of templates[b.constituent].bonds) bonds.push([first + i, first + j])
   })
-  // The arrows come from a stream of their own, so that the motion switch never moves a particle.
-  const arrows = params.motion ? motionArrows(bodies, params.state, w, h, scale, rng(SEED ^ 0x5a5a)) : []
+  // The arrows come from a stream of their own, so that switching motion on never moves a particle.
+  const arrows = params.motion ? motionArrows(placedBodies, params.state, w, h, scale, rng(SEED ^ 0x5a5a)) : []
   return { w, h, params, constituents: templates, scale, particles, units, bonds, arrows }
 }
 
 // ---------------------------------------------------------------- the picture
 
-export function particlePrims(m: ParticleModel): Prim[] {
+function particlePrims(m: ParticleModel): Prim[] {
   const prims: Prim[] = [{ d: rect(-m.w / 2, 0, m.w / 2, m.h), role: 'outline' }]
   const of = (kind: Kind) =>
     m.particles
@@ -600,17 +642,18 @@ export function particlePrims(m: ParticleModel): Prim[] {
   if (b) prims.push(...tinted(b, { pitch: 3 }))
   if (c) prims.push({ d: c, role: 'ink' })
   if (m.arrows.length) {
-    // The shaft stops at the foot of the head, so that the head is not drawn over a thick line end.
-    const shaft = m.arrows.map((a) => {
+    // The shaft stops at the foot of its head, so that the head is not drawn over the end of a line.
+    const shafts: string[] = [],
+      heads: string[] = []
+    for (const a of m.arrows) {
       const l = Math.hypot(a.x1 - a.x0, a.y1 - a.y0),
+        ux = (a.x1 - a.x0) / l,
+        uy = (a.y1 - a.y0) / l,
         foot = Math.max(0, l - HEAD.length * m.scale * 0.8)
-      return `M${f(a.x0)} ${f(a.y0)}L${f(a.x0 + ((a.x1 - a.x0) * foot) / l)} ${f(a.y0 + ((a.y1 - a.y0) * foot) / l)}`
-    })
-    const heads = m.arrows.map((a) => {
-      const l = Math.hypot(a.x1 - a.x0, a.y1 - a.y0)
-      return headD(a.x1, a.y1, (a.x1 - a.x0) / l, (a.y1 - a.y0) / l, m.scale)
-    })
-    prims.push({ d: shaft.join(''), role: 'detail' }, { d: heads.join(''), role: 'ink' })
+      shafts.push(`M${f(a.x0)} ${f(a.y0)}L${f(a.x0 + ux * foot)} ${f(a.y0 + uy * foot)}`)
+      heads.push(arrowHeadD(a.x1, a.y1, ux, uy, HEAD.length * m.scale, HEAD.half * m.scale))
+    }
+    prims.push({ d: shafts.join(''), role: 'detail' }, { d: heads.join(''), role: 'ink' })
   }
   return prims
 }
@@ -623,7 +666,7 @@ export const particleBox: SymbolDef = {
   pack: 'matter',
   size: { w: 160, h: 120 },
   resize: 'free',
-  min: { w: 100, h: 75 },
+  min: { w: 120, h: 90 },
   params: [
     {
       key: 'substance',
@@ -665,14 +708,17 @@ export const particleBox: SymbolDef = {
     { key: 'motion', label: 'Motion arrows', type: 'boolean', default: false },
   ],
   build({ w, h, p }) {
-    const m = particleModel(w, h, {
-      substance: str(p.substance, 'element') as Substance,
-      state: str(p.state, 'gas') as State,
-      count: num(p.count, 16),
-      formula: str(p.formula, 'AB') as Formula,
-      motion: bool(p.motion, false),
-    })
-    return { prims: particlePrims(m) }
+    return {
+      prims: particlePrims(
+        particleModel(w, h, {
+          substance: str(p.substance, 'element') as Substance,
+          state: str(p.state, 'gas') as State,
+          count: num(p.count, 16),
+          formula: str(p.formula, 'AB') as Formula,
+          motion: bool(p.motion, false),
+        }),
+      ),
+    }
   },
 }
 
