@@ -720,6 +720,24 @@ describe('isotopes drawn as nuclei', () => {
     }
   })
 
+  it('mixes protons and neutrons through every cluster: z protons in a circles, centred, and as far out as the neutrons', () => {
+    for (let z = 1; z <= 18; z++) {
+      for (let a = z; a <= 40; a++) {
+        const cs = clusterCircles(z, a)
+        const protons = cs.filter((c) => c.proton),
+          neutrons = cs.filter((c) => !c.proton)
+        expect([protons.length, neutrons.length], `z ${z} a ${a}`).toEqual([z, a - z])
+        if (protons.length < 4 || neutrons.length < 4) continue
+        const mean = (pts: Pt[]) => P(sum(pts.map((p) => p.x)) / pts.length, sum(pts.map((p) => p.y)) / pts.length)
+        const middle = mean(cs)
+        const reach = Math.max(...cs.map((c) => dist(c, middle)))
+        const far = (pts: Pt[]) => sum(pts.map((p) => dist(p, middle))) / pts.length
+        expect(dist(mean(protons), middle), `z ${z} a ${a}: the protons are not on one side`).toBeLessThan(0.3 * reach)
+        expect(Math.abs(far(protons) - far(neutrons)), `z ${z} a ${a}: the protons are not at the rim or in the middle only`).toBeLessThan(0.25 * reach)
+      }
+    }
+  })
+
   it('writes the nuclide notation under each cluster, with the same code as nuclideNotation', () => {
     const g = geometry('isotopeNuclei', 300, 150, { z: 17, a1: 35, a2: 37, a3: 0, notation: true })
     const symbols = g.texts!.filter((t) => t.size === NOTATION.symbol)
@@ -755,6 +773,13 @@ describe('isotopes drawn as nuclei', () => {
         .texts!.filter((t) => t.size === NOTATION.counts)
         .map((t) => t.text),
     ).toEqual(['1 proton', '0 neutrons', '1 proton', '1 neutron', '1 proton', '2 neutrons'])
+    // Without the notation the counts stand alone under their clusters, still protons and neutrons only.
+    const alone = geometry('isotopeNuclei', 300, 150, { z: 17, a1: 35, a2: 37, notation: false, counts: true })
+    expect(alone.texts!.map((t) => t.text)).toEqual(['17 protons', '18 neutrons', '17 protons', '20 neutrons'])
+    for (const c of clustersOf(alone)) {
+      const lowest = Math.max(...[...c.protons, ...c.neutrons].map((p) => p.y)) + NUCLEON_R
+      for (const t of alone.texts!) expect(t.y - 0.716 * t.size, 'the counts are under the clusters').toBeGreaterThan(lowest)
+    }
   })
 
   it('draws a plus sign in each proton and none in a neutron, and mixes both kinds through the cluster', () => {
@@ -766,11 +791,15 @@ describe('isotopes drawn as nuclei', () => {
       for (const p of c.protons) expect(plus.filter((q) => dist(centre(q), p) < 0.05)).toHaveLength(2)
       for (const n of c.neutrons) expect(plus.filter((q) => dist(centre(q), n) < 0.05)).toHaveLength(0)
     }
-    // Mixed: the protons are spread over the cluster, not collected on one side.
+    // Mixed: the protons are spread over the cluster, not collected on one side or at its rim: the two kinds lie equally far out, on the average.
     for (const c of clusters) {
       const all = [...c.protons, ...c.neutrons]
       const mean = (pts: Pt[], k: 'x' | 'y') => sum(pts.map((p) => p[k])) / pts.length
-      expect(Math.hypot(mean(c.protons, 'x') - mean(all, 'x'), mean(c.protons, 'y') - mean(all, 'y'))).toBeLessThan(5)
+      const middle = P(mean(all, 'x'), mean(all, 'y'))
+      expect(Math.hypot(mean(c.protons, 'x') - middle.x, mean(c.protons, 'y') - middle.y)).toBeLessThan(5)
+      const far = (pts: Pt[]) => sum(pts.map((p) => dist(p, middle))) / pts.length
+      const reach = Math.max(...all.map((p) => dist(p, middle)))
+      expect(Math.abs(far(c.protons) - far(c.neutrons)), 'protons and neutrons are equally far from the middle').toBeLessThan(0.25 * reach)
     }
   })
 
@@ -830,7 +859,7 @@ describe('alpha-particle scattering', () => {
         const g = geometry('alphaScattering', w, h, { paths: n, nuclei: true })
         const r = read(g)
         expect(r.paths, `${n} paths in ${w} × ${h}`).toHaveLength(n)
-        expect(r.arrows, `${n}: an arrow head for each`).toHaveLength(n)
+        expect(r.arrows, `${n}: two arrow heads for each path, one on the beam and one at the screen`).toHaveLength(2 * n)
         expect(r.atoms.length).toBeGreaterThan(8)
         expect(r.nuclei).toHaveLength(r.atoms.length)
         expect(
@@ -906,12 +935,36 @@ describe('alpha-particle scattering', () => {
         const r = read(g)
         const screen = 0.45 * h
         const middle = P(r.atoms[0].x, h / 2)
-        for (const arrow of r.arrows) {
-          // The tip of each arrow head is on the screen, which is a circle of radius 0.45 h round the foil.
-          const tip = arrow.reduce((p, q) => (Math.abs(dist(q, middle) - screen) < Math.abs(dist(p, middle) - screen) ? q : p))
-          expect(Math.abs(dist(tip, middle) - screen), `${n} in ${w} × ${h}`).toBeLessThan(0.1)
+        // The tip of an arrow head at the end of a path is on the screen, which is a circle of radius 0.45 h round the foil.
+        const onScreen = (arrow: Pt[]) => arrow.some((q) => Math.abs(dist(q, middle) - screen) < 0.1)
+        const ends = r.arrows.filter(onScreen),
+          beam = r.arrows.filter((a) => !onScreen(a))
+        expect(ends, `${n} in ${w} × ${h}: an arrow head at the screen for each path`).toHaveLength(n)
+        expect(beam, `${n} in ${w} × ${h}: an arrow head on the beam for each path`).toHaveLength(n)
+        // The arrow head on the beam is on its path, before the foil, and points along the beam.
+        for (const a of beam) {
+          const tip = a.reduce((p, q) => (q.x > p.x ? q : p))
+          expect(tip.x, 'before the foil').toBeLessThan(middle.x - 30)
+          expect(
+            a.every((q) => q.x <= tip.x + 1e-6),
+            'it points along the beam',
+          ).toBe(true)
+          expect(Math.min(...r.paths.map((path) => passes(path, tip))), 'it is on a path').toBeLessThan(0.05)
         }
         for (const path of r.paths) expect(path[0].x, 'it starts at the block').toBeLessThan(-w / 2 + 40)
+        // The screen is one dashed arc, a circle of radius 0.45 h round the foil, open on the side of the block where the beam comes in.
+        const arcs = polysOf(g, 'dashed')
+        expect(arcs, `${n} in ${w} × ${h}`).toHaveLength(1)
+        for (const q of arcs[0]) expect(Math.abs(dist(q, middle) - screen), 'a point of the screen').toBeLessThan(0.1)
+        expect(arcs[0][0].x).toBeLessThan(middle.x)
+        expect(last(arcs[0]).x).toBeLessThan(middle.x)
+        // No path crosses the screen: each stops at it, and the beam passes through the opening.
+        for (const path of r.paths) {
+          const crossed = path.some(
+            (_, a) => a + 1 < path.length && arcs[0].some((__, b) => b + 1 < arcs[0].length && cross(path[a], path[a + 1], arcs[0][b], arcs[0][b + 1])),
+          )
+          expect(crossed, `${n} in ${w} × ${h}: a path crosses the screen`).toBe(false)
+        }
         for (let i = 0; i < r.paths.length; i++) {
           for (let j = i + 1; j < r.paths.length; j++) {
             const p = r.paths[i],

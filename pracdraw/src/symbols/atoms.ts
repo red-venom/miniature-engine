@@ -23,8 +23,10 @@ import type { ParamValue, Prim, SymbolDef, SymbolText } from './types'
 
 const deg = (a: number): number => (a * Math.PI) / 180
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n))
+/** A whole number from a parameter. A file can hold anything: a value that is not a finite number becomes `fallback`. */
+const int = (n: number, fallback = 0): number => (Number.isFinite(n) ? Math.round(n) : fallback)
 /** The element for an atomic number that a parameter gave (1 to 36; anything else is moved into the table). */
-const elementOf = (z: number): Element => element(clamp(Math.round(z), 1, 36))!
+const elementOf = (z: number): Element => element(clamp(int(z, 1), 1, 36))!
 
 /**
  * The widths of Arial in thousandths of an em (the rule S11 font), for the few places where a drawing needs to know how wide its text is:
@@ -231,7 +233,7 @@ const ANION: Record<string, string> = {
 /** "sodium atom", "sodium ion", "chloride ion". A charge that the element cannot have is a neutral atom. */
 export function bohrLabel(z: number, charge: number): string {
   const e = elementOf(z)
-  const c = Math.round(charge)
+  const c = int(charge)
   if (!c || !ionShells(e, c)) return `${e.name} atom`
   return `${c < 0 ? (ANION[e.symbol] ?? e.name) : e.name} ion`
 }
@@ -243,7 +245,7 @@ export function bohrLabel(z: number, charge: number): string {
 export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions> = {}): BohrModel {
   const opt: BohrOptions = { w: 170, h: 170, nucleus: 'symbol', mark: 'dot', outerOnly: false, otherMarks: 0, structure: false, ...o }
   const e = elementOf(zIn)
-  const asked = Math.round(chargeIn)
+  const asked = int(chargeIn)
   const ion = ionShells(e, asked)
   const charge = ion ? asked : 0
   const structure = ion ?? [...e.shells]
@@ -258,7 +260,7 @@ export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions>
   const cx = 0,
     cy = opt.h / 2 - shrink / 2
   const other: Mark = opt.mark === 'dot' ? 'cross' : 'dot'
-  const swap = clamp(Math.round(opt.otherMarks), 0, 8)
+  const swap = clamp(int(opt.otherMarks), 0, 8)
   const shells: BohrShell[] = []
   structure.forEach((count, i) => {
     if (opt.outerOnly && i < n - 1) return
@@ -430,7 +432,7 @@ const PUDDING: readonly Pt[] = (() => {
 
 /** The model of the atom that was asked for, in a box of side `size`. */
 export function atomModel(kind: ModelKind, countIn: number, mark: Mark, size: number): AtomModel {
-  const count = clamp(Math.round(countIn), 1, 10)
+  const count = clamp(int(countIn, 1), 1, 10)
   const cx = 0,
     cy = size / 2
   const nucleus = { r: MODELS.nucleusR, plus: P(cx + 8, cy - 8) }
@@ -532,9 +534,9 @@ export interface Nuclide {
 /** The nuclide with atomic number z and mass number a (0 = the commonest isotope of the element), with a charge. */
 export function nuclide(zIn: number, aIn: number, chargeIn = 0): Nuclide {
   const e = elementOf(zIn)
-  const asked = Math.round(aIn)
+  const asked = int(aIn)
   const a = asked <= 0 ? e.a : Math.max(asked, e.z)
-  const c = Math.round(chargeIn)
+  const c = int(chargeIn)
   const charge = ionShells(e, c) ? c : 0
   return { z: e.z, a, charge, symbol: e.symbol, name: e.name, protons: e.z, neutrons: a - e.z, electrons: e.z - charge }
 }
@@ -665,6 +667,7 @@ export interface Cluster {
 }
 
 const SQ3 = Math.sqrt(3)
+const sum = (a: readonly number[]): number => a.reduce((n, m) => n + m, 0)
 
 /**
  * The circles of a nucleus with `protons` protons and mass number `a`, centred on (0, 0): a tight hexagonal cluster, laid out from the middle
@@ -678,6 +681,7 @@ export function clusterCircles(protons: number, a: number): Nucleon[] {
   for (let q = -reach; q <= reach; q++) for (let r = -reach; r <= reach; r++) lattice.push(P(D * (q + r / 2), D * (SQ3 / 2) * r))
   const origins = [P(0, 0), P(D / 2, 0), P(D / 2, (D * SQ3) / 6)]
   let best: Pt[] = [],
+    middle = origins[0],
     bestSpread = Infinity
   for (const o of origins) {
     // Nearest first. Sites that are equally near are taken in opposite pairs, so that a part-filled ring is as even as it can be.
@@ -699,50 +703,74 @@ export function clusterCircles(protons: number, a: number): Nucleon[] {
     if (spread < bestSpread - 1e-6) {
       bestSpread = spread
       best = take
+      middle = o
     }
   }
+  const flags = mixture(best, middle, protons)
   // Centre the box of the circles on (0, 0).
   const xs = best.map((p) => p.x),
     ys = best.map((p) => p.y)
   const ox = (Math.min(...xs) + Math.max(...xs)) / 2,
     oy = (Math.min(...ys) + Math.max(...ys)) / 2
-  const sites = best.map((p) => P(p.x - ox, p.y - oy))
-  const flags = mixture(sites, protons)
-  return sites.map((p, i) => ({ x: p.x, y: p.y, proton: flags[i] }))
+  return best.map((p, i) => ({ x: p.x - ox, y: p.y - oy, proton: flags[i] }))
 }
 
 /**
- * Which of the circles are protons: the kind that there are fewer of is spread through the cluster as evenly as it can be (each next one is the
- * circle farthest from those chosen, starting from the middle), and the other kind fills the rest. Both kinds are then seen all through it.
+ * Which of the circles are protons. The circles lie in rings round the middle of the cluster (each ring all equally far from it). Each ring gets
+ * its share of the protons (z in a, the rounding going to the rings with the most left over), and the protons of a ring are spread evenly round it,
+ * each ring turned so that the protons stay centred on the cluster. So both kinds are seen all through it, in the middle and at the rim, and
+ * neither is collected on one side.
  */
-function mixture(sites: readonly Pt[], protons: number): boolean[] {
+function mixture(sites: readonly Pt[], middle: Pt, protons: number): boolean[] {
   const a = sites.length
-  const fewer = Math.min(protons, a - protons)
-  const mx = sites.reduce((s, p) => s + p.x, 0) / a,
-    my = sites.reduce((s, p) => s + p.y, 0) / a
-  const chosen: number[] = []
-  if (fewer > 0) {
-    let first = 0
-    sites.forEach((p, i) => {
-      if (Math.hypot(p.x - mx, p.y - my) < Math.hypot(sites[first].x - mx, sites[first].y - my) - 1e-6) first = i
-    })
-    chosen.push(first)
+  const away = (p: Pt) => Math.hypot(p.x - middle.x, p.y - middle.y)
+  // The rings: runs of sites that are equally far from the middle (the sites are in order of distance).
+  const rings: number[][] = []
+  sites.forEach((p, i) => {
+    if (i && Math.abs(away(p) - away(sites[i - 1])) < 1e-6) rings[rings.length - 1].push(i)
+    else rings.push([i])
+  })
+  // Each ring's share: the whole part of its quota, and the rest to the rings with the largest fractions (the inner ring first when they are equal).
+  const quota = rings.map((r) => (protons * r.length) / a)
+  const share = quota.map((q) => Math.floor(q + 1e-9))
+  let left = protons - sum(share)
+  const order = quota.map((_, i) => i).sort((i, j) => quota[j] - Math.floor(quota[j]) - (quota[i] - Math.floor(quota[i])) || i - j)
+  for (const i of order) {
+    if (left <= 0) break
+    if (share[i] < rings[i].length) {
+      share[i]++
+      left--
+    }
   }
-  while (chosen.length < fewer) {
-    let pick = -1,
-      far = -1
-    sites.forEach((p, i) => {
-      if (chosen.includes(i)) return
-      const d = Math.min(...chosen.map((j) => Math.hypot(p.x - sites[j].x, p.y - sites[j].y)))
-      if (d > far + 1e-6) {
-        far = d
-        pick = i
+  const flags: boolean[] = sites.map(() => false)
+  // The protons of a ring are spread evenly round it, turned to the place that keeps the protons of the whole cluster centred on its middle.
+  let sx = 0,
+    sy = 0
+  rings.forEach((ring, k) => {
+    const n = ring.length,
+      count = share[k]
+    if (!count) return
+    const byAngle = [...ring].sort(
+      (i, j) => Math.atan2(sites[i].y - middle.y, sites[i].x - middle.x) - Math.atan2(sites[j].y - middle.y, sites[j].x - middle.x),
+    )
+    const pattern = Array.from({ length: count }, (_, j) => Math.floor(((j + 0.5) * n) / count))
+    let bestTurn: number[] = [],
+      bestOff = Infinity
+    for (let turn = 0; turn < n; turn++) {
+      const chosen = pattern.map((i) => byAngle[(i + turn) % n])
+      const off = Math.hypot(sx + sum(chosen.map((i) => sites[i].x - middle.x)), sy + sum(chosen.map((i) => sites[i].y - middle.y)))
+      if (off < bestOff - 1e-9) {
+        bestOff = off
+        bestTurn = chosen
       }
-    })
-    chosen.push(pick)
-  }
-  const small = sites.map((_, i) => chosen.includes(i))
-  return protons <= a - protons ? small : small.map((x) => !x)
+    }
+    for (const i of bestTurn) {
+      flags[i] = true
+      sx += sites[i].x - middle.x
+      sy += sites[i].y - middle.y
+    }
+  })
+  return flags
 }
 
 export interface IsotopeModel {
@@ -770,7 +798,7 @@ export interface IsotopeOptions {
 export function isotopeModel(zIn: number, masses: readonly number[], o: Partial<IsotopeOptions> = {}): IsotopeModel {
   const opt: IsotopeOptions = { w: 300, h: 150, notation: true, counts: false, ...o }
   const e = elementOf(zIn)
-  const as = masses.map((m, i) => (i > 0 && Math.round(m) <= 0 ? 0 : Math.max(Math.round(m), e.z))).filter((m, i) => i === 0 || m > 0)
+  const as = masses.map((m, i) => (i > 0 && int(m) <= 0 ? 0 : Math.max(int(m), e.z))).filter((m, i) => i === 0 || m > 0)
   const shapes = as.map((a) => clusterCircles(e.z, a))
   const boxes = shapes.map((cs) => {
     const xs = cs.map((c) => c.x),
@@ -883,6 +911,8 @@ export const ALPHA = {
   blockW: 46,
   back: 16,
   arm: 24,
+  /** How far from its nucleus a bent path starts to bend (the path is straight further out). */
+  reach: 70,
   /** The length of an arrow head, and its half angle. */
   arrow: 8,
   spread: 0.42,
@@ -917,7 +947,7 @@ export interface PathSlot {
  * never cross, and every path is at least 9 u from the next.
  */
 export function alphaPattern(paths: number): PathSlot[] {
-  const count = clamp(Math.round(paths), 5, 12)
+  const count = clamp(int(paths, 8), 5, 12)
   const bent = bentCount(count)
   const up = bent >= 3 ? 2 : 1
   const straight = count - 1 - bent
@@ -964,9 +994,11 @@ export interface AlphaPath {
   turn: number
   /** The line, from the lead block to the foot of the arrow head. */
   points: Pt[]
-  /** The tip of the arrow head, and the direction it points, in degrees clockwise from +x. */
+  /** The tip of the arrow head at the end of the path, and the direction it points, in degrees clockwise from +x. */
   tip: Pt
   heading: number
+  /** The tip of the arrow head on the beam, half way between the block and the foil: it points along +x. */
+  beam: Pt
 }
 
 export interface AlphaModel {
@@ -1029,7 +1061,7 @@ export function alphaModel(pathsIn: number, showNuclei: boolean, w = 380, h = 23
       pts = [P(xs, N.y + s), P(cx, N.y + s), P(cx + 4 * w, N.y + s)]
       apex = 1
     } else {
-      const curve = hyperbola(b, deg(turn), 70, 80).map((q) => P(N.x + q.x, N.y - (up ? 1 : -1) * q.y))
+      const curve = hyperbola(b, deg(turn), ALPHA.reach, 80).map((q) => P(N.x + q.x, N.y - (up ? 1 : -1) * q.y))
       const last = curve[curve.length - 1],
         before = curve[curve.length - 2]
       const len = Math.hypot(last.x - before.x, last.y - before.y)
@@ -1058,7 +1090,9 @@ export function alphaModel(pathsIn: number, showNuclei: boolean, w = 380, h = 23
     }
     const heading = (Math.atan2(tip.y - pts[cut].y, tip.x - pts[cut].x) * 180) / Math.PI
     const points = trimEnd([...pts.slice(0, cut + 1), tip], ALPHA.arrow - 1)
-    return { kind: turn === 0 ? 'straight' : turn > 90 ? 'reversed' : 'bent', nucleus: index, s, turn: up ? -turn : turn, points, tip, heading }
+    // The arrow head on the beam is at the middle of the level part of the path.
+    const beam = P((xs + (N.x - ALPHA.reach)) / 2 + ALPHA.arrow / 2, points[0].y)
+    return { kind: turn === 0 ? 'straight' : turn > 90 ? 'reversed' : 'bent', nucleus: index, s, turn: up ? -turn : turn, points, tip, heading, beam }
   })
   const reach = Math.max(...paths.map((q) => Math.abs(q.points[0].y - cy)))
   const slit = reach + 7
@@ -1106,7 +1140,8 @@ function alphaPrims(m: AlphaModel): Prim[] {
   prims.push({ d: m.nuclei.map((n) => circle(n.x, n.y, ALPHA.atomR)).join(''), role: 'detail' })
   if (m.showNuclei) prims.push({ d: m.nuclei.map((n) => circle(n.x, n.y, ALPHA.nucleusR)).join(''), role: 'ink' })
   prims.push({ d: m.paths.map((q) => polyline(q.points)).join(''), role: 'detail' })
-  prims.push({ d: m.paths.map((q) => arrowD(q.tip, q.heading)).join(''), role: 'ink' })
+  // An arrow head at the end of each path, and one on the beam before the foil.
+  prims.push({ d: m.paths.map((q) => arrowD(q.tip, q.heading) + arrowD(q.beam, 0)).join(''), role: 'ink' })
   return prims
 }
 
