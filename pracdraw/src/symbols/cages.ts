@@ -262,7 +262,7 @@ const graphiteStructure: SymbolDef = {
   pack: 'structures',
   size: { w: 200, h: 170 },
   resize: 'uniform',
-  min: { w: 140, h: 119 },
+  min: { w: 170, h: 144 },
   params: [
     { key: 'layers', label: 'Layers', type: 'number', default: 3, min: 2, max: 4, step: 1 },
     { key: 'forces', label: 'Weak forces', type: 'boolean', default: true },

@@ -220,7 +220,7 @@ describe('graphite: the drawing agrees with the model', () => {
   ]
   const sizes = [
     { w: 200, h: 170 },
-    { w: 140, h: 119 }, // the minimum
+    { w: 170, h: 144 }, // the minimum
     { w: 300, h: 255 }, // 1.5 times
   ]
 
@@ -244,8 +244,9 @@ describe('graphite: the drawing agrees with the model', () => {
             const L = dist(circles[far[0]].c, circles[far[1]].c) / dist(unit[far[0]], unit[far[1]])
             const s = L / style.l
             expect(Math.abs(r - style.atomR * s)).toBeLessThan(0.02)
-            expect(s).toBeLessThanOrEqual(w / GRAPHITE.box.w + 1e-4) // never bigger than the size of the box asks for
-            if (layers < 4) expect(s).toBeCloseTo(w / GRAPHITE.box.w, 3) // and at that size unless the picture would be taller than its box
+            const asked = Math.min(w / GRAPHITE.box.w, h / GRAPHITE.box.h) // the scale that the size of the box asks for
+            expect(s).toBeLessThanOrEqual(asked + 1e-4) // never bigger
+            if (layers < 4) expect(s).toBeCloseTo(asked, 3) // and exactly that unless the picture would be taller than its box
             // the atoms are where the oblique projection puts them, centred in the box
             const raw = model.atoms.map((a) => oblique(a.x * L, a.y * L, a.z * L))
             const b = circleBounds(raw, r)
@@ -327,17 +328,33 @@ describe('graphite: the drawing agrees with the model', () => {
     }
   })
 
-  it('draws no two atoms touching: the outlines of neighbouring atoms are at least 2.5 u apart (the brief is not: see GRAPHITE_BRIEF)', () => {
-    const gap = (style: GraphiteStyle) => {
-      const g = graphiteGeometry(200, 170, 3, true, style)
+  it('draws no two atoms touching: the outlines of neighbouring atoms are 2.5 u apart or more, and 2 u at the smallest size (the brief is not: see GRAPHITE_BRIEF)', () => {
+    const gap = (style: GraphiteStyle, w = 200, layers = 3) => {
+      const g = graphiteGeometry(w, (w * 170) / 200, layers, true, style)
       const c = circlesIn(prim(g, 'solid'))
       let min = Infinity
       for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) min = Math.min(min, dist(c[i].c, c[j].c) - 2 * (c[i].r + 1))
       return min
     }
     expect(gap(GRAPHITE_STYLE)).toBeGreaterThanOrEqual(2.5)
+    expect(gap(GRAPHITE_STYLE, 300)).toBeGreaterThanOrEqual(2.5)
+    expect(gap(GRAPHITE_STYLE, 170)).toBeGreaterThanOrEqual(2) // the minimum size
+    expect(gap(GRAPHITE_STYLE, 170, 4)).toBeGreaterThanOrEqual(1.5) // and four sheets at the minimum size
+    expect(gap(GRAPHITE_STYLE, 200, 4)).toBeGreaterThanOrEqual(2) // four sheets are drawn a little smaller to fit the box
     // with the numbers of the brief the two atoms of a bond that runs along z are drawn 11 u apart: their outlines are 1 u apart
     expect(gap(GRAPHITE_BRIEF)).toBeCloseTo(1, 1)
+  })
+
+  it('runs no bond over an atom that is not at its end', () => {
+    for (const layers of [2, 3, 4]) {
+      const g = graphiteGeometry(200, 170, layers, true)
+      const circles = circlesIn(prim(g, 'solid'))
+      for (const line of linesIn(prim(g, 'outline')))
+        for (const c of circles) {
+          if (line.some((p) => Math.abs(dist(p, c.c) - c.r) < 0.03)) continue
+          expect(distToSegment(c.c, line), 'a bond runs over an atom').toBeGreaterThan(c.r + 1 + 0.5)
+        }
+    }
   })
 
   it('runs a dotted line over no atom and at most one bond of the sheets', () => {
@@ -683,7 +700,7 @@ describe('C60: the drawing agrees with the model', () => {
     expect(g.prims.filter((p) => p.role === 'hatch').length).toBeGreaterThanOrEqual(pentagonsFacing - 1) // a pentagon seen edge-on may be too thin for a line
   })
 
-  it('draws no two atoms overlapping, with their outlines 2 u apart or more at the default size (the closest pair is 5 u apart without `facing`)', () => {
+  it('draws no two atoms overlapping, and their outlines 2 u apart or more at every size (the closest pair is 5 u apart without `facing`)', () => {
     const gap = (turn: C60Turn, w = 150) => {
       const view = c60View(turn)
       const circles = circlesIn(prim(c60Geometry(w, w, false, turn), 'solid'))
@@ -695,11 +712,10 @@ describe('C60: the drawing agrees with the model', () => {
     for (const w of sizes) {
       const { min, r } = gap(C60_TURN, w)
       expect(min, `closest pair at ${w}`).toBeGreaterThan(2 * r) // no two circles overlap
+      expect(min - 2 * (r + 1), `outlines at ${w}`).toBeGreaterThanOrEqual(2) // and the outlines do not touch
     }
-    const { min, r } = gap(C60_TURN)
-    expect(min - 2 * (r + 1)).toBeGreaterThanOrEqual(2) // the outlines do not touch
     // The brief draws every face that is turned to the viewer at all: that is 16 faces and 40 atoms, and the closest two atoms are less than 2 r apart.
-    const brief = gap({ ...C60_TURN, facing: 0, corner: -90 })
+    const brief = gap({ ...C60_TURN, facing: 0 })
     expect(brief.min).toBeLessThan(2 * brief.r)
     expect(c60View({ ...C60_TURN, facing: 0 }).shown).toHaveLength(40)
   })
