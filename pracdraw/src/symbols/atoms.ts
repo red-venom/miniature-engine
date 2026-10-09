@@ -281,7 +281,7 @@ export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions>
   }
   const B = R + BOHR.bracketGap
   const bracket = charge ? { x0: cx - B, y0: cy - B, x1: cx + B, y1: cy + B, arm: BOHR.bracketArm } : null
-  const chargeText = bracket ? { text: chargeMarkup(charge), x: bracket.x1 + 3, y: bracket.y0 + 4, size: BOHR.chargeSize } : null
+  const chargeText = bracket ? { text: chargeMarkup(charge), x: bracket.x1 + 4.5, y: bracket.y0 + 4, size: BOHR.chargeSize } : null
   const below = bracket ? B + 1.5 : R + DOT_R
   const structureText =
     opt.structure && n ? { text: shellString(structure), x: cx, y: cy + below + 5 + CAP * BOHR.structureSize, size: BOHR.structureSize } : null
@@ -405,27 +405,22 @@ export interface AtomModel {
 }
 
 /**
- * Ten places for the electrons of a plum pudding, in the unit disc: scattered, but never close. Each is the best of 40 random points
- * (the one farthest from the places before it and from the edge), from a fixed seed (Thomson proposed the model in 1904), so that the first
- * four of the ten are the pudding of four electrons, and one more electron never moves the others.
+ * Ten places for the electrons of a plum pudding, in the unit disc: spread evenly over it (a golden-angle spiral, each place moved a little by a
+ * fixed random number, so that they look scattered) and put in an order in which the first few are already spread: after the first, each is the
+ * one farthest from those before it. So the pudding of four electrons is the first four of the ten, and one more electron never moves the others.
  */
 const PUDDING: readonly Pt[] = (() => {
-  const next = rng(1904)
-  const out: Pt[] = []
-  while (out.length < 10) {
-    let best = P(0, 0),
-      far = -1
-    for (let t = 0; t < 40; t++) {
-      const r = Math.sqrt(next()),
-        a = 2 * Math.PI * next()
-      const c = P(r * Math.cos(a), r * Math.sin(a))
-      const d = Math.min(2 * (1 - r), ...out.map((q) => Math.hypot(q.x - c.x, q.y - c.y)))
-      if (d > far) {
-        far = d
-        best = c
-      }
-    }
-    out.push(best)
+  const next = rng(1904) // the year of Thomson's model
+  const spiral = Array.from({ length: 10 }, (_, i) => {
+    const r = 0.92 * Math.sqrt((i + 0.5) / 10),
+      a = i * 2.399963 + 0.5
+    return P(r * Math.cos(a) + (next() - 0.5) * 0.12, r * Math.sin(a) + (next() - 0.5) * 0.12)
+  })
+  const out: Pt[] = [spiral.reduce((p, q) => (Math.hypot(q.x, q.y) < Math.hypot(p.x, p.y) ? q : p))]
+  while (out.length < spiral.length) {
+    const rest = spiral.filter((q) => !out.includes(q))
+    const gap = (q: Pt) => Math.min(...out.map((o) => Math.hypot(o.x - q.x, o.y - q.y)))
+    out.push(rest.reduce((p, q) => (gap(q) > gap(p) ? q : p)))
   }
   return out
 })()
@@ -484,7 +479,7 @@ const atomModels: SymbolDef = {
   pack: 'atoms',
   size: { w: 150, h: 150 },
   resize: 'uniform',
-  min: { w: 100, h: 100 },
+  min: { w: 110, h: 110 },
   params: [
     {
       key: 'model',
@@ -658,10 +653,11 @@ export interface Cluster {
   a: number
   protons: number
   neutrons: number
-  /** Where the cluster is, its circles (absolute, in the symbol's frame), and how far it reaches from its middle (to the outside of the outermost circle). */
+  /** Where the middle of the cluster is, and its circles (absolute, in the symbol's frame). */
   cx: number
   cy: number
   circles: Nucleon[]
+  /** The width and the height of its drawing, to the outside of the outermost circles. */
   width: number
   height: number
 }
@@ -1013,7 +1009,7 @@ export interface AlphaModel {
   paths: AlphaPath[]
   /** Whether the nuclei are drawn. */
   showNuclei: boolean
-  /** The detector screen is a circle round the foil with a gap where the beam comes in: from `from` to `to` (degrees clockwise from +x, going the long way round). */
+  /** The detector screen is a circle round the foil, open where the beam comes in: the opening is this many degrees to each side of the beam line. */
   gap: number
   /** The lead block: a box that is open on the side of the foil. `slit` is the half height of its opening, `outer` that of the block. */
   block: { x0: number; x1: number; back: number; slit: number; outer: number }
@@ -1094,10 +1090,11 @@ export function alphaModel(pathsIn: number, showNuclei: boolean, w = 380, h = 23
     const beam = P((xs + (N.x - ALPHA.reach)) / 2 + ALPHA.arrow / 2, points[0].y)
     return { kind: turn === 0 ? 'straight' : turn > 90 ? 'reversed' : 'bent', nucleus: index, s, turn: up ? -turn : turn, points, tip, heading, beam }
   })
-  const reach = Math.max(...paths.map((q) => Math.abs(q.points[0].y - cy)))
-  const slit = reach + 7
+  // The opening of the block and of the screen is as wide as the beam, with a little room.
+  const beam = Math.max(...paths.map((q) => Math.abs(q.points[0].y - cy)))
+  const slit = beam + 7
   const outer = Math.min(slit + ALPHA.arm, h / 2 - 4)
-  const gap = (Math.asin(Math.min(1, (reach + 8) / screen)) * 180) / Math.PI
+  const gap = (Math.asin(Math.min(1, (beam + 8) / screen)) * 180) / Math.PI
   return {
     w,
     h,

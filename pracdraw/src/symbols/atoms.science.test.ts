@@ -129,7 +129,7 @@ describe('Bohr atom: the model', () => {
         const tag = `${e.symbol} ${charge}: ${shellString(s)}`
         s.slice(0, -1).forEach((n, i) => expect(n, `${tag}: shell ${i + 1} is full`).toBe(FILL[i]))
         // An atom or a cation fills no shell beyond its place; an anion may fill its outer shell to the octet (a first shell holds two).
-        const cap = charge > 0 || charge === 0 ? FILL[s.length - 1] : s.length === 1 ? 2 : 8
+        const cap = charge >= 0 ? FILL[s.length - 1] : s.length === 1 ? 2 : 8
         expect(last(s), tag).toBeGreaterThan(0)
         expect(last(s), tag).toBeLessThanOrEqual(cap)
       }
@@ -501,10 +501,12 @@ describe('models of the atom', () => {
 
   it('keeps the electrons of the pudding apart, and one more electron never moves the others', () => {
     for (const mark of MARKS) {
-      const ten = atomModel('plumPudding', 10, mark, 100) // the smallest box
-      expect(minDistance(ten.electrons.map((e) => P(e.x, e.y))), mark).toBeGreaterThan(2 * MINUS_R + 1)
+      const smallest = symbolDef('atomModels').min!.w
+      const ten = atomModel('plumPudding', 10, mark, smallest)
+      // Two circled minus signs (11.2 u across, with their lines) do not touch, in the smallest box: there is a clear gap between them.
+      expect(minDistance(ten.electrons.map((e) => P(e.x, e.y))), mark).toBeGreaterThan(2 * (MINUS_R + 1) + 1)
       for (let n = 1; n < 10; n++) {
-        const fewer = atomModel('plumPudding', n, mark, 100)
+        const fewer = atomModel('plumPudding', n, mark, smallest)
         expect(fewer.electrons.map((e) => [e.x, e.y])).toEqual(ten.electrons.slice(0, n).map((e) => [e.x, e.y]))
       }
     }
