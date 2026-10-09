@@ -389,7 +389,7 @@ const optionLabel = (m: Molecule): string => `${m.name.charAt(0).toUpperCase()}$
 
 const covalentDotCross: SymbolDef = {
   id: 'covalentDotCross',
-  name: 'Covalent dot-and-cross diagram',
+  name: 'Covalent dot and cross',
   aliases: ['dot and cross', 'covalent bonding diagram', 'dot-and-cross covalent', 'molecule'],
   label: (p) => (molecule(str(p.molecule, 'H2O')) ?? molecule('H2O')!).name,
   pack: 'atoms',
@@ -804,7 +804,7 @@ const elementLabel = (symbol: string): string => {
 
 const ionicDotCross: SymbolDef = {
   id: 'ionicDotCross',
-  name: 'Ionic dot-and-cross diagram',
+  name: 'Ionic dot and cross',
   aliases: ['dot and cross', 'ionic bonding diagram', 'dot-and-cross ionic', 'ionic compound'],
   label: (p) => compoundName(ionicModel(str(p.metal, 'Na'), str(p.nonMetal, 'Cl'))),
   pack: 'atoms',

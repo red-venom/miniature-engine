@@ -337,7 +337,7 @@ export function diamondPicture(m: DiamondModel, h: number = DIAMOND.size, withSt
 
 const diamondStructure: SymbolDef = {
   id: 'diamondStructure',
-  name: 'Diamond (giant covalent)',
+  name: 'Diamond structure',
   aliases: ['giant covalent', 'carbon structure', 'tetrahedral carbon', 'diamond lattice', 'diamond cluster'],
   label: 'diamond',
   pack: 'structures',

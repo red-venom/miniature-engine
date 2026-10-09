@@ -502,7 +502,7 @@ export function c60Geometry(w: number, h: number, pentagons: boolean, turn: C60T
 
 const fullereneC60: SymbolDef = {
   id: 'fullereneC60',
-  name: 'Buckminsterfullerene (C60)',
+  name: 'Fullerene (C60)',
   aliases: ['C60', 'fullerene', 'buckyball', 'football molecule', 'giant molecule'],
   label: 'buckminsterfullerene',
   pack: 'structures',

@@ -6551,7 +6551,7 @@
     "proposedPack": "annotation",
     "priority": "C",
     "detail": "full",
-    "draw": "Use the formulaTriangle symbol: a triangle split by a horizontal and a vertical line into three parts, one quantity at the top and two at the bottom. The presets are moles (m over n and Mr), concentration (n over c and V), gasVolume (V over n and 24) and yield (actual over % and max); custom takes your own three texts (physics: V over I and R, or speed over distance and time). Set hide to top, left or right to leave one part empty, for a worksheet.",
+    "draw": "Use the formulaTriangle symbol: a triangle split by a horizontal and a vertical line into three parts, one quantity at the top and two at the bottom. The presets are moles (m over n and Mr), concentration (n over c and V), gasVolume (V over n and 24) and yield (actual over % and max); custom takes your own three texts (physics: V over I and R, or distance over speed and time). Set hide to top, left or right to leave one part empty, for a worksheet.",
     "params": "preset (moles | concentration | gasVolume | yield | custom), top, left and right text for custom, hide (none | top | left | right)",
     "scienceChecks": "The top quantity equals the product of the two bottom quantities. Covering the top shows a product; covering a bottom part shows the top divided by the other bottom part.",
     "sources": [],

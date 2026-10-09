@@ -1989,7 +1989,7 @@
     },
     {
       "id": "ionicDotCross",
-      "name": "Ionic dot-and-cross diagram",
+      "name": "Ionic dot and cross",
       "pack": "atoms",
       "priority": "C",
       "w": 420,
@@ -2011,7 +2011,7 @@
     },
     {
       "id": "covalentDotCross",
-      "name": "Covalent dot-and-cross diagram",
+      "name": "Covalent dot and cross",
       "pack": "atoms",
       "priority": "C",
       "w": 220,
@@ -2159,7 +2159,7 @@
     },
     {
       "id": "diamondStructure",
-      "name": "Diamond (giant covalent)",
+      "name": "Diamond structure",
       "pack": "structures",
       "priority": "C",
       "w": 160,
@@ -2191,7 +2191,7 @@
     },
     {
       "id": "fullereneC60",
-      "name": "Buckminsterfullerene (C60)",
+      "name": "Fullerene (C60)",
       "pack": "structures",
       "priority": "C",
       "w": 150,
