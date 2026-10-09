@@ -4,8 +4,9 @@
 // break that made it fail.
 
 import { describe, expect, it } from 'vitest'
-import { P, dist, type Pt } from '../kernel/geom'
+import { P, dist, pathBounds, pathPolys, scan, type Pt } from '../kernel/geom'
 import {
+  DIVIDER,
   METALS,
   METRICS,
   NON_METALS,
@@ -15,13 +16,22 @@ import {
   chargeText,
   compoundName,
   covalentDiagram,
+  groupLabel,
   ionicDiagram,
   ionicModel,
+  labelBox,
+  massText,
+  tableModel,
+  tableSizes,
+  tableTexts,
+  textWidth,
+  type TableLabel,
   type CovalentDiagram,
   type CovalentLayout,
   type IonicDiagram,
   type MarkKind,
 } from './dotcross'
+import { ELEMENTS } from './elements'
 import { MOLECULES, molecule } from './molecules'
 import { geometry, labelText, symbolDef } from './registry'
 import type { Geometry } from './types'
@@ -733,6 +743,7 @@ describe('ionic dot-and-cross: the picture is clean', () => {
   })
 
   it('draws arrows that do not cross each other and keep clear of the circles between their ends', () => {
+    const problems: string[] = []
     for (const { label, stage, d } of ionicCases()) {
       if (stage !== 'transfer') continue
       const lines = d.arrows.map((a) => along(a.start, a.via, a.end))
@@ -740,11 +751,13 @@ describe('ionic dot-and-cross: the picture is clean', () => {
         for (let j = i + 1; j < lines.length; j++)
           for (let s = 0; s + 1 < p.length; s++)
             for (let t = 0; t + 1 < lines[j].length; t++)
-              expect(crosses(p[s], p[s + 1], lines[j][t], lines[j][t + 1]), `${label}: arrows ${i} and ${j}`).toBe(false)
+              if (crosses(p[s], p[s + 1], lines[j][t], lines[j][t + 1])) problems.push(`${label}: arrows ${i} and ${j} cross`)
         // The middle of the curve is clear of every circle line.
-        for (const q of p.slice(4, -4)) for (const c of circlesOf(d)) expect(Math.abs(dist(q, c) - c.r), `${label}: arrow ${i}`).toBeGreaterThan(2)
+        for (const q of p.slice(4, -4))
+          for (const c of circlesOf(d)) if (Math.abs(dist(q, c) - c.r) <= 2) problems.push(`${label}: arrow ${i} runs along a circle line`)
       })
     }
+    expect([...new Set(problems)]).toEqual([])
   })
 
   it('keeps every ion inside the box at the default size and larger, and the whole drawing within 1.5 times the nominal box at the smallest', () => {
@@ -791,5 +804,394 @@ describe('ionic dot-and-cross: parameters and the symbol row', () => {
     expect(options('metal')).toEqual(METALS)
     expect(options('nonMetal')).toEqual(NON_METALS)
     expect(ionicDef.params!.find((p) => p.key === 'inner')).toMatchObject({ type: 'boolean', default: false })
+  })
+})
+
+// ---------------------------------------------------------------- periodic table
+
+/** The standard layout of the first 36 elements in 18 columns (the IUPAC group) and 4 rows (the period), typed as a table: "." is an empty place. */
+const LAYOUT = [
+  'H . . . . . . . . . . . . . . . . He',
+  'Li Be . . . . . . . . . . B C N O F Ne',
+  'Na Mg . . . . . . . . . . Al Si P S Cl Ar',
+  'K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr',
+]
+const PLACE = new Map<string, [number, number]>()
+LAYOUT.forEach((line, r) => line.split(' ').forEach((s, c) => s !== '.' && PLACE.set(s, [c + 1, r + 1])))
+/** The metals among the first 36 elements; the rest are non-metals (boron, silicon and germanium, the semi-metals, with the non-metals). */
+const METAL_SYMBOLS = ['Li', 'Be', 'Na', 'Mg', 'Al', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga']
+const BLOCKS: Record<string, string[]> = {
+  s: ['H', 'He', 'Li', 'Be', 'Na', 'Mg', 'K', 'Ca'],
+  d: ['Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn'],
+  p: ['B', 'C', 'N', 'O', 'F', 'Ne', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr'],
+}
+const KS4_LABELS = ['1', '2', '', '', '', '', '', '', '', '', '', '', '3', '4', '5', '6', '7', '0']
+
+const tableDef = symbolDef('periodicTable')
+const TABLE_SIZES = [tableDef.size, tableDef.min ?? tableDef.size, { w: tableDef.size.w * 1.5, h: tableDef.size.h * 1.5 }]
+const model = (params: Record<string, unknown> = {}, size = tableDef.size) => tableModel(params, size.w, size.h)
+
+/** The squares of a drawing: every closed rectangle `M x y H x V y H x Z` of the `detail` prim. */
+function drawnSquares(g: Geometry) {
+  const re = new RegExp(`M${num} ${num}H${num}V${num}H${num}Z`, 'g')
+  return g.prims
+    .filter((p) => p.role === 'detail')
+    .flatMap((p) => [...p.d.matchAll(re)])
+    .map((m) => ({ x0: +m[1], y0: +m[2], x1: +m[3], y1: +m[4] }))
+}
+
+/** The hatch lines of a drawing as segments. */
+const hatchSegments = (g: Geometry) =>
+  g.prims
+    .filter((p) => p.role === 'hatch')
+    .flatMap((p) => [...p.d.matchAll(new RegExp(`M${num} ${num}L${num} ${num}`, 'g'))])
+    .map((m) => [P(+m[1], +m[2]), P(+m[3], +m[4])] as const)
+
+/** Is the point inside the closed paths of `d` (even-odd)? */
+function inside(d: string, q: Pt): boolean {
+  return scan(pathPolys(d), q.y).some(([a, b]) => q.x > a && q.x < b)
+}
+
+/** The box that the ink of a text fills: from the top of its capitals or digits to its baseline, and below the baseline for a letter with a tail (g, y). */
+function inkBox(l: Pick<TableLabel, 'x' | 'y' | 'text' | 'size' | 'anchor'>) {
+  const w = textWidth(l.text, l.size)
+  const x0 = l.anchor === 'middle' ? l.x - w / 2 : l.anchor === 'end' ? l.x - w : l.x
+  return { x0, x1: x0 + w, y0: l.y - 0.716 * l.size, y1: l.y + (/[gjpqy]/.test(l.text) ? 0.21 * l.size : 0) }
+}
+
+describe('periodic table: the model', () => {
+  it('runs the elements in order of atomic number, left to right and top to bottom, in the group and period of the standard table', () => {
+    for (const range of ['first20', 'first36']) {
+      const cells = model({ range }).cells
+      expect(cells.map((c) => c.z)).toEqual(Array.from({ length: range === 'first20' ? 20 : 36 }, (_, i) => i + 1))
+      cells.forEach((c) => expect([c.col, c.row], `${range} ${c.symbol}`).toEqual(PLACE.get(c.symbol)))
+      cells.forEach((c, i) => {
+        if (i) {
+          const before = cells[i - 1]
+          expect(c.row > before.row || (c.row === before.row && c.col > before.col), `${c.symbol} follows ${before.symbol}`).toBe(true)
+        }
+      })
+    }
+  })
+
+  it('takes the symbol and atomic number from elements.ts, and writes the relative atomic mass as 23, 24.3, 35.5', () => {
+    const t = model({ content: 'both' })
+    t.cells.forEach((c, i) => {
+      expect(c.symbol).toBe(ELEMENTS[i].symbol)
+      expect(c.z).toBe(ELEMENTS[i].z)
+    })
+    expect([1, 11, 12, 17, 29].map((z) => massText(ELEMENTS[z - 1].ar))).toEqual(['1', '23', '24.3', '35.5', '63.5'])
+    for (const c of ELEMENTS) expect(Number(massText(c.ar)), c.symbol).toBeCloseTo(c.ar, 9)
+  })
+
+  it('puts helium in group 0 at KS4 (group 18 in the IUPAC numbering), and leaves the transition metals without a group number', () => {
+    const labels = (groups: string) => Array.from({ length: 18 }, (_, i) => groupLabel(i + 1, groups as 'ks4'))
+    expect(labels('ks4')).toEqual(KS4_LABELS)
+    expect(labels('iupac')).toEqual(Array.from({ length: 18 }, (_, i) => String(i + 1)))
+    expect(labels('none')).toEqual(Array(18).fill(''))
+    const he = model().cells.find((c) => c.symbol === 'He')!
+    expect(he.col).toBe(18)
+    expect(groupLabel(he.col, 'ks4')).toBe('0')
+  })
+
+  it('puts the ten transition metals Sc to Zn in groups 3 to 12 of period 4, in the d block', () => {
+    const d = model().cells.filter((c) => c.block === 'd')
+    expect(d.map((c) => c.symbol)).toEqual(BLOCKS.d)
+    expect(d.map((c) => [c.col, c.row])).toEqual(Array.from({ length: 10 }, (_, i) => [i + 3, 4]))
+    expect(model({ range: 'first20' }).cells.some((c) => c.block === 'd')).toBe(false)
+  })
+
+  it('sorts the elements into metals and non-metals, and into the s, p and d blocks', () => {
+    for (const c of model().cells) {
+      expect(c.metal, c.symbol).toBe(METAL_SYMBOLS.includes(c.symbol))
+      expect(BLOCKS[c.block], c.symbol).toContain(c.symbol)
+    }
+  })
+
+  it('runs the stepped line between the right pairs of cells: boron over aluminium, aluminium beside silicon, gallium beside germanium', () => {
+    // The pairs that a line between metals and non-metals must run between: every metal and non-metal that touch, found here from the typed layout.
+    const touching = (limit: number) => {
+      const out: string[] = []
+      for (const [a, [ac, ar]] of PLACE) {
+        for (const [b, [bc, br]] of PLACE) {
+          const za = ELEMENTS.find((e) => e.symbol === a)!.z,
+            zb = ELEMENTS.find((e) => e.symbol === b)!.z
+          if (za > limit || zb > limit || Math.abs(ac - bc) + Math.abs(ar - br) !== 1) continue
+          if (METAL_SYMBOLS.includes(a) && !METAL_SYMBOLS.includes(b) && b !== 'H') out.push([`${ac},${ar}`, `${bc},${br}`].sort().join('|'))
+        }
+      }
+      return out.sort()
+    }
+    const pairs = (limit: number) =>
+      DIVIDER.filter(([a, b]) =>
+        [a, b].every(([c, r]) => [...PLACE].some(([s, p]) => p[0] === c && p[1] === r && ELEMENTS.find((e) => e.symbol === s)!.z <= limit)),
+      )
+        .map(([a, b]) => [`${a}`, `${b}`].sort().join('|'))
+        .sort()
+    expect(DIVIDER.length).toBe(3)
+    expect(pairs(36)).toEqual(touching(36))
+    expect(pairs(20)).toEqual(touching(20))
+    expect(pairs(36)).toEqual(['13,2|13,3', '13,3|14,3', '13,4|14,4'])
+    // The line itself passes along those shared edges and no others: under boron, then down the right of aluminium and gallium.
+    const t = model()
+    const side = t.side,
+      left = t.cells[0].x
+    const gridX = (x: number) => (x - left) / side,
+      gridY = (y: number) => (y - t.cells[0].y) / side
+    expect(t.line.map((q) => [gridX(q.x), gridY(q.y)].map((v) => Math.round(v * 1000) / 1000))).toEqual([
+      [12, 2],
+      [13, 2],
+      [13, 3],
+      [13, 4],
+    ])
+    expect(model({ range: 'first20' }).line.length).toBe(3)
+    expect(model({ divider: false }).line).toEqual([])
+  })
+
+  it('has at most one highlight: an element beats a group, a group beats a period, and each rings the cells that it names', () => {
+    expect(model().highlight).toBeNull()
+    const all = model({ hlElement: 11, hlGroup: 17, hlPeriod: 2 }).highlight!
+    expect(all.kind).toBe('element')
+    expect(all.cells.map((i) => model().cells[i].symbol)).toEqual(['Na'])
+    const group = model({ hlGroup: 1, hlPeriod: 3 }).highlight!
+    expect(group.kind).toBe('group')
+    expect(group.cells.map((i) => model().cells[i].symbol)).toEqual(['H', 'Li', 'Na', 'K'])
+    const period = model({ hlPeriod: 3 }).highlight!
+    expect(period.cells.map((i) => model().cells[i].symbol)).toEqual(['Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar'])
+    // Nothing to ring when the element, group or period is not in the range.
+    expect(model({ range: 'first20', hlElement: 30 }).highlight!.cells).toEqual([])
+    expect(model({ range: 'first20', hlGroup: 8 }).highlight!.cells).toEqual([])
+  })
+})
+
+describe('periodic table: the drawing agrees with the model', () => {
+  it('draws one square cell for each element, all the same size, in 18 columns and 4 rows, scaled with the box', () => {
+    for (const range of ['first20', 'first36'])
+      for (const size of TABLE_SIZES) {
+        const g = geometry('periodicTable', size.w, size.h, { range })
+        const squares = drawnSquares(g)
+        const t = model({ range }, size)
+        expect(squares.length, `${range} ${sizeName(size)}`).toBe(range === 'first20' ? 20 : 36)
+        const side = (size.h / tableDef.size.h) * 28
+        squares.forEach((s, i) => {
+          expect(s.x1 - s.x0, `${range} ${sizeName(size)} cell ${i}`).toBeCloseTo(side, 1)
+          expect(s.y1 - s.y0, `${range} ${sizeName(size)} cell ${i}`).toBeCloseTo(side, 1)
+          expect(s.x0, `${range} cell ${i} column`).toBeCloseTo(t.cells[i].x, 1)
+          expect(s.y0, `${range} cell ${i} row`).toBeCloseTo(t.cells[i].y, 1)
+          // On the grid: a whole number of cells from the first.
+          expect((s.x0 - squares[0].x0) / side - Math.round((s.x0 - squares[0].x0) / side), `${range} cell ${i}`).toBeCloseTo(0, 1)
+        })
+      }
+  })
+
+  it('writes in each cell what `content` says: the symbol, the atomic number above, both, the mass below, or nothing', () => {
+    const cellTexts = (content: string) => tableTexts(model({ content, groups: 'none' })).filter((l) => l.cell !== undefined)
+    const of = (content: string, kind: string) => cellTexts(content).filter((l) => l.kind === kind)
+    const symbols = ELEMENTS.map((e) => e.symbol),
+      numbers = ELEMENTS.map((e) => String(e.z)),
+      masses = ELEMENTS.map((e) => massText(e.ar))
+    expect(of('symbol', 'symbol').map((l) => l.text)).toEqual(symbols)
+    expect(cellTexts('symbol').length).toBe(36)
+    expect(of('number', 'number').map((l) => l.text)).toEqual(numbers)
+    expect(cellTexts('number').length).toBe(36)
+    expect(of('both', 'symbol').map((l) => l.text)).toEqual(symbols)
+    expect(of('both', 'number').map((l) => l.text)).toEqual(numbers)
+    expect(cellTexts('both').length).toBe(72)
+    expect(of('mass', 'mass').map((l) => l.text)).toEqual(masses)
+    expect(cellTexts('mass').length).toBe(36)
+    expect(cellTexts('blank')).toEqual([])
+    // The drawing writes those texts and no others: the cell texts, then the period numbers.
+    for (const content of ['symbol', 'number', 'both', 'mass', 'blank']) {
+      const drawn = geometry('periodicTable', 560, 200, { content, groups: 'none' }).texts!.map((t) => t.text)
+      expect(drawn, content).toEqual([...cellTexts(content).map((l) => l.text), '1', '2', '3', '4'])
+    }
+    // Above and below: the atomic number stands above the symbol, and the mass below the middle of its cell.
+    const both = tableTexts(model({ content: 'both' }))
+    model().cells.forEach((c, i) => {
+      const mine = both.filter((l) => l.cell === i)
+      expect(mine[0].y, c.symbol).toBeLessThan(mine[1].y)
+      expect(mine[0].y, c.symbol).toBeLessThan(c.y + c.side / 2)
+    })
+    for (const l of of('mass', 'mass')) expect(l.y).toBeGreaterThan(model().cells[l.cell!].y + 14)
+  })
+
+  it('draws the group numbers above the columns that have an element, and the period numbers 1 to 4 at the left', () => {
+    for (const groups of ['ks4', 'iupac', 'none'] as const) {
+      const t = model({ groups })
+      const labels = tableTexts(t).filter((l) => l.kind === 'group')
+      const expected = Array.from({ length: 18 }, (_, i) => groupLabel(i + 1, groups)).filter((s) => s !== '')
+      expect(
+        labels.map((l) => l.text),
+        groups,
+      ).toEqual(expected)
+      const left = t.cells[0].x
+      labels.forEach((l) => expect(l.y).toBeLessThan(t.cells[0].y))
+      const periods = tableTexts(t).filter((l) => l.kind === 'period')
+      expect(periods.map((l) => l.text)).toEqual(['1', '2', '3', '4'])
+      periods.forEach((l) => expect(l.x, 'period numbers stand left of the table').toBeLessThan(left))
+    }
+    // For the first twenty elements only the columns that hold an element are numbered.
+    expect(
+      tableTexts(model({ range: 'first20', groups: 'iupac' }))
+        .filter((l) => l.kind === 'group')
+        .map((l) => l.text),
+    ).toEqual(['1', '2', '13', '14', '15', '16', '17', '18'])
+  })
+
+  it('draws the stepped line as one heavy line and each highlight as one heavy ring, and never more than one ring', () => {
+    const heavy = (params: Record<string, unknown>) => geometry('periodicTable', 560, 200, params as never).prims.filter((p) => p.role === 'heavy')
+    const isRing = (d: string) => d.endsWith('Z')
+    expect(heavy({}).map((p) => isRing(p.d))).toEqual([false]) // the stepped line alone
+    expect(heavy({ divider: false })).toEqual([])
+    expect(heavy({ divider: false, hlElement: 8 }).map((p) => isRing(p.d))).toEqual([true])
+    expect(heavy({ divider: false, hlElement: 8, hlGroup: 3, hlPeriod: 2 }).length).toBe(1) // not three rings
+    expect(heavy({ hlPeriod: 2 }).filter((p) => isRing(p.d)).length).toBe(1)
+    // The ring of an element is round that element's cell and nowhere else.
+    const g = geometry('periodicTable', 560, 200, { divider: false, hlElement: 8 })
+    const ring = pathBounds(g.prims.find((p) => p.role === 'heavy')!.d)
+    const o = drawnSquares(g)[7] // oxygen is the eighth cell
+    expect(Math.abs(ring.x0 - o.x0) + Math.abs(ring.x1 - o.x1) + Math.abs(ring.y0 - o.y0) + Math.abs(ring.y1 - o.y1)).toBeLessThan(0.5)
+  })
+
+  it('shades the metals, or the s block and the d block, with a tint and a hatch of the same shape, and nothing else', () => {
+    const t = model({ shading: 'metals' })
+    const g = geometry('periodicTable', 560, 200, { shading: 'metals' })
+    const tints = g.prims.filter((p) => p.role === 'tint'),
+      hatches = g.prims.filter((p) => p.role === 'hatch')
+    expect(tints.length).toBe(1)
+    expect(hatches.length).toBe(1)
+    for (const c of t.cells) expect(inside(tints[0].d, P(c.x + c.side / 2, c.y + c.side / 2)), `${c.symbol} metal ${c.metal}`).toBe(c.metal)
+    expect(geometry('periodicTable', 560, 200, {}).prims.some((p) => p.role === 'tint' || p.role === 'hatch')).toBe(false)
+    // Blocks: the s block and the d block are shaded in two greys with a different slant, the p block is not shaded.
+    const b = geometry('periodicTable', 560, 200, { shading: 'blocks' })
+    const regions = b.prims.filter((p) => p.role === 'tint')
+    expect(regions.length).toBe(2)
+    expect(b.prims.filter((p) => p.role === 'hatch').length).toBe(2)
+    const tb = model({ shading: 'blocks' })
+    for (const c of tb.cells) {
+      const q = P(c.x + c.side / 2, c.y + c.side / 2)
+      expect([inside(regions[0].d, q), inside(regions[1].d, q)], c.symbol).toEqual([c.block === 's', c.block === 'd'])
+    }
+    expect(regions[0].tint).toBeUndefined()
+    expect(regions[1].tint).toMatch(/^#([0-9a-f]{2})\1\1$/) // a grey
+    expect(regions[0].tint).not.toBe(regions[1].tint)
+    // The two slants differ: the lines of the first rise, the lines of the second fall.
+    const slope = (seg: readonly [Pt, Pt]) => Math.sign((seg[1].y - seg[0].y) * (seg[1].x - seg[0].x))
+    const hs = b.prims.filter((p) => p.role === 'hatch').map((p) => hatchSegments({ prims: [p] }))
+    expect(new Set(hs[0].map(slope)).size).toBe(1)
+    expect(new Set(hs[1].map(slope)).size).toBe(1)
+    expect(slope(hs[0][0])).not.toBe(slope(hs[1][0]))
+  })
+
+  it('keeps the hatch off the text, so that the symbols stay readable on a photocopy', () => {
+    for (const shading of ['metals', 'blocks'])
+      for (const content of ['symbol', 'both', 'mass']) {
+        const t = model({ shading, content })
+        const segments = hatchSegments(geometry('periodicTable', 560, 200, { shading, content }))
+        expect(segments.length, `${shading} ${content}`).toBeGreaterThan(50)
+        const across: string[] = []
+        for (const l of tableTexts(t).filter((x) => x.cell !== undefined)) {
+          const box = labelBox(l)
+          // Points along each hatch line: none may fall in the box of a text.
+          const hit = segments.some(([a, b]) =>
+            Array.from({ length: 21 }, (_, s) => P(a.x + ((b.x - a.x) * s) / 20, a.y + ((b.y - a.y) * s) / 20)).some(
+              (q) => q.x > box.x0 && q.x < box.x1 && q.y > box.y0 && q.y < box.y1,
+            ),
+          )
+          if (hit) across.push(l.text)
+        }
+        expect(across, `${shading} ${content}: texts with hatch across them`).toEqual([])
+      }
+  })
+})
+
+describe('periodic table: the picture is clean', () => {
+  it('keeps every text inside its cell, the atomic number clear of the symbol, and the table inside the box', () => {
+    for (const size of TABLE_SIZES)
+      for (const content of ['symbol', 'number', 'both', 'mass'])
+        for (const range of ['first20', 'first36']) {
+          const t = model({ content, range }, size)
+          const texts = tableTexts(t)
+          for (const l of texts.filter((x) => x.cell !== undefined)) {
+            const c = t.cells[l.cell!],
+              b = inkBox(l)
+            const label = `${sizeName(size)} ${content} ${range} ${l.text}`
+            expect(b.x0 - c.x, label).toBeGreaterThanOrEqual(1.5)
+            expect(c.x + c.side - b.x1, label).toBeGreaterThanOrEqual(1.5)
+            expect(b.y0 - c.y, label).toBeGreaterThanOrEqual(1.5)
+            expect(c.y + c.side - b.y1, label).toBeGreaterThanOrEqual(1.5)
+          }
+          if (content === 'both')
+            t.cells.forEach((_, i) => {
+              const mine = texts.filter((x) => x.cell === i).map(inkBox)
+              expect(mine[1].y0 - mine[0].y1, `${sizeName(size)} cell ${i}`).toBeGreaterThanOrEqual(1)
+            })
+          // Everything inside the nominal box, labels and rings included.
+          const g = geometry('periodicTable', size.w, size.h, { content, range, hlElement: 1, hlGroup: 0 })
+          for (const p of g.prims) {
+            const bb = pathBounds(p.d)
+            expect(bb.x0).toBeGreaterThanOrEqual(-size.w / 2)
+            expect(bb.x1).toBeLessThanOrEqual(size.w / 2)
+            expect(bb.y0).toBeGreaterThanOrEqual(0)
+            expect(bb.y1).toBeLessThanOrEqual(size.h)
+          }
+          for (const l of texts) {
+            const b = inkBox(l)
+            expect(b.x0, `${sizeName(size)} ${l.text}`).toBeGreaterThanOrEqual(-size.w / 2)
+            expect(b.x1, `${sizeName(size)} ${l.text}`).toBeLessThanOrEqual(size.w / 2)
+            expect(b.y0, `${sizeName(size)} ${l.text}`).toBeGreaterThanOrEqual(0)
+            expect(b.y1, `${sizeName(size)} ${l.text}`).toBeLessThanOrEqual(size.h)
+          }
+        }
+  })
+
+  it('sets the text at 14 u (symbol), 9 u (numbers) and 11 u (group and period numbers) at the default size, and within the ranges of rule S11 at others', () => {
+    const at = (size: { w: number; h: number }) => tableSizes(size.h / tableDef.size.h)
+    expect(at(tableDef.size)).toEqual({ symbol: 14, small: 9, label: 11 })
+    for (const size of TABLE_SIZES) {
+      const s = at(size)
+      expect(s.symbol).toBeGreaterThanOrEqual(12)
+      expect(s.symbol).toBeLessThanOrEqual(18)
+      expect(s.small).toBeGreaterThanOrEqual(8)
+      expect(s.small).toBeLessThanOrEqual(12)
+      expect(s.label).toBeGreaterThanOrEqual(9)
+      expect(s.label).toBeLessThanOrEqual(14)
+    }
+  })
+
+  it('keeps the group numbers clear of the cells and of each other', () => {
+    for (const size of TABLE_SIZES) {
+      const t = model({ groups: 'iupac' }, size)
+      const labels = tableTexts(t).filter((l) => l.kind === 'group')
+      labels.forEach((l, i) => {
+        const b = inkBox(l)
+        expect(t.cells[0].y - b.y1, `${sizeName(size)} group ${l.text}`).toBeGreaterThanOrEqual(2)
+        if (i) expect(b.x0 - inkBox(labels[i - 1]).x1, `${sizeName(size)} group ${l.text}`).toBeGreaterThanOrEqual(2)
+      })
+    }
+  })
+})
+
+describe('periodic table: parameters and the symbol row', () => {
+  it('draws something sensible for values that it does not know, and never throws', () => {
+    const base = JSON.stringify(geometry('periodicTable', 560, 200, {}))
+    expect(JSON.stringify(geometry('periodicTable', 560, 200, { content: 'names', range: 'all', shading: 'stripes', groups: 'roman' }))).toBe(base)
+    expect(JSON.stringify(geometry('periodicTable', 560, 200, { hlElement: 99, hlGroup: -4, hlPeriod: 7.4 }))).not.toContain('NaN')
+    expect(JSON.stringify(geometry('periodicTable', 560, 200, { hlElement: NaN as unknown as number }))).toBe(base)
+    for (const [w, h] of [
+      [1, 1],
+      [0, 0],
+      [3000, 40],
+    ]) {
+      const g = geometry('periodicTable', w, h, { content: 'both', shading: 'blocks', hlGroup: 1 })
+      expect(g.prims[0].role).not.toBe('dashed')
+      for (const p of g.prims) expect(p.d).not.toMatch(/NaN|Infinity/)
+    }
+  })
+
+  it('offers the eight parameters of the catalogue row, with a label for the options', () => {
+    expect(tableDef.params?.map((p) => p.key)).toEqual(['content', 'range', 'hlGroup', 'hlPeriod', 'hlElement', 'divider', 'shading', 'groups'])
+    expect(tableDef.resize).toBe('uniform')
+    expect(labelText(tableDef)).toBe('periodic table')
   })
 })

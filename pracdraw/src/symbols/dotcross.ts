@@ -6,10 +6,11 @@
 // for the table. `dotcross.science.test.ts` tests the models against the science and then counts the marks in the geometry to see that the
 // drawing agrees with them.
 
-import { P, dist, f, type Pt } from '../kernel/geom'
-import { bool, circle, str } from './kit'
+import { P, dist, f, v, type Pt } from '../kernel/geom'
+import { hatchD } from '../kernel/hatch'
+import { bool, circle, closed, rect, str } from './kit'
 import { bracketD, electronPrims, pairedPoints } from './electrons'
-import { elementBySymbol, ionShells, ks4Group, type Element } from './elements'
+import { ELEMENTS, elementBySymbol, ionShells, ks4Group, period, type Element } from './elements'
 import { MOLECULES, molecule, type Molecule } from './molecules'
 import type { Prim, SymbolDef, SymbolText } from './types'
 
@@ -54,11 +55,22 @@ const ARIAL = [
   ...[667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611],
   ...[556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500],
 ]
-/** The width of a word of letters set in Arial at `size` u (a letter that it does not know counts as an M). */
-export const textWidth = (word: string, size: number): number =>
-  ([...word].reduce((n, c) => n + (ARIAL[c >= 'A' && c <= 'Z' ? c.charCodeAt(0) - 65 : c >= 'a' && c <= 'z' ? 26 + c.charCodeAt(0) - 97 : 12] ?? 833), 0) *
-    size) /
-  1000
+/** The width of a word set in Arial at `size` u: letters, digits and the signs of a charge (anything else counts as an M). */
+export const textWidth = (word: string, size: number): number => {
+  const em = (c: string): number =>
+    c >= 'A' && c <= 'Z'
+      ? ARIAL[c.charCodeAt(0) - 65]
+      : c >= 'a' && c <= 'z'
+        ? ARIAL[26 + c.charCodeAt(0) - 97]
+        : c >= '0' && c <= '9'
+          ? 556
+          : c === '.'
+            ? 278
+            : c === '+' || c === '-' || c === '\u2212'
+              ? 584
+              : 833
+  return ([...word].reduce((n, c) => n + em(c), 0) * size) / 1000
+}
 /** How far the corner of the box of an element symbol is from its centre, plus a little room: the smallest circle that holds the symbol. */
 const symbolRadius = (symbol: string, size: number): number => Math.hypot(textWidth(symbol, size) / 2, size * 0.358) + 1.8
 
@@ -822,4 +834,375 @@ const ionicDotCross: SymbolDef = {
   },
 }
 
-export const dotcross: SymbolDef[] = [covalentDotCross, ionicDotCross]
+// ---------------------------------------------------------------- periodic table
+
+export type TableRange = 'first20' | 'first36'
+export type TableContent = 'symbol' | 'number' | 'both' | 'mass' | 'blank'
+export type TableShading = 'none' | 'metals' | 'blocks'
+export type TableGroups = 'ks4' | 'iupac' | 'none'
+export type Block = 's' | 'p' | 'd'
+
+/** The non-metals among the first 36 elements. Boron, silicon and germanium (the semi-metals) are drawn on the non-metal side of the stepped line. */
+export const NON_METALS_OF_TABLE = ['H', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar', 'Ge', 'As', 'Se', 'Br', 'Kr']
+
+/**
+ * The pairs of cells that the stepped line runs between, as [column, row] of each (column = IUPAC group, row = period): boron above aluminium, aluminium
+ * beside silicon, gallium beside germanium. Each pair is a metal and a non-metal that touch. Hydrogen is a non-metal that stands over lithium, but it is in
+ * group 1 for its one outer electron and is not cut off from the metals below it, so no line runs under it.
+ */
+export const DIVIDER: [[number, number], [number, number]][] = [
+  [
+    [13, 2],
+    [13, 3],
+  ],
+  [
+    [13, 3],
+    [14, 3],
+  ],
+  [
+    [13, 4],
+    [14, 4],
+  ],
+]
+
+export interface TableCell {
+  z: number
+  symbol: string
+  /** The column of the cell: the IUPAC group, 1 to 18. */
+  col: number
+  /** The row of the cell: the period, 1 to 4. */
+  row: number
+  metal: boolean
+  block: Block
+  /** The corner of the cell nearest the top left, and its side. */
+  x: number
+  y: number
+  side: number
+}
+
+/** What is drawn in the cell and where: a text and its place. */
+export interface TableText {
+  cell: number
+  kind: 'number' | 'symbol' | 'mass'
+  text: string
+}
+
+export interface TableHighlight {
+  kind: 'element' | 'group' | 'period'
+  value: number
+  /** The cells that it rings (indices into `cells`): none when the element, group or period is not in the range. */
+  cells: number[]
+}
+
+export interface TableModel {
+  range: TableRange
+  content: TableContent
+  shading: TableShading
+  groups: TableGroups
+  divider: boolean
+  /** The scale against the default size (the box is 560 u wide when it is 1). */
+  k: number
+  side: number
+  cells: TableCell[]
+  highlight: TableHighlight | null
+  /** The stepped line, as the points it passes through (empty when it is off or the range has no step). */
+  line: Pt[]
+}
+
+/** The size of the default box and of a cell. */
+const TABLE = { w: 560, h: 200, cell: 28, strip: 20, header: 14 }
+const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v))
+/** The text sizes at scale k: the symbol (14 u), the atomic number and mass (9 u), and the group and period numbers (11 u), kept within the range of rule S11. */
+export const tableSizes = (k: number) => ({ symbol: clamp(14 * k, 12, 18), small: clamp(9 * k, 8, 12), label: clamp(11 * k, 9, 14) })
+const blockOf = (e: Element): Block => (e.z === 2 || e.group <= 2 ? 's' : e.group <= 12 ? 'd' : 'p')
+const choice = <T extends string>(v: string, options: readonly T[], fallback: T): T => (options.includes(v as T) ? (v as T) : fallback)
+const whole = (v: unknown, max: number): number => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), 0, max) : 0)
+/** The relative atomic mass as the table writes it: 35.5, 24.3, and 23 for 23.0. */
+export const massText = (ar: number): string => ar.toFixed(1).replace(/\.0$/, '')
+
+/**
+ * The model of a periodic table in a box `w` by `h`: the elements of elements.ts in the standard 18 columns, the period as the row, in square cells; what the
+ * cells say; the one highlight (an element beats a group, a group beats a period); the stepped line between metals and non-metals. Nothing here throws.
+ */
+export function tableModel(p: Record<string, unknown>, w: number, h: number): TableModel {
+  const range = choice(String(p.range), ['first20', 'first36'] as const, 'first36'),
+    content = choice(String(p.content), ['symbol', 'number', 'both', 'mass', 'blank'] as const, 'symbol'),
+    shading = choice(String(p.shading), ['none', 'metals', 'blocks'] as const, 'none'),
+    groups = choice(String(p.groups), ['ks4', 'iupac', 'none'] as const, 'ks4')
+  const k = Math.max(0.3, Math.min(w / TABLE.w, h / TABLE.h, 4)) || 1
+  const side = TABLE.cell * k
+  const left = -9 * side + (TABLE.strip * k) / 2,
+    top = h / 2 - 2 * side + (TABLE.header * k) / 2
+  const cells: TableCell[] = ELEMENTS.filter((e) => e.z <= (range === 'first20' ? 20 : 36)).map((e) => ({
+    z: e.z,
+    symbol: e.symbol,
+    col: e.group,
+    row: period(e),
+    metal: !NON_METALS_OF_TABLE.includes(e.symbol),
+    block: blockOf(e),
+    x: left + (e.group - 1) * side,
+    y: top + (period(e) - 1) * side,
+    side,
+  }))
+  // One highlight at most, so that no cell has two.
+  const divider = typeof p.divider === 'boolean' ? p.divider : true
+  const hl = { element: whole(p.hlElement, 36), group: whole(p.hlGroup, 18), period: whole(p.hlPeriod, 4) }
+  const kind = hl.element ? 'element' : hl.group ? 'group' : hl.period ? 'period' : null
+  const inHighlight = (c: TableCell): boolean => (kind === 'element' ? c.z === hl.element : kind === 'group' ? c.col === hl.group : c.row === hl.period)
+  const highlight: TableHighlight | null = kind ? { kind, value: hl[kind], cells: cells.map((c, i) => (inHighlight(c) ? i : -1)).filter((i) => i >= 0) } : null
+  // The stepped line: the edges between the pairs of cells, joined into one line.
+  const at = (col: number, row: number) => cells.find((c) => c.col === col && c.row === row)
+  const edges = DIVIDER.filter(([a, b]) => at(...a) && at(...b))
+  const corner = (col: number, row: number) => P(left + col * side, top + row * side) // the bottom right corner of a cell
+  const line: Pt[] = []
+  if (divider && edges.length) {
+    // The pairs are, in order: one cell above another (a horizontal edge), then side by side (vertical edges) running down.
+    for (const [[c1, ar], [c2, br]] of edges) {
+      const ac = Math.min(c1, c2),
+        bc = Math.max(c1, c2)
+      const horizontal = ac === bc
+      const from = horizontal ? corner(ac - 1, Math.max(ar, br) - 1) : corner(ac, Math.min(ar, br) - 1),
+        to = horizontal ? corner(ac, Math.max(ar, br) - 1) : corner(ac, Math.max(ar, br))
+      if (!line.length) line.push(from)
+      else if (dist(line[line.length - 1], from) > 1e-6) line.push(from)
+      line.push(to)
+    }
+  }
+  return { range, content, shading, groups, divider, k, side, cells, highlight, line }
+}
+
+/** The texts of one cell: the atomic number above, the symbol, or the relative atomic mass below, as `content` says. */
+export function cellTexts(c: TableCell, content: TableContent): { kind: TableText['kind']; text: string }[] {
+  const e = ELEMENTS[c.z - 1]
+  const out: { kind: TableText['kind']; text: string }[] = []
+  if (content === 'number' || content === 'both') out.push({ kind: 'number', text: String(c.z) })
+  if (content === 'symbol' || content === 'both') out.push({ kind: 'symbol', text: c.symbol })
+  if (content === 'mass') out.push({ kind: 'mass', text: massText(e.ar) })
+  return out
+}
+
+/** The label above a column: KS4 numbering (1 to 7 and 0; none for the transition metals), IUPAC (1 to 18) or nothing. */
+export function groupLabel(col: number, groups: TableGroups): string {
+  if (groups === 'none') return ''
+  if (groups === 'iupac') return String(col)
+  const e = ELEMENTS.find((x) => x.group === col)
+  const g = e ? ks4Group(e) : undefined
+  return g === undefined ? '' : String(g)
+}
+
+/** The outline of a set of cells as closed paths: the edges between a cell of the set and a cell outside it, joined end to end. */
+export function regionD(cells: readonly TableCell[], same: (c: TableCell) => boolean): string {
+  const set = cells.filter(same)
+  const has = (col: number, row: number) => set.some((c) => c.col === col && c.row === row)
+  const origin = cells[0]
+  if (!set.length || !origin) return ''
+  const side = origin.side,
+    x0 = origin.x - (origin.col - 1) * side,
+    y0 = origin.y - (origin.row - 1) * side
+  // Edges round each cell clockwise, from one grid corner (i, j) to the next.
+  const next = new Map<string, [number, number][]>()
+  const edge = (a: [number, number], b: [number, number]) => next.set(`${a}`, [...(next.get(`${a}`) ?? []), b])
+  for (const { col, row } of set) {
+    if (!has(col, row - 1)) edge([col - 1, row - 1], [col, row - 1])
+    if (!has(col + 1, row)) edge([col, row - 1], [col, row])
+    if (!has(col, row + 1)) edge([col, row], [col - 1, row])
+    if (!has(col - 1, row)) edge([col - 1, row], [col - 1, row - 1])
+  }
+  let d = ''
+  for (const [from, outs] of [...next]) {
+    while (outs.length) {
+      const start = from.split(',').map(Number) as [number, number]
+      const loop: [number, number][] = [start]
+      let here = start
+      for (;;) {
+        const list = next.get(`${here}`)
+        const step = list?.shift()
+        if (!step) break
+        here = step
+        if (here[0] === start[0] && here[1] === start[1]) break
+        loop.push(here)
+      }
+      // Leave out the corners that lie on a straight line.
+      const keep = loop.filter((q, i) => {
+        const a = loop[(i + loop.length - 1) % loop.length],
+          b = loop[(i + 1) % loop.length]
+        return (q[0] - a[0]) * (b[1] - q[1]) !== (q[1] - a[1]) * (b[0] - q[0])
+      })
+      d += keep.map((q, i) => `${i ? 'L' : 'M'}${f(x0 + q[0] * side)} ${f(y0 + q[1] * side)}`).join('') + 'Z'
+    }
+  }
+  return d
+}
+
+/** A rounded ring on the outer edge of the cells that fill the box x0..x1, y0..y1. It stays on the edge, so it does not run across the text of the next cell. */
+function ringD(x0: number, y0: number, x1: number, y1: number): string {
+  return closed([v(x0, y0, 4), v(x1, y0, 4), v(x1, y1, 4), v(x0, y1, 4)]).d()
+}
+
+export interface TableLabel {
+  x: number
+  y: number
+  text: string
+  size: number
+  anchor: 'start' | 'middle' | 'end'
+  /** What it is: the number, symbol or mass of a cell (with the cell's index), or a group or period number. */
+  kind: 'number' | 'symbol' | 'mass' | 'group' | 'period'
+  cell?: number
+}
+
+/**
+ * Every text of the table with its place: in a cell, the atomic number above (its baseline 9.2 u down), the symbol (centred, or 21.4 u down when the number
+ * is there too) and the mass below (25.4 u down), all at scale k; the group numbers above the columns that have an element, the period numbers at the left.
+ */
+export function tableTexts(t: TableModel): TableLabel[] {
+  const size = tableSizes(t.k),
+    side = t.side,
+    out: TableLabel[] = []
+  t.cells.forEach((c, i) => {
+    for (const x of cellTexts(c, t.content)) {
+      const baseline = x.kind === 'number' ? 9.2 * t.k : x.kind === 'mass' ? 25.4 * t.k : t.content === 'both' ? 21.4 * t.k : side / 2 + 0.358 * size.symbol
+      out.push({
+        x: c.x + side / 2,
+        y: c.y + baseline,
+        text: x.text,
+        size: x.kind === 'symbol' ? size.symbol : size.small,
+        anchor: 'middle',
+        kind: x.kind,
+        cell: i,
+      })
+    }
+  })
+  const first = t.cells[0]
+  if (first) {
+    const left = first.x - (first.col - 1) * side,
+      top = first.y - (first.row - 1) * side
+    for (let col = 1; col <= 18; col++) {
+      const text = t.cells.some((c) => c.col === col) ? groupLabel(col, t.groups) : ''
+      if (text) out.push({ x: left + (col - 0.5) * side, y: top - 5 * t.k, text, size: size.label, anchor: 'middle', kind: 'group' })
+    }
+    for (let row = 1; row <= 4; row++)
+      out.push({ x: left - 6 * t.k, y: top + (row - 0.5) * side + size.label * 0.36, text: String(row), size: size.label, anchor: 'end', kind: 'period' })
+  }
+  return out
+}
+
+/** The box that a text fills, a little generously: for the hole that keeps the hatch off it. */
+export function labelBox(l: Pick<TableLabel, 'x' | 'y' | 'text' | 'size' | 'anchor'>): { x0: number; y0: number; x1: number; y1: number } {
+  const w = textWidth(l.text, l.size)
+  const x0 = l.anchor === 'middle' ? l.x - w / 2 : l.anchor === 'end' ? l.x - w : l.x
+  return { x0, x1: x0 + w, y0: l.y - 0.72 * l.size, y1: l.y + 0.22 * l.size }
+}
+
+function tableGeometry(t: TableModel) {
+  const prims: Prim[] = []
+  const side = t.side
+  const texts = tableTexts(t)
+  // 1. Shading: tint and hatch (rule S12). The hatch stands in for the tint on a photocopy, so it leaves a clear space round each text (a hole in the
+  //    hatch, which hatchD keeps empty), and a second region has the other slant and a second grey.
+  const shade = (same: (c: TableCell) => boolean, opts?: { angle: number }, grey?: string) => {
+    const d = regionD(t.cells, same)
+    if (!d) return
+    // One hole for each cell, round all its texts: two holes that overlapped would hatch the overlap again.
+    const holes = t.cells
+      .map((c, i) => ({ c, boxes: texts.filter((l) => l.cell === i).map(labelBox) }))
+      .filter(({ c, boxes }) => same(c) && boxes.length)
+      .map(({ boxes }) =>
+        rect(
+          Math.min(...boxes.map((b) => b.x0)) - 1.5,
+          Math.min(...boxes.map((b) => b.y0)) - 1,
+          Math.max(...boxes.map((b) => b.x1)) + 1.5,
+          Math.max(...boxes.map((b) => b.y1)) + 1,
+        ),
+      )
+      .join('')
+    prims.push({ d, role: 'tint', ...(grey ? { tint: grey } : {}) }, { d: hatchD(d + holes, opts), role: 'hatch' })
+  }
+  if (t.shading === 'metals') shade((c) => c.metal)
+  if (t.shading === 'blocks') {
+    shade((c) => c.block === 's')
+    shade((c) => c.block === 'd', { angle: 45 }, '#cfcfcf')
+  }
+  // 2. The cells.
+  prims.push({ d: t.cells.map((c) => rect(c.x, c.y, c.x + side, c.y + side)).join(''), role: 'detail' })
+  // 3. The stepped line, and the highlight.
+  if (t.line.length > 1) prims.push({ d: t.line.map((q, i) => `${i ? 'L' : 'M'}${f(q.x)} ${f(q.y)}`).join(''), role: 'heavy' })
+  if (t.highlight?.cells.length) {
+    const hit = t.highlight.cells.map((i) => t.cells[i])
+    prims.push({
+      d: ringD(
+        Math.min(...hit.map((c) => c.x)),
+        Math.min(...hit.map((c) => c.y)),
+        Math.max(...hit.map((c) => c.x + side)),
+        Math.max(...hit.map((c) => c.y + side)),
+      ),
+      role: 'heavy',
+    })
+  }
+  return { prims, texts: texts.map(({ x, y, text, size, anchor }): SymbolText => ({ x, y, text, size, anchor })) }
+}
+
+const periodicTable: SymbolDef = {
+  id: 'periodicTable',
+  name: 'Periodic table',
+  aliases: ['elements', 'periodic chart', 'groups and periods'],
+  pack: 'atoms',
+  size: { w: TABLE.w, h: TABLE.h },
+  resize: 'uniform',
+  min: { w: 476, h: 170 },
+  params: [
+    {
+      key: 'content',
+      label: 'Cell content',
+      type: 'choice',
+      default: 'symbol',
+      options: [
+        { value: 'symbol', label: 'Symbol' },
+        { value: 'number', label: 'Atomic number' },
+        { value: 'both', label: 'Symbol and atomic number' },
+        { value: 'mass', label: 'Relative atomic mass' },
+        { value: 'blank', label: 'Blank' },
+      ],
+    },
+    {
+      key: 'range',
+      label: 'Range',
+      type: 'choice',
+      default: 'first36',
+      options: [
+        { value: 'first20', label: 'First 20 elements' },
+        { value: 'first36', label: 'First 36 elements' },
+      ],
+    },
+    { key: 'hlGroup', label: 'Highlight group', type: 'number', default: 0, min: 0, max: 18, step: 1 },
+    { key: 'hlPeriod', label: 'Highlight period', type: 'number', default: 0, min: 0, max: 4, step: 1 },
+    { key: 'hlElement', label: 'Highlight element', type: 'number', default: 0, min: 0, max: 36, step: 1 },
+    { key: 'divider', label: 'Metal divider', type: 'boolean', default: true },
+    {
+      key: 'shading',
+      label: 'Shading',
+      type: 'choice',
+      default: 'none',
+      options: [
+        { value: 'none', label: 'None' },
+        { value: 'metals', label: 'Metals' },
+        { value: 'blocks', label: 'Blocks' },
+      ],
+    },
+    {
+      key: 'groups',
+      label: 'Group numbers',
+      type: 'choice',
+      default: 'ks4',
+      options: [
+        { value: 'ks4', label: '1 to 7 and 0' },
+        { value: 'iupac', label: '1 to 18' },
+        { value: 'none', label: 'None' },
+      ],
+    },
+  ],
+  build({ w, h, p }) {
+    return tableGeometry(tableModel(p, w, h))
+  },
+}
+
+export const dotcross: SymbolDef[] = [covalentDotCross, ionicDotCross, periodicTable]
