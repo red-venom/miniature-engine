@@ -294,6 +294,46 @@ describe('docs/diagram-inventory.md agrees with the file', () => {
     expect(proseNumbers('Steps 1 to 7 and decision 3 follow 7405 3.1.8.1 in KS4 on 9 October 2026, at 8 to 14 u.')).toEqual([])
   })
 
+  it('states the main counts as a plain tally of the rows gives them (the generator is not trusted to count)', () => {
+    const stated = (key: string): number => {
+      const m = new RegExp(`<!-- gen:${key.replace('.', '\\.')} -->([\\d,]+)<!-- /gen -->`).exec(doc)
+      expect(m, `the document does not state ${key}`).not.toBeNull()
+      return Number((m?.[1] ?? '').replace(/,/g, ''))
+    }
+    const chem = rows.filter((r) => r.subject === 'chemistry')
+    const tally: Record<string, number> = {
+      'n.total': rows.length,
+      'n.chem': chem.length,
+      'n.chemKs4': chem.filter((r) => r.level === 'KS4').length,
+      'n.chemKs5': chem.filter((r) => r.level === 'KS5').length,
+      'n.outline': rows.filter((r) => r.subject !== 'chemistry').length,
+      'n.covered': rows.filter((r) => r.kind === 'covered').length,
+      'n.charts': rows.filter((r) => r.kind === 'chart').length,
+      'n.new': rows.filter((r) => ['symbol', 'compound', 'template', 'process'].includes(r.kind)).length,
+      'n.checked': rows.filter((r) => r.confidence === 'checked').length,
+      'n.secondary': rows.filter((r) => r.confidence === 'secondary').length,
+      'n.unverified': rows.filter((r) => r.confidence === 'unverified').length,
+    }
+    for (const [key, want] of Object.entries(tally)) expect(stated(key), key).toBe(want)
+    // every line of the Counts table, against a tally made here
+    const lines: [string, (r: Row) => string][] = [
+      ['subject', (r) => r.subject],
+      ['level', (r) => r.level],
+      ['kind', (r) => r.kind],
+      ['priority', (r) => r.priority],
+      ['confidence', (r) => r.confidence],
+    ]
+    expect(doc, 'Counts table: total').toContain(`| total | rows | ${rows.length} |`)
+    for (const [name, f] of lines) {
+      const counts = new Map<string, number>()
+      for (const r of rows) counts.set(f(r), (counts.get(f(r)) ?? 0) + 1)
+      for (const [value, c] of counts) expect(doc, `Counts table: ${name} ${value}`).toContain(`| ${name} | ${value} | ${c} |`)
+      // and no line for a value that no row has
+      const listed = [...doc.matchAll(new RegExp(`^\\| ${name} \\| (\\S+) \\| \\d+ \\|$`, 'gm'))].map((m) => m[1])
+      expect([...listed].sort(), `Counts table: the ${name} lines`).toEqual([...counts.keys()].sort())
+    }
+  })
+
   it('names in backticks only ids that exist: rows, symbols, templates, Later symbols, packs, fields, tags and values', () => {
     const ok = new Set<string>([
       ...rows.map((r) => r.id),

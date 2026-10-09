@@ -339,7 +339,7 @@
     "proposedPack": "matter",
     "priority": "A",
     "detail": "full",
-    "draw": "Three particle boxes (solid, liquid, gas) in a row with a pair of labelled arrows between solid and liquid (melting above, freezing below) and between liquid and gas (boiling or evaporating above, condensing below). An optional long curved arrow from solid to gas for sublimation. Arrows are labelled with the change of state and, optionally, 'energy in' on the upward arrows and 'energy out' on the downward ones.",
+    "draw": "Three particle boxes (solid, liquid, gas) in a row with a pair of labelled arrows between solid and liquid (melting above, freezing below) and between liquid and gas (boiling or evaporating above, condensing below). An optional long straight arrow from solid to gas for sublimation. Arrows are labelled with the change of state and, optionally, 'energy in' on the upward arrows and 'energy out' on the downward ones.",
     "params": "show sublimation (boolean), show energy labels (boolean), label mode (names | blank for a worksheet)",
     "scienceChecks": "Melting, boiling and sublimation arrows carry 'energy in'; freezing and condensing carry 'energy out'. The boxes use the particleStates arrangements. The arrows join the correct pairs of boxes.",
     "sources": [
@@ -459,7 +459,7 @@
     "proposedPack": "molecules",
     "priority": "A",
     "detail": "full",
-    "draw": "Spheres joined by sticks, drawn as circles with a small highlight line (no shading, no gradient, S7) and sticks as two parallel lines in an oblique view. Methane tetrahedral, ammonia pyramidal, water bent, carbon dioxide linear, hydrogen chloride two balls on one stick. Atoms are told apart by size and by a hatch or grey fill, with a key (symbol and fill) beside the model.",
+    "draw": "Spheres joined by sticks, drawn as plain circles (no shading, no gradient, no highlight: rule S1) and sticks as two parallel lines in an oblique view. Methane tetrahedral, ammonia pyramidal, water bent, carbon dioxide linear, hydrogen chloride two balls on one stick. Atoms are told apart by size and by a hatch or grey fill, with a key (symbol and fill) beside the model.",
     "params": "molecule (from the small-molecule library named in covalentDotCross), view (front | oblique), show key (boolean), show element labels on the balls (boolean)",
     "scienceChecks": "The number of balls of each element equals the formula. Each ball has its valency of sticks. Bond angles in the model: 109.5 for CH4, about 107 for NH3, about 104.5 for H2O, 180 for CO2 (HCl has one bond, so it has no bond angle). Key matches the fills used.",
     "sources": [
@@ -1711,7 +1711,7 @@
       "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2023/june/AQA-84622H-QP-JUN23.PDF"
     ],
     "confidence": "checked",
-    "notes": "Higher Tier idea. The sealed-syringe question (NO2 and N2O4, plunger pushed in, darker or lighter brown) is Question 9.2 of the June 2023 8462/2H paper, as a second reader's search summary reports it; the 4.6 page alone does not mention a syringe, so the paper is the source that supports the row. The paper itself was not opened."
+    "notes": "Higher Tier idea. The sealed-syringe question (NO2 and N2O4, plunger pushed in, darker or lighter brown) is Question 9 of the June 2023 8462/2H paper, as a second reader's search summary reports it; the 4.6 page alone does not mention a syringe, so the paper is the source that supports the row. The paper itself was not opened."
   },
   {
     "id": "reversibleHeatingTube",
@@ -3129,7 +3129,7 @@
     "detail": "full",
     "draw": "The central atom with its bonds drawn as plain lines in the plane of the page, wedges coming towards the viewer and dashes going away. Lone pairs on the central atom as a pair of dots or a lobe. The name of the shape and the bond angle written beside it, with the angle arc drawn. Linear, trigonal planar, tetrahedral, trigonal pyramidal, bent, trigonal bipyramidal, see-saw, T-shaped, linear with three lone pairs, octahedral and square planar. A charge outside square brackets for an ion.",
     "params": "bonding pairs (2 to 6), lone pairs (0 to 3, with at most six electron pairs in all and only the combinations in the checks), central atom and ligands, charge, show angles (boolean), show lone pairs (boolean)",
-    "scienceChecks": "Angles: linear 180, trigonal planar 120, tetrahedral 109.5, trigonal pyramidal 107, bent 104.5, trigonal bipyramidal 90 and 120, see-saw (4 bonding pairs, 1 lone pair) a little under 90 and a little under 120, T-shaped (3 bonding pairs, 2 lone pairs) a little under 90, linear with 3 lone pairs (2 bonding pairs) 180, octahedral 90, square planar 90. A lone pair reduces the bond angle (lone pair - lone pair > lone pair - bonding pair > bonding pair - bonding pair). Electron pairs = bonding pairs + lone pairs. The molecule has the symmetry of its shape.",
+    "scienceChecks": "Angles: linear 180, trigonal planar 120, tetrahedral 109.5, trigonal pyramidal 107, bent 104.5, trigonal bipyramidal 90 and 120, see-saw (4 bonding pairs, 1 lone pair) a little under 90 between an axial and an equatorial bond and about 102 between the two equatorial bonds (SF4), T-shaped (3 bonding pairs, 2 lone pairs) a little under 90, linear with 3 lone pairs (2 bonding pairs) 180, octahedral 90, square planar 90. A lone pair reduces the bond angle (lone pair - lone pair > lone pair - bonding pair > bonding pair - bonding pair). Electron pairs = bonding pairs + lone pairs. The molecule has the symmetry of its shape.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7405/specification/subject-content/physical-chemistry",
       "https://www.savemyexams.com/a-level/chemistry/aqa/17/revision-notes/1-physical-chemistry/1-5-molecules-shapes-and-forces/1-5-1-shapes-of-simple-molecules-and-ions/",
@@ -3962,7 +3962,7 @@
       "https://www.docbrown.info/page06/OrgMechsIntro.htm"
     ],
     "confidence": "checked",
-    "notes": "Not a symbol: it needs a new connector kind in the editor (the lead's work; the specification lists four connector kinds and none is curved), and the whole mechanisms pack waits on it. The wedge and dash bond is the second editor task. AQA says radical mechanisms need a dot for the unpaired electron and do not need curly arrows.",
+    "notes": "Counted as one drawing, but it is editor work: it needs a new connector kind in the editor (the lead's work; the specification lists four connector kinds and none is curved), and the whole mechanisms pack waits on it. The wedge and dash bond is the second editor task. AQA says radical mechanisms need a dot for the unpaired electron and do not need curly arrows.",
     "tags": ["curlyArrow"]
   },
   {
@@ -4603,12 +4603,15 @@
     "proposedPack": "mechanisms",
     "priority": "C",
     "detail": "full",
-    "draw": "A chain of steps with radical dots: ultraviolet light breaks a C-Cl bond in a chlorofluorocarbon, giving a chlorine radical; Cl plus ozone gives ClO and oxygen; ClO plus O gives chlorine radical and oxygen; the chlorine radical is regenerated. Each step is an equation with dots.",
+    "draw": "A chain of steps with radical dots: ultraviolet light breaks a C-Cl bond in a chlorofluorocarbon, giving a chlorine radical; Cl plus ozone gives ClO and oxygen; ClO plus a second ozone (or an oxygen atom) gives the chlorine radical again and oxygen; the chlorine radical is regenerated. Each step is an equation with dots.",
     "params": "show the overall equation (boolean), label mode",
     "scienceChecks": "Atoms are conserved. The chlorine radical is regenerated at the end of the cycle. The overall change is ozone turning into oxygen.",
-    "sources": [],
-    "confidence": "unverified",
-    "notes": "From memory. A second reader reports that 7405 papers ask for the chlorine radical chain, but no address came back to cite, so the row stays unverified.",
+    "sources": [
+      "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2018/june/AQA-74052-QP-JUN18.PDF",
+      "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2018/june/AQA-74052-W-MS-JUN18.PDF"
+    ],
+    "confidence": "checked",
+    "notes": "The June 2018 7405/2 paper (Question 1) asks for the radical from a CFC that depletes ozone and for equations that show why one radical destroys many ozone molecules; its mark scheme accepts the chain with ozone (Cl plus O3 gives ClO plus O2; ClO plus O3 gives Cl plus two O2) and penalises missing radical dots, as a search summary reports it. The papers were not opened.",
     "tags": ["mechanism"]
   },
   {

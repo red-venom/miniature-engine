@@ -1,6 +1,6 @@
 # Diagram inventory: KS4 science and KS5 chemistry
 
-Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/diagrams.json`. This document is the version for people. Its tables and its numbers are written by `npm run gen:inventory` from that file: they sit between comments that start with `gen:` and are never edited by hand. `src/diagrams.test.ts` regenerates the document in memory and compares it with this file, so a change to the list without the document, or to the document without the list, fails the test. The text around the tables is written by hand and holds no number about the rows; the test fails when one is typed.
+Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/diagrams.json`. This document is the version for people. Its tables and its numbers are written by `npm run gen:inventory` from that file: they sit between comments that start with `gen:` and are never edited by hand. `src/diagrams.test.ts` regenerates the document in memory and compares it with this file, so a change to the list without the document, or to the document without the list, fails the test. The text around the tables is written by hand and holds no number in digits about the rows; the test fails when one is typed. A number written as a word in the text is not checked, and neither is a change to the parameters, the science checks or the notes of a row, because no table shows them.
 
 **What to read.** James: read "Read this first", "Decisions for James" and "Build order" (about <!-- gen:n.readWords -->2,600<!-- /gen --> words). The rest is for the lead, for the pack authors and for looking things up. "Rows by topic" at the end lists every row.
 
@@ -34,7 +34,7 @@ Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/dia
 
 **Priority.** A is a core KS4 diagram that appears in most courses and most lessons on its topic. B is a less common KS4 diagram, or a core KS5 diagram. C is a KS5 specialist diagram, a nice-to-have, a diagram that lessons use but the AQA specification does not name, or an outline row. A KS5 diagram is B at most, so priority is not a build order across levels: the build order says what to do first.
 
-**Confidence.** Each row says how sure the author is: <!-- gen:n.checked -->124<!-- /gen --> rows are `checked`, <!-- gen:n.secondary -->78<!-- /gen --> `secondary` and <!-- gen:n.unverified -->91<!-- /gen --> `unverified`. Treat `checked` as weaker than it sounds. The AQA website and its PDFs could not be opened, so it means only that a search tool's account of an AQA page or paper reported the requirement; I never saw a figure. The meanings, and what could not be reached, are under "Confidence and limits".
+**Confidence.** Each row says how sure the author is: <!-- gen:n.checked -->125<!-- /gen --> rows are `checked`, <!-- gen:n.secondary -->78<!-- /gen --> `secondary` and <!-- gen:n.unverified -->90<!-- /gen --> `unverified`. Treat `checked` as weaker than it sounds. The AQA website and its PDFs could not be opened, so it means only that a search tool's account of an AQA page or paper reported the requirement; I never saw a figure. The meanings, and what could not be reached, are under "Confidence and limits".
 
 ## Decisions for James
 
@@ -44,7 +44,7 @@ Each decision gives the options and a recommendation, so that James can approve 
 
 **1. Graphs, tables and spectra (charts).** <!-- gen:n.charts -->40<!-- /gen --> rows are charts (<!-- gen:n.chartsChem -->33<!-- /gen --> in chemistry), and <!-- gen:n.chartsAB -->22<!-- /gen --> of them are priority A or B: used often, but not built first. Options: (a) leave all charts out and let teachers use a spreadsheet; (b) allow sketch graphs with no data as symbols, for the shapes a student draws freehand (the rate curve, the heating curve, the Maxwell-Boltzmann curve, the pH curve, the concentration-time curve); (c) build a data chart tool. Recommended: (a) for the first packs, then (b) once the particle and molecule packs have passed review. The reaction profile is a symbol already, because it has no data axis.
 
-**2. Skeletal formulae and curly arrows (KS5 organic).** <!-- gen:n.tag.skeletal -->9<!-- /gen --> rows need skeletal formulae (tag `skeletal`) and <!-- gen:n.tag.curlyArrow -->8<!-- /gen --> rows need the curly arrow, a new kind of connector in the editor (tag `curlyArrow`); <!-- gen:n.skeletalOrCurly -->16<!-- /gen --> rows need one or both. The <!-- gen:n.mechanisms -->10<!-- /gen --> rows of the mechanisms pack wait for the connector. Options: now; later, after the KS4 packs; never. Recommended: later. To keep the door open, build the KS4 molecule drawing (step 5) as a list of atoms and bonds, so that a skeletal drawing is a second way to draw the same data.
+**2. Skeletal formulae and curly arrows (KS5 organic).** <!-- gen:n.tag.skeletal -->9<!-- /gen --> rows need skeletal formulae (tag `skeletal`) and <!-- gen:n.tag.curlyArrow -->8<!-- /gen --> rows need the curly arrow, a new kind of connector in the editor (tag `curlyArrow`); <!-- gen:n.skeletalOrCurly -->16<!-- /gen --> rows need one or both. The mechanisms pack waits for the connector, except for the rows that draw an unpaired electron or no arrow (the radical substitution and the ozone chain). Options: now; later, after the KS4 packs; never. Recommended: later. To keep the door open, build the KS4 molecule drawing (step 5) as a list of atoms and bonds, so that a skeletal drawing is a second way to draw the same data.
 
 **3. The style of three-dimensional structures.** <!-- gen:n.tag.3d -->16<!-- /gen --> rows are structures in three dimensions (tag `3d`: diamond, graphite, the sodium chloride cube, C60, the nanotube, silica, ice, iodine, cages and others), and <!-- gen:n.tag.wedge -->8<!-- /gen --> rows need wedge and dash bonds (tag `wedge`). Options: (a) one oblique projection (the front face square, the back face shifted up and to the right at half size, hidden lines dashed) for every lattice and cage, with wedge and dash bonds for molecules; (b) an isometric view; (c) flat 2D networks only, which keeps the exclusion but cannot draw most of these rows. Recommended: (a), with one pilot sheet of four pictures for James to approve before the ball-and-stick model of step 5 and the structures pack of step 6 are built: the sodium chloride cube, a diamond cluster, graphite layers and C60 (the hardest).
 
@@ -145,9 +145,9 @@ An inventory row is a scope, not a recipe. For each pack, the lead does the foll
 | priority | A | 61 |
 | priority | B | 115 |
 | priority | C | 117 |
-| confidence | checked | 124 |
+| confidence | checked | 125 |
 | confidence | secondary | 78 |
-| confidence | unverified | 91 |
+| confidence | unverified | 90 |
 <!-- /gen -->
 
 Kind by priority, all subjects:
@@ -167,7 +167,7 @@ Kind by priority, all subjects:
 Reading the numbers:
 
 - <!-- gen:n.covered -->57<!-- /gen --> rows are already covered by a symbol or a template. They need no new code, only a recipe and a check that the picture shows what the lesson needs. <!-- gen:n.charts -->40<!-- /gen --> rows are charts, which the specification puts outside PracDraw. The other <!-- gen:n.new -->196<!-- /gen --> rows need something new: <!-- gen:n.symbol -->69<!-- /gen --> symbols, <!-- gen:n.compound -->79<!-- /gen --> compounds, <!-- gen:n.template -->16<!-- /gen --> templates and <!-- gen:n.process -->32<!-- /gen --> process diagrams.
-- Of the chemistry rows, <!-- gen:n.newChem -->144<!-- /gen --> need something new (symbols, compounds, templates and process diagrams). The templates need no new code, so <!-- gen:n.newDrawingsChem -->128<!-- /gen --> chemistry drawings (symbols, compounds and process diagrams) need new code. Several rows share one engine (the Bohr atom and the ion, or all the displayed formulae), so the number of separate pieces of code is smaller than the number of drawings. My estimate, not a measurement, is <!-- gen:n.estLow -->51<!-- /gen --> to <!-- gen:n.estHigh -->77<!-- /gen --> separate pieces of code.
+- Of the chemistry rows, <!-- gen:n.newChem -->144<!-- /gen --> need something new (symbols, compounds, templates and process diagrams). The templates need no new drawing code beyond the small additions listed under Build order, so <!-- gen:n.newDrawingsChem -->128<!-- /gen --> chemistry drawings (symbols, compounds and process diagrams) need new code. Several rows share one engine (the Bohr atom and the ion, or all the displayed formulae), so the number of separate pieces of code is smaller than the number of drawings. My estimate, not a measurement, is <!-- gen:n.estLow -->51<!-- /gen --> to <!-- gen:n.estHigh -->77<!-- /gen --> separate pieces of code.
 
 ### Tags
 
@@ -218,9 +218,9 @@ The library group says whether the pack name is already a group of the library (
 
 The AQA website and its PDFs could not be opened from this environment. The search tool could read AQA pages, specification PDFs, question papers, mark schemes, reports on the examination and practical handbooks, and it returned a paraphrase with section numbers. I never saw a figure.
 
-- `checked` (<!-- gen:n.checked -->124<!-- /gen --> rows): the search tool's account of an AQA page, paper or practical handbook reported the requirement, the figure or the apparatus for this diagram. It does not mean that anyone compared a drawing with an AQA drawing, and a mistake in a paraphrase would be copied here.
+- `checked` (<!-- gen:n.checked -->125<!-- /gen --> rows): the search tool's account of an AQA page, paper or practical handbook reported the requirement, the figure or the apparatus for this diagram. It does not mean that anyone compared a drawing with an AQA drawing, and a mistake in a paraphrase would be copied here.
 - `secondary` (<!-- gen:n.secondary -->78<!-- /gen --> rows): a revision or teaching site (Save My Exams, Oak National Academy, Doc Brown's, Chemguide) described the diagram. The AQA text named the topic.
-- `unverified` (<!-- gen:n.unverified -->91<!-- /gen --> rows): from memory, or the AQA text named the topic but not the picture, or two readers could not confirm it.
+- `unverified` (<!-- gen:n.unverified -->90<!-- /gen --> rows): from memory, or the AQA text named the topic but not the picture, or two readers could not confirm it.
 
 The test requires an AQA address on every `checked` row and a revision-site address on every `secondary` row. It does not use the network, so it cannot tell whether an address is real: a `checked` row that cites an invented AQA address would pass. A person should open the addresses.
 
@@ -381,7 +381,7 @@ Every row once, under its topic, for looking things up. The last column is the s
 | `ionicDotCross` | Dot-and-cross diagram of an ionic compound | symbol | atoms | A | checked | 8464, 8462 | Two forms. Transfer: the metal atom and the non-metal atom as circles for their outer shells, the metal's electrons as dots and the non-metal's as crosses, with curved arrows showing the electrons moving across. |
 | `covalentDotCross` | Dot-and-cross diagram of a simple covalent molecule | symbol | atoms | A | checked | 8464, 8462 | One circle for the outer shell of each atom, overlapping where atoms are bonded. Each shared pair sits in the overlap as one dot and one cross. |
 | `displayedFormulaSmall` | Displayed formula of a small molecule (lines for bonds) | symbol | molecules | A | checked | 8464, 8462 | Atom symbols in 15 u text joined by single lines, double lines or triple lines, laid out flat with the bonds at right angles or at 120 degrees (the 2D convention, not the real shape). |
-| `ballAndStickModel` | Ball-and-stick model of a small molecule | symbol | molecules | A | checked | 8464, 8462 | Spheres joined by sticks, drawn as circles with a small highlight line (no shading, no gradient, S7) and sticks as two parallel lines in an oblique view. |
+| `ballAndStickModel` | Ball-and-stick model of a small molecule | symbol | molecules | A | checked | 8464, 8462 | Spheres joined by sticks, drawn as plain circles (no shading, no gradient, no highlight: rule S1) and sticks as two parallel lines in an oblique view. |
 | `spaceFillingModel` | Space-filling model of a small molecule | symbol | molecules | C | secondary | 8464, 8462 | Overlapping circles at the atom positions with the nearer atoms drawn in front, and a key for the atoms. No sticks. |
 | `ionicLattice2D` | Giant ionic lattice in two dimensions | symbol | structures | A | checked | 8464, 8462 | A square grid of touching circles in alternating kinds: the positive ions small and marked +, the negative ions larger and marked -. |
 | `ionicLattice3D` | Sodium chloride lattice in three dimensions (ball and stick) | symbol | structures | B | secondary | 8464, 8462, 7405 | A 3 by 3 by 3 cube of alternating small (Na+) and large (Cl-) circles in an oblique projection: the front face drawn square and the back face shifted up and right at half size, joined by lines. |
@@ -625,7 +625,7 @@ Every row once, under its topic, for looking things up. The last column is the s
 | `columnChromatography` | Column chromatography apparatus | template | organicApparatus | B | unverified | 7405 | A vertical column (a burette symbol) clamped upright, packed with silica gel (powder layer) with a layer of solvent above, a band of the sample at the top, and a separating funnel or dropper above supplying solvent. |
 | `dehydrationEthanolApparatus` | Dehydration of ethanol to ethene (apparatus) | template | organicApparatus | B | unverified | 7405 | The cracking apparatus layout: a boiling tube lying almost horizontal and clamped, with mineral wool soaked in ethanol at the closed end and aluminium oxide chips in the middle heated strongly, a delivery tube to a trough and an ... |
 | `ethanolHydrationPlant` | Industrial hydration of ethene to ethanol (flow diagram) | process | flow | C | unverified | 7405 | Boxes and arrows: ethene and steam mixed, a reactor with a phosphoric acid catalyst on silica at about 300 degrees and 60 to 70 atmospheres, a condenser separating ethanol from unreacted ethene, and a recycle pipe returning the ... |
-| `ozoneDepletionMechanism` | Ozone depletion by chlorine radicals (radical chain) | compound | mechanisms | C | unverified | 7405 | A chain of steps with radical dots: ultraviolet light breaks a C-Cl bond in a chlorofluorocarbon, giving a chlorine radical; Cl plus ozone gives ClO and oxygen; ClO plus O gives chlorine radical and oxygen; the chlorine radical ... |
+| `ozoneDepletionMechanism` | Ozone depletion by chlorine radicals (radical chain) | compound | mechanisms | C | checked | 7405 | A chain of steps with radical dots: ultraviolet light breaks a C-Cl bond in a chlorofluorocarbon, giving a chlorine radical; Cl plus ozone gives ClO and oxygen; ClO plus a second ozone (or an oxygen atom) gives the chlorine ... |
 | `sigmaPiBonding` | Sigma and pi bonds (orbital overlap in ethene) | symbol | atoms | C | unverified | 7405 | Two carbon atoms with the plane of the molecule marked. |
 
 #### Required practicals (A-level) (15)
