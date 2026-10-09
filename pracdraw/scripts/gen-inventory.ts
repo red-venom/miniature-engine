@@ -241,7 +241,7 @@ export function facts(d: Data): Record<string, string> {
   const chem = rows.filter((r) => r.subject === 'chemistry')
   const newCode = (r: Row): boolean => NEW_CODE.includes(r.kind)
   const drawings = (r: Row): boolean => ['symbol', 'compound', 'process'].includes(r.kind)
-  const steps = stepRows(rows)
+  stepRows(rows) // every row must fall in a step
   const aNew = rows.filter((r) => r.priority === 'A' && newCode(r))
   const lastAStep = Math.max(...aNew.map((r) => STEPS.find((s) => s.pick(r))?.n ?? 0))
   const l = lists(rows)
@@ -249,7 +249,6 @@ export function facts(d: Data): Record<string, string> {
   const newDrawings = count(chem, drawings)
   const newPackNames = new Set(rows.filter((r) => drawings(r) && !d.packIds.includes(r.proposedPack)).map((r) => r.proposedPack))
   const kept = rows.filter((r) => r.notes.startsWith(KEPT_NOTE))
-  const brief = rows.filter((r) => r.notes.includes(BRIEF_NOTE))
   const out: Record<string, string> = {
     total: String(rows.length),
     chem: String(chem.length),
@@ -270,7 +269,6 @@ export function facts(d: Data): Record<string, string> {
     estLow: String(Math.round(newDrawings * 0.4)),
     estHigh: String(Math.round(newDrawings * 0.6)),
     aNew: String(aNew.length),
-    aCovered: String(count(rows, (r) => r.priority === 'A' && r.kind === 'covered')),
     lastAStep: String(lastAStep),
     checked: String(count(rows, (r) => r.confidence === 'checked')),
     secondary: String(count(rows, (r) => r.confidence === 'secondary')),
@@ -278,23 +276,18 @@ export function facts(d: Data): Record<string, string> {
     aRisk: String(l.risk.length),
     bRisk: String(l.b.length),
     aChecked: String(l.checkedA.length),
-    trilogy: String(count(chem, (r) => r.courses.includes('8464'))),
     both: String(count(chem, (r) => r.courses.includes('8464') && r.courses.includes('8462'))),
     gcseOnly: String(count(chem, (r) => r.courses.includes('8462') && !r.courses.includes('8464') && r.level === 'KS4')),
     symbols: String(d.symbols.length),
     templates: String(d.templates.length),
-    later: String(d.later.length),
     packIds: String(d.packIds.length),
     newPacks: String(newPackNames.size),
     libraryGroups: String(d.packIds.length + newPackNames.size),
     kept: String(kept.length),
     keptIds: ids(kept),
-    brief: String(brief.length),
-    briefIds: ids(brief),
+    briefIds: ids(rows.filter((r) => r.notes.includes(BRIEF_NOTE))),
     skeletalOrCurly: String(count(rows, (r) => (r.tags ?? []).includes('skeletal') || (r.tags ?? []).includes('curlyArrow'))),
     mechanisms: String(count(rows, (r) => r.proposedPack === 'mechanisms')),
-    steps: String(STEPS.length - 1),
-    stepRowsTotal: String([...steps.values()].reduce((a, s) => a + s.length, 0)),
   }
   for (const t of TAGS) out[`tag.${t}`] = String(count(rows, (r) => (r.tags ?? []).includes(t)))
   return out

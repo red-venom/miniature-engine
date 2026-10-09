@@ -86,6 +86,15 @@ const isAqa = (url: string) => /^https:\/\/([a-z]+\.)*aqa\.org\.uk\//.test(url)
  */
 const idClash = (r: Pick<Row, 'id' | 'kind' | 'covered'>, ids: Set<string>): boolean => ids.has(r.id) && !(r.kind === 'covered' && r.covered === r.id)
 
+/** Where two texts first differ, in words, for a failure message. */
+const firstDifference = (file: string, made: string): string => {
+  const a = file.split('\n')
+  const b = made.split('\n')
+  const n = a.findIndex((line, i) => line !== b[i])
+  if (n < 0) return a.length === b.length ? '' : `The file has ${a.length} lines and the generated text ${b.length}.`
+  return `First difference at line ${n + 1}: the file has "${a[n].slice(0, 160)}" and gen-inventory writes "${(b[n] ?? '').slice(0, 160)}".`
+}
+
 /** The name of the course that a reference such as "8464 5.10.1.3" belongs to, in the `courses` of a row of that subject. */
 const courseOf = (r: Row, code: string): string => {
   if (r.subject === 'chemistry') return code
@@ -262,7 +271,7 @@ describe('docs/diagram-inventory.md agrees with the file', () => {
     const made = generate(doc, data)
     expect(
       made === doc,
-      'docs/diagram-inventory.md differs from what gen-inventory writes from spec/diagrams.json now: run npm run gen:inventory (and edit the text outside the generated parts, not inside them)',
+      `docs/diagram-inventory.md differs from what gen-inventory writes from spec/diagrams.json now: run npm run gen:inventory (change the text outside the generated parts, never inside them). ${firstDifference(doc, made)}`,
     ).toBe(true)
     expect(generate(made, data) === made, 'generating twice changes the document').toBe(true)
   })
@@ -319,60 +328,6 @@ describe('docs/diagram-inventory.md agrees with the file', () => {
 })
 
 describe('the document test catches drift: each of these breaks fails the comparison', () => {
-  const copy = (): Data => structuredClone(data)
-  const rowOf = (d: Data, id: string): Row => {
-    const r = d.rows.find((x) => x.id === id)
-    if (!r) throw new Error(`no row ${id}`)
-    return r
-  }
-  /** A pair of the document and the data that disagree: the comparison of the test must fail on it. */
-  const breaks: [string, string, Data][] = []
-  const docBreak = (name: string, change: (d: string) => string): number => breaks.push([name, change(doc), data])
-  const dataBreak = (name: string, change: (d: Data) => void): number => {
-    const d = copy()
-    change(d)
-    return breaks.push([name, doc, d])
-  }
-
-  // 1 a number in the prose
-  docBreak('the total in the text is changed by hand', (d) => d.replace(/(<!-- gen:n\.total -->)\d+/, (_all, head: string) => `${head}999`))
-  // 2 a row name
-  dataBreak('a row is renamed', (d) => void (rowOf(d, 'bohrAtom').name += ' (renamed)'))
-  // 3 a row moved to another topic
-  dataBreak('a row moves to another topic', (d) => void (rowOf(d, 'bohrAtom').topic = 'Energy changes'))
-  // 4 a changed description
-  dataBreak('a description changes', (d) => void (rowOf(d, 'bohrAtom').draw = `Changed. ${rowOf(d, 'bohrAtom').draw}`))
-  // 5 a number in a decision
-  docBreak('a number in a decision is changed by hand', (d) => d.replace(/(<!-- gen:n\.tag\.3d -->)\d+/, (_all, head: string) => `${head}99`))
-  // 6 a pack count
-  dataBreak('a row moves to another pack', (d) => void (rowOf(d, 'bohrAtom').proposedPack = 'structures'))
-  // 7 a rows-to-check entry (in the file, and in the document)
-  dataBreak('a checked row of priority A becomes secondary', (d) => void (rowOf(d, 'bohrAtom').confidence = 'secondary'))
-  docBreak('a row is deleted from a rows-to-check table', (d) => d.replace(/^\| `heatingCurve` \|.*\n/m, ''))
-  // 8 a build-order cell
-  docBreak('a cell of the build-order table is changed by hand', (d) =>
-    d.replace(/^(\| 1 \| New templates \(KS4\) \| [^|]+\| )\d+/m, (_all, head: string) => `${head}99`),
-  )
-  // more
-  dataBreak('a row is added', (d) => void d.rows.push({ ...rowOf(d, 'bohrAtom'), id: 'aNewRow', name: 'A new row' }))
-  dataBreak(
-    'a row is removed',
-    (d) =>
-      void d.rows.splice(
-        d.rows.findIndex((r) => r.id === 'bohrAtom'),
-        1,
-      ),
-  )
-  dataBreak('a tag is removed', (d) => void delete rowOf(d, 'ionicLattice3D').tags)
-  dataBreak('a priority changes', (d) => void (rowOf(d, 'diamondStructure').priority = 'B'))
-  dataBreak('the note of a kept row changes', (d) => void (rowOf(d, 'blastFurnace').notes = 'Changed.'))
-  dataBreak('a row changes course', (d) => void (rowOf(d, 'haberProcess').courses = ['8464', '8462']))
-  docBreak('a table cell of the pack table is changed by hand', (d) =>
-    d.replace(/^(\| atoms \| chemistry \| new \| )\d+/m, (_all, head: string) => `${head}99`),
-  )
-  docBreak('a row is deleted by hand from the appendix', (d) => d.replace(/^\| `bohrAtom` \|.*\n/m, ''))
-  docBreak('a generated part is left empty', (d) => d.replace(/<!-- gen:counts -->[\s\S]*?<!-- \/gen -->/, '<!-- gen:counts --><!-- /gen -->'))
-
   /** Whether the document made from the data is the text given. An error while making it counts as a disagreement. */
   const agrees = (text: string, d: Data): boolean => {
     try {
@@ -381,11 +336,156 @@ describe('the document test catches drift: each of these breaks fails the compar
       return false
     }
   }
+  const copy = (): Data => structuredClone(data)
+  /** The first row that satisfies a test, so that these breaks do not depend on one row staying as it is. */
+  const first = (d: Data, test: (r: Row) => boolean = () => true): Row => {
+    const r = d.rows.find(test)
+    if (!r) throw new Error('no row for the break')
+    return r
+  }
+  /** Change the first line of a generated table that starts with a row id in backticks, between two markers. */
+  const inBlock = (text: string, key: string, change: (line: string) => string): string => {
+    const open = text.indexOf(`<!-- gen:${key} -->`)
+    const close = text.indexOf('<!-- /gen -->', open)
+    const body = text.slice(open, close)
+    const lines = body.split('\n')
+    const i = lines.findIndex((l, n) => n > 2 && l.startsWith('| '))
+    lines[i] = change(lines[i])
+    return text.slice(0, open) + lines.join('\n') + text.slice(close)
+  }
+  const bump = (cell: string): string => String(Number(cell) + 1)
+  /** Change the number in the cell with this index of a generated table line, as a person editing the table by hand would. */
+  const editCell =
+    (index: number) =>
+    (line: string): string => {
+      const cells = line.split('|')
+      cells[index + 1] = ` ${bump(cells[index + 1].trim())} `
+      return cells.join('|')
+    }
+
+  /** Each break gives a document and data that disagree: the comparison of the test must fail on it. */
+  const breaks: [string, () => [string, Data]][] = [
+    // 1 a count in the prose
+    [
+      'a count in the prose is changed by hand',
+      () => [doc.replace(/(<!-- gen:n\.total -->)(\d+)/, (_a, head: string, n: string) => `${head}${bump(n)}`), data],
+    ],
+    // 2 a row name
+    [
+      'a row is renamed',
+      () => {
+        const d = copy()
+        first(d).name += ' (renamed)'
+        return [doc, d]
+      },
+    ],
+    // 3 a row moved to another topic
+    [
+      'a row moves to another topic',
+      () => {
+        const d = copy()
+        const r = first(d)
+        r.topic = first(d, (x) => x.topic !== r.topic).topic
+        return [doc, d]
+      },
+    ],
+    // 4 a changed description
+    [
+      'a description changes',
+      () => {
+        const d = copy()
+        const r = first(d)
+        r.draw = `Changed. ${r.draw}`
+        return [doc, d]
+      },
+    ],
+    // 5 a number in a decision
+    [
+      'a number in a decision is changed by hand',
+      () => [doc.replace(/(<!-- gen:n\.tag\.3d -->)(\d+)/, (_a, head: string, n: string) => `${head}${bump(n)}`), data],
+    ],
+    // 6 a pack count
+    [
+      'a row moves to another pack',
+      () => {
+        const d = copy()
+        const r = first(d, (x) => x.kind === 'symbol')
+        r.proposedPack = r.proposedPack === 'structures' ? 'matter' : 'structures'
+        return [doc, d]
+      },
+    ],
+    // 7 a rows-to-check entry, in the file and in the document
+    [
+      'a checked row of priority A becomes secondary',
+      () => {
+        const d = copy()
+        first(d, (x) => x.priority === 'A' && x.confidence === 'checked').confidence = 'secondary'
+        return [doc, d]
+      },
+    ],
+    ['a line is deleted from a rows-to-check table', () => [inBlock(doc, 'check-risk', () => ''), data]],
+    // 8 a build-order cell
+    ['a cell of the build-order table is changed by hand', () => [inBlock(doc, 'steps', editCell(3)), data]],
+    // more
+    [
+      'a row is added',
+      () => {
+        const d = copy()
+        d.rows.push({ ...first(d), id: 'aNewRow', name: 'A new row' })
+        return [doc, d]
+      },
+    ],
+    [
+      'a row is removed',
+      () => {
+        const d = copy()
+        d.rows.splice(d.rows.indexOf(first(d)), 1)
+        return [doc, d]
+      },
+    ],
+    [
+      'a tag is removed',
+      () => {
+        const d = copy()
+        delete first(d, (x) => x.tags !== undefined).tags
+        return [doc, d]
+      },
+    ],
+    [
+      'a priority changes',
+      () => {
+        const d = copy()
+        first(d, (x) => x.priority === 'A').priority = 'B'
+        return [doc, d]
+      },
+    ],
+    [
+      'the note of a kept row changes',
+      () => {
+        const d = copy()
+        first(d, (x) => x.notes.startsWith(KEPT_NOTE)).notes = 'Changed.'
+        return [doc, d]
+      },
+    ],
+    [
+      'a row changes course',
+      () => {
+        const d = copy()
+        first(d, (x) => x.courses.includes('8464')).courses = ['8462']
+        return [doc, d]
+      },
+    ],
+    ['a cell of the pack table is changed by hand', () => [inBlock(doc, 'packs', editCell(3)), data]],
+    ['a line is deleted by hand from the appendix', () => [inBlock(doc, 'rows-by-topic', () => ''), data]],
+    ['a generated part is left empty', () => [doc.replace(/<!-- gen:counts -->[\s\S]*?<!-- \/gen -->/, '<!-- gen:counts --><!-- /gen -->'), data]],
+  ]
+
   it('agrees for the real document and the real data (so that every break below is the break and nothing else)', () => {
     expect(agrees(doc, data)).toBe(true)
   })
-  for (const [name, text, d] of breaks) {
+  for (const [name, make] of breaks) {
     it(`fails when ${name}`, () => {
+      const [text, d] = make()
       expect(agrees(text, d), `the comparison does not notice that ${name}`).toBe(false)
     })
   }
