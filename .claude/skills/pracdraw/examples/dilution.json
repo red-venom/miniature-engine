@@ -6,7 +6,9 @@
       "id": "beaker",
       "symbol": "beaker",
       "at": { "x": 0, "y": 0, "anchor": "base" },
-      "contents": { "main": [{ "preset": "Blue (copper sulfate)", "amount": 0.6 }] }
+      "contents": {
+        "main": [{ "preset": "Blue (copper sulfate)", "amount": 0.6 }]
+      }
     },
     {
       "id": "flask",
@@ -17,7 +19,9 @@
       "id": "pipette",
       "symbol": "volumetricPipette",
       "on": { "part": "beaker", "anchor": "base", "own": "tip", "dy": -16 },
-      "contents": { "main": [{ "preset": "Blue (copper sulfate)", "amount": 0.845 }] }
+      "contents": {
+        "main": [{ "preset": "Blue (copper sulfate)", "amount": 0.845 }]
+      }
     },
     {
       "id": "filler",

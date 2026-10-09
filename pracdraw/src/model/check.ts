@@ -120,9 +120,9 @@ interface Obstacle {
   vessel: boolean
 }
 
-const FILLED: readonly Role[] = ['solid', 'rubber', 'dark', 'flame', 'flameCore']
-const WALL_ROLES: readonly Role[] = ['outline', 'heavy', 'solid', 'rubber', 'dark']
-const INK_ROLES: readonly Role[] = [...WALL_ROLES, 'mesh', 'flame', 'flameCore']
+const FILLED: readonly Role[] = ['solid', 'rubber', 'tint', 'dark', 'ink', 'flame', 'flameCore']
+const WALL_ROLES: readonly Role[] = ['outline', 'heavy', 'solid', 'rubber', 'tint', 'dark']
+const INK_ROLES: readonly Role[] = [...WALL_ROLES, 'ink', 'mesh', 'flame', 'flameCore']
 
 function newObstacle(item: Item, what: string, pad: number): Obstacle {
   return {
@@ -172,7 +172,7 @@ function finish(obs: Obstacle): Obstacle {
   return obs
 }
 
-function symbolObstacle(it: SymbolItem): Obstacle {
+function symbolObstacle(it: SymbolItem, measure: Measure): Obstacle {
   const g = geometry(it.symbol, it.w, it.h, it.params)
   const obs = newObstacle(it, `part "${it.id}"`, 1)
   for (const prim of g.prims) {
@@ -182,6 +182,7 @@ function symbolObstacle(it: SymbolItem): Obstacle {
         if (pts.length > 2) obs.cover.push(pts)
         continue
       }
+      if (prim.role === 'hatch') continue // lines inside a tinted shape, in photocopy-safe mode only: the shape's own outline is the obstacle
       const closed = FILLED.includes(prim.role) && pts.length > 2 && Math.hypot(poly[0].x - poly[poly.length - 1].x, poly[0].y - poly[poly.length - 1].y) < 1e-6
       addLine(obs, pts, closed, INK_ROLES.includes(prim.role), WALL_ROLES.includes(prim.role))
       if (closed) obs.cover.push(pts)
@@ -193,6 +194,17 @@ function symbolObstacle(it: SymbolItem): Obstacle {
       obs.regions.push(pts)
       obs.cover.push(pts)
     }
+  }
+  // The text of a symbol (the numbers of a scale, a notation, a table) is drawn too: a leader may end on it and a label may not run over it.
+  for (const t of g.texts ?? []) {
+    const lines = t.text.split('\n')
+    const w = Math.max(...lines.map((line) => measure(line, t.size)))
+    const x0 = t.anchor === 'start' ? t.x : t.anchor === 'end' ? t.x - w : t.x - w / 2
+    const y0 = t.y - INK_TOP * t.size,
+      y1 = t.y + (lines.length - 1) * LINE_GAP * t.size + INK_BOTTOM * t.size
+    const box = [P(x0, y0), P(x0 + w, y0), P(x0 + w, y1), P(x0, y1)].map((p) => toWorld(it, p))
+    addLine(obs, [...box, box[0]], false, false, false)
+    obs.regions.push(box)
   }
   obs.vessel = !!g.cavities?.length
   return finish(obs)
@@ -232,12 +244,12 @@ function shapeObstacle(it: ShapeItem): Obstacle {
 const isDrawn = (it: ConnectorItem): boolean =>
   it.points.length >= 2 && it.points.some((p) => Math.abs(p.x - it.points[0].x) > 1e-6 || Math.abs(p.y - it.points[0].y) > 1e-6)
 
-function obstaclesOf(doc: Doc): Obstacle[] {
+function obstaclesOf(doc: Doc, measure: Measure): Obstacle[] {
   const out: Obstacle[] = []
   for (const id of doc.order) {
     const it = doc.items[id]
     if (!it) continue
-    if (it.type === 'symbol') out.push(symbolObstacle(it))
+    if (it.type === 'symbol') out.push(symbolObstacle(it, measure))
     else if (it.type === 'connector') {
       const o = connectorObstacle(it)
       if (o) out.push(o)
@@ -469,7 +481,7 @@ export function checkLayout(doc: Doc, measure: Measure = estimateWidth): Problem
   })
 
   const labels = doc.order.map((id) => doc.items[id]).filter((it): it is LabelItem => it?.type === 'label')
-  const obstacles = obstaclesOf(doc)
+  const obstacles = obstaclesOf(doc, measure)
   const parts = obstacles.filter((o) => o.item.type === 'symbol')
 
   // A part drawn through another part: their walls cross, and neither stands on the other (anchors that meet) or holds

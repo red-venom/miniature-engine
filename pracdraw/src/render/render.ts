@@ -13,10 +13,11 @@ import type { Prim, Role } from '../symbols/types'
 export const INK = '#111111'
 export const PAPER = '#ffffff'
 export const GREY = '#c9c9c9'
+export const TINT = '#e4e4e4'
 export const DARK = '#4a4a4a'
 export const FLAME = '#bfe0f7'
 export const FLAME_CORE = '#6fb3e8'
-export const LINE = { main: 2, heavy: 3, detail: 1.25 }
+export const LINE = { main: 2, heavy: 3, detail: 1.25, hatch: 1 }
 export const TUBE_WIDTH = { glassTube: 7, rubberTube: 10 }
 export const BLANK_RULE = 100 // length of the line to write on, in 'blank' label mode
 
@@ -26,7 +27,7 @@ export function resolveTarget(doc: Doc, t: Target): Pt | null {
   return it && it.type === 'symbol' ? toWorld(it, P(t.lx, t.ly)) : null
 }
 
-function primNode(p: Prim, mono: boolean): PathNode {
+export function primNode(p: Prim, mono: boolean): PathNode {
   const line = (sw: number, fill?: string): PathNode => ({ t: 'path', d: p.d, stroke: INK, sw, fill })
   const table: Record<Role, () => PathNode> = {
     outline: () => line(LINE.main),
@@ -36,12 +37,26 @@ function primNode(p: Prim, mono: boolean): PathNode {
     paper: () => ({ t: 'path', d: p.d, fill: PAPER }),
     solid: () => line(LINE.main, mono ? PAPER : (p.tint ?? PAPER)),
     rubber: () => line(LINE.main, mono ? PAPER : (p.tint ?? GREY)),
+    tint: () => line(LINE.main, mono ? PAPER : (p.tint ?? TINT)),
+    hatch: () => ({ t: 'path', d: p.d, stroke: INK, sw: LINE.hatch, cap: 'butt' }),
+    ink: () => ({ t: 'path', d: p.d, fill: INK }),
     dark: () => line(LINE.main, mono ? INK : (p.tint ?? DARK)),
     flame: () => line(LINE.detail, mono ? PAPER : (p.tint ?? FLAME)),
     flameCore: () => line(LINE.detail, mono ? PAPER : (p.tint ?? FLAME_CORE)),
     mesh: () => ({ t: 'path', d: p.d, stroke: INK, sw: 4.5, dash: [2.5, 2.5], cap: 'butt' }),
   }
   return table[p.role]()
+}
+
+/**
+ * The nodes of a symbol's prims, back to front: those that go behind the contents ('paper') and those in front.
+ * A 'hatch' prim stands in for a tint on a photocopy, so it exists in photocopy-safe mode only.
+ */
+export function primNodes(prims: Prim[], mono: boolean): { under: Node[]; over: Node[] } {
+  const under: Node[] = [],
+    over: Node[] = []
+  for (const p of prims) if (p.role !== 'hatch' || mono) (p.role === 'paper' ? under : over).push(primNode(p, mono))
+  return { under, over }
 }
 
 export function textNodes(x: number, y: number, raw: string, size: number, anchor: TextNode['anchor'], smart: boolean): TextNode[] {
@@ -64,7 +79,9 @@ export function symbolNode(it: SymbolItem, s: DocSettings): Node {
     over: Node[] = []
   // 1. White behind every cavity and every 'paper' prim.
   for (const cav of g.cavities ?? []) under.push({ t: 'path', d: cav.polys.map((poly) => polyD(poly)).join(''), fill: PAPER })
-  for (const p of g.prims) (p.role === 'paper' ? under : over).push(primNode(p, s.mono))
+  const prims = primNodes(g.prims, s.mono)
+  under.push(...prims.under)
+  over.push(...prims.over)
   // 2. Contents in the world-oriented frame: the surface stays level.
   for (const cav of g.cavities ?? []) {
     const layers = it.contents[cav.id]

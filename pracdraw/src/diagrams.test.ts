@@ -8,7 +8,6 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import catalogue from '../spec/catalogue.json'
 import inventory from '../spec/diagrams.json'
-import plan from '../spec/templates.json'
 import {
   BRIEF_NOTE,
   DOC_FILE,
@@ -25,14 +24,16 @@ import {
   type Row,
 } from '../scripts/gen-inventory'
 import { PACKS } from './editor/search'
+import { SYMBOLS } from './symbols/registry'
+import { TEMPLATES } from './templates'
 
 const rows = inventory as unknown as Row[]
 const doc = readFileSync(DOC_FILE, 'utf8')
 const data: Data = {
   rows,
-  symbols: catalogue.symbols.map((s) => s.id),
+  symbols: SYMBOLS.map((s) => s.id),
   later: catalogue.later.map((s) => s.id),
-  templates: plan.templates.map((t) => t.id),
+  templates: TEMPLATES.map((t) => t.id),
   packIds: PACKS.map((p) => p.id),
 }
 
@@ -255,15 +256,21 @@ describe('spec/diagrams.json: kinds, courses and levels', () => {
     const kept = rows.filter((r) => r.notes.startsWith(KEPT_NOTE))
     expect(kept.length).toBeGreaterThan(0)
     for (const r of kept) expect(r.priority, `${r.id} is kept because lessons use it, so it is priority C`).toBe('C')
+    // A row loses the note when its brief is built, so that none may be left; the rule holds for any row that has it.
     const brief = rows.filter((r) => r.notes.includes(BRIEF_NOTE))
-    expect(brief.length).toBeGreaterThan(0)
     for (const r of brief) expect(r.kind === 'symbol' && r.priority === 'A', `${r.id} needs a geometry brief, so it is a symbol of priority A`).toBe(true)
   })
 
   it('puts every row in exactly one step of the build order', () => {
     const steps = stepRows(rows)
     expect([...steps.values()].reduce((n, s) => n + s.length, 0)).toBe(rows.length)
-    for (const s of STEPS) expect(steps.get(s.n)?.length, `step ${s.n} picks no row`).toBeGreaterThan(0)
+    for (const s of STEPS) {
+      if (s.built) {
+        // A step that is built has no row of its own left: every row that it would pick is a covered row, and falls in step 0.
+        const open = rows.filter((r) => r.kind !== 'covered' && s.pick(r)).map((r) => r.id)
+        expect(open, `step ${s.n} is marked built, but these rows are not built`).toEqual([])
+      } else expect(steps.get(s.n)?.length, `step ${s.n} picks no row`).toBeGreaterThan(0)
+    }
   })
 })
 

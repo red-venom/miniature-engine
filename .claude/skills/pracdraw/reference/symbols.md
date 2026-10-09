@@ -2,7 +2,7 @@
 
 # Symbols
 
-123 symbols in 11 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+141 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -90,6 +90,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `filterPaper` | Filter paper | fluted filter paper | 76 × 46 | free, min 30 × 20 | residue: boolean, default false |  | apex (tip) | in the 84 u filter funnel: size w 68 (the default 76 nearly touches the funnel wall) |
 | `gClamp` | G-clamp | clamp for the bench, C-clamp | 50 × 80 | uniform, min 38 × 60 |  |  |  | label "G-clamp" |
 | `lid` | Lid | cover | 120 × 7 | width, min 40 × 7 | holes: number 0..2, default 0 |  | under (base) |  |
+| `nail` | Nail | iron nail, metal rod, pin | 12 × 110 | height, min 12 × 30 |  |  |  |  |
 | `spatula` | Spatula |  | 14 × 170 | height, min 14 × 90 |  |  |  |  |
 | `splint` | Splint | wooden splint, glowing splint, burning splint, lit splint | 130 × 8 | width, min 40 × 8 | state: "unlit" or "lit" or "glowing", default "lit" |  | tip (tip) |  |
 | `spottingTile` | Spotting tile (top view) | dimple tile, spot plate | 170 × 120 | free, min 60 × 40 | rows: number 2..4, default 3; cols: number 3..6, default 4; iodine: boolean, default false; blueBlack: number 0..24, default 0 |  |  | label "spotting tile" |
@@ -186,9 +187,46 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `eye` | Eye | observer, eye level | 46 × 26 | uniform, min 23 × 13 |  |  |  | no automatic label |
 | `flame` | Flame |  | 26 × 44 | uniform, min 13 × 22 |  |  | base (base) | no automatic label |
 | `flameTestLoop` | Flame test wire | nichrome wire, wire loop | 180 × 12 | width, min 100 × 12 |  |  | loop (tip) |  |
+| `formulaTriangle` | Formula triangle | formula triangle, magic triangle, moles triangle | 120 × 110 | uniform, min 96 × 88 | preset: "moles" or "concentration" or "gasVolume" or "yield" or "custom", default "moles"; top: text, default "m"; left: text, default "n"; right: text, default "Mr"; hide: "none" or "top" or "left" or "right", default "none" |  |  |  |
+| `hazardSymbol` | Hazard symbol | hazard, warning symbol, GHS pictogram, hazard pictogram | 70 × 70 | uniform, min 56 × 56 | hazard: "explosive" or "flammable" or "oxidising" or "gasUnderPressure" or "corrosive" or "toxic" or "harmful" or "health" or "environment", default "flammable"; name: boolean, default false |  |  |  |
 | `indicatorPaper` | Indicator paper | litmus paper, pH paper, universal indicator paper | 14 × 60 | free, min 6 × 10 | colour: "red" or "blue" or "green" or "orange" or "yellow" or "purple", default "red" |  |  |  |
 | `magnesiumRibbon` | Metal ribbon | magnesium ribbon, magnesium strip | 60 × 12 | free, min 24 × 8 |  |  |  | label "magnesium ribbon" |
+| `phScale` | pH scale | pH colours, universal indicator colours, acid alkali scale | 420 × 70 | free, min 360 × 62 | orientation: "horizontal" or "vertical", default "horizontal"; numbers: boolean, default true; brackets: boolean, default true; examples: boolean, default false |  |  | label "pH scale"; orientation vertical needs a tall box (for example w 70, h 420): the symbol does not swap the box for you |
+
+## Atoms and ions
+
+| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `alphaScattering` | Alpha particle scattering | Rutherford scattering, gold foil experiment, Geiger-Marsden | 380 × 230 | free, min 300 × 200 | paths: number 5..12, default 8; nuclei: boolean, default true |  |  | the pattern of the paths is fixed, never random; it has no text: add the labels and the conclusion as plain text |
+| `atomModels` | Models of the atom | plum pudding, nuclear model, Rutherford model, Thomson model, atom model | 150 × 150 | uniform, min 110 × 110 | model: "plumPudding" or "nuclear" or "shell", default "plumPudding"; electrons: number 1..10, default 4; mark: "minus" or "dot" or "cross", default "minus" |  |  | label "plum pudding model" |
+| `bohrAtom` | Bohr atom | atom, electron shells, electronic structure, shell diagram, ion, Bohr model, electron configuration | 170 × 170 | uniform, min 82 × 82 | z: number 1..36, default 11; charge: number -3..3, default 0; nucleus: "symbol" or "numbers" or "blank", default "symbol"; mark: "dot" or "cross", default "dot"; outerOnly: boolean, default false; otherMarks: number 0..8, default 0; structure: boolean, default false |  |  | label "sodium atom"; size the box by the shells: 38 + 44 x shells (82, 126, 170, 214 u square); nucleus numbers need the larger nucleus; structure shrinks the atom by 14 u; a charge needs 18 u of room |
+| `covalentDotCross` | Covalent dot and cross | dot and cross, covalent bonding diagram, dot-and-cross covalent, molecule | 220 × 160 | free, min 196 × 144 | molecule: "H2" or "Cl2" or "O2" or "N2" or "HCl" or "H2O" or "NH3" or "CH4" or "CO2" or "HF" or "F2" or "C2H4" or "C2H6", default "H2O"; layout: "overlap" or "apart", default "overlap"; marks: "default" or "swapped" or "ring", default "default" |  |  | label "water" |
+| `ionicDotCross` | Ionic dot and cross | dot and cross, ionic bonding diagram, dot-and-cross ionic, ionic compound | 420 × 150 | free, min 404 × 140 | metal: "Li" or "Na" or "K" or "Mg" or "Ca" or "Al", default "Na"; nonMetal: "N" or "O" or "F" or "S" or "Cl" or "Br", default "Cl"; stage: "transfer" or "ions", default "ions"; inner: boolean, default false; marks: "default" or "swapped" or "ring", default "default" |  |  | label "sodium chloride" |
+| `isotopeNuclei` | Isotopes (nuclei) | isotopes, nucleus, protons and neutrons, nuclei | 300 × 150 | uniform, min 240 × 120 | z: number 1..18, default 17; a1: number 1..40, default 35; a2: number 0..40, default 37; a3: number 0..40, default 0; notation: boolean, default true; counts: boolean, default false |  |  | label "chlorine isotopes"; do not flip it: the notation would be mirrored |
+| `nuclideNotation` | Nuclide notation | isotope notation, mass number and atomic number, nuclide symbol | 96 × 50 | none | z: number 1..36, default 11; a: number 0..80, default 0; charge: number -3..3, default 0; counts: boolean, default false |  |  | label "sodium-23"; do not flip it: the numbers would move to the right of the symbol |
+| `periodicTable` | Periodic table | elements, periodic chart, groups and periods | 560 × 200 | uniform, min 476 × 170 | content: "symbol" or "number" or "both" or "mass" or "blank", default "symbol"; range: "first20" or "first36", default "first36"; hlGroup: number 0..18, default 0; hlPeriod: number 0..4, default 0; hlElement: number 0..36, default 0; divider: boolean, default true; shading: "none" or "metals" or "blocks", default "none"; groups: "ks4" or "iupac" or "none", default "ks4" |  |  |  |
+
+## Particles
+
+| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `particleBox` | Particle box | particles, states of matter, particle model, particle diagram, element compound mixture | 160 × 120 | free, min 120 × 90 | substance: "element" or "molecules" or "compound" or "mixtureElements" or "mixtureCompounds" or "mixtureElementCompound", default "element"; state: "gas" or "liquid" or "solid", default "gas"; count: number 6..40, default 16; formula: "AB" or "AB2" or "A2B", default "AB"; motion: boolean, default false |  |  | label "particle diagram" |
+
+## Energy
+
+| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `reactionProfile` | Reaction profile | energy level diagram, energy profile, exothermic endothermic diagram | 260 × 170 | free, min 230 × 160 | type: "exothermic" or "endothermic", default "exothermic"; catalyst: boolean, default false; activation: boolean, default true; change: boolean, default true; levels: "words" or "formulae" or "blank", default "words" |  |  |  |
+
+## Structures
+
+| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `diamondStructure` | Diamond structure | giant covalent, carbon structure, tetrahedral carbon, diamond lattice, diamond cluster | 160 × 160 | uniform, min 120 × 120 | stubs: boolean, default true |  |  | label "diamond" |
+| `fullereneC60` | Fullerene (C60) | C60, fullerene, buckyball, football molecule, giant molecule | 150 × 150 | uniform, min 105 × 105 | pentagons: boolean, default false |  |  | label "buckminsterfullerene" |
+| `graphiteStructure` | Graphite (layers) | giant covalent, carbon layers, hexagonal layers, graphite lattice | 250 × 212 | uniform, min 170 × 144 | layers: number 2..4, default 3; forces: boolean, default true |  |  | label "graphite" |
+| `ionicLattice3D` | Ionic lattice (3D) | sodium chloride lattice, giant ionic lattice, NaCl structure, ionic crystal, ionic lattice | 150 × 150 | uniform, min 120 × 120 | bonds: boolean, default true |  |  | label "ionic lattice" |
 
 ## Not drawn yet
 
-These 18 symbols are planned and are not in the editor, so a recipe cannot use them: Dropping bottle (containers), Petri dish (side view) (containers), Thiele tube (organic), Ground-glass stopper (organic), Tongs (support), Beehive shelf (support), Cork ring (support), Mortar and pestle (support), Ray box (physics), Glass block (physics), Lens (physics), Plane mirror (physics), Protractor (measuring), Visking tubing (biology), Potometer (biology), Forceps (biology), Scalpel (biology), Hazard symbols (9) (annotation).
+These 17 symbols are planned and are not in the editor, so a recipe cannot use them: Dropping bottle (containers), Petri dish (side view) (containers), Thiele tube (organic), Ground-glass stopper (organic), Tongs (support), Beehive shelf (support), Cork ring (support), Mortar and pestle (support), Ray box (physics), Glass block (physics), Lens (physics), Plane mirror (physics), Protractor (measuring), Visking tubing (biology), Potometer (biology), Forceps (biology), Scalpel (biology).

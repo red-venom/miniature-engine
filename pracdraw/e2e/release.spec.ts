@@ -1397,7 +1397,7 @@ test('tile-names-fit', async ({ page }) => {
     type: 'tile names',
     description: `${drawn.length} tiles, ${drawn.filter((t) => t.rows === 2).length} on two lines; smaller than 10 px: ${small.join(', ') || 'none'}`,
   })
-  expect(small.length).toBeLessThan(5)
+  expect(small.length, `names smaller than 10 px: ${small.join(', ')}`).toBeLessThan(5)
 })
 
 // ---------------------------------------------------------------- the library: drag a tile to the canvas (section 12)

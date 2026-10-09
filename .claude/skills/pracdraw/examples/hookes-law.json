@@ -2,7 +2,11 @@
   "title": "Hooke's law: spring, mass and ruler",
   "note": "The same symbols as the template springExtension. The pointer arrow is not labelled, as in the template: a text in the 25 u gap between the ruler and the hanger would be too close to both. A longer clamp arm would put the load beyond the base of the stand.",
   "parts": [
-    { "id": "stand", "symbol": "clampStand", "at": { "x": 0, "y": 0, "anchor": "base" } },
+    {
+      "id": "stand",
+      "symbol": "clampStand",
+      "at": { "x": 0, "y": 0, "anchor": "base" }
+    },
     {
       "id": "clamp",
       "symbol": "bossClamp",
@@ -31,7 +35,10 @@
       "id": "pointer",
       "kind": "line",
       "endCap": "arrow",
-      "points": [{ "part": "spring", "anchor": "bottom", "dx": -4, "dy": -4 }, { "x": -1 }]
+      "points": [
+        { "part": "spring", "anchor": "bottom", "dx": -4, "dy": -4 },
+        { "x": -1 }
+      ]
     }
   ],
   "labels": {

@@ -9,6 +9,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { PACKS } from '../src/editor/search.ts'
+import { SYMBOLS } from '../src/symbols/registry.ts'
+import { TEMPLATES } from '../src/templates/index.ts'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const DOC_FILE = resolve(ROOT, 'docs', 'diagram-inventory.md')
@@ -133,15 +135,17 @@ interface Step {
   n: number
   title: string
   pick: (r: Row) => boolean
+  /** Set by hand when every row of the step has been built: each is then a covered row (step 0), and the step picks no row of its own. */
+  built?: true
 }
 const ks4chem = (r: Row): boolean => r.subject === 'chemistry' && r.level === 'KS4'
 const ks5 = (r: Row): boolean => r.level === 'KS5' && r.kind !== 'chart' && r.kind !== 'covered'
 /** Each row falls in the first step that picks it. The prose of each step is in the document, under its number. */
 export const STEPS: Step[] = [
   { n: 0, title: 'Covered rows (no new code)', pick: (r) => r.kind === 'covered' },
-  { n: 1, title: 'New templates (KS4)', pick: (r) => ks4chem(r) && r.kind === 'template' },
+  { n: 1, title: 'New templates (KS4)', pick: (r) => ks4chem(r) && r.kind === 'template', built: true },
   { n: 2, title: 'Small symbols and the reaction profile (KS4)', pick: (r) => ks4chem(r) && (r.proposedPack === 'annotation' || r.id === 'reactionProfile') },
-  { n: 3, title: 'Atoms, ions and dot-and-cross diagrams (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'atoms' },
+  { n: 3, title: 'Atoms, ions and dot-and-cross diagrams (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'atoms', built: true },
   { n: 4, title: 'The particle box', pick: (r) => r.proposedPack === 'matter' },
   { n: 5, title: 'Molecules (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'molecules' },
   { n: 6, title: 'Structures (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'structures' },
@@ -283,7 +287,7 @@ export function facts(d: Data): Record<string, string> {
     libraryGroups: String(d.packIds.length + newPackNames.size),
     kept: String(kept.length),
     keptIds: ids(kept),
-    briefIds: ids(rows.filter((r) => r.notes.includes(BRIEF_NOTE))),
+    briefIds: ids(rows.filter((r) => r.notes.includes(BRIEF_NOTE))) || 'none',
     skeletalOrCurly: String(count(rows, (r) => (r.tags ?? []).includes('skeletal') || (r.tags ?? []).includes('curlyArrow'))),
     mechanisms: String(count(rows, (r) => r.proposedPack === 'mechanisms')),
   }
@@ -353,7 +357,7 @@ function stepsBlock(rows: Row[]): string {
     const packs = [...new Set(sub.map((r) => r.proposedPack))].sort((a, b) => lt(a, b))
     return [
       String(s.n),
-      s.title,
+      s.built ? `${s.title} (built)` : s.title,
       packs.map((p) => `\`${p}\``).join(', '),
       String(sub.length),
       ...PRIORITY_ORDER.map((p) => String(count(sub, (r) => r.priority === p))),
@@ -540,13 +544,14 @@ const json = <T>(file: string): T => JSON.parse(readFileSync(resolve(ROOT, 'spec
 
 /** The data that the document is made from, read from the files. */
 export function loadData(): Data {
-  const catalogue = json<{ symbols: { id: string }[]; later: { id: string }[] }>('catalogue.json')
-  const plan = json<{ templates: { id: string }[] }>('templates.json')
+  const catalogue = json<{ later: { id: string }[] }>('catalogue.json')
+  // What is built, not what is planned: a row may share its id with a symbol only when it is the covered row of that symbol, and a
+  // symbol that is planned but not built does not draw anything yet.
   return {
     rows: json<Row[]>('diagrams.json'),
-    symbols: catalogue.symbols.map((s) => s.id),
+    symbols: SYMBOLS.map((s) => s.id),
     later: catalogue.later.map((s) => s.id),
-    templates: plan.templates.map((t) => t.id),
+    templates: TEMPLATES.map((t) => t.id),
     packIds: PACKS.map((p) => p.id),
   }
 }

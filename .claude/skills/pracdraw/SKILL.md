@@ -12,7 +12,7 @@ Run every command from the `pracdraw/` folder of this repository (`npm ci` there
 ## The loop
 
 1. Read the request. Name the apparatus, what each part holds, and what a student must label.
-2. Find the symbols and the set-up: `npm run render -- --find <words>` (for example `--find filter funnel`) searches the names, the aliases and the titles and notes of the templates, and prints one line for each hit with its pack or group. Look in `reference/templates.md` first: if the set-up is there, `npm run render -- --template <id> --out <dir>` draws it at once, and `--explain` lists its parts with their anchors, so that you can copy their offsets into a recipe. If your diagram is close to one of `examples/*.json`, copy that recipe.
+2. If the request names a lesson diagram (a titration, a flame test, filtration, electrolysis, Hooke's law), look it up by name in `reference/lessons.md` first: it says which template or symbol draws it and what to set. Otherwise find the symbols and the set-up: `npm run render -- --find <words>` (for example `--find filter funnel`) searches the names, the aliases and the titles and notes of the templates, and prints one line for each hit with its pack or group. Look in `reference/templates.md` first: if the set-up is there, `npm run render -- --template <id> --out <dir>` draws it at once, and `--explain` lists its parts with their anchors, so that you can copy their offsets into a recipe. If your diagram is close to one of `examples/*.json`, copy that recipe.
 3. Look up each symbol in `reference/symbols.md` (id, size, parameters, cavities, anchors), or run `npm run render -- --symbol <id>`. A symbol id that is wrong is an error that names the nearest ids.
 4. Write the recipe: one JSON file, in a folder of your own (not in `pracdraw/`).
 5. Run `npm run render -- <recipe.json> --out <dir>`. Errors come as a numbered list with the path in the recipe and a hint; nothing is written until there are none. Warnings (layout faults) come with hints too: fix them.
@@ -53,18 +53,18 @@ Units are world units: 1 unit is 1 pixel at 100 % zoom. x goes right and y goes 
 
 **Parts** are drawn in list order, back to front. Place each one on a part listed before it, by anchors, not by coordinates:
 
-| key | meaning |
-| --- | --- |
-| `id`, `symbol` | A name that you choose (it starts with a letter, then letters, digits, `_` and `-`, at most 40 characters), and the symbol id. |
-| `on` | `{ "part": "mat", "anchor": "top", "own": "feet", "dx": 0, "dy": 0 }`: the part's own anchor `own` goes on that anchor of an earlier part. `out: 30` moves the point 30 along the direction of the anchor (negative goes back into the part). |
-| `near` | `{ "part": "flask", "anchor": "base", "dx": 112, "dy": -33 }`: its centre goes there. For a symbol with no anchors (stopwatch, ribbon). |
-| `at` | `{ "x": 0, "y": 0, "anchor": "under" }`: its own anchor (or its centre) on a point of the world. Use it for the first part: y = 0 is then the bench. |
-| `alignX`, `alignY` | `{ "part": "clamp", "anchor": "sleeve", "own": "rod" }`: fix one coordinate only. A clamp stand uses both: the rod under the clamp, the base on the bench. |
-| `rot`, `flip` | Degrees clockwise; mirror left to right. |
-| `size` | `{ "w": 100, "h": 200 }`, within what the symbol's resize mode allows. `h` may be `{ "between": [point, point] }`: the distance between two anchors, such as a stand from the bench to above its clamp. |
-| `params` | The parameters of the symbol, such as `{ "graduations": true }`. |
-| `contents` | `{ "main": [layers] }`, by cavity, bottom layer first. A layer is `{ "preset": "Water", "amount": 0.6 }` or `{ "preset": "Water", "reading": 37 }`. See `reference/presets.md`. |
-| `behind`, `back` | `"behind": "burette"` draws this part just behind that one. `"back": true` draws it behind everything. |
+| key                | meaning                                                                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `symbol`     | A name that you choose (it starts with a letter, then letters, digits, `_` and `-`, at most 40 characters), and the symbol id.                                                                                                                |
+| `on`               | `{ "part": "mat", "anchor": "top", "own": "feet", "dx": 0, "dy": 0 }`: the part's own anchor `own` goes on that anchor of an earlier part. `out: 30` moves the point 30 along the direction of the anchor (negative goes back into the part). |
+| `near`             | `{ "part": "flask", "anchor": "base", "dx": 112, "dy": -33 }`: its centre goes there. For a symbol with no anchors (stopwatch, ribbon).                                                                                                       |
+| `at`               | `{ "x": 0, "y": 0, "anchor": "under" }`: its own anchor (or its centre) on a point of the world. Use it for the first part: y = 0 is then the bench.                                                                                          |
+| `alignX`, `alignY` | `{ "part": "clamp", "anchor": "sleeve", "own": "rod" }`: fix one coordinate only. A clamp stand uses both: the rod under the clamp, the base on the bench.                                                                                    |
+| `rot`, `flip`      | Degrees clockwise; mirror left to right.                                                                                                                                                                                                      |
+| `size`             | `{ "w": 100, "h": 200 }`, within what the symbol's resize mode allows. `h` may be `{ "between": [point, point] }`: the distance between two anchors, such as a stand from the bench to above its clamp.                                       |
+| `params`           | The parameters of the symbol, such as `{ "graduations": true }`.                                                                                                                                                                              |
+| `contents`         | `{ "main": [layers] }`, by cavity, bottom layer first. A layer is `{ "preset": "Water", "amount": 0.6 }` or `{ "preset": "Water", "reading": 37 }`. See `reference/presets.md`.                                                               |
+| `behind`, `back`   | `"behind": "burette"` draws this part just behind that one. `"back": true` draws it behind everything.                                                                                                                                        |
 
 An anchor is named by its id or by its kind when only one anchor has that kind (`"surface"`, `"base"`). Anchors that fit: `base` on `surface`; `mouth` and `plug` (a bung, the `tip` of a tube); `round` in `cup`; `neck` in `grip` (a clamp or a test-tube holder); `rod` and `sleeve`; `port` with `port` (a spring and its hanger, the ends of tubes); `heat` with the bottom of a vessel (a flame under a tube).
 
@@ -99,10 +99,26 @@ The thermometer reads 60 degrees; the beaker is 60 % full of water. The tripod a
 {
   "title": "Heating water in a beaker",
   "parts": [
-    { "id": "mat", "symbol": "heatproofMat", "at": { "x": 0, "y": 0, "anchor": "under" } },
-    { "id": "tripod", "symbol": "tripod", "on": { "part": "mat", "anchor": "top", "own": "feet" } },
-    { "id": "burner", "symbol": "bunsenBurner", "on": { "part": "mat", "anchor": "top", "own": "base" } },
-    { "id": "gauze", "symbol": "gauze", "on": { "part": "tripod", "anchor": "top", "own": "under" } },
+    {
+      "id": "mat",
+      "symbol": "heatproofMat",
+      "at": { "x": 0, "y": 0, "anchor": "under" }
+    },
+    {
+      "id": "tripod",
+      "symbol": "tripod",
+      "on": { "part": "mat", "anchor": "top", "own": "feet" }
+    },
+    {
+      "id": "burner",
+      "symbol": "bunsenBurner",
+      "on": { "part": "mat", "anchor": "top", "own": "base" }
+    },
+    {
+      "id": "gauze",
+      "symbol": "gauze",
+      "on": { "part": "tripod", "anchor": "top", "own": "under" }
+    },
     {
       "id": "beaker",
       "symbol": "beaker",
@@ -114,7 +130,13 @@ The thermometer reads 60 degrees; the beaker is 60 % full of water. The tripod a
       "id": "thermometer",
       "symbol": "thermometer",
       "size": { "h": 200 },
-      "on": { "part": "beaker", "anchor": "base", "own": "bulb", "dx": 16, "dy": -12 },
+      "on": {
+        "part": "beaker",
+        "anchor": "base",
+        "own": "bulb",
+        "dx": 16,
+        "dy": -12
+      },
       "contents": { "main": [{ "reading": 60 }] }
     }
   ],
@@ -137,9 +159,17 @@ A gas is collected over water in an upside-down measuring cylinder, which a clam
       "id": "flask",
       "symbol": "conicalFlask",
       "at": { "x": 0, "y": 0, "anchor": "base" },
-      "contents": { "main": [{ "preset": "Colourless solution", "amount": 0.3, "bubbles": "few" }] }
+      "contents": {
+        "main": [
+          { "preset": "Colourless solution", "amount": 0.3, "bubbles": "few" }
+        ]
+      }
     },
-    { "id": "bung", "symbol": "bung", "on": { "part": "flask", "anchor": "mouth", "own": "plug" } },
+    {
+      "id": "bung",
+      "symbol": "bung",
+      "on": { "part": "flask", "anchor": "mouth", "own": "plug" }
+    },
     {
       "id": "trough",
       "symbol": "trough",
@@ -151,8 +181,19 @@ A gas is collected over water in an upside-down measuring cylinder, which a clam
       "symbol": "measuringCylinder",
       "rot": 180,
       "size": { "h": 170 },
-      "on": { "part": "trough", "anchor": "base", "own": "mouth", "dx": 35, "dy": -22 },
-      "contents": { "main": [{ "preset": "Water", "reading": 34 }, { "preset": "Colourless gas" }] }
+      "on": {
+        "part": "trough",
+        "anchor": "base",
+        "own": "mouth",
+        "dx": 35,
+        "dy": -22
+      },
+      "contents": {
+        "main": [
+          { "preset": "Water", "reading": 34 },
+          { "preset": "Colourless gas" }
+        ]
+      }
     },
     {
       "id": "clamp",
@@ -166,7 +207,14 @@ A gas is collected over water in an upside-down measuring cylinder, which a clam
     {
       "id": "stand",
       "symbol": "clampStand",
-      "size": { "h": { "between": [{ "part": "flask", "anchor": "base" }, { "part": "clamp", "anchor": "sleeve", "dy": -22 }] } },
+      "size": {
+        "h": {
+          "between": [
+            { "part": "flask", "anchor": "base" },
+            { "part": "clamp", "anchor": "sleeve", "dy": -22 }
+          ]
+        }
+      },
       "alignX": { "part": "clamp", "anchor": "sleeve", "own": "rod" },
       "alignY": { "part": "flask", "anchor": "base", "own": "base" },
       "back": true

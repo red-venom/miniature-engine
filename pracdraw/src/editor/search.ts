@@ -16,6 +16,10 @@ export const PACKS: { id: PackId; name: string }[] = [
   { id: 'biology', name: 'Biology' },
   { id: 'circuit', name: 'Circuit symbols' },
   { id: 'annotation', name: 'Annotation' },
+  { id: 'atoms', name: 'Atoms and ions' },
+  { id: 'matter', name: 'Particles' },
+  { id: 'energy', name: 'Energy' },
+  { id: 'structures', name: 'Structures' },
 ]
 
 /** The library group after the packs: the connector presets of section 10. */
