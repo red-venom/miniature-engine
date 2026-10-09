@@ -2,7 +2,7 @@
 
 # Symbols
 
-131 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+133 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -202,11 +202,13 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 
 | id | name | aliases | size | resize | parameters | cavities | anchors | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `particleBox` | Particle box | particles, states of matter, particle model, particle diagram, element compound mixture | 160 × 120 | free, min 120 × 90 | substance: "element" or "molecules" or "compound" or "mixtureElements" or "mixtureCompounds" or "mixtureElementCompound", default "element"; state: "gas" or "liquid" or "solid", default "gas"; count: number 6..40, default 16; formula: "AB" or "AB2" or "A2B", default "AB"; motion: boolean, default false |  |  | label "particle diagram" |
 
 ## Energy
 
 | id | name | aliases | size | resize | parameters | cavities | anchors | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `reactionProfile` | Reaction profile | energy level diagram, energy profile, exothermic endothermic diagram | 260 × 170 | free, min 230 × 160 | type: "exothermic" or "endothermic", default "exothermic"; catalyst: boolean, default false; activation: boolean, default true; change: boolean, default true; levels: "words" or "formulae" or "blank", default "words" |  |  |  |
 
 ## Structures
 

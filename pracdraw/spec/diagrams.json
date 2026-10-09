@@ -7,13 +7,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.1.1.1"],
     "topic": "Atomic structure and the periodic table",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "particleBox",
     "proposedPack": "matter",
     "priority": "A",
     "detail": "full",
-    "draw": "A rectangle (the container) holding 12 to 30 circles that never overlap. Element: all circles the same size and fill (single atoms), or joined pairs for a diatomic element such as H2 or O2. Compound: touching groups of two or three different circles in a fixed pattern (for example one large and two small for H2O). Mixture: two kinds of free particle, or a particle of an element and a particle of a compound, not bonded to each other. Kinds differ by size and by fill (white, hatched, grey) so that the picture survives photocopying (S12).",
-    "params": "substance (element of atoms | element of molecules | compound | mixture of elements | mixture of compounds | mixture of element and compound), state (gas | liquid | solid), particle count (8 to 40), compound formula (AB | AB2 | A2B | ...)",
+    "draw": "Use the particleBox symbol: set `substance` (element, molecules, compound, mixtureElements, mixtureCompounds or mixtureElementCompound), `state` (gas, liquid or solid), `count` (6 to 40; a molecule counts as one) and, for a compound, `formula` (AB, AB2 or A2B). The kinds of particle differ by size and by fill (white, grey tint with hatch, solid black); `motion` adds arrows. The symbol has no text: label it with label items.",
+    "params": "substance, state, count, formula (AB | AB2 | A2B), motion",
     "scienceChecks": "All particles of an element are one kind. Each compound particle holds at least two kinds of atom in the ratio of its formula (2 to 1 for H2O). A mixture has at least two kinds of particle and no bond between them. Circles never overlap.",
     "sources": [
       "https://www.docbrown.info/page03/3_52states-01.htm",
@@ -21,7 +21,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table"
     ],
     "confidence": "secondary",
-    "notes": "The same particle box serves the states-of-matter row (particleStates): one symbol with two uses.",
+    "notes": "The same particle box serves the states-of-matter row (particleStates): one symbol with two uses. Built in release 1.2 (src/symbols/matter.ts). In a box too small for the count, all particles are drawn smaller by one common factor, so that no circles overlap.",
     "tags": ["fill"]
   },
   {
@@ -309,13 +309,13 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Bonding, structure and the properties of matter",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "particleBox",
     "proposedPack": "matter",
     "priority": "A",
     "detail": "full",
-    "draw": "Three boxes side by side. Solid: touching circles in a regular lattice, with small vibration marks. Liquid: touching circles in an irregular arrangement filling the lower part of the box, with a few short motion arrows. Gas: widely spaced circles all through the box, with longer arrows in random directions. Each box has a one-line label (arrangement, movement) when asked. Circles do not overlap.",
-    "params": "state (solid | liquid | gas), particle count (10 to 40), particle kind (atom | pair | triple), show motion arrows (boolean), show labels (boolean)",
+    "draw": "Use three particleBox parts side by side with `state` solid, liquid and gas (same substance and count, `motion` on if wanted), and label them with label items. A solid is a lattice in contact on the floor of the box, a liquid an irregular touching heap in the lower part, a gas particles spread through the box.",
+    "params": "state (solid | liquid | gas), count (6 to 40), substance, motion",
     "scienceChecks": "A solid is a regular lattice in contact. A liquid has contact without regular rows. A gas has gaps larger than a particle diameter. The three boxes show the same number of particles. Circles never overlap.",
     "sources": [
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/2-bonds-structure-and-properties-of-matter/2-2-bonding-and-substance-properties/2-2-2-particle-theory-and-its-limitations/",
@@ -324,7 +324,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"
     ],
     "confidence": "secondary",
-    "notes": "The same symbol as particleElementCompoundMixture. Exam questions ask students to state limitations of this model (spacing and size not to scale, no forces shown), which is text."
+    "notes": "The same symbol as particleElementCompoundMixture. Exam questions ask students to state limitations of this model (spacing and size not to scale, no forces shown), which is text. Built in release 1.2 (src/symbols/matter.ts)."
   },
   {
     "id": "changeOfState",
@@ -1373,13 +1373,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.5.1.2"],
     "topic": "Energy changes",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "reactionProfile",
     "proposedPack": "energy",
     "priority": "A",
     "detail": "full",
-    "draw": "Axes: 'Energy' up the side and 'Progress of reaction' along the bottom, with no numbers. A smooth curve from a flat reactants level up to a rounded peak and down to a flat products level. Exothermic: products below the reactants. Endothermic: products above. Each level is labelled (reactants, products, or their formulae). A double-headed arrow from the reactants level to the peak is the activation energy. A vertical arrow between the two levels is the overall energy change, pointing down for exothermic and up for endothermic. Option: a second, lower, dashed hump for the catalysed pathway.",
-    "params": "type (exothermic | endothermic), catalyst (boolean), show activation energy arrow (boolean), show overall change arrow (boolean), level labels (words | formulae), blank labels for a worksheet (boolean)",
+    "draw": "Use the reactionProfile symbol: the axes \"Energy\" and \"Progress of reaction\" and a smooth curve from a flat reactants level over a rounded peak to a flat products level (exothermic: the products are lower; endothermic: higher). `activation` draws the double-headed activation energy arrow, `change` the arrow for the overall energy change, `catalyst` a lower dashed route, and `levels` labels the two levels in words, as two worked formula equations, or as blank lines to write on.",
+    "params": "type (exothermic | endothermic), catalyst (boolean), activation (boolean), change (boolean), levels (words | formulae | blank)",
     "scienceChecks": "Exothermic: products below reactants. Endothermic: products above. The peak is above both levels. The activation energy arrow starts at the reactants level and ends at the peak. The overall change arrow runs from the reactants level to the products level. The catalysed peak is lower and the start and end levels are unchanged. The line is a smooth curve.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/energy-changes",
@@ -1389,7 +1389,7 @@
       "https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2021/november/AQA-84621F-QP-NOV21.PDF"
     ],
     "confidence": "checked",
-    "notes": "AQA asks students to draw simple profiles with a curved line and to complete part-drawn ones with labels. The catalyst version is also asked in the rates section. The AQA pages were read through the search tool."
+    "notes": "AQA asks students to draw simple profiles with a curved line and to complete part-drawn ones with labels. The catalyst version is also asked in the rates section. The AQA pages were read through the search tool. Built in release 1.2 (src/symbols/energy.ts). The formulae labels are two fixed worked examples (CH4 and O2; CaCO3), balanced."
   },
   {
     "id": "bondEnergyDiagram",
@@ -5976,17 +5976,17 @@
     "courses": ["Trilogy", "GCSE Physics"],
     "specRefs": [],
     "topic": "Particle model of matter",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "particleBox",
     "proposedPack": "matter",
     "priority": "C",
     "detail": "outline",
-    "draw": "The chemistry particleStates symbol: three boxes of particles for solid, liquid and gas.",
-    "params": "state",
+    "draw": "Use three particleBox parts (solid, liquid and gas) as for particleStates.",
+    "params": "state (solid | liquid | gas), count, motion",
     "scienceChecks": "A solid is a regular lattice in contact.",
     "sources": ["https://filestore.aqa.org.uk/resources/physics/specifications/AQA-8463-SP-2016.PDF"],
     "confidence": "checked",
-    "notes": "AQA asks students to recognise or draw simple diagrams that model solids, liquids and gases. The same symbol as chemistry; nothing new to build."
+    "notes": "AQA asks students to recognise or draw simple diagrams that model solids, liquids and gases. The same symbol as chemistry; nothing new was built for it (release 1.2)."
   },
   {
     "id": "physDensityPractical",
