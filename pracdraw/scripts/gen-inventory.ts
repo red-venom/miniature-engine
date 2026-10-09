@@ -287,7 +287,7 @@ export function facts(d: Data): Record<string, string> {
     libraryGroups: String(d.packIds.length + newPackNames.size),
     kept: String(kept.length),
     keptIds: ids(kept),
-    briefIds: ids(rows.filter((r) => r.notes.includes(BRIEF_NOTE))),
+    briefIds: ids(rows.filter((r) => r.notes.includes(BRIEF_NOTE))) || 'none',
     skeletalOrCurly: String(count(rows, (r) => (r.tags ?? []).includes('skeletal') || (r.tags ?? []).includes('curlyArrow'))),
     mechanisms: String(count(rows, (r) => r.proposedPack === 'mechanisms')),
   }

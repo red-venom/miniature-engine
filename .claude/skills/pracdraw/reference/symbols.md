@@ -2,7 +2,7 @@
 
 # Symbols
 
-133 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+136 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -197,6 +197,9 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 
 | id | name | aliases | size | resize | parameters | cavities | anchors | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `covalentDotCross` | Covalent dot-and-cross diagram | dot and cross, covalent bonding diagram, dot-and-cross covalent, molecule | 220 × 160 | free, min 196 × 144 | molecule: "H2" or "Cl2" or "O2" or "N2" or "HCl" or "H2O" or "NH3" or "CH4" or "CO2" or "HF" or "F2" or "C2H4" or "C2H6", default "H2O"; layout: "overlap" or "apart", default "overlap"; marks: "default" or "swapped" or "ring", default "default" |  |  | label "water" |
+| `ionicDotCross` | Ionic dot-and-cross diagram | dot and cross, ionic bonding diagram, dot-and-cross ionic, ionic compound | 420 × 150 | free, min 404 × 140 | metal: "Li" or "Na" or "K" or "Mg" or "Ca" or "Al", default "Na"; nonMetal: "N" or "O" or "F" or "S" or "Cl" or "Br", default "Cl"; stage: "transfer" or "ions", default "ions"; inner: boolean, default false; marks: "default" or "swapped" or "ring", default "default" |  |  | label "sodium chloride" |
+| `periodicTable` | Periodic table | elements, periodic chart, groups and periods | 560 × 200 | uniform, min 476 × 170 | content: "symbol" or "number" or "both" or "mass" or "blank", default "symbol"; range: "first20" or "first36", default "first36"; hlGroup: number 0..18, default 0; hlPeriod: number 0..4, default 0; hlElement: number 0..36, default 0; divider: boolean, default true; shading: "none" or "metals" or "blocks", default "none"; groups: "ks4" or "iupac" or "none", default "ks4" |  |  |  |
 
 ## Particles
 

@@ -256,8 +256,8 @@ describe('spec/diagrams.json: kinds, courses and levels', () => {
     const kept = rows.filter((r) => r.notes.startsWith(KEPT_NOTE))
     expect(kept.length).toBeGreaterThan(0)
     for (const r of kept) expect(r.priority, `${r.id} is kept because lessons use it, so it is priority C`).toBe('C')
+    // A row loses the note when its brief is built, so that none may be left; the rule holds for any row that has it.
     const brief = rows.filter((r) => r.notes.includes(BRIEF_NOTE))
-    expect(brief.length).toBeGreaterThan(0)
     for (const r of brief) expect(r.kind === 'symbol' && r.priority === 'A', `${r.id} needs a geometry brief, so it is a symbol of priority A`).toBe(true)
   })
 

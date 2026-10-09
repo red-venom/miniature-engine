@@ -181,13 +181,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.1.2.1"],
     "topic": "Atomic structure and the periodic table",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "periodicTable",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "A grid of 18 columns and 7 rows of square cells (the f-block as two separate rows below). Each cell can show the symbol, the atomic number, the name or the relative atomic mass. Group numbers above (1 to 7 and 0, or 1 to 18), period numbers at the left. A stepped line separates metals from non-metals. Highlights: one group, one period, one element (a ring), the transition metals, or a block. Regions use a pattern as well as a fill so that they survive photocopying.",
-    "params": "cell content (symbol | number | name | blank), range (first 20 | first 36 | all 118), highlight group, highlight period, highlight element, divider line (boolean), region shading (none | metal and non-metal | blocks), group numbering (0 to 7 | 1 to 18)",
+    "draw": "Use the periodicTable symbol: the first 20 or the first 36 elements in 18 columns and 4 rows of square cells (the d block is ten cells, scandium to zinc). `content` is the symbol, the atomic number, both, the relative atomic mass, or blank; `groups` numbers the groups 1 to 7 and 0 (KS4), 1 to 18 (IUPAC) or not at all; one highlight (an element, a group or a period, in that order of precedence) is a heavy ring on the cell edges; `divider` draws the stepped line between metals and non-metals; `shading` shades metals or blocks with a tint and, in photocopy-safe mode, a hatch.",
+    "params": "content (symbol | number | both | mass | blank), range (first20 | first36), hlGroup, hlPeriod, hlElement, divider (boolean), shading (none | metals | blocks), groups (ks4 | iupac | none)",
     "scienceChecks": "The elements run in order of atomic number with the correct group and period. Helium is in group 0. The divider runs between the correct pairs of cells. Transition metals sit in groups 3 to 12 of periods 4 to 7. At most one highlight style is on a cell.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/atomic-structure-and-the-periodic-table",
@@ -195,7 +195,7 @@
       "https://www.docbrown.info/page03/3_34ptable.htm"
     ],
     "confidence": "checked",
-    "notes": "It is a table, but a fixed 118-cell layout with highlight parameters, so it is classed as a symbol, not a chart. James to confirm. Needs a verified data file of the 118 elements (symbol, atomic number, name, relative atomic mass, group, period, block) in spec/elements.json, and the list of cell pairs that the stepped divider runs between; the drawing and the data are best built separately.",
+    "notes": "It is a table, but a fixed 118-cell layout with highlight parameters, so it is classed as a symbol, not a chart. James to confirm. Needs a verified data file of the 118 elements (symbol, atomic number, name, relative atomic mass, group, period, block) in spec/elements.json, and the list of cell pairs that the stepped divider runs between; the drawing and the data are best built separately. Built in release 1.2 (src/symbols/dotcross.ts), as a table of the first 36 elements (decision 9 of the inventory: it stops after the fourth period); the data are src/symbols/elements.ts, whose relative atomic masses are from memory and are checked only for consistency (unverified against a book).",
     "tags": ["fill", "symbolText"]
   },
   {
@@ -378,13 +378,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.2.1.2"],
     "topic": "Bonding, structure and the properties of matter",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "ionicDotCross",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "Two forms. Transfer: the metal atom and the non-metal atom as circles for their outer shells, the metal's electrons as dots and the non-metal's as crosses, with curved arrows showing the electrons moving across. Ions: each ion inside large square brackets with its charge top right outside them; the metal ion shows no outer electrons (its inner shells are optional and ignored in marking), the non-metal ion a full outer shell of dots and crosses. For MgCl2 or Na2O the second ion is drawn beside the first with the ratio visible. Inner shells are optional and, when drawn, appear as plain circles.",
-    "params": "metal (Li | Na | K | Mg | Ca), non-metal (O | S | F | Cl | Br), stage (transfer | ions), show inner shells (boolean), marks (dot and cross, the default | another pair of clearly different marks)",
+    "draw": "Use the ionicDotCross symbol: choose the metal (Li, Na, K, Mg, Ca, Al), the non-metal (N, O, F, S, Cl, Br), the `stage` (transfer: the atoms with curved arrows for the electrons that move; ions: each ion in square brackets with its charge at the top right), `inner` shells on or off and the `marks`. The number of ions follows from the charges (MgCl2 shows three ions, Al2O3 five), so the ratio can be counted. The metal ion shows no outer electrons and the non-metal ion a full outer shell.",
+    "params": "metal (Li | Na | K | Mg | Ca | Al), nonMetal (N | O | F | S | Cl | Br), stage (transfer | ions), inner (boolean), marks (default | swapped | ring)",
     "scienceChecks": "Electrons lost by the metal atoms equal electrons gained by the non-metal atoms. Each ion has the electron structure of a noble gas. The charge follows the group number (group 1 +1, group 2 +2, group 6 -2, group 7 -1). The numbers of ions give a neutral compound.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter",
@@ -392,7 +392,7 @@
       "https://www.thenational.academy/teachers/programmes/combined-science-secondary-ks4-higher-aqa/units/structure-and-bonding/lessons/giant-ionic-structures"
     ],
     "confidence": "checked",
-    "notes": "AQA 4.2.1.2 limits the examples to Group 1 and 2 metals with Group 6 and 7 non-metals. A second reader found no AQA mark scheme text that shows square brackets, so that brackets and charges are what a mark scheme rewards is unconfirmed; the AQA mark schemes seen credit the transfer statements and the ion charges. See the dot-and-cross decision for James: the recommended default is dots for one atom and crosses for the other, all in black, so that no second version is needed.",
+    "notes": "AQA 4.2.1.2 limits the examples to Group 1 and 2 metals with Group 6 and 7 non-metals. A second reader found no AQA mark scheme text that shows square brackets, so that brackets and charges are what a mark scheme rewards is unconfirmed; the AQA mark schemes seen credit the transfer statements and the ion charges. See the dot-and-cross decision for James: the recommended default is dots for one atom and crosses for the other, all in black, so that no second version is needed. Built in release 1.2 (src/symbols/dotcross.ts): all 36 pairs of metal and non-metal are drawn. The first version of this row listed five metals and five non-metals; aluminium and nitrogen were added.",
     "tags": ["dotCross", "symbolText"]
   },
   {
@@ -403,13 +403,13 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.2.1.4"],
     "topic": "Bonding, structure and the properties of matter",
-    "kind": "symbol",
-    "covered": null,
+    "kind": "covered",
+    "covered": "covalentDotCross",
     "proposedPack": "atoms",
     "priority": "A",
     "detail": "full",
-    "draw": "One circle for the outer shell of each atom, overlapping where atoms are bonded. Each shared pair sits in the overlap as one dot and one cross. The other outer electrons of each atom stay on its own circle as dots or crosses, with lone pairs drawn as pairs. The central atom is in the middle for H2O, NH3, CH4 and CO2; C2H4 and C2H6 have two central carbon atoms side by side, each with its hydrogens around it. Double and triple bonds have two and three pairs in the overlap. Inner shells are never drawn. A second layout puts the atoms apart with the shared pairs between them. Marks: the central atom (or the first atom of the formula) uses crosses and the atoms bonded to it use dots, and in a molecule of two identical atoms one atom uses dots and the other crosses, all in black, so that a picture is photocopy-safe without a second version.",
-    "params": "molecule from the small-molecule library, which is named here and shared by displayedFormulaSmall, ballAndStickModel and balancedEquationModels: H2, Cl2, O2, N2, HCl, H2O, NH3 and CH4 (the eight in the specification), and CO2, HF, F2, C2H4 and C2H6 as extras; layout (overlapping circles | circles apart); marks (dot and cross, the default | another pair of clearly different marks)",
+    "draw": "Use the covalentDotCross symbol: choose one of 13 small molecules (H2, Cl2, O2, N2, HCl, H2O, NH3, CH4, CO2, HF, F2, C2H4, C2H6), the `layout` (overlapping circles, or circles apart with the shared pairs between them) and the `marks` (dots and crosses, swapped, or dots and open rings). One circle for the outer shell of each atom; each shared pair is one cross and one dot (two and three pairs for a double and a triple bond); the other outer electrons stay on the atom's own circle, with lone pairs drawn as pairs; inner shells are not drawn. The element symbol is written in each circle.",
+    "params": "molecule (13 molecules), layout (overlap | apart), marks (default | swapped | ring)",
     "scienceChecks": "Every atom ends with a full outer shell (2 for hydrogen, 8 for the others). The shared pairs equal the usual valency (H 1, Cl 1, O 2, N 3, C 4). The total outer electrons equal the sum over the atoms (8 for H2O, 8 for NH3, 8 for CH4). Lone pairs are shown. Each shared pair has one dot and one cross.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter",
@@ -418,7 +418,7 @@
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-ocr/units/structure-and-bonding/lessons/forming-covalent-bonds"
     ],
     "confidence": "checked",
-    "notes": "AQA names eight molecules. Examiners expect lone pairs to be shown. A dot-and-cross shows no shape; that limitation is part of the specification. AQA wording, as a second reader's search summary reports it for 4.2.1.2: use different symbols for the electrons of each atom (dots and crosses, or any clearly distinguished marks), show the outer shell electrons only, and inner shells are ignored in marking. Needs a geometry brief before it is built. The brief must give the atoms and bond orders of every molecule in both layouts, the circle radius and the width of the overlap for bond order 1 to 3, and the electron positions in the overlap and on the free arc.",
+    "notes": "AQA names eight molecules. Examiners expect lone pairs to be shown. A dot-and-cross shows no shape; that limitation is part of the specification. AQA wording, as a second reader's search summary reports it for 4.2.1.2: use different symbols for the electrons of each atom (dots and crosses, or any clearly distinguished marks), show the outer shell electrons only, and inner shells are ignored in marking. Built in release 1.2 (src/symbols/dotcross.ts; the small-molecule library is src/symbols/molecules.ts and is shared with the molecule packs to come). The central atom (or the first atom of the formula) uses crosses and its partners dots; two identical atoms use dots and crosses.",
     "tags": ["dotCross", "symbolText"]
   },
   {
