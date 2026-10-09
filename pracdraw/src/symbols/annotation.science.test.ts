@@ -144,9 +144,14 @@ describe('pH scale: the cells', () => {
     expect(phsOf('weak alkali')).toEqual(range(8, 11))
     expect(phsOf('strong alkali')).toEqual(range(12, 14))
     // An acid is below 7 and an alkali above it.
-    for (const b of PH_BANDS)
-      for (const ph of range(b.from, b.to))
-        expect(b.strength.endsWith(phKind(ph) === 'acid' ? 'acid' : phKind(ph) === 'alkali' ? 'alkali' : 'neutral'), `pH ${ph}: ${b.strength}`).toBe(true)
+    const kindOf: Record<string, string> = {
+      'strong acid': 'acid',
+      'weak acid': 'acid',
+      neutral: 'neutral',
+      'weak alkali': 'alkali',
+      'strong alkali': 'alkali',
+    }
+    for (const b of PH_BANDS) for (const ph of range(b.from, b.to)) expect(kindOf[b.strength], `pH ${ph}: ${b.strength}`).toBe(phKind(ph))
     expect(PH_BANDS.flatMap((b) => range(b.from, b.to))).toEqual(range(0, 14))
     for (const b of PH_BANDS) for (const ph of range(b.from, b.to)) expect(PH_CELLS[ph].colour).toBe(b.colour)
   })
