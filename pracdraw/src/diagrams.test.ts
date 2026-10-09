@@ -264,7 +264,13 @@ describe('spec/diagrams.json: kinds, courses and levels', () => {
   it('puts every row in exactly one step of the build order', () => {
     const steps = stepRows(rows)
     expect([...steps.values()].reduce((n, s) => n + s.length, 0)).toBe(rows.length)
-    for (const s of STEPS) expect(steps.get(s.n)?.length, `step ${s.n} picks no row`).toBeGreaterThan(0)
+    for (const s of STEPS) {
+      if (s.built) {
+        // A step that is built has no row of its own left: every row that it would pick is a covered row, and falls in step 0.
+        const open = rows.filter((r) => r.kind !== 'covered' && s.pick(r)).map((r) => r.id)
+        expect(open, `step ${s.n} is marked built, but these rows are not built`).toEqual([])
+      } else expect(steps.get(s.n)?.length, `step ${s.n} picks no row`).toBeGreaterThan(0)
+    }
   })
 })
 

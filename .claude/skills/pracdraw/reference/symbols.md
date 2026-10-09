@@ -2,7 +2,7 @@
 
 # Symbols
 
-130 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+131 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -90,6 +90,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `filterPaper` | Filter paper | fluted filter paper | 76 × 46 | free, min 30 × 20 | residue: boolean, default false |  | apex (tip) | in the 84 u filter funnel: size w 68 (the default 76 nearly touches the funnel wall) |
 | `gClamp` | G-clamp | clamp for the bench, C-clamp | 50 × 80 | uniform, min 38 × 60 |  |  |  | label "G-clamp" |
 | `lid` | Lid | cover | 120 × 7 | width, min 40 × 7 | holes: number 0..2, default 0 |  | under (base) |  |
+| `nail` | Nail | iron nail, metal rod, pin | 12 × 110 | height, min 12 × 30 |  |  |  |  |
 | `spatula` | Spatula |  | 14 × 170 | height, min 14 × 90 |  |  |  |  |
 | `splint` | Splint | wooden splint, glowing splint, burning splint, lit splint | 130 × 8 | width, min 40 × 8 | state: "unlit" or "lit" or "glowing", default "lit" |  | tip (tip) |  |
 | `spottingTile` | Spotting tile (top view) | dimple tile, spot plate | 170 × 120 | free, min 60 × 40 | rows: number 2..4, default 3; cols: number 3..6, default 4; iodine: boolean, default false; blueBlack: number 0..24, default 0 |  |  | label "spotting tile" |
@@ -213,7 +214,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `diamondStructure` | Diamond (giant covalent) | giant covalent, carbon structure, tetrahedral carbon, diamond lattice, diamond cluster | 160 × 160 | uniform, min 120 × 120 | stubs: boolean, default false |  |  | label "diamond" |
 | `fullereneC60` | Buckminsterfullerene (C60) | C60, fullerene, buckyball, football molecule, giant molecule | 150 × 150 | uniform, min 105 × 105 | pentagons: boolean, default false |  |  | label "buckminsterfullerene" |
-| `graphiteStructure` | Graphite (layers) | giant covalent, carbon layers, hexagonal layers, graphite lattice | 200 × 170 | uniform, min 170 × 144 | layers: number 2..4, default 3; forces: boolean, default true |  |  | label "graphite" |
+| `graphiteStructure` | Graphite (layers) | giant covalent, carbon layers, hexagonal layers, graphite lattice | 250 × 212 | uniform, min 170 × 144 | layers: number 2..4, default 3; forces: boolean, default true |  |  | label "graphite" |
 | `ionicLattice3D` | Ionic lattice (3D) | sodium chloride lattice, giant ionic lattice, NaCl structure, ionic crystal, ionic lattice | 150 × 150 | uniform, min 120 × 120 | bonds: boolean, default true |  |  | label "ionic lattice" |
 
 ## Not drawn yet

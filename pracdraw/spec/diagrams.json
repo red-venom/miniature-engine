@@ -246,17 +246,17 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Atomic structure and the periodic table",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "groupOneWater",
     "proposedPack": "labTemplates",
     "priority": "B",
     "detail": "full",
-    "draw": "A trough or a large beaker of water (Water preset, 60 %). A small piece of metal (the irregularSolid symbol made small and pale grey) on the surface, a few bubbles under it, and an optional lit splint above the bubbles. With universal indicator the liquid is the Purple preset to show an alkali. A label gives the metal and the gas (hydrogen).",
-    "params": "container (trough | beaker), metal (lithium | sodium | potassium), indicator colour (boolean), splint (boolean)",
+    "draw": "Use the groupOneWater template: a beaker of water with a piece of lithium floating at the surface, bubbles below it and a burning splint above.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The metal sits on the liquid surface, not in it. Bubbles are under or beside the piece. If the indicator is on, the liquid is purple or blue, never red or green.",
     "sources": ["https://www.chemguide.co.uk/14to16/pt/group1.html", "https://www.docbrown.info/page03/3_34ptable.htm"],
     "confidence": "secondary",
-    "notes": "A new template from existing symbols (trough, beaker, irregularSolid, splint). Schools often show a video, so the picture is for a worksheet."
+    "notes": "A new template from existing symbols (trough, beaker, irregularSolid, splint). Schools often show a video, so the picture is for a worksheet. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "halogenDisplacement",
@@ -868,20 +868,20 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Quantitative chemistry",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "magnesiumInCrucible",
     "proposedPack": "labTemplates",
     "priority": "B",
     "detail": "full",
-    "draw": "A crucible with a lid on a pipeclay triangle on a tripod, a Bunsen burner with a blue flame under it on a heatproof mat, a coil of magnesium ribbon inside the crucible, and a label 'lift the lid briefly to let air in'. Optional pair of balance readings before and after (the oxide is heavier).",
-    "params": "lid (on | slightly raised), flame (blue | off), show balance readings (boolean)",
+    "draw": "Use the magnesiumInCrucible template: a lidded crucible on a pipeclay triangle on a tripod, the flame touching its base, and magnesium ribbon in the crucible.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The crucible stands on the triangle, not on the gauze. The flame is under the crucible. The ribbon is inside the crucible. The after reading is larger than the before reading because oxygen has joined the metal.",
     "sources": [
       "https://www.savemyexams.com/gcse/chemistry/aqa/18/revision-notes/3-quantitative-chemistry/3-1-measurement-mass-and-equations/3-1-1-conservation-of-mass-and-balanced-chemical-equations/",
       "https://www.thenational.academy/teachers/programmes/chemistry-secondary-ks4-higher-aqa/units/calculations-involving-masses/lessons/determining-an-equation-experimentally-magnesium-oxide"
     ],
     "confidence": "secondary",
-    "notes": "A new template from existing symbols (crucible, pipeclayTriangle, tripod, bunsenBurner, heatproofMat, magnesiumRibbon). Tongs are in the Later list and are not needed."
+    "notes": "A new template from existing symbols (crucible, pipeclayTriangle, tripod, bunsenBurner, heatproofMat, magnesiumRibbon). Tongs are in the Later list and are not needed. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "thermalDecompositionCarbonate",
@@ -1107,7 +1107,7 @@
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/chemical-changes"
     ],
     "confidence": "secondary",
-    "notes": "There is no copper-coloured powder preset; the nearest is the orange-brown precipitate. A preset would help. The metal strip stands for the iron nail until a nail symbol exists."
+    "notes": "There is no copper-coloured powder preset; the nearest is the orange-brown precipitate. A preset would help. A nail symbol exists now (support pack); the template still draws a metal strip for the iron nail."
   },
   {
     "id": "metalOxideCarbonHeating",
@@ -1260,20 +1260,20 @@
     "courses": ["8464", "8462"],
     "specRefs": ["8462 4.4.3.2"],
     "topic": "Chemical changes",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "electrolysisMolten",
     "proposedPack": "labTemplates",
     "priority": "B",
     "detail": "full",
-    "draw": "A crucible (or a deep basin) of the molten compound on a pipeclay triangle on a tripod, a Bunsen burner under it on a heatproof mat. Two graphite electrodes held from above by clamps, dipping into the liquid without touching each other or the bottom, wires with crocodile clips to a power supply and a lamp or an ammeter. A label says that the work is done in a fume cupboard.",
-    "params": "compound (lead bromide | zinc chloride), electrodes (graphite), show lamp (boolean)",
+    "draw": "Use the electrolysisMolten template: a crucible on a pipeclay triangle on a tripod, heated by a Bunsen burner; two rods held by one stand with two clamps that each grip a rod; two wires to a power supply that do not cross. The note about the fume cupboard is plain text.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The electrodes dip into the liquid and do not touch each other. The flame is under the crucible. The circuit runs from the supply through both electrodes and back.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/chemical-changes",
       "https://www.docbrown.info/page01/ExIndChem/electrochemistry05.htm"
     ],
     "confidence": "secondary",
-    "notes": "AQA names lead bromide and suggests anhydrous zinc chloride as a safer choice. The apparatus is not in the required practical."
+    "notes": "AQA names lead bromide and suggests anhydrous zinc chloride as a safer choice. The apparatus is not in the required practical. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "electrolysisGasTubes",
@@ -1446,20 +1446,20 @@
     "courses": ["8462"],
     "specRefs": ["8462 4.5.2.1"],
     "topic": "Energy changes",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "simpleCell",
     "proposedPack": "labTemplates",
     "priority": "A",
     "detail": "full",
-    "draw": "A beaker of electrolyte (Colourless solution) with two different metal strips (the electrode symbol, metal strip) standing in it without touching each other. Wires from the tops of the strips to a voltmeter (meter box titled voltmeter, two terminals). Labels give the two metals, the electrolyte and the voltmeter. Optional plus and minus signs on the strips.",
-    "params": "metal 1, metal 2 (magnesium | zinc | iron | copper), electrolyte, meter reading (text)",
+    "draw": "Use the simpleCell template: a beaker of electrolyte with a zinc strip and a copper strip 44 u apart, their tips under the surface, and wires with clips to a voltmeter; zinc is marked minus and copper plus.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The two metals are different (identical metals give no voltage). The strips do not touch. Both dip into the electrolyte. The meter is in the circuit. The more reactive metal is the negative terminal. The voltage is larger for metals further apart in the reactivity series.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/energy-changes",
       "https://www.docbrown.info/page01/ExIndChem/electrochemistry10.htm"
     ],
     "confidence": "checked",
-    "notes": "Chemistry only in 8462. A new template from existing symbols. The existing electrochemicalCell template has a salt bridge and two beakers, which is the A-level version."
+    "notes": "Chemistry only in 8462. A new template from existing symbols. The existing electrochemicalCell template has a salt bridge and two beakers, which is the A-level version. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "fuelCell",
@@ -1721,17 +1721,17 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "The rate and extent of chemical change",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "reversibleHeating",
     "proposedPack": "labTemplates",
     "priority": "B",
     "detail": "full",
-    "draw": "A boiling tube held by a test-tube holder (or a clamp) at a slope with its mouth lower than its closed end, blue crystals (Blue crystals preset) at the closed end, a Bunsen with a blue flame under the crystals, water droplets near the mouth. A second picture: the white powder with a few drops of water added from a dropper, turning blue again.",
-    "params": "stage (heating | adding water), tube holder or clamp",
+    "draw": "Use the reversibleHeating template: two boiling tubes, each in its own holder: the first slopes with its mouth down, blue crystals on its lower wall and the flame under them; the second holds white powder, with a dropper above it and drops falling.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The tube is open (the mouth faces slightly down so condensed water runs out, not back onto hot glass). The flame is at the crystals. The after-heating powder is white and the re-hydrated powder is blue.",
     "sources": ["https://filestore.aqa.org.uk/sample-papers-and-mark-schemes/2023/june/AQA-84622H-QP-JUN23.PDF"],
     "confidence": "checked",
-    "notes": "The heating-tube picture is the standard demonstration. A second reader found that the June 2023 8462/2H paper uses hydrated and anhydrous copper sulfate (in a calculation), so the example is AQA's; raised from unverified. The paper does not print this apparatus."
+    "notes": "The heating-tube picture is the standard demonstration. A second reader found that the June 2023 8462/2H paper uses hydrated and anhydrous copper sulfate (in a calculation), so the example is AQA's; raised from unverified. The paper does not print this apparatus. Built in release 1.2 (src/templates/labs.ts). The crystals lie on the lower wall at the mouth end, not at the closed end: the contents of a tube lie at its lowest level."
   },
   {
     "id": "haberYieldGraphs",
@@ -2003,20 +2003,20 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Organic chemistry",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "crackingApparatus",
     "proposedPack": "organicApparatus",
     "priority": "B",
     "detail": "full",
-    "draw": "A boiling tube lying almost horizontal and held by a clamp, with mineral wool soaked in paraffin at the closed end and pieces of catalyst (broken porcelain or aluminium oxide, a Chips layer) in the middle, heated strongly by a Bunsen. A bung and a delivery tube lead to a trough of water, with a test tube filled with water upside down over the end to collect the gas. A label says to take the delivery tube out of the water before stopping the heating.",
-    "params": "collect gas over water (boolean), second tube of bromine water for the test (boolean)",
+    "draw": "Use the crackingApparatus template: a boiling tube nearly level, held by a clamp near its mouth whose arm runs to the stand behind the tube; a delivery tube runs along the floor of a trough into an inverted, water-filled, clamped test tube. The warning is plain text.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The paraffin wool is at the closed end and the catalyst in the strongly heated part. The delivery tube end is under the inverted full test tube. The only opening is the trough (S13). The collected gas turns bromine water colourless.",
     "sources": [
       "https://www.docbrown.info/page04/OilProducts06.htm",
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/organic-chemistry"
     ],
     "confidence": "secondary",
-    "notes": "A new template from existing symbols (boilingTube, clampStand, bossClamp, bunsenBurner, bung, trough, testTube, cottonWool). The AQA text I read asks for cracking conditions and equations, not this apparatus, so priority is B."
+    "notes": "A new template from existing symbols (boilingTube, clampStand, bossClamp, bunsenBurner, bung, trough, testTube, cottonWool). The AQA text I read asks for cracking conditions and equations, not this apparatus, so priority is B. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "crackingEquationModels",
@@ -2049,17 +2049,17 @@
     "courses": ["8462"],
     "specRefs": [],
     "topic": "Organic chemistry",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "fermentationApparatus",
     "proposedPack": "organicApparatus",
     "priority": "C",
     "detail": "full",
-    "draw": "A conical flask of sugar solution and yeast closed with a bung and a delivery tube that dips into limewater in a test tube, with the flask standing in a beaker of warm water (about 35 degrees) and a thermometer in the water bath. Bubbles in the flask and in the limewater, which turns cloudy.",
-    "params": "limewater test tube (boolean), water bath (boolean), airlock instead of limewater (boolean)",
+    "draw": "Use the fermentationApparatus template: a flask standing in a beaker of warm water with a thermometer at 35 degrees; the delivery tube from the bung, the only opening, dips into limewater in a test tube in a small beaker.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The flask is closed except for the delivery tube (anaerobic, S13). The delivery tube dips below the limewater surface. The bath temperature is in the warm range, not boiling.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Not named in the AQA specification; kept because lessons use it. AQA names fermentation with yeast at warm temperatures (4.7.2.3, chemistry only); the apparatus is a classroom choice from memory."
+    "notes": "Not named in the AQA specification; kept because lessons use it. AQA names fermentation with yeast at warm temperatures (4.7.2.3, chemistry only); the apparatus is a classroom choice from memory. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "combustionProductsApparatus",
@@ -2069,17 +2069,17 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Organic chemistry",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "combustionProducts",
     "proposedPack": "organicApparatus",
     "priority": "C",
     "detail": "full",
-    "draw": "A spirit burner or candle under a funnel, a tube from the funnel to a U-tube standing in a beaker of ice (liquid collects), a second tube to a test tube of limewater (turns cloudy), and a tube to a filter pump that draws the gases through. Labels: fuel, ice, condensate, limewater, to pump.",
-    "params": "fuel (ethanol burner | candle), show the cobalt chloride paper test (boolean)",
+    "draw": "Use the combustionProducts template: an inverted funnel clamped over a spirit burner; the funnel, a U-tube in ice, limewater and \"to pump\" are joined by glass and rubber tubing through bungs.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "Gases are drawn through the ice-cooled tube before the limewater. The limewater tube inlet dips under the surface. The system is open only at the funnel and the pump (S13).",
     "sources": [],
     "confidence": "unverified",
-    "notes": "Not named in the AQA specification; kept because lessons use it. Complete combustion gives carbon dioxide and water (the AQA text, 4.7.1.3); the apparatus is a standard teaching one from memory, and many schools show the result as a table."
+    "notes": "Not named in the AQA specification; kept because lessons use it. Complete combustion gives carbon dioxide and water (the AQA text, 4.7.1.3); the apparatus is a standard teaching one from memory, and many schools show the result as a table. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "alkeneBromineTest",
@@ -2203,20 +2203,20 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Chemical analysis",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "gasTests",
     "proposedPack": "labTemplates",
     "priority": "A",
     "detail": "full",
-    "draw": "Four small pictures. Hydrogen: a lit splint at the mouth of a test tube of gas (squeaky pop). Oxygen: a glowing splint going into a test tube of gas, relighting. Carbon dioxide: gas bubbled through limewater in a test tube, which goes cloudy. Chlorine: damp litmus paper held at the mouth of a test tube of pale green gas, bleached white. Each picture has a one-line result under it.",
-    "params": "gas (hydrogen | oxygen | carbon dioxide | chlorine | ammonia), show the result label (boolean), blank result for a worksheet",
+    "draw": "Use the gasTests template: one rack of five test tubes holds the four gas tests: hydrogen and oxygen with a splint (at the mouth, and in the tube), carbon dioxide (a source tube whose delivery tube runs into limewater) and chlorine. The result of each test is a plain-text caption.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "Hydrogen uses a lit splint, oxygen a glowing splint, chlorine damp (not dry) litmus paper, carbon dioxide limewater. The result label matches the gas: squeaky pop, relights, goes cloudy, bleaches. The splint is at the mouth of the tube, not in a liquid.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/chemical-analysis",
       "https://filestore.aqa.org.uk/resources/chemistry/AQA-8462-PRACTICALS-HB.PDF"
     ],
     "confidence": "checked",
-    "notes": "A new template group from existing symbols (testTube, splint, indicatorPaper, testTubeRack, glass tube). Gas tests are in 4.8.2 for both courses."
+    "notes": "A new template group from existing symbols (testTube, splint, indicatorPaper, testTubeRack, glass tube). Gas tests are in 4.8.2 for both courses. Built in release 1.2 (src/templates/labs.ts). The four small pictures of the first version are four results in one rack of five tubes, because the carbon dioxide test needs two tubes. The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "carbonateTest",
@@ -2226,20 +2226,20 @@
     "courses": ["8462"],
     "specRefs": [],
     "topic": "Chemical analysis",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "carbonateTest",
     "proposedPack": "labTemplates",
     "priority": "A",
     "detail": "full",
-    "draw": "A test tube of the solid carbonate with dilute acid added from a dropper, fizzing, closed with a bung and a delivery tube that dips into limewater in a second test tube, which turns cloudy. Both tubes in a rack or clamp. Labels: carbonate, acid, delivery tube, limewater.",
-    "params": "carbonate (calcium carbonate | copper carbonate | sodium carbonate), limewater state (clear | cloudy)",
+    "draw": "Use the carbonateTest template: a test tube of carbonate with a dropper of acid in one bung hole and a delivery tube from the other hole into limewater in a second test tube; both tubes stand in a rack.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The delivery tube end dips below the limewater surface. The first tube is closed by the bung with the delivery tube as the only opening (S13). Bubbles appear in the first tube. The limewater is cloudy after the test.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/chemical-analysis",
       "https://filestore.aqa.org.uk/resources/chemistry/AQA-8462-PRACTICALS-HB.PDF"
     ],
     "confidence": "checked",
-    "notes": "Chemistry only. AQA: add acid to the carbonate and test the gas with limewater. The new template reuses the delivery-tube-into-limewater layout of thermalDecomposition, without the heating."
+    "notes": "Chemistry only. AQA: add acid to the carbonate and test the gas with limewater. The new template reuses the delivery-tube-into-limewater layout of thermalDecomposition, without the heating. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "flameTestApparatus",
@@ -2752,13 +2752,13 @@
     "courses": ["8462"],
     "specRefs": [],
     "topic": "Using resources",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "rustingTubes",
     "proposedPack": "labTemplates",
     "priority": "A",
     "detail": "full",
-    "draw": "Four test tubes in a rack, each with an iron nail. Tube 1: tap water, open to air (the nail rusts, drawn with brown marks). Tube 2: boiled water with a layer of oil on top (no oxygen, no rust). Tube 3: anhydrous calcium chloride and a bung (no water, no rust). Tube 4: salt solution (rusts faster). Labels say what is in each tube and the result.",
-    "params": "tubes shown (3 or 4), result marks (boolean), label mode",
+    "draw": "Use the rustingTubes template: four test tubes in a rack, each with a nail (the nail symbol); rust is a thin orange-brown layer at the foot of tubes 1 and 4, tube 3 has a bung, and a plain note explains the rust.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "Rust appears only where both water and oxygen are present. Tube 2 has oil above boiled water. Tube 3 is closed with a bung and holds a drying agent. Each nail is fully inside its tube.",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/using-resources",
@@ -2766,7 +2766,7 @@
       "https://www.docbrown.info/page03/Reactivitya.htm"
     ],
     "confidence": "secondary",
-    "notes": "Chemistry only (4.10.3). A new template from existing symbols; there is no nail symbol, so a metal electrode rod stands in. A nail symbol would help here and in the displacement rows."
+    "notes": "Chemistry only (4.10.3). A new template from existing symbols; the nail symbol (support pack, built with the template) stands in each tube; the displacement rows can use it too. Built in release 1.2 (src/templates/labs.ts). A nail cannot show rust on its own surface, so the rust is drawn as a thin layer at the foot of the tube. The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "sacrificialProtection",
@@ -6526,17 +6526,17 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Organic chemistry",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "fractionalDistillationLab",
     "proposedPack": "organicApparatus",
     "priority": "B",
     "detail": "full",
-    "draw": "The distillation template with a fractionating column between the flask and the still head: a round-bottomed flask in a heating mantle, a vertical column packed with glass beads, a thermometer at the top with its bulb level with the side arm, a Liebig condenser sloping down with water in at the lower port, and a receiver flask. Labels: fractionating column, thermometer, condenser, water in, water out, collected liquid.",
-    "params": "mixture (ethanol and water | hexane and heptane), heating (mantle | gauze), packing (beads | none)",
+    "draw": "Use the fractionalDistillationLab template: a heating mantle, a flask, a packed column, a still head with a thermometer (its bulb level with the side arm), a sloping Liebig condenser (water in at the low port) and a receiver adaptor in the neck of a collecting flask, so that the system is open at one point.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The system is open to the air at exactly one point (S13). The column is vertical. The thermometer bulb is level with the side arm. Cooling water enters at the lower port.",
     "sources": [],
     "confidence": "unverified",
-    "notes": "A new template from existing symbols (roundBottomFlask, fractionatingColumn, stillHead, thermometer, liebigCondenser, heatingMantle). From memory: AQA names fractional distillation for crude oil; the laboratory mixture is a classroom choice."
+    "notes": "A new template from existing symbols (roundBottomFlask, fractionatingColumn, stillHead, thermometer, liebigCondenser, heatingMantle). From memory: AQA names fractional distillation for crude oil; the laboratory mixture is a classroom choice. Built in release 1.2 (src/templates/labs.ts). The flask, mantle and column are a little smaller than in the distillation template, so that the receiver reaches a collecting flask that stands on the bench. The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "formulaTriangle",
@@ -6567,20 +6567,20 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Chemical analysis",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "gasCollection",
     "proposedPack": "labTemplates",
     "priority": "B",
     "detail": "full",
-    "draw": "Two small set-ups, each a flask producing the gas with a bung and delivery tube. Downward delivery: an upright gas jar with the tube reaching the bottom (the gas is denser than air). Upward delivery: an upside-down gas jar with the tube reaching the top (the gas is less dense than air). A label gives an example gas for each. Collection over water and with a gas syringe are drawn by the rows rateGasOverWaterApparatus and rateGasSyringeApparatus, so they are not repeated here.",
-    "params": "method (downward delivery | upward delivery), gas label",
+    "draw": "Use the gasCollection template: downward delivery and upward delivery side by side, with a lid under the inverted jar; a plain-text note under each says which gases it suits.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "A gas denser than air (carbon dioxide, chlorine) goes by downward delivery and a gas lighter than air (hydrogen, ammonia) by upward delivery. The tube reaches the far end of the jar. Each system is open at exactly one point (S13).",
     "sources": [
       "https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/practical-assessment",
       "https://filestore.aqa.org.uk/resources/chemistry/AQA-8462-PRACTICALS-HB.PDF"
     ],
     "confidence": "unverified",
-    "notes": "AQA's required practical 5 uses collection over water and the gas syringe, which the two rate rows draw; the two delivery methods are a classroom convention from memory. A new template from existing symbols (conicalFlask, bung, gasJar)."
+    "notes": "AQA's required practical 5 uses collection over water and the gas syringe, which the two rate rows draw; the two delivery methods are a classroom convention from memory. A new template from existing symbols (conicalFlask, bung, gasJar). Built in release 1.2 (src/templates/labs.ts)."
   },
   {
     "id": "conductivityTest",
@@ -6590,17 +6590,17 @@
     "courses": ["8464", "8462"],
     "specRefs": [],
     "topic": "Bonding, structure and the properties of matter",
-    "kind": "template",
-    "covered": null,
+    "kind": "covered",
+    "covered": "conductivityTest",
     "proposedPack": "labTemplates",
     "priority": "B",
     "detail": "full",
-    "draw": "A circuit of a cell (or power supply), a lamp and two carbon electrodes on wires, the electrodes dipping into a beaker of the sample (a solution, or a crucible of the molten substance; for a solid, the electrodes touch the block). The lamp is lit or unlit, with a label saying what the result shows. Variants: solid salt, salt solution, molten salt, metal, graphite, sugar solution.",
-    "params": "sample (solid ionic | molten ionic | ionic solution | metal | graphite | sugar solution), lamp lit or not",
+    "draw": "Use the conductivityTest template: a cell and a lamp in series with two carbon rods that dip into the sample without touching each other.",
+    "params": "none: a fixed set-up (set the label mode in the recipe; edit the parts in the editor)",
     "scienceChecks": "The two electrodes dip into the sample and do not touch each other. The lamp is in series with the cell. The lamp is lit only for a sample with free ions or free electrons (molten or dissolved ionic compound, metal, graphite).",
     "sources": ["https://www.aqa.org.uk/subjects/chemistry/gcse/chemistry-8462/specification/subject-content/bonding-structure-and-the-properties-of-matter"],
     "confidence": "unverified",
-    "notes": "AQA asks why ionic compounds conduct when molten or dissolved and why metals and graphite conduct; the apparatus is the usual classroom one, from memory."
+    "notes": "AQA asks why ionic compounds conduct when molten or dissolved and why metals and graphite conduct; the apparatus is the usual classroom one, from memory. Built in release 1.2 (src/templates/labs.ts). The variants named in the first version of this row are not built: the template is one fixed set-up."
   },
   {
     "id": "sigmaPiBonding",

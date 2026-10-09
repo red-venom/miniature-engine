@@ -135,13 +135,15 @@ interface Step {
   n: number
   title: string
   pick: (r: Row) => boolean
+  /** Set by hand when every row of the step has been built: each is then a covered row (step 0), and the step picks no row of its own. */
+  built?: true
 }
 const ks4chem = (r: Row): boolean => r.subject === 'chemistry' && r.level === 'KS4'
 const ks5 = (r: Row): boolean => r.level === 'KS5' && r.kind !== 'chart' && r.kind !== 'covered'
 /** Each row falls in the first step that picks it. The prose of each step is in the document, under its number. */
 export const STEPS: Step[] = [
   { n: 0, title: 'Covered rows (no new code)', pick: (r) => r.kind === 'covered' },
-  { n: 1, title: 'New templates (KS4)', pick: (r) => ks4chem(r) && r.kind === 'template' },
+  { n: 1, title: 'New templates (KS4)', pick: (r) => ks4chem(r) && r.kind === 'template', built: true },
   { n: 2, title: 'Small symbols and the reaction profile (KS4)', pick: (r) => ks4chem(r) && (r.proposedPack === 'annotation' || r.id === 'reactionProfile') },
   { n: 3, title: 'Atoms, ions and dot-and-cross diagrams (KS4)', pick: (r) => ks4chem(r) && r.proposedPack === 'atoms' },
   { n: 4, title: 'The particle box', pick: (r) => r.proposedPack === 'matter' },
@@ -355,7 +357,7 @@ function stepsBlock(rows: Row[]): string {
     const packs = [...new Set(sub.map((r) => r.proposedPack))].sort((a, b) => lt(a, b))
     return [
       String(s.n),
-      s.title,
+      s.built ? `${s.title} (built)` : s.title,
       packs.map((p) => `\`${p}\``).join(', '),
       String(sub.length),
       ...PRIORITY_ORDER.map((p) => String(count(sub, (r) => r.priority === p))),

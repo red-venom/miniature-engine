@@ -217,8 +217,8 @@ Each entry gives the id, the title, the practicals it serves, the symbols it use
 ### reversibleHeating: Heating hydrated copper sulfate
 
 - practicals: GCSE 4.6.2
-- symbols: `heatproofMat`, `bunsenBurner`, `boilingTube`, `testTubeHolder`, `dropper`
-- set-up: Left: a boiling tube held by a test-tube holder, sloping with its mouth lower than the closed end, blue crystals (Blue crystals preset) at the closed end, a Bunsen under them, droplets of water near the mouth. Right: the tube with white powder (White powder) and a dropper above it adding water. Labels: hydrated copper sulfate, anhydrous copper sulfate, water, dropper.
+- symbols: `heatproofMat`, `bunsenBurner`, `boilingTube`, `testTubeHolder`, `dropper`, `drops`
+- set-up: Left: a boiling tube held by a test-tube holder, sloping with its mouth lower than the closed end, blue crystals (Blue crystals preset) and a Bunsen under them, droplets of water (the drops symbol) leaving the mouth. The crystals lie on the lower wall, which is lowest at the mouth: contents always lie at the lowest level, so they cannot sit at the closed end of a tube whose mouth is lower. Right: the tube with white powder (White powder), held by a second holder, and a dropper above it adding water (drops falling). Labels: hydrated copper sulfate, anhydrous copper sulfate, water, dropper.
 
 ### crackingApparatus: Cracking a hydrocarbon in the laboratory
 
