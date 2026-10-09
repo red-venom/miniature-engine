@@ -323,6 +323,39 @@ describe('ionicLattice3D: the picture of the model', () => {
     }
   })
 
+  it('draws the 3 hidden edges as dashed chains that meet at one circle, the rear corner, and leave it up the page, to the right, and down and to the left', () => {
+    // From the drawing alone: the dashed lines join circles; the circle with three dashed lines is the corner. The edge that runs from it down and
+    // to the left is the depth edge, so the corner is the one at the back, and the depth axis runs up and to the right (rule S14).
+    for (const h of sizes('ionicLattice3D')) {
+      const { drawn } = drawnIons(h)
+      const at = (p: Pt) => drawn.circles.filter((c) => Math.abs(dist(p, c.c) - c.r) < 0.03)
+      const joined = new Map<DrawnCircle, DrawnCircle[]>()
+      for (const line of drawn.lines.filter((l) => l.role === 'dashed')) {
+        const [a, b] = [at(line.p), at(line.q)]
+        expect([a.length, b.length]).toEqual([1, 1])
+        joined.set(a[0], [...(joined.get(a[0]) ?? []), b[0]])
+        joined.set(b[0], [...(joined.get(b[0]) ?? []), a[0]])
+      }
+      const corners = [...joined].filter(([, others]) => others.length === 3)
+      expect(corners, `at ${h}`).toHaveLength(1)
+      const [corner, others] = corners[0]
+      const ways = others.map((o) => P(o.c.x - corner.c.x, o.c.y - corner.c.y)) // y points down the page
+      expect(ways.filter((w) => Math.abs(w.x) < 0.03 && w.y < 0)).toHaveLength(1) // up
+      expect(ways.filter((w) => Math.abs(w.y) < 0.03 && w.x > 0)).toHaveLength(1) // to the right
+      expect(ways.filter((w) => w.x < 0 && w.y > 0 && Math.abs(w.x - -w.y) < 0.03)).toHaveLength(1) // down and to the left, at 45 degrees
+      // the other six circles of the three chains are the ends and the middles: 3 middles (degree 2) and 3 ends (degree 1)
+      expect([...joined.values()].map((o) => o.length).sort()).toEqual([1, 1, 1, 2, 2, 2, 3])
+    }
+  })
+
+  it('draws the circles far to near, so that a nearer circle would cover a farther one', () => {
+    const { m, circles } = drawnIons(IONIC.size)
+    const order = m.ions.map((ion, i) => ({ z: ion.pos[2], at: circles[i].at })).sort((a, b) => a.at - b.at)
+    for (let i = 1; i < order.length; i++) expect(order[i].z).toBeLessThanOrEqual(order[i - 1].z)
+    expect(order[0].z).toBe(2)
+    expect(order[26].z).toBe(0)
+  })
+
   it('draws the bonds first and the circles after, so that a circle covers the end of each of its bonds', () => {
     const { drawn } = drawnIons(IONIC.size)
     expect(Math.max(...drawn.lines.map((l) => l.at))).toBeLessThan(Math.min(...drawn.circles.map((c) => c.at)))
@@ -653,6 +686,21 @@ describe('diamondStructure: the picture of the model', () => {
 
   it('uses the numbers of the brief: size 160, u = 24, radius 7, stubs 0.4 of a bond', () => {
     expect([DIAMOND.size, DIAMOND.unit, DIAMOND.radius, DIAMOND.stub]).toEqual([160, 24, 7, 0.4])
+  })
+
+  it('is in the oblique projection of rule S14: the front keeps its shape, and a step of depth moves a circle up and to the right at 45 degrees by half the step', () => {
+    for (const h of sizes('diamondStructure')) {
+      const x = drawn(h),
+        u = 24 * x.k,
+        half = 0.5 * Math.SQRT1_2 // half a step of depth, at 45 degrees: this far right and this far up
+      for (let i = 0; i < 17; i++)
+        for (let j = i + 1; j < 17; j++) {
+          const [a, b] = [m.atoms[i].view, m.atoms[j].view]
+          const [dx, dy, dz] = [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
+          expect(x.circles[j].c.x - x.circles[i].c.x, `${i} ${j}`).toBeCloseTo(u * (dx + half * dz), 1)
+          expect(x.circles[j].c.y - x.circles[i].c.y, `${i} ${j}`).toBeCloseTo(-u * (dy + half * dz), 1) // y points down the page
+        }
+    }
   })
 
   it('draws the model: 17 white circles of radius 7 (scaled with the box) at the places of the atoms, 16 bond lines, and nothing else', () => {
