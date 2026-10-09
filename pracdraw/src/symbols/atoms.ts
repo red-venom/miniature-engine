@@ -1,7 +1,7 @@
 // atoms.ts — atoms and ions: Bohr atoms, models of the atom, nuclide notation, isotopes, alpha scattering (release 1.2).
 // The symbols are in the plan in spec/catalogue.json (priority C).
 //
-// Each picture is made from a data model that this file exports (bohrModel, atomModel, nuclide, isotopeModel, scatterModel). The drawing reads
+// Each picture is made from a data model that this file exports (bohrModel, atomModel, nuclide, isotopeModel, alphaModel). The drawing reads
 // the model and nothing else, so that atoms.science.test.ts can test the science on the model (electrons = Z minus the charge, the shells fill
 // 2, 8, 8, 2, neutrons = A minus Z, no alpha path enters a nucleus) and then check that the geometry agrees with it (it counts the marks).
 //
@@ -10,7 +10,7 @@
 // by the number of shells that are drawn: width = height = 38 + 44 × shells, which is 82, 126, 170 and 214 u for one to four shells. The shells
 // are then 19 to 21 u apart. In a smaller box the atom keeps its shells 9 u apart at least and so grows beyond the box (never by 45 u).
 
-import { P, f, rng, type Pt } from '../kernel/geom'
+import { P, dist, f, rng, type Pt } from '../kernel/geom'
 import { hatchD } from '../kernel/hatch'
 import { SCRIPT } from '../kernel/nodes'
 import { parseMarkup } from '../kernel/text'
@@ -137,7 +137,7 @@ export const BOHR = {
   /** The nucleus, and the radius from which the shells are spaced. */
   nucleusR: 14,
   /** A nucleus that holds two lines of numbers is larger, so that they fit; the shells stay where they are. */
-  numbersR: 18,
+  numbersR: 19,
   /** The room between the outermost shell and the edge of the box, and the 18 u more that an ion needs for its brackets. */
   margin: 8,
   ionRoom: 18,
@@ -146,6 +146,8 @@ export const BOHR = {
   bracketArm: 8,
   /** The least distance between two shells (dots 5.2 u across): a box that is too small makes the atom larger, not crowded. */
   minGap: 9,
+  /** The first shell is at least this far outside a nucleus that is larger than 14 u (the nucleus of the numbers). */
+  nucleusGap: 6,
   /** Text sizes: the element symbol, the numbers of protons and neutrons, the charge (its superscript is drawn at 0.7 of this: 12.6 u), the electron structure. */
   symbolSize: 16,
   numbersSize: 12,
@@ -201,9 +203,9 @@ export interface BohrModel {
   /** The square brackets of an ion. */
   bracket: null | { x0: number; y0: number; x1: number; y1: number; arm: number }
   /** The charge at the top right of the brackets, in the label markup (`^{2+}`). */
-  charge_text: null | PlacedText
+  chargeText: null | PlacedText
   /** The electron structure under the atom. */
-  structure_text: null | PlacedText
+  structureText: null | PlacedText
 }
 
 /** The charge as a superscript in the label markup: `^{+}`, `^{2+}`, `^{-}`, `^{3-}` (a hyphen in a superscript is drawn as a true minus sign). */
@@ -251,7 +253,8 @@ export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions>
   const shrink = opt.structure ? BOHR.structureRoom : 0
   // The outermost shell, and the centre. A box that is too small does not crowd the shells: the atom grows instead.
   const drawn = opt.outerOnly ? Math.min(1, n) : n
-  const R = Math.max(half - BOHR.margin - (charge ? BOHR.ionRoom : 0) - shrink / 2, BOHR.nucleusR + BOHR.minGap * drawn, nuclearR + 4)
+  const spacing = Math.max(BOHR.minGap, nuclearR - BOHR.nucleusR + BOHR.nucleusGap)
+  const R = Math.max(half - BOHR.margin - (charge ? BOHR.ionRoom : 0) - shrink / 2, BOHR.nucleusR + spacing * drawn, nuclearR + 4)
   const cx = 0,
     cy = opt.h / 2 - shrink / 2
   const other: Mark = opt.mark === 'dot' ? 'cross' : 'dot'
@@ -276,9 +279,9 @@ export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions>
   }
   const B = R + BOHR.bracketGap
   const bracket = charge ? { x0: cx - B, y0: cy - B, x1: cx + B, y1: cy + B, arm: BOHR.bracketArm } : null
-  const charge_text = bracket ? { text: chargeMarkup(charge), x: bracket.x1 + 3, y: bracket.y0 + 4, size: BOHR.chargeSize } : null
+  const chargeText = bracket ? { text: chargeMarkup(charge), x: bracket.x1 + 3, y: bracket.y0 + 4, size: BOHR.chargeSize } : null
   const below = bracket ? B + 1.5 : R + DOT_R
-  const structure_text =
+  const structureText =
     opt.structure && n ? { text: shellString(structure), x: cx, y: cy + below + 5 + CAP * BOHR.structureSize, size: BOHR.structureSize } : null
   return {
     z: e.z,
@@ -293,8 +296,8 @@ export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions>
     shells,
     electrons: shells.flatMap((s) => s.electrons),
     bracket,
-    charge_text,
-    structure_text,
+    chargeText,
+    structureText,
   }
 }
 
@@ -359,8 +362,8 @@ const bohrAtom: SymbolDef = {
       structure: bool(p.structure, false),
     })
     const texts: SymbolText[] = m.nucleus.texts.map((t) => asText(t, 'middle'))
-    if (m.charge_text) texts.push(asText(m.charge_text, 'start'))
-    if (m.structure_text) texts.push(asText(m.structure_text, 'middle'))
+    if (m.chargeText) texts.push(asText(m.chargeText, 'start'))
+    if (m.structureText) texts.push(asText(m.structureText, 'middle'))
     return { prims: bohrPrims(m), texts }
   },
 }
@@ -892,8 +895,8 @@ export function deflection(b: number): number {
   return ALPHA.reverseAngle * Math.exp(-(Math.max(b, ALPHA.reverseB) - ALPHA.reverseB) / ALPHA.lambda)
 }
 
-/** The paths that bend a little, in all, for the number of paths: one of five, two of six to nine, three of ten to twelve. */
-const bentCount = (paths: number): number => Math.round(paths / 4)
+/** The paths that bend a little, for the number of paths: one of five or six, two of seven to ten, three of eleven or twelve. Most paths are straight. */
+const bentCount = (paths: number): number => Math.floor((paths + 1) / 4)
 /** How far above their nuclei the paths that bend upwards pass (the turned-back path passes at `reverseB`), and how far below its nucleus the path that bends down passes. */
 const UP = [3.2, 3.6]
 const DOWN = 3.4
@@ -982,6 +985,24 @@ export interface AlphaModel {
   block: { x0: number; x1: number; back: number; slit: number; outer: number }
 }
 
+/** A polyline without its last `length` u, measured along it. */
+function trimEnd(pts: readonly Pt[], length: number): Pt[] {
+  const out = [...pts]
+  let left = length
+  while (out.length > 1) {
+    const a = out[out.length - 2],
+      b = out[out.length - 1]
+    const seg = dist(a, b)
+    if (seg > left) {
+      out[out.length - 1] = P(b.x - ((b.x - a.x) * left) / seg, b.y - ((b.y - a.y) * left) / seg)
+      break
+    }
+    left -= seg
+    out.pop()
+  }
+  return out
+}
+
 /** The model of the picture: the nuclei, the paths of the alpha particles and the screen, in a box w × h. */
 export function alphaModel(pathsIn: number, showNuclei: boolean, w = 380, h = 230): AlphaModel {
   const slots = alphaPattern(pathsIn)
@@ -1014,7 +1035,7 @@ export function alphaModel(pathsIn: number, showNuclei: boolean, w = 380, h = 23
       pts = [P(xs, curve[0].y), ...curve, far]
       apex = 1 + curve.length / 2
     }
-    // End the path where it meets the detector screen, with the arrow head's tip on the screen.
+    // The path ends where it meets the detector screen: the tip of its arrow head is on the screen, and the line stops at the foot of the head.
     const C = P(cx, cy)
     let tip = pts[pts.length - 1],
       cut = pts.length - 1
@@ -1033,10 +1054,8 @@ export function alphaModel(pathsIn: number, showNuclei: boolean, w = 380, h = 23
         break
       }
     }
-    const from = pts[cut]
-    const heading = (Math.atan2(tip.y - from.y, tip.x - from.x) * 180) / Math.PI
-    const foot = P(tip.x - (ALPHA.arrow - 1) * Math.cos(deg(heading)), tip.y - (ALPHA.arrow - 1) * Math.sin(deg(heading)))
-    const points = [...pts.slice(0, cut + 1), foot]
+    const heading = (Math.atan2(tip.y - pts[cut].y, tip.x - pts[cut].x) * 180) / Math.PI
+    const points = trimEnd([...pts.slice(0, cut + 1), tip], ALPHA.arrow - 1)
     return { kind: turn === 0 ? 'straight' : turn > 90 ? 'reversed' : 'bent', nucleus: index, s, turn: up ? -turn : turn, points, tip, heading }
   })
   const reach = Math.max(...paths.map((q) => Math.abs(q.points[0].y - cy)))
