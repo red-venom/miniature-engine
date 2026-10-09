@@ -122,7 +122,7 @@ An inventory row is a scope, not a recipe. For each pack, the lead does the foll
 - **Catalogue rows.** Write the catalogue row of every symbol (size, resize mode, parameters with type, default and range, anchors, label, line roles), as for the apparatus. `src/spec.test.ts` compares the code with those rows.
 - **A geometry brief for each hard row.** The rows with the note "Needs a geometry brief before it is built." are <!-- gen:n.briefIds -->`covalentDotCross`, `diamondStructure`, `graphiteStructure`, `fullereneC60`<!-- /gen -->. A brief gives the construction or the coordinates, the oblique transform, the rule for hidden lines, and what is drawn at the edge of a patch. Two more of the hardest rows, `ionicDotCross` and `displayedFormulaHydrocarbon`, are close to ready.
 - **Text and fills.** Decisions 7 and 8: the kernel needs a tint role and a hatch role, and rule S11 needs relaxing for these packs.
-- **Library groups.** The library's packs are a closed list: `PackId` in `src/symbols/types.ts`, `PACKS` in `src/editor/search.ts` and `src/editor/search.test.ts` agree on <!-- gen:n.packIds -->14<!-- /gen --> ids. The inventory proposes <!-- gen:n.newPacks -->7<!-- /gen --> more pack names, which would make <!-- gen:n.libraryGroups -->21<!-- /gen --> groups. The library will group the packs under a few headings (the lead's work) and will not show that many.
+- **Library groups.** The library's packs are a closed list: `PackId` in `src/symbols/types.ts`, `PACKS` in `src/editor/search.ts` and `src/editor/search.test.ts` agree on <!-- gen:n.packIds -->15<!-- /gen --> ids. The inventory proposes <!-- gen:n.newPacks -->6<!-- /gen --> more pack names, which would make <!-- gen:n.libraryGroups -->21<!-- /gen --> groups. The library will group the packs under a few headings (the lead's work) and will not show that many.
 - **Science checks need a model.** The science checks of a row are written about atoms, bonds and electrons, but a symbol returns only paths. A symbol file exports its data (the element table, the molecule library) so that a test can check it. The author brief forbids authors to write tests; for these packs the lead changes that rule, and the author owns a `<pack>.science.test.ts`.
 
 ## Counts
@@ -197,7 +197,7 @@ The library group says whether the pack name is already a group of the library (
 | atoms | chemistry | exists | 14 | 8 | 3 | 3 | 9 | 5 | `alphaScattering`, `atomModels`, `bohrAtom`, `covalentDotCross` |
 | matter | chemistry and physics | exists | 10 | 4 | 4 | 2 | 10 | 0 | `changeOfState`, `collisionTheoryParticles`, `particleElementCompoundMixture`, `particleStates` |
 | molecules | chemistry | new | 33 | 7 | 20 | 6 | 15 | 18 | `additionPolymerisation`, `alkeneAdditionReactions`, `balancedEquationModels`, `ballAndStickModel` |
-| structures | chemistry | new | 15 | 7 | 7 | 1 | 12 | 3 | `alloyStructure`, `diamondStructure`, `fullereneC60`, `grapheneSheet` |
+| structures | chemistry | exists | 15 | 7 | 7 | 1 | 12 | 3 | `alloyStructure`, `diamondStructure`, `fullereneC60`, `grapheneSheet` |
 | energy | chemistry | exists | 8 | 1 | 6 | 1 | 2 | 6 | `reactionProfile`, `benzeneEnthalpyLevels`, `bondEnergyDiagram`, `bornHaberCycle` |
 | flow | chemistry | new | 17 | 3 | 5 | 9 | 11 | 6 | `haberProcess`, `potableWaterTreatment`, `wasteWaterTreatment`, `bioleaching` |
 | plants | chemistry | new | 4 | 1 | 1 | 2 | 4 | 0 | `crudeOilFractionatingTower`, `desalinationReverseOsmosis`, `blastFurnace`, `catalyticConverter` |

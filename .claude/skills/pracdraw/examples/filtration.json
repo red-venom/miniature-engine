@@ -6,7 +6,9 @@
       "id": "flask",
       "symbol": "conicalFlask",
       "at": { "x": 0, "y": 0, "anchor": "base" },
-      "contents": { "main": [{ "preset": "Colourless solution", "amount": 0.15 }] }
+      "contents": {
+        "main": [{ "preset": "Colourless solution", "amount": 0.15 }]
+      }
     },
     {
       "id": "funnel",
@@ -23,7 +25,11 @@
   ],
   "labels": {
     "side": { "paper": "left" },
-    "end": { "funnel": { "at": [36, 8] }, "paper": { "at": [-17, 23] }, "flask": { "at": [36, 95] } },
+    "end": {
+      "funnel": { "at": [36, 8] },
+      "paper": { "at": [-17, 23] },
+      "flask": { "at": [36, 95] }
+    },
     "extra": [
       { "text": "residue", "part": "paper", "at": [0, 39], "side": "left" },
       { "text": "filtrate", "part": "flask", "at": [20, 140] }

@@ -125,6 +125,7 @@ export type PackId =
   | 'atoms'
   | 'matter'
   | 'energy'
+  | 'structures'
 
 export type ResizeMode = 'free' | 'uniform' | 'width' | 'height' | 'none'
 

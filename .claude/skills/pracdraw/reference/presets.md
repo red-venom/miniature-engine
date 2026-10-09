@@ -8,43 +8,43 @@ A layer of `"contents"` is `{ "preset": "Water", "amount": 0.6 }` or `{ "preset"
 - A cavity holds at most 4 layers, listed from the bottom. The amounts of the layers that are not a gas add up to 1 or less. At most one layer is a gas, and it is last: it fills what the others leave, so it has no amount. Lumps lie at the bottom: put them first.
 - A liquid also takes `"meniscus": true` (on the top liquid only), `"bubbles": "few" | "many"` and `"cloudy": true`. A layer with no preset is `{ "kind": "liquid", "colour": "#cfe8f7", "amount": 0.5 }`, and with nothing but an amount or a reading it is water (a red thread in a thermometer).
 
-| preset | kind | colour |
-| --- | --- | --- |
-| Water | liquid | `#cfe8f7` |
-| Colourless solution | liquid | `#e9f1f5` |
-| Blue (copper sulfate) | liquid | `#7fb8e6` |
-| Pale green | liquid | `#cfe8c4` |
-| Green (neutral indicator) | liquid | `#8fce8a` |
-| Yellow | liquid | `#f5e58a` |
-| Orange | liquid | `#f2b56b` |
-| Pink | liquid | `#f2a7c3` |
-| Red | liquid | `#e98a8a` |
-| Purple | liquid | `#b497d6` |
-| Brown (iodine solution) | liquid | `#b98556` |
-| Blue-black (starch and iodine) | liquid | `#3b4a6b` |
-| Oil or organic layer | liquid | `#f3d9a8` |
-| Cloudy | liquid, cloudy | `#e6e6e6` |
-| Cloudy yellow (sulfur) | liquid, cloudy | `#f1e9b0` |
-| White powder or precipitate | powder | `#f1f1f1` |
-| Grey powder | powder | `#d8d8d8` |
-| Black powder | powder | `#5a5a5a` |
-| Green powder (copper carbonate) | powder | `#9fcfae` |
-| Blue precipitate (copper(II) hydroxide) | powder | `#8fbfe8` |
-| Pale green precipitate (iron(II) hydroxide) | powder | `#b9d6a3` |
-| Orange-brown precipitate (iron(III) hydroxide) | powder | `#c9824a` |
-| Pink-brown deposit (copper) | powder | `#c58a63` |
-| Cream precipitate (silver bromide) | powder | `#f3ecd0` |
-| Yellow precipitate (silver iodide) | powder | `#f2e26b` |
-| Brick-red precipitate (Benedict's test) | powder | `#c8553d` |
-| Chips or granules | lumps | `#e9e9e9` |
-| Ice | lumps | `#eaf4fb` |
-| Blue crystals (copper sulfate) | lumps | `#7fb8e6` |
-| Pale green gas | gas | `#e3efc1` |
-| Brown gas | gas | `#cfa27a` |
+| preset                                         | kind           | colour    |
+| ---------------------------------------------- | -------------- | --------- |
+| Water                                          | liquid         | `#cfe8f7` |
+| Colourless solution                            | liquid         | `#e9f1f5` |
+| Blue (copper sulfate)                          | liquid         | `#7fb8e6` |
+| Pale green                                     | liquid         | `#cfe8c4` |
+| Green (neutral indicator)                      | liquid         | `#8fce8a` |
+| Yellow                                         | liquid         | `#f5e58a` |
+| Orange                                         | liquid         | `#f2b56b` |
+| Pink                                           | liquid         | `#f2a7c3` |
+| Red                                            | liquid         | `#e98a8a` |
+| Purple                                         | liquid         | `#b497d6` |
+| Brown (iodine solution)                        | liquid         | `#b98556` |
+| Blue-black (starch and iodine)                 | liquid         | `#3b4a6b` |
+| Oil or organic layer                           | liquid         | `#f3d9a8` |
+| Cloudy                                         | liquid, cloudy | `#e6e6e6` |
+| Cloudy yellow (sulfur)                         | liquid, cloudy | `#f1e9b0` |
+| White powder or precipitate                    | powder         | `#f1f1f1` |
+| Grey powder                                    | powder         | `#d8d8d8` |
+| Black powder                                   | powder         | `#5a5a5a` |
+| Green powder (copper carbonate)                | powder         | `#9fcfae` |
+| Blue precipitate (copper(II) hydroxide)        | powder         | `#8fbfe8` |
+| Pale green precipitate (iron(II) hydroxide)    | powder         | `#b9d6a3` |
+| Orange-brown precipitate (iron(III) hydroxide) | powder         | `#c9824a` |
+| Pink-brown deposit (copper)                    | powder         | `#c58a63` |
+| Cream precipitate (silver bromide)             | powder         | `#f3ecd0` |
+| Yellow precipitate (silver iodide)             | powder         | `#f2e26b` |
+| Brick-red precipitate (Benedict's test)        | powder         | `#c8553d` |
+| Chips or granules                              | lumps          | `#e9e9e9` |
+| Ice                                            | lumps          | `#eaf4fb` |
+| Blue crystals (copper sulfate)                 | lumps          | `#7fb8e6` |
+| Pale green gas                                 | gas            | `#e3efc1` |
+| Brown gas                                      | gas            | `#cfa27a` |
 
 ## Added by the recipe
 
-| preset | kind | colour |
-| --- | --- | --- |
+| preset          | kind   | colour    |
+| --------------- | ------ | --------- |
 | Thermometer red | liquid | `#d33333` |
-| Colourless gas | gas | `#ffffff` |
+| Colourless gas  | gas    | `#ffffff` |

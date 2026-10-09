@@ -2,7 +2,7 @@
 
 # Symbols
 
-123 symbols in 14 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+123 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -13,196 +13,201 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 
 ## Containers
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `beaker` | Beaker |  | 100 × 120 | free, min 40 × 40 | graduations: boolean, default false; spout: boolean, default true | main | base (base), mouth (mouth), rim (surface) |  |
-| `boilingTube` | Boiling tube |  | 34 × 150 | free, min 12 × 40 |  | main | bottom (round), mouth (mouth), neck (neck) |  |
-| `buchnerFlask` | Büchner flask | side-arm flask, filter flask, Buchner flask | 120 × 150 | free, min 60 × 80 |  | main | base (base), mouth (mouth), neck (neck), sideArm (port) | label "Büchner flask" |
-| `conicalFlask` | Conical flask | Erlenmeyer flask | 110 × 150 | free, min 50 × 60 |  | main | base (base), mouth (mouth), neck (neck) |  |
-| `copperCalorimeter` | Calorimeter (metal can) | copper can, copper calorimeter | 80 × 90 | free, min 30 × 30 |  | main | base (base), mouth (mouth) | label "calorimeter" |
-| `crucible` | Crucible |  | 54 × 56 | free, min 30 × 30 | lid: boolean, default false | main | base (base), mouth (mouth) |  |
-| `crystallisingDish` | Crystallising dish |  | 150 × 55 | free, min 60 × 24 |  | main | base (base), mouth (mouth) |  |
-| `displacementCan` | Displacement can | eureka can, overflow can | 90 × 130 | free, min 40 × 60 |  | main | base (base), spout (port) |  |
-| `evaporatingBasin` | Evaporating basin | evaporating dish | 120 × 44 | free, min 50 × 20 |  | main | base (base), mouth (mouth) |  |
-| `flatBottomFlask` | Flat-bottomed flask |  | 110 × 150 | free, min 50 × 70 |  | main | base (base), mouth (mouth), neck (neck) |  |
-| `gasJar` | Gas jar |  | 70 × 170 | free, min 30 × 80 | lid: boolean, default false | main | base (base), mouth (mouth) |  |
-| `pearFlask` | Pear-shaped flask |  | 90 × 140 | free, min 60 × 90 |  | main | bottom (round), mouth (mouth), neck (neck) |  |
-| `polystyreneCup` | Polystyrene cup | insulated cup, calorimeter cup | 84 × 104 | free, min 40 × 40 | lid: boolean, default true | main | base (base), mouth (mouth) |  |
-| `reagentBottle` | Reagent bottle | bottle | 80 × 140 | free, min 50 × 80 | stopper: boolean, default true | main | base (base), mouth (mouth) |  |
-| `roundBottomFlask` | Round-bottomed flask | RB flask, boiling flask | 110 × 150 | free, min 50 × 70 |  | main | bottom (round), mouth (mouth), neck (neck) |  |
-| `sideArmTube` | Side-arm boiling tube |  | 34 × 150 | free, min 20 × 70 |  | main | bottom (round), mouth (mouth), sideArm (port) |  |
-| `testTube` | Test tube |  | 24 × 120 | free, min 12 × 40 |  | main | bottom (round), mouth (mouth), neck (neck) |  |
-| `trough` | Trough | water trough, pneumatic trough, washing-up bowl | 280 × 95 | free, min 80 × 40 |  | main | base (base) |  |
-| `uTube` | U-tube |  | 110 × 150 | free, min 64 × 80 |  | main | mouthL (mouth), mouthR (mouth) | label "U-tube" |
-| `volumetricFlask` | Volumetric flask | standard flask, graduated flask | 110 × 210 | free, min 50 × 100 | stopper: boolean, default false; mark: boolean, default true | main | base (base), mouth (mouth), neck (neck) | the mark is at 0.2 × height from the top, 15.6 u above neck: amount 0.806 puts the surface on it |
-| `washBottle` | Wash bottle | distilled water bottle | 70 × 150 | free, min 44 × 90 |  | main | base (base) |  |
-| `watchGlass` | Watch glass | clock glass | 110 × 14 | width, min 40 × 14 |  |  | under (base), edge (base), top (surface) |  |
+| id                  | name                    | aliases                                         | size      | resize             | parameters                                                        | cavities | anchors                                                 | notes                                                                                            |
+| ------------------- | ----------------------- | ----------------------------------------------- | --------- | ------------------ | ----------------------------------------------------------------- | -------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `beaker`            | Beaker                  |                                                 | 100 × 120 | free, min 40 × 40  | graduations: boolean, default false; spout: boolean, default true | main     | base (base), mouth (mouth), rim (surface)               |                                                                                                  |
+| `boilingTube`       | Boiling tube            |                                                 | 34 × 150  | free, min 12 × 40  |                                                                   | main     | bottom (round), mouth (mouth), neck (neck)              |                                                                                                  |
+| `buchnerFlask`      | Büchner flask           | side-arm flask, filter flask, Buchner flask     | 120 × 150 | free, min 60 × 80  |                                                                   | main     | base (base), mouth (mouth), neck (neck), sideArm (port) | label "Büchner flask"                                                                            |
+| `conicalFlask`      | Conical flask           | Erlenmeyer flask                                | 110 × 150 | free, min 50 × 60  |                                                                   | main     | base (base), mouth (mouth), neck (neck)                 |                                                                                                  |
+| `copperCalorimeter` | Calorimeter (metal can) | copper can, copper calorimeter                  | 80 × 90   | free, min 30 × 30  |                                                                   | main     | base (base), mouth (mouth)                              | label "calorimeter"                                                                              |
+| `crucible`          | Crucible                |                                                 | 54 × 56   | free, min 30 × 30  | lid: boolean, default false                                       | main     | base (base), mouth (mouth)                              |                                                                                                  |
+| `crystallisingDish` | Crystallising dish      |                                                 | 150 × 55  | free, min 60 × 24  |                                                                   | main     | base (base), mouth (mouth)                              |                                                                                                  |
+| `displacementCan`   | Displacement can        | eureka can, overflow can                        | 90 × 130  | free, min 40 × 60  |                                                                   | main     | base (base), spout (port)                               |                                                                                                  |
+| `evaporatingBasin`  | Evaporating basin       | evaporating dish                                | 120 × 44  | free, min 50 × 20  |                                                                   | main     | base (base), mouth (mouth)                              |                                                                                                  |
+| `flatBottomFlask`   | Flat-bottomed flask     |                                                 | 110 × 150 | free, min 50 × 70  |                                                                   | main     | base (base), mouth (mouth), neck (neck)                 |                                                                                                  |
+| `gasJar`            | Gas jar                 |                                                 | 70 × 170  | free, min 30 × 80  | lid: boolean, default false                                       | main     | base (base), mouth (mouth)                              |                                                                                                  |
+| `pearFlask`         | Pear-shaped flask       |                                                 | 90 × 140  | free, min 60 × 90  |                                                                   | main     | bottom (round), mouth (mouth), neck (neck)              |                                                                                                  |
+| `polystyreneCup`    | Polystyrene cup         | insulated cup, calorimeter cup                  | 84 × 104  | free, min 40 × 40  | lid: boolean, default true                                        | main     | base (base), mouth (mouth)                              |                                                                                                  |
+| `reagentBottle`     | Reagent bottle          | bottle                                          | 80 × 140  | free, min 50 × 80  | stopper: boolean, default true                                    | main     | base (base), mouth (mouth)                              |                                                                                                  |
+| `roundBottomFlask`  | Round-bottomed flask    | RB flask, boiling flask                         | 110 × 150 | free, min 50 × 70  |                                                                   | main     | bottom (round), mouth (mouth), neck (neck)              |                                                                                                  |
+| `sideArmTube`       | Side-arm boiling tube   |                                                 | 34 × 150  | free, min 20 × 70  |                                                                   | main     | bottom (round), mouth (mouth), sideArm (port)           |                                                                                                  |
+| `testTube`          | Test tube               |                                                 | 24 × 120  | free, min 12 × 40  |                                                                   | main     | bottom (round), mouth (mouth), neck (neck)              |                                                                                                  |
+| `trough`            | Trough                  | water trough, pneumatic trough, washing-up bowl | 280 × 95  | free, min 80 × 40  |                                                                   | main     | base (base)                                             |                                                                                                  |
+| `uTube`             | U-tube                  |                                                 | 110 × 150 | free, min 64 × 80  |                                                                   | main     | mouthL (mouth), mouthR (mouth)                          | label "U-tube"                                                                                   |
+| `volumetricFlask`   | Volumetric flask        | standard flask, graduated flask                 | 110 × 210 | free, min 50 × 100 | stopper: boolean, default false; mark: boolean, default true      | main     | base (base), mouth (mouth), neck (neck)                 | the mark is at 0.2 × height from the top, 15.6 u above neck: amount 0.806 puts the surface on it |
+| `washBottle`        | Wash bottle             | distilled water bottle                          | 70 × 150  | free, min 44 × 90  |                                                                   | main     | base (base)                                             |                                                                                                  |
+| `watchGlass`        | Watch glass             | clock glass                                     | 110 × 14  | width, min 40 × 14 |                                                                   |          | under (base), edge (base), top (surface)                |                                                                                                  |
 
 ## Measuring
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `balance` | Balance | top-pan balance, digital balance, electronic balance, scales | 180 × 56 | width, min 100 × 56 | reading: text, default "0.00 g" |  | pan (surface), base (base) |  |
-| `burette` | Burette |  | 18 × 340 | height, min 18 × 200 | numbers: boolean, default false | main (scale 0..50 cm³) | tip (tip), neck (neck) |  |
-| `dropper` | Dropping pipette | teat pipette, dropper, Pasteur pipette | 16 × 100 | height, min 16 × 60 |  | main | tip (tip) |  |
-| `gasSyringe` | Gas syringe |  | 230 × 46 | width, min 150 × 46 | plunger: number 0..1, default 0.3; numbers: boolean, default false | main | nozzle (port), neck (neck) |  |
-| `instrumentBox` | Meter box | joulemeter, pH meter, data logger, signal generator, colorimeter, digital voltmeter, digital ammeter, multimeter | 130 × 80 | free, min 70 × 60 | title: text, default "pH meter"; reading: text, default "7.00"; terminals: "none" or "2" or "4", default "none" |  | base (base) | label "pH meter" |
-| `lightGate` | Light gate |  | 70 × 90 | free, min 40 × 40 | beam: boolean, default true |  | base (base), lead (terminal) |  |
-| `measuringCylinder` | Measuring cylinder | graduated cylinder | 60 × 190 | free, min 30 × 80 | capacity: "10" or "25" or "50" or "100" or "250", default "100"; numbers: boolean, default false | main (scale 0..100 cm³) | base (base), mouth (mouth) |  |
-| `newtonMeter` | Newton meter | spring balance, force meter, newtonmeter | 30 × 160 | height, min 30 × 100 | reading: number 0..1, default 0.3 |  | top (port), hook (port) |  |
-| `pipetteFiller` | Pipette filler | pipette pump, safety filler | 34 × 62 | uniform, min 22 × 40 |  |  |  | no hand holds it: it stands in the air above its pipette |
-| `probe` | Probe | pH probe, temperature probe, sensor | 12 × 150 | height, min 12 × 50 |  |  | tip (tip), top (terminal) |  |
-| `ruler` | Ruler | metre rule, metre stick, rule, tape measure, half-metre rule | 300 × 22 | width, min 100 × 22 | length: "15" or "30" or "50" or "100", default "30"; numbers: boolean, default true |  |  |  |
-| `scaleWindow` | Magnified scale | scale reading, enlarged scale | 70 × 150 | free, min 50 × 100 | top: number 0..1000, default 20; bottom: number 0..1000, default 21; divisions: "5" or "10" or "20", default "10"; unit: text, default "cm³" | main (scale 20..21 cm³) |  |  |
-| `stopwatch` | Stopwatch | stopclock, timer | 54 × 66 | uniform, min 36 × 44 | style: "digital" or "analogue", default "digital"; reading: text, default "00:00.0" |  |  |  |
-| `syringe` | Syringe | plastic syringe | 26 × 120 | height, min 26 × 70 | plunger: number 0..1, default 0.5 | main | tip (tip) |  |
-| `thermometer` | Thermometer |  | 9 × 210 | height, min 9 × 100 | numbers: boolean, default false | main (scale -10..110 °C) | bulb (tip) |  |
-| `volumetricPipette` | Pipette | volumetric pipette, bulb pipette | 20 × 300 | height, min 20 × 160 |  | main | tip (tip), neck (neck) | the mark is at 0.16 × height from the top, 9.5 u above neck: amount 0.845 puts the surface on it |
+| id                  | name               | aliases                                                                                                          | size     | resize               | parameters                                                                                                                                   | cavities                 | anchors                      | notes                                                                                            |
+| ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| `balance`           | Balance            | top-pan balance, digital balance, electronic balance, scales                                                     | 180 × 56 | width, min 100 × 56  | reading: text, default "0.00 g"                                                                                                              |                          | pan (surface), base (base)   |                                                                                                  |
+| `burette`           | Burette            |                                                                                                                  | 18 × 340 | height, min 18 × 200 | numbers: boolean, default false                                                                                                              | main (scale 0..50 cm³)   | tip (tip), neck (neck)       |                                                                                                  |
+| `dropper`           | Dropping pipette   | teat pipette, dropper, Pasteur pipette                                                                           | 16 × 100 | height, min 16 × 60  |                                                                                                                                              | main                     | tip (tip)                    |                                                                                                  |
+| `gasSyringe`        | Gas syringe        |                                                                                                                  | 230 × 46 | width, min 150 × 46  | plunger: number 0..1, default 0.3; numbers: boolean, default false                                                                           | main                     | nozzle (port), neck (neck)   |                                                                                                  |
+| `instrumentBox`     | Meter box          | joulemeter, pH meter, data logger, signal generator, colorimeter, digital voltmeter, digital ammeter, multimeter | 130 × 80 | free, min 70 × 60    | title: text, default "pH meter"; reading: text, default "7.00"; terminals: "none" or "2" or "4", default "none"                              |                          | base (base)                  | label "pH meter"                                                                                 |
+| `lightGate`         | Light gate         |                                                                                                                  | 70 × 90  | free, min 40 × 40    | beam: boolean, default true                                                                                                                  |                          | base (base), lead (terminal) |                                                                                                  |
+| `measuringCylinder` | Measuring cylinder | graduated cylinder                                                                                               | 60 × 190 | free, min 30 × 80    | capacity: "10" or "25" or "50" or "100" or "250", default "100"; numbers: boolean, default false                                             | main (scale 0..100 cm³)  | base (base), mouth (mouth)   |                                                                                                  |
+| `newtonMeter`       | Newton meter       | spring balance, force meter, newtonmeter                                                                         | 30 × 160 | height, min 30 × 100 | reading: number 0..1, default 0.3                                                                                                            |                          | top (port), hook (port)      |                                                                                                  |
+| `pipetteFiller`     | Pipette filler     | pipette pump, safety filler                                                                                      | 34 × 62  | uniform, min 22 × 40 |                                                                                                                                              |                          |                              | no hand holds it: it stands in the air above its pipette                                         |
+| `probe`             | Probe              | pH probe, temperature probe, sensor                                                                              | 12 × 150 | height, min 12 × 50  |                                                                                                                                              |                          | tip (tip), top (terminal)    |                                                                                                  |
+| `ruler`             | Ruler              | metre rule, metre stick, rule, tape measure, half-metre rule                                                     | 300 × 22 | width, min 100 × 22  | length: "15" or "30" or "50" or "100", default "30"; numbers: boolean, default true                                                          |                          |                              |                                                                                                  |
+| `scaleWindow`       | Magnified scale    | scale reading, enlarged scale                                                                                    | 70 × 150 | free, min 50 × 100   | top: number 0..1000, default 20; bottom: number 0..1000, default 21; divisions: "5" or "10" or "20", default "10"; unit: text, default "cm³" | main (scale 20..21 cm³)  |                              |                                                                                                  |
+| `stopwatch`         | Stopwatch          | stopclock, timer                                                                                                 | 54 × 66  | uniform, min 36 × 44 | style: "digital" or "analogue", default "digital"; reading: text, default "00:00.0"                                                          |                          |                              |                                                                                                  |
+| `syringe`           | Syringe            | plastic syringe                                                                                                  | 26 × 120 | height, min 26 × 70  | plunger: number 0..1, default 0.5                                                                                                            | main                     | tip (tip)                    |                                                                                                  |
+| `thermometer`       | Thermometer        |                                                                                                                  | 9 × 210  | height, min 9 × 100  | numbers: boolean, default false                                                                                                              | main (scale -10..110 °C) | bulb (tip)                   |                                                                                                  |
+| `volumetricPipette` | Pipette            | volumetric pipette, bulb pipette                                                                                 | 20 × 300 | height, min 20 × 160 |                                                                                                                                              | main                     | tip (tip), neck (neck)       | the mark is at 0.16 × height from the top, 9.5 u above neck: amount 0.845 puts the surface on it |
 
 ## Heating
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `bunsenBurner` | Bunsen burner |  | 60 × 124 | uniform, min 40 × 83 | flame: "off" or "safety" or "blue", default "blue" |  | base (base), flame (heat), gas (port) | label "Bunsen burner" |
-| `gauze` | Gauze | gauze mat, wire gauze | 136 × 5 | width, min 40 × 5 |  |  | top (surface), under (base) |  |
-| `heatArrow` | Heat arrow |  | 44 × 70 | uniform, min 28 × 44 | text: text, default "heat" |  | tip (heat) | no automatic label |
-| `heatingMantle` | Heating mantle | Isomantle, electric mantle | 170 × 90 | free, min 80 × 44 |  |  | cup (cup), base (base) |  |
-| `heatproofMat` | Heatproof mat | heat-resistant mat, bench mat | 180 × 8 | width, min 60 × 8 |  |  | top (surface), under (base) |  |
-| `hotPlate` | Hot plate | electric heater, hotplate, magnetic stirrer, stirrer hotplate | 150 × 62 | free, min 60 × 30 | stirrer: boolean, default false |  | top (surface), base (base) |  |
-| `immersionHeater` | Immersion heater | heater, heating element, 12 V heater | 16 × 130 | height, min 16 × 50 |  |  | tip (tip), terminalA (terminal), terminalB (terminal) |  |
-| `pipeclayTriangle` | Pipeclay triangle |  | 90 × 6 | width, min 56 × 6 |  |  | top (surface), under (base) |  |
-| `spiritBurner` | Spirit burner | alcohol burner, spirit lamp | 80 × 76 | uniform, min 54 × 51 |  | main | base (base), flame (heat) |  |
-| `tripod` | Tripod |  | 120 × 110 | free, min 60 × 50 |  |  | top (surface), feet (base) |  |
-| `waterBath` | Water bath (electric) | thermostatic water bath | 260 × 130 | free, min 80 × 50 |  | main | base (base) | label "water bath" |
+| id                 | name                  | aliases                                                       | size      | resize               | parameters                                         | cavities | anchors                                               | notes                 |
+| ------------------ | --------------------- | ------------------------------------------------------------- | --------- | -------------------- | -------------------------------------------------- | -------- | ----------------------------------------------------- | --------------------- |
+| `bunsenBurner`     | Bunsen burner         |                                                               | 60 × 124  | uniform, min 40 × 83 | flame: "off" or "safety" or "blue", default "blue" |          | base (base), flame (heat), gas (port)                 | label "Bunsen burner" |
+| `gauze`            | Gauze                 | gauze mat, wire gauze                                         | 136 × 5   | width, min 40 × 5    |                                                    |          | top (surface), under (base)                           |                       |
+| `heatArrow`        | Heat arrow            |                                                               | 44 × 70   | uniform, min 28 × 44 | text: text, default "heat"                         |          | tip (heat)                                            | no automatic label    |
+| `heatingMantle`    | Heating mantle        | Isomantle, electric mantle                                    | 170 × 90  | free, min 80 × 44    |                                                    |          | cup (cup), base (base)                                |                       |
+| `heatproofMat`     | Heatproof mat         | heat-resistant mat, bench mat                                 | 180 × 8   | width, min 60 × 8    |                                                    |          | top (surface), under (base)                           |                       |
+| `hotPlate`         | Hot plate             | electric heater, hotplate, magnetic stirrer, stirrer hotplate | 150 × 62  | free, min 60 × 30    | stirrer: boolean, default false                    |          | top (surface), base (base)                            |                       |
+| `immersionHeater`  | Immersion heater      | heater, heating element, 12 V heater                          | 16 × 130  | height, min 16 × 50  |                                                    |          | tip (tip), terminalA (terminal), terminalB (terminal) |                       |
+| `pipeclayTriangle` | Pipeclay triangle     |                                                               | 90 × 6    | width, min 56 × 6    |                                                    |          | top (surface), under (base)                           |                       |
+| `spiritBurner`     | Spirit burner         | alcohol burner, spirit lamp                                   | 80 × 76   | uniform, min 54 × 51 |                                                    | main     | base (base), flame (heat)                             |                       |
+| `tripod`           | Tripod                |                                                               | 120 × 110 | free, min 60 × 50    |                                                    |          | top (surface), feet (base)                            |                       |
+| `waterBath`        | Water bath (electric) | thermostatic water bath                                       | 260 × 130 | free, min 80 × 50    |                                                    | main     | base (base)                                           | label "water bath"    |
 
 ## Support
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `benchLine` | Bench | bench surface, table, floor | 500 × 12 | width, min 60 × 12 |  |  | top (surface) | no automatic label |
-| `bossClamp` | Boss and clamp | clamp, boss | 110 × 40 | width, min 70 × 40 | grip: number 14..60, default 30 |  | sleeve (sleeve), grip (grip) |  |
-| `bung` | Bung | stopper, rubber bung | 38 × 24 | free, min 14 × 12 | holes: number 0..2, default 1 |  | plug (plug), hole1 (port) |  |
-| `capillaryTube` | Capillary tube | melting point tube | 5 × 90 | height, min 5 × 30 |  |  | tip (tip) |  |
-| `chromatographyPaper` | Chromatography paper | TLC plate, chromatogram | 50 × 105 | free, min 30 × 50 | spots: number 1..6, default 3; front: number 0..1, default 0.7; developed: boolean, default true; plate: boolean, default false |  | top (port) |  |
-| `clampStand` | Clamp stand | retort stand, stand | 150 × 380 | free, min 80 × 120 |  |  | rod (rod), base (base) |  |
-| `cottonWool` | Cotton wool plug |  | 34 × 22 | free, min 24 × 16 |  |  | plug (plug) |  |
-| `crossPaper` | Paper with cross |  | 150 × 30 | width, min 60 × 30 |  |  | top (surface) |  |
-| `filterPaper` | Filter paper | fluted filter paper | 76 × 46 | free, min 30 × 20 | residue: boolean, default false |  | apex (tip) | in the 84 u filter funnel: size w 68 (the default 76 nearly touches the funnel wall) |
-| `gClamp` | G-clamp | clamp for the bench, C-clamp | 50 × 80 | uniform, min 38 × 60 |  |  |  | label "G-clamp" |
-| `lid` | Lid | cover | 120 × 7 | width, min 40 × 7 | holes: number 0..2, default 0 |  | under (base) |  |
-| `spatula` | Spatula |  | 14 × 170 | height, min 14 × 90 |  |  |  |  |
-| `splint` | Splint | wooden splint, glowing splint, burning splint, lit splint | 130 × 8 | width, min 40 × 8 | state: "unlit" or "lit" or "glowing", default "lit" |  | tip (tip) |  |
-| `spottingTile` | Spotting tile (top view) | dimple tile, spot plate | 170 × 120 | free, min 60 × 40 | rows: number 2..4, default 3; cols: number 3..6, default 4; iodine: boolean, default false; blueBlack: number 0..24, default 0 |  |  | label "spotting tile" |
-| `stirBar` | Magnetic stirrer bar | flea, follower | 30 × 8 | width, min 12 × 8 |  |  |  |  |
-| `stirringRod` | Glass rod | stirring rod, stirrer | 6 × 190 | height, min 6 × 30 |  |  |  |  |
-| `testTubeHolder` | Test-tube holder |  | 150 × 26 | width, min 100 × 26 |  |  | grip (grip) | no hand holds it: the handle ends in the air; draw it behind the tube it grips |
-| `testTubeRack` | Test-tube rack |  | 220 × 90 | width, min 120 × 90 | holes: number 3..8, default 6; tube: "test" or "boiling", default "test" |  | slot1 (cup), slot2 (cup), slot3 (cup), slot4 (cup), slot5 (cup), slot6 (cup), base (base) |  |
-| `tile` | White tile |  | 150 × 8 | width, min 40 × 8 |  |  | top (surface), under (base) |  |
+| id                    | name                     | aliases                                                   | size      | resize               | parameters                                                                                                                      | cavities | anchors                                                                                   | notes                                                                                |
+| --------------------- | ------------------------ | --------------------------------------------------------- | --------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `benchLine`           | Bench                    | bench surface, table, floor                               | 500 × 12  | width, min 60 × 12   |                                                                                                                                 |          | top (surface)                                                                             | no automatic label                                                                   |
+| `bossClamp`           | Boss and clamp           | clamp, boss                                               | 110 × 40  | width, min 70 × 40   | grip: number 14..60, default 30                                                                                                 |          | sleeve (sleeve), grip (grip)                                                              |                                                                                      |
+| `bung`                | Bung                     | stopper, rubber bung                                      | 38 × 24   | free, min 14 × 12    | holes: number 0..2, default 1                                                                                                   |          | plug (plug), hole1 (port)                                                                 |                                                                                      |
+| `capillaryTube`       | Capillary tube           | melting point tube                                        | 5 × 90    | height, min 5 × 30   |                                                                                                                                 |          | tip (tip)                                                                                 |                                                                                      |
+| `chromatographyPaper` | Chromatography paper     | TLC plate, chromatogram                                   | 50 × 105  | free, min 30 × 50    | spots: number 1..6, default 3; front: number 0..1, default 0.7; developed: boolean, default true; plate: boolean, default false |          | top (port)                                                                                |                                                                                      |
+| `clampStand`          | Clamp stand              | retort stand, stand                                       | 150 × 380 | free, min 80 × 120   |                                                                                                                                 |          | rod (rod), base (base)                                                                    |                                                                                      |
+| `cottonWool`          | Cotton wool plug         |                                                           | 34 × 22   | free, min 24 × 16    |                                                                                                                                 |          | plug (plug)                                                                               |                                                                                      |
+| `crossPaper`          | Paper with cross         |                                                           | 150 × 30  | width, min 60 × 30   |                                                                                                                                 |          | top (surface)                                                                             |                                                                                      |
+| `filterPaper`         | Filter paper             | fluted filter paper                                       | 76 × 46   | free, min 30 × 20    | residue: boolean, default false                                                                                                 |          | apex (tip)                                                                                | in the 84 u filter funnel: size w 68 (the default 76 nearly touches the funnel wall) |
+| `gClamp`              | G-clamp                  | clamp for the bench, C-clamp                              | 50 × 80   | uniform, min 38 × 60 |                                                                                                                                 |          |                                                                                           | label "G-clamp"                                                                      |
+| `lid`                 | Lid                      | cover                                                     | 120 × 7   | width, min 40 × 7    | holes: number 0..2, default 0                                                                                                   |          | under (base)                                                                              |                                                                                      |
+| `spatula`             | Spatula                  |                                                           | 14 × 170  | height, min 14 × 90  |                                                                                                                                 |          |                                                                                           |                                                                                      |
+| `splint`              | Splint                   | wooden splint, glowing splint, burning splint, lit splint | 130 × 8   | width, min 40 × 8    | state: "unlit" or "lit" or "glowing", default "lit"                                                                             |          | tip (tip)                                                                                 |                                                                                      |
+| `spottingTile`        | Spotting tile (top view) | dimple tile, spot plate                                   | 170 × 120 | free, min 60 × 40    | rows: number 2..4, default 3; cols: number 3..6, default 4; iodine: boolean, default false; blueBlack: number 0..24, default 0  |          |                                                                                           | label "spotting tile"                                                                |
+| `stirBar`             | Magnetic stirrer bar     | flea, follower                                            | 30 × 8    | width, min 12 × 8    |                                                                                                                                 |          |                                                                                           |                                                                                      |
+| `stirringRod`         | Glass rod                | stirring rod, stirrer                                     | 6 × 190   | height, min 6 × 30   |                                                                                                                                 |          |                                                                                           |                                                                                      |
+| `testTubeHolder`      | Test-tube holder         |                                                           | 150 × 26  | width, min 100 × 26  |                                                                                                                                 |          | grip (grip)                                                                               | no hand holds it: the handle ends in the air; draw it behind the tube it grips       |
+| `testTubeRack`        | Test-tube rack           |                                                           | 220 × 90  | width, min 120 × 90  | holes: number 3..8, default 6; tube: "test" or "boiling", default "test"                                                        |          | slot1 (cup), slot2 (cup), slot3 (cup), slot4 (cup), slot5 (cup), slot6 (cup), base (base) |                                                                                      |
+| `tile`                | White tile               |                                                           | 150 × 8   | width, min 40 × 8    |                                                                                                                                 |          | top (surface), under (base)                                                               |                                                                                      |
 
 ## Filtering
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `buchnerFunnel` | Büchner funnel | Buchner funnel | 100 × 116 | free, min 40 × 50 | paper: boolean, default true | main | stem (tip), rim (mouth) | label "Büchner funnel" |
-| `droppingFunnel` | Dropping funnel | tap funnel, addition funnel | 60 × 230 | free, min 40 × 150 |  | main | stem (tip), mouth (mouth) |  |
-| `filterFunnel` | Filter funnel | funnel | 84 × 110 | free, min 40 × 50 |  | main | stem (tip), rim (mouth) | the cavity includes the stem: amount up to 0.55 fills only the stem; filter paper w 68 |
-| `separatingFunnel` | Separating funnel | separatory funnel, tap funnel | 90 × 250 | free, min 40 × 120 | stopper: boolean, default true | main | stem (tip), mouth (mouth), neck (neck) |  |
-| `thistleFunnel` | Thistle funnel |  | 44 × 270 | height, min 44 × 120 |  | main | stem (tip), mouth (mouth) |  |
+| id                 | name              | aliases                       | size      | resize               | parameters                     | cavities | anchors                                | notes                                                                                  |
+| ------------------ | ----------------- | ----------------------------- | --------- | -------------------- | ------------------------------ | -------- | -------------------------------------- | -------------------------------------------------------------------------------------- |
+| `buchnerFunnel`    | Büchner funnel    | Buchner funnel                | 100 × 116 | free, min 40 × 50    | paper: boolean, default true   | main     | stem (tip), rim (mouth)                | label "Büchner funnel"                                                                 |
+| `droppingFunnel`   | Dropping funnel   | tap funnel, addition funnel   | 60 × 230  | free, min 40 × 150   |                                | main     | stem (tip), mouth (mouth)              |                                                                                        |
+| `filterFunnel`     | Filter funnel     | funnel                        | 84 × 110  | free, min 40 × 50    |                                | main     | stem (tip), rim (mouth)                | the cavity includes the stem: amount up to 0.55 fills only the stem; filter paper w 68 |
+| `separatingFunnel` | Separating funnel | separatory funnel, tap funnel | 90 × 250  | free, min 40 × 120   | stopper: boolean, default true | main     | stem (tip), mouth (mouth), neck (neck) |                                                                                        |
+| `thistleFunnel`    | Thistle funnel    |                               | 44 × 270  | height, min 44 × 120 |                                | main     | stem (tip), mouth (mouth)              |                                                                                        |
 
 ## Organic
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `fractionatingColumn` | Fractionating column |  | 44 × 240 | height, min 44 × 120 |  | inner | bottom (plug), top (mouth) |  |
-| `liebigCondenser` | Liebig condenser | condenser | 290 × 70 | width, min 180 × 70 |  | jacket; inner | socket (mouth), cone (plug), tip (tip), waterOut (port), waterIn (port) | label "Liebig condenser" |
-| `meltingPointApparatus` | Melting point apparatus |  | 130 × 150 | free, min 80 × 90 |  |  | base (base), thermo (mouth), sample (mouth) |  |
-| `receiverAdaptor` | Receiver adaptor | receiver bend, delivery adaptor | 110 × 110 | none |  | inner | in (mouth), out (tip) |  |
-| `stillHead` | Still head | distillation head, three-way adaptor | 130 × 130 | none |  | inner | bottom (plug), top (mouth), arm (plug) |  |
-| `thermometerAdaptor` | Thermometer adaptor | screw-cap adaptor, thermometer pocket | 38 × 34 | none |  |  | plug (plug), hole (port) |  |
+| id                      | name                    | aliases                               | size      | resize               | parameters | cavities      | anchors                                                                 | notes                    |
+| ----------------------- | ----------------------- | ------------------------------------- | --------- | -------------------- | ---------- | ------------- | ----------------------------------------------------------------------- | ------------------------ |
+| `fractionatingColumn`   | Fractionating column    |                                       | 44 × 240  | height, min 44 × 120 |            | inner         | bottom (plug), top (mouth)                                              |                          |
+| `liebigCondenser`       | Liebig condenser        | condenser                             | 290 × 70  | width, min 180 × 70  |            | jacket; inner | socket (mouth), cone (plug), tip (tip), waterOut (port), waterIn (port) | label "Liebig condenser" |
+| `meltingPointApparatus` | Melting point apparatus |                                       | 130 × 150 | free, min 80 × 90    |            |               | base (base), thermo (mouth), sample (mouth)                             |                          |
+| `receiverAdaptor`       | Receiver adaptor        | receiver bend, delivery adaptor       | 110 × 110 | none                 |            | inner         | in (mouth), out (tip)                                                   |                          |
+| `stillHead`             | Still head              | distillation head, three-way adaptor  | 130 × 130 | none                 |            | inner         | bottom (plug), top (mouth), arm (plug)                                  |                          |
+| `thermometerAdaptor`    | Thermometer adaptor     | screw-cap adaptor, thermometer pocket | 38 × 34   | none                 |            |               | plug (plug), hole (port)                                                |                          |
 
 ## Electrochemistry
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `crocodileClip` | Crocodile clip |  | 34 × 14 | width, min 30 × 14 |  |  | jaw (grip), tail (terminal) |  |
-| `electrode` | Electrode | carbon rod, graphite electrode, metal strip | 16 × 150 | height, min 16 × 40 | kind: "rod" or "strip", default "rod"; material: "carbon" or "metal", default "carbon" |  | top (terminal), tip (tip) |  |
-| `electrolysisCell` | Electrolysis cell |  | 130 × 120 | free, min 70 × 60 |  | main | base (base), terminalL (terminal), terminalR (terminal) |  |
-| `powerSupply` | Power supply | power pack, lab pack, d.c. supply | 130 × 84 | free, min 90 × 60 | voltage: text, default "6 V" |  | base (base), plus (terminal), minus (terminal) |  |
-| `saltBridge` | Salt bridge |  | 170 × 90 | free, min 60 × 40 |  | main | endL (tip), endR (tip) |  |
+| id                 | name              | aliases                                     | size      | resize              | parameters                                                                             | cavities | anchors                                                 | notes |
+| ------------------ | ----------------- | ------------------------------------------- | --------- | ------------------- | -------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------- | ----- |
+| `crocodileClip`    | Crocodile clip    |                                             | 34 × 14   | width, min 30 × 14  |                                                                                        |          | jaw (grip), tail (terminal)                             |       |
+| `electrode`        | Electrode         | carbon rod, graphite electrode, metal strip | 16 × 150  | height, min 16 × 40 | kind: "rod" or "strip", default "rod"; material: "carbon" or "metal", default "carbon" |          | top (terminal), tip (tip)                               |       |
+| `electrolysisCell` | Electrolysis cell |                                             | 130 × 120 | free, min 70 × 60   |                                                                                        | main     | base (base), terminalL (terminal), terminalR (terminal) |       |
+| `powerSupply`      | Power supply      | power pack, lab pack, d.c. supply           | 130 × 84  | free, min 90 × 60   | voltage: text, default "6 V"                                                           |          | base (base), plus (terminal), minus (terminal)          |       |
+| `saltBridge`       | Salt bridge       |                                             | 170 × 90  | free, min 60 × 40   |                                                                                        | main     | endL (tip), endR (tip)                                  |       |
 
 ## Physics
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `infraredDetector` | Infrared detector | IR detector, infrared thermometer, thermopile | 84 × 34 | width, min 50 × 34 |  |  | sensor (tip), lead (terminal) |  |
-| `irregularSolid` | Irregular solid | stone, rock, pebble | 44 × 34 | free, min 20 × 16 |  |  |  |  |
-| `lamp` | Lamp | light source, bench lamp, ray box lamp | 80 × 120 | free, min 50 × 70 | rays: boolean, default true |  | base (base), bulb (heat) |  |
-| `leslieCube` | Leslie cube |  | 100 × 104 | free, min 50 × 50 |  | main | base (base) | label "Leslie cube" |
-| `massHanger` | Masses on a hanger | slotted masses, weights, 100 g masses | 40 × 110 | height, min 40 × 60 | masses: number 0..10, default 3 |  | hook (port) |  |
-| `metalBlock` | Metal block | aluminium block, copper block, iron block, specific heat capacity block | 110 × 120 | free, min 70 × 60 | insulated: boolean, default true |  | base (base), heater (mouth), thermo (mouth) |  |
-| `pulley` | Bench pulley | pulley, pulley on clamp | 50 × 70 | free, min 28 × 40 |  |  | top (port), side (port) |  |
-| `rippleTank` | Ripple tank |  | 320 × 250 | free, min 180 × 140 |  | main | base (base) |  |
-| `spring` | Spring |  | 26 × 120 | height, min 26 × 60 | coils: number 4..24, default 10 |  | top (port), bottom (port) |  |
-| `trolley` | Trolley | dynamics trolley, cart | 120 × 44 | width, min 60 × 44 | card: boolean, default false |  | wheels (base), front (port), rear (port), top (surface) |  |
-| `vibrationGenerator` | Vibration generator | vibrator, oscillator | 84 × 70 | free, min 50 × 40 |  |  | base (base), pin (port), terminalA (terminal), terminalB (terminal) |  |
-| `woodenBridge` | Wooden bridge |  | 26 × 24 | free, min 12 × 10 |  |  | base (base), apex (port) |  |
+| id                   | name                | aliases                                                                 | size      | resize              | parameters                       | cavities | anchors                                                             | notes               |
+| -------------------- | ------------------- | ----------------------------------------------------------------------- | --------- | ------------------- | -------------------------------- | -------- | ------------------------------------------------------------------- | ------------------- |
+| `infraredDetector`   | Infrared detector   | IR detector, infrared thermometer, thermopile                           | 84 × 34   | width, min 50 × 34  |                                  |          | sensor (tip), lead (terminal)                                       |                     |
+| `irregularSolid`     | Irregular solid     | stone, rock, pebble                                                     | 44 × 34   | free, min 20 × 16   |                                  |          |                                                                     |                     |
+| `lamp`               | Lamp                | light source, bench lamp, ray box lamp                                  | 80 × 120  | free, min 50 × 70   | rays: boolean, default true      |          | base (base), bulb (heat)                                            |                     |
+| `leslieCube`         | Leslie cube         |                                                                         | 100 × 104 | free, min 50 × 50   |                                  | main     | base (base)                                                         | label "Leslie cube" |
+| `massHanger`         | Masses on a hanger  | slotted masses, weights, 100 g masses                                   | 40 × 110  | height, min 40 × 60 | masses: number 0..10, default 3  |          | hook (port)                                                         |                     |
+| `metalBlock`         | Metal block         | aluminium block, copper block, iron block, specific heat capacity block | 110 × 120 | free, min 70 × 60   | insulated: boolean, default true |          | base (base), heater (mouth), thermo (mouth)                         |                     |
+| `pulley`             | Bench pulley        | pulley, pulley on clamp                                                 | 50 × 70   | free, min 28 × 40   |                                  |          | top (port), side (port)                                             |                     |
+| `rippleTank`         | Ripple tank         |                                                                         | 320 × 250 | free, min 180 × 140 |                                  | main     | base (base)                                                         |                     |
+| `spring`             | Spring              |                                                                         | 26 × 120  | height, min 26 × 60 | coils: number 4..24, default 10  |          | top (port), bottom (port)                                           |                     |
+| `trolley`            | Trolley             | dynamics trolley, cart                                                  | 120 × 44  | width, min 60 × 44  | card: boolean, default false     |          | wheels (base), front (port), rear (port), top (surface)             |                     |
+| `vibrationGenerator` | Vibration generator | vibrator, oscillator                                                    | 84 × 70   | free, min 50 × 40   |                                  |          | base (base), pin (port), terminalA (terminal), terminalB (terminal) |                     |
+| `woodenBridge`       | Wooden bridge       |                                                                         | 26 × 24   | free, min 12 × 10   |                                  |          | base (base), apex (port)                                            |                     |
 
 ## Biology
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `leaf` | Leaf |  | 70 × 100 | free, min 40 × 64 |  |  |  |  |
-| `microscope` | Microscope | light microscope, optical microscope | 160 × 250 | uniform, min 64 × 100 |  |  | base (base), stage (surface) |  |
-| `microscopeSlide` | Microscope slide (side view) | slide, cover slip | 120 × 6 | width, min 40 × 6 | coverSlip: boolean, default true |  | top (surface), under (base) | label "microscope slide" |
-| `petriDishTop` | Petri dish (top view) | agar plate | 120 × 120 | uniform, min 72 × 72 | colonies: number 0..30, default 0; discs: number 0..6, default 0 |  |  | label "Petri dish" |
-| `pondweed` | Pondweed | Elodea, Cabomba, aquatic plant | 24 × 110 | free, min 16 × 50 |  |  | cut (tip) |  |
-| `potatoCylinder` | Potato cylinder | potato chip, plant tissue | 16 × 56 | free, min 8 × 16 |  |  |  |  |
-| `quadrat` | Quadrat (top view) |  | 170 × 170 | uniform, min 60 × 60 | grid: "1" or "2" or "5" or "10", default "5" |  |  | label "quadrat" |
+| id                | name                         | aliases                              | size      | resize                | parameters                                                       | cavities | anchors                      | notes                    |
+| ----------------- | ---------------------------- | ------------------------------------ | --------- | --------------------- | ---------------------------------------------------------------- | -------- | ---------------------------- | ------------------------ |
+| `leaf`            | Leaf                         |                                      | 70 × 100  | free, min 40 × 64     |                                                                  |          |                              |                          |
+| `microscope`      | Microscope                   | light microscope, optical microscope | 160 × 250 | uniform, min 64 × 100 |                                                                  |          | base (base), stage (surface) |                          |
+| `microscopeSlide` | Microscope slide (side view) | slide, cover slip                    | 120 × 6   | width, min 40 × 6     | coverSlip: boolean, default true                                 |          | top (surface), under (base)  | label "microscope slide" |
+| `petriDishTop`    | Petri dish (top view)        | agar plate                           | 120 × 120 | uniform, min 72 × 72  | colonies: number 0..30, default 0; discs: number 0..6, default 0 |          |                              | label "Petri dish"       |
+| `pondweed`        | Pondweed                     | Elodea, Cabomba, aquatic plant       | 24 × 110  | free, min 16 × 50     |                                                                  |          | cut (tip)                    |                          |
+| `potatoCylinder`  | Potato cylinder              | potato chip, plant tissue            | 16 × 56   | free, min 8 × 16      |                                                                  |          |                              |                          |
+| `quadrat`         | Quadrat (top view)           |                                      | 170 × 170 | uniform, min 60 × 60  | grid: "1" or "2" or "5" or "10", default "5"                     |          |                              | label "quadrat"          |
 
 ## Circuit symbols
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `cAmmeter` | Ammeter |  | 60 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label |
-| `cBattery` | Battery |  | 80 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label |
-| `cCell` | Cell |  | 60 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label |
-| `cDiode` | Diode |  | 60 × 40 | none | circle: boolean, default true |  | a (terminal), b (terminal) | no automatic label |
-| `cFuse` | Fuse |  | 60 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label |
-| `cJunction` | Junction |  | 8 × 8 | none |  |  | c (terminal) | no automatic label |
-| `cLamp` | Lamp (symbol) | bulb, filament lamp | 60 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label; label "lamp" |
-| `cLDR` | LDR | light-dependent resistor | 60 × 44 | none | circle: boolean, default true |  | a (terminal), b (terminal) | no automatic label; label "LDR" |
-| `cLED` | LED | light-emitting diode | 60 × 44 | none | circle: boolean, default true |  | a (terminal), b (terminal) | no automatic label; label "LED" |
-| `cResistor` | Resistor | fixed resistor | 60 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label |
-| `cSwitch` | Switch |  | 60 × 40 | none | closed: boolean, default false |  | a (terminal), b (terminal) | no automatic label |
-| `cThermistor` | Thermistor |  | 60 × 40 | none | circle: boolean, default false |  | a (terminal), b (terminal) | no automatic label |
-| `cVariableResistor` | Variable resistor | rheostat | 60 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label |
-| `cVoltmeter` | Voltmeter |  | 60 × 40 | none |  |  | a (terminal), b (terminal) | no automatic label |
+| id                  | name              | aliases                  | size    | resize | parameters                     | cavities | anchors                    | notes                            |
+| ------------------- | ----------------- | ------------------------ | ------- | ------ | ------------------------------ | -------- | -------------------------- | -------------------------------- |
+| `cAmmeter`          | Ammeter           |                          | 60 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label               |
+| `cBattery`          | Battery           |                          | 80 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label               |
+| `cCell`             | Cell              |                          | 60 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label               |
+| `cDiode`            | Diode             |                          | 60 × 40 | none   | circle: boolean, default true  |          | a (terminal), b (terminal) | no automatic label               |
+| `cFuse`             | Fuse              |                          | 60 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label               |
+| `cJunction`         | Junction          |                          | 8 × 8   | none   |                                |          | c (terminal)               | no automatic label               |
+| `cLamp`             | Lamp (symbol)     | bulb, filament lamp      | 60 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label; label "lamp" |
+| `cLDR`              | LDR               | light-dependent resistor | 60 × 44 | none   | circle: boolean, default true  |          | a (terminal), b (terminal) | no automatic label; label "LDR"  |
+| `cLED`              | LED               | light-emitting diode     | 60 × 44 | none   | circle: boolean, default true  |          | a (terminal), b (terminal) | no automatic label; label "LED"  |
+| `cResistor`         | Resistor          | fixed resistor           | 60 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label               |
+| `cSwitch`           | Switch            |                          | 60 × 40 | none   | closed: boolean, default false |          | a (terminal), b (terminal) | no automatic label               |
+| `cThermistor`       | Thermistor        |                          | 60 × 40 | none   | circle: boolean, default false |          | a (terminal), b (terminal) | no automatic label               |
+| `cVariableResistor` | Variable resistor | rheostat                 | 60 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label               |
+| `cVoltmeter`        | Voltmeter         |                          | 60 × 40 | none   |                                |          | a (terminal), b (terminal) | no automatic label               |
 
 ## Annotation
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `drops` | Drops | drip, droplets | 12 × 44 | height, min 12 × 36 | count: number 1..4, default 2 |  |  | no automatic label |
-| `eye` | Eye | observer, eye level | 46 × 26 | uniform, min 23 × 13 |  |  |  | no automatic label |
-| `flame` | Flame |  | 26 × 44 | uniform, min 13 × 22 |  |  | base (base) | no automatic label |
-| `flameTestLoop` | Flame test wire | nichrome wire, wire loop | 180 × 12 | width, min 100 × 12 |  |  | loop (tip) |  |
-| `indicatorPaper` | Indicator paper | litmus paper, pH paper, universal indicator paper | 14 × 60 | free, min 6 × 10 | colour: "red" or "blue" or "green" or "orange" or "yellow" or "purple", default "red" |  |  |  |
-| `magnesiumRibbon` | Metal ribbon | magnesium ribbon, magnesium strip | 60 × 12 | free, min 24 × 8 |  |  |  | label "magnesium ribbon" |
+| id                | name            | aliases                                           | size     | resize               | parameters                                                                            | cavities | anchors     | notes                    |
+| ----------------- | --------------- | ------------------------------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------- | -------- | ----------- | ------------------------ |
+| `drops`           | Drops           | drip, droplets                                    | 12 × 44  | height, min 12 × 36  | count: number 1..4, default 2                                                         |          |             | no automatic label       |
+| `eye`             | Eye             | observer, eye level                               | 46 × 26  | uniform, min 23 × 13 |                                                                                       |          |             | no automatic label       |
+| `flame`           | Flame           |                                                   | 26 × 44  | uniform, min 13 × 22 |                                                                                       |          | base (base) | no automatic label       |
+| `flameTestLoop`   | Flame test wire | nichrome wire, wire loop                          | 180 × 12 | width, min 100 × 12  |                                                                                       |          | loop (tip)  |                          |
+| `indicatorPaper`  | Indicator paper | litmus paper, pH paper, universal indicator paper | 14 × 60  | free, min 6 × 10     | colour: "red" or "blue" or "green" or "orange" or "yellow" or "purple", default "red" |          |             |                          |
+| `magnesiumRibbon` | Metal ribbon    | magnesium ribbon, magnesium strip                 | 60 × 12  | free, min 24 × 8     |                                                                                       |          |             | label "magnesium ribbon" |
 
 ## Atoms and ions
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| id  | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | ---- | ------- | ---- | ------ | ---------- | -------- | ------- | ----- |
 
 ## Particles
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| id  | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | ---- | ------- | ---- | ------ | ---------- | -------- | ------- | ----- |
 
 ## Energy
 
-| id | name | aliases | size | resize | parameters | cavities | anchors | notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| id  | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | ---- | ------- | ---- | ------ | ---------- | -------- | ------- | ----- |
+
+## Structures
+
+| id  | name | aliases | size | resize | parameters | cavities | anchors | notes |
+| --- | ---- | ------- | ---- | ------ | ---------- | -------- | ------- | ----- |
 
 ## Not drawn yet
 

@@ -44,6 +44,7 @@ describe('searchSymbols', () => {
       'atoms',
       'matter',
       'energy',
+      'structures',
     ])
   })
 })

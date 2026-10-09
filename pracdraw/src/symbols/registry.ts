@@ -15,6 +15,7 @@ import { matter } from './matter'
 import { measuring } from './measuring'
 import { organic } from './organic'
 import { physics } from './physics'
+import { structures } from './structures'
 import { support } from './support'
 import { rect } from './kit'
 import { PILOTS } from './pilots'
@@ -37,6 +38,7 @@ export const SYMBOLS: SymbolDef[] = [
   ...dotcross,
   ...matter,
   ...energy,
+  ...structures,
 ]
 
 const byId = new Map(SYMBOLS.map((s) => [s.id, s]))
