@@ -303,10 +303,9 @@ describe('particleBox: a gas, a liquid and a solid', () => {
 
   it('has a liquid that is touching, in no order, and no more than two thirds full', () => {
     for (const { tag, h, m } of cases((c) => c.params.state === 'liquid')) {
-      m.units.forEach((unit, u) => {
-        const onFloor = Math.max(...unit.particles.map((i) => m.particles[i].y + m.particles[i].r)) > h - INSET - 1e-6
+      m.units.forEach((_, u) => {
         const touching = m.units.some((_, v) => v !== u && unitGap(m, u, v) <= apartOf(m, u, v) + 1e-6)
-        expect(touching || onFloor, `${tag}: unit ${u} touches nothing`).toBe(true)
+        expect(touching, `${tag}: unit ${u} touches no other unit`).toBe(true)
       })
       expect(Math.max(...m.particles.map((p) => p.y + p.r)), `${tag}: the heap rests on the floor`).toBeCloseTo(h - INSET, 9)
       expect(Math.min(...m.particles.map((p) => p.y - p.r)), `${tag}: it fills the lower two thirds at most`).toBeGreaterThanOrEqual(h / 3 - 1e-6)
