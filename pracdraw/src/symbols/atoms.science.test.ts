@@ -80,7 +80,7 @@ const minDistance = (pts: readonly Pt[]): number => {
   return m
 }
 
-/** Which of the 36 elements, and which charges, the model accepts: all of them, but `ionShells` refuses some. */
+/** Every charge that is tried on every element; `ionShells` refuses the ones an element cannot have (and then the atom is drawn neutral). */
 const CHARGES = [-3, -2, -1, 0, 1, 2, 3]
 const PERIOD = (z: number): number => (z <= 2 ? 1 : z <= 10 ? 2 : z <= 18 ? 3 : 4)
 /** What a shell holds, innermost first, in the first four periods (K, L, M, N) as the course teaches it: 2, 8, 8, 2. */
@@ -662,7 +662,7 @@ describe('isotopes drawn as nuclei', () => {
     [17, 35, 0, 0], // one nucleus
   ]
 
-  it('draws a circles in each cluster, z of them protons, and the isotopes share z', () => {
+  it('draws one circle for each nucleon: A circles in a cluster, Z of them protons, and the isotopes share Z', () => {
     for (const [z, a1, a2, a3] of CASES) {
       const g = geometry('isotopeNuclei', 300, 150, { z, a1, a2, a3 })
       const clusters = clustersOf(g)
@@ -722,7 +722,7 @@ describe('isotopes drawn as nuclei', () => {
     }
   })
 
-  it('mixes protons and neutrons through every cluster: z protons in a circles, centred, and as far out as the neutrons', () => {
+  it('mixes protons and neutrons through every cluster: Z protons among A nucleons, not on one side, and as far out as the neutrons', () => {
     for (let z = 1; z <= 18; z++) {
       for (let a = z; a <= 40; a++) {
         const cs = clusterCircles(z, a)
