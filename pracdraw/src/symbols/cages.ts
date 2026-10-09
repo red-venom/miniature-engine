@@ -5,10 +5,15 @@
 // the atoms with their 3D positions, the bonds with their two ends, and, for the ball, the faces. The drawing never invents a part.
 //
 // Where the pictures differ from the numbers of the catalogue `draw` text, and why (both are pilots for James to look at):
-//  - graphite: a bond of 24 u and atoms of radius 3.5 u, not 22 u and 4 u (GRAPHITE_BRIEF keeps the brief's numbers). A bond along z is
-//    drawn half as long, so with the brief's numbers its two atoms touch. Four sheets are drawn smaller so that they fit the box.
+//  - graphite: the default size is 250 x 212 (the draw text has 200 x 170), and at that size a bond is 30 u and an atom has the radius
+//    4.375 u: the picture of a bond of 24 u and atoms of 3.5 u at 200 x 170, 1.25 times as big, with the outline of an atom still 2 u (rule
+//    S3). The brief's 22 u and 4 u (GRAPHITE_BRIEF keeps them, as 27.5 u and 5 u at this size) draw a bond along z half as long, so its two
+//    atoms touch. The picture scales with w / 250 and h / 212; four sheets are drawn smaller (0.86) so that they fit the box; the minimum
+//    size is 170 x 144, because the strokes do not scale and below it the 66 atoms touch.
 //  - C60: a face counts as facing the viewer when its normal is more than 0.3 from edge-on (C60_TURN.facing; the brief has 0), because the
-//    faces seen almost edge-on make doubled lines and overlapping circles at the rim. The hexagon directions are those of this atom set.
+//    faces seen almost edge-on make doubled lines and overlapping circles at the rim. The hexagon directions are the cyclic permutations
+//    of (0, phi, 1/phi), which is what the atoms of the formula need: the draw text has the mirror family (0, 1/phi, phi), which picks out
+//    one atom, not a hexagon (the test finds the faces again from the bond graph).
 
 import { P, bounds, dist, f, type Pt } from '../kernel/geom'
 import { bool, circle, num, tinted } from './kit'
@@ -30,11 +35,11 @@ export const GRAPHITE = {
   stub: 0.4,
   minLayers: 2,
   maxLayers: 4,
-  /** The default size of the symbol: the sizes below are for a picture at this size, and a picture in a bigger or smaller box scales with it. */
-  box: { w: 200, h: 170 },
+  /** The default size of the symbol: the sizes of a GraphiteStyle are for a picture at this size, and a picture in a bigger or smaller box scales with it. */
+  box: { w: 250, h: 212 },
 } as const
 
-/** The sizes of a picture at the default size, in u. The outline of an atom is 2 u whatever the size (rule S3). */
+/** The sizes of a picture at the default size (GRAPHITE.box), in u. The outline of an atom is 2 u whatever the size (rule S3). */
 export interface GraphiteStyle {
   /** One bond. */
   l: number
@@ -42,12 +47,16 @@ export interface GraphiteStyle {
   atomR: number
 }
 /**
- * The numbers of the catalogue row: l = 22 u and atoms of radius 4 u. In the oblique projection a bond along z is drawn half as long (11 u),
- * so the outlines of its two atoms are 1 u apart and the bond between them is 3 u long: the atoms touch (cages.science.test.ts shows it).
+ * The numbers of the catalogue row, which are for a box of 200 x 170: l = 22 u and atoms of radius 4 u. Here they are 1.25 times as big, for
+ * the box of 250 x 212 (so a picture of 200 x 170 in this style has 22 u and 4 u). In the oblique projection a bond along z is drawn half as
+ * long (11 u), so the outlines of its two atoms are 1 u apart and the bond between them is 3 u long: the atoms touch (cages.science.test.ts).
  */
-export const GRAPHITE_BRIEF: GraphiteStyle = { l: 22, atomR: 4 }
-/** What the symbol draws: a bond of 24 u and atoms of radius 3.5 u, so that the outlines of a bond along z are 3 u apart. */
-export const GRAPHITE_STYLE: GraphiteStyle = { l: 24, atomR: 3.5 }
+export const GRAPHITE_BRIEF: GraphiteStyle = { l: 27.5, atomR: 5 }
+/**
+ * What the symbol draws at 250 x 212: a bond of 30 u and atoms of radius 4.375 u. That is the picture of 24 u and 3.5 u at 200 x 170, 1.25
+ * times as big, so the outlines of a bond along z (15 u long on the page) are 4.25 u apart.
+ */
+export const GRAPHITE_STYLE: GraphiteStyle = { l: 30, atomR: 4.375 }
 
 /** One sheet: a patch of the honeycomb net. The hexagons have their corners at 30, 90, ..., 330 degrees in the x-z plane (two sides run along z). */
 export interface Honeycomb {
@@ -266,7 +275,7 @@ const graphiteStructure: SymbolDef = {
   aliases: ['giant covalent', 'carbon layers', 'hexagonal layers', 'graphite lattice'],
   label: 'graphite',
   pack: 'structures',
-  size: { w: 200, h: 170 },
+  size: { w: 250, h: 212 },
   resize: 'uniform',
   min: { w: 170, h: 144 },
   params: [
