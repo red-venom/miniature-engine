@@ -543,7 +543,7 @@ export function nuclide(zIn: number, aIn: number, chargeIn = 0): Nuclide {
 export const nuclideLabel = (n: Nuclide): string => `${n.name}-${n.a}`
 
 /** Sizes of the text of the notation, in u: the symbol, the two numbers beside it, the lines of counts and the distance between their baselines. */
-export const NOTATION = { symbol: 24, numbers: 16, counts: 12, countPitch: 14, numberGap: 3 } as const
+export const NOTATION = { symbol: 24, numbers: 16, counts: 12, countPitch: 14, numberGap: 3, countsGap: 8 } as const
 
 export interface NotationLayout {
   texts: SymbolText[]
@@ -564,13 +564,27 @@ export function countLines(n: Nuclide, kind: 'nucleus' | 'atom'): string[] {
   return lines
 }
 
+/** The lines of counts as text: left-aligned in a block that is centred on `cx`, the first baseline at `first`. */
+export function countTexts(n: Nuclide, kind: 'nucleus' | 'atom', cx: number, first: number): { texts: SymbolText[]; x0: number; x1: number; y1: number } {
+  const { counts: C, countPitch } = NOTATION
+  const lines = countLines(n, kind)
+  const width = Math.max(...lines.map((l) => textWidth(l, C)))
+  const x0 = cx - width / 2
+  return {
+    texts: lines.map((l, i) => ({ x: x0, y: first + i * countPitch, text: l, size: C, anchor: 'start' as const })),
+    x0,
+    x1: x0 + width,
+    y1: first + (lines.length - 1) * countPitch + 0.21 * C,
+  }
+}
+
 /**
  * The text of a nuclide notation, centred on `cx`, with the baseline of the symbol at `baseline`: the symbol (24 u), the mass number above
  * the atomic number at its left (16 u, right-aligned with each other and centred on the height of the capital letters of the symbol), and the
  * charge as a superscript. With `counts`, the lines of counts (12 u) under it. nuclideNotation and isotopeNuclei both draw it with this.
  */
 export function notationLayout(n: Nuclide, cx: number, baseline: number, counts: 'none' | 'nucleus' | 'atom' = 'none'): NotationLayout {
-  const { symbol: S, numbers: N, counts: C, countPitch, numberGap } = NOTATION
+  const { symbol: S, numbers: N, counts: C, numberGap, countsGap } = NOTATION
   const body = n.charge ? `${n.symbol}${chargeMarkup(n.charge)}` : n.symbol
   const numW = Math.max(textWidth(String(n.a), N), textWidth(String(n.z), N))
   const bodyW = textWidth(body, S)
@@ -588,17 +602,10 @@ export function notationLayout(n: Nuclide, cx: number, baseline: number, counts:
   let all = { ...notation }
   let countsAt: number | null = null
   if (counts !== 'none') {
-    const lines = countLines(n, counts)
-    countsAt = notation.y1 + 8 + CAP * C
-    const width = Math.max(...lines.map((l) => textWidth(l, C)))
-    const left = cx - width / 2
-    lines.forEach((l, i) => texts.push({ x: left, y: countsAt! + i * countPitch, text: l, size: C, anchor: 'start' }))
-    all = {
-      x0: Math.min(notation.x0, left),
-      y0: notation.y0,
-      x1: Math.max(notation.x1, left + width),
-      y1: countsAt + (lines.length - 1) * countPitch + 0.21 * C,
-    }
+    countsAt = notation.y1 + countsGap + CAP * C
+    const c = countTexts(n, counts, cx, countsAt)
+    texts.push(...c.texts)
+    all = { x0: Math.min(notation.x0, c.x0), y0: notation.y0, x1: Math.max(notation.x1, c.x1), y1: c.y1 }
   }
   return { texts, notation, all, countsAt }
 }
@@ -756,10 +763,6 @@ export interface IsotopeOptions {
   counts: boolean
 }
 
-/** The room that the notation takes under a cluster (from the baseline of its symbol): above it the mass number, below it the atomic number. */
-const NOTATION_ABOVE = CAP * NOTATION.symbol * 0.5 + (CAP * NOTATION.numbers * 2 + 3) / 2 // the top of the mass number
-const NOTATION_BELOW = (CAP * NOTATION.numbers * 2 + 3) / 2 - (CAP * NOTATION.symbol) / 2 // the foot of the atomic number
-
 /**
  * One to three isotopes of the element z side by side. `masses` are the three mass numbers a1, a2 and a3: one that is 0 (a2 or a3) is left
  * out, and one below z is raised to z. The clusters are spread over the width of the box and the whole picture is centred in its height.
@@ -776,14 +779,16 @@ export function isotopeModel(zIn: number, masses: readonly number[], o: Partial<
   })
   const tall = Math.max(...boxes.map((b) => b.height)),
     gap = 14
+  // What the notation takes up above and below the baseline of its symbol is measured from the layout itself.
+  const probe = notationLayout(nuclide(e.z, as[0]), 0, 0)
   // Top to bottom: the clusters, the notation, the counts. Measured from the top of the clusters.
-  let baseline = tall + gap + NOTATION_ABOVE
+  let baseline = tall + gap - probe.notation.y0
   let bottom = tall
   let countsAt: number | null = null
-  if (opt.notation) bottom = baseline + NOTATION_BELOW
+  if (opt.notation) bottom = baseline + probe.notation.y1
   if (opt.counts) {
-    countsAt = (opt.notation ? bottom + 8 : tall + gap) + CAP * NOTATION.counts
-    bottom = countsAt + NOTATION.countPitch + 0.21 * NOTATION.counts
+    countsAt = (opt.notation ? bottom + NOTATION.countsGap : tall + gap) + CAP * NOTATION.counts
+    bottom = countTexts(nuclide(e.z, as[0]), 'nucleus', 0, countsAt).y1
   }
   const top = Math.max(6, (opt.h - bottom) / 2)
   baseline += top
@@ -844,12 +849,9 @@ const isotopeNuclei: SymbolDef = {
         plus.push(plusD(n.x, n.y, 2.4))
         clear.push(circle(n.x, n.y, 3.2))
       }
-      if (m.notation) texts.push(...notationLayout(c.nuclide, c.cx, c.baseline).texts)
-      if (m.countsAt !== null) {
-        const lines = countLines(c.nuclide, 'nucleus')
-        const left = c.cx - Math.max(...lines.map((l) => textWidth(l, NOTATION.counts))) / 2
-        lines.forEach((l, i) => texts.push({ x: left, y: m.countsAt! + i * NOTATION.countPitch, text: l, size: NOTATION.counts, anchor: 'start' }))
-      }
+      // The notation of nuclideNotation, with its counts under it; or the counts alone under the cluster.
+      if (m.notation) texts.push(...notationLayout(c.nuclide, c.cx, c.baseline, m.counts ? 'nucleus' : 'none').texts)
+      else if (m.countsAt !== null) texts.push(...countTexts(c.nuclide, 'nucleus', c.cx, m.countsAt).texts)
     }
     const prims: Prim[] = []
     if (neutrons.length) prims.push({ d: neutrons.join(''), role: 'solid' })
