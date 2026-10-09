@@ -10,6 +10,7 @@ import { PACKS } from '../src/editor/search.ts'
 import { PRESETS } from '../src/model/contents.ts'
 import { RECIPE_PRESETS } from '../src/model/recipe.ts'
 import { SYMBOLS, geometry, labelText } from '../src/symbols/registry.ts'
+import { TEMPLATES } from '../src/templates/index.ts'
 import type { ParamDef, SymbolDef } from '../src/symbols/types.ts'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -159,9 +160,61 @@ function presetsMd(): string {
   return `${out.join('\n')}\n`
 }
 
+interface Diagram {
+  id: string
+  name: string
+  subject: string
+  level: string
+  courses: string[]
+  kind: string
+  covered: string | null
+  draw: string
+}
+
+/**
+ * Lesson diagrams by name: the rows of the diagram inventory that an existing template or symbol already draws, with what to use and how.
+ * The row's text says "Covered by `x`. Use ...": the part after the first sentence is the how.
+ */
+function lessonsMd(): string {
+  const rows = json<Diagram[]>('diagrams.json')
+  const templates = new Set(TEMPLATES.map((t) => t.id)),
+    symbols = new Set(SYMBOLS.map((s) => s.id))
+  const drawn = rows.filter((r) => r.kind === 'covered' && r.covered && (templates.has(r.covered) || symbols.has(r.covered)))
+  const out: string[] = [
+    HEADER('spec/diagrams.json (the diagram inventory)'),
+    '# Lesson diagrams: what to use',
+    '',
+    `${drawn.length} diagrams that lessons and exams ask for are drawn by a template or a symbol that exists. Find yours by name here, then \`npm run render -- --template <id> --explain\` (a template) or write a recipe with the symbol. The "how" says what to set. The diagram inventory (\`docs/diagram-inventory.md\`) lists every diagram type, including those that are not drawn yet (${rows.filter((r) => r.kind !== 'covered' && r.kind !== 'chart').length} need new symbols, templates or flow diagrams; ${rows.filter((r) => r.kind === 'chart').length} are graphs, tables and spectra, which PracDraw does not draw).`,
+  ]
+  for (const subject of ['chemistry', 'biology', 'physics']) {
+    for (const level of ['KS4', 'KS5']) {
+      const group = drawn.filter((r) => r.subject === subject && r.level === level)
+      if (!group.length) continue
+      out.push('', `## ${subject[0].toUpperCase()}${subject.slice(1)}, ${level}`, '')
+      out.push(
+        table(
+          ['diagram', 'courses', 'use', 'how'],
+          group.map((r) => [
+            r.name,
+            r.courses.join(', '),
+            `${templates.has(r.covered!) ? 'template' : 'symbol'} \`${r.covered}\``,
+            r.draw.replace(/^Covered by `[^`]+`\.\s*/, ''),
+          ]),
+        ),
+      )
+    }
+  }
+  return `${out.join('\n')}\n`
+}
+
 /** The text of every generated file, by its path inside the skill folder. */
 export function skillFiles(): Record<string, string> {
-  return { 'reference/symbols.md': symbolsMd(), 'reference/templates.md': templatesMd(), 'reference/presets.md': presetsMd() }
+  return {
+    'reference/symbols.md': symbolsMd(),
+    'reference/templates.md': templatesMd(),
+    'reference/presets.md': presetsMd(),
+    'reference/lessons.md': lessonsMd(),
+  }
 }
 
 function main(): void {

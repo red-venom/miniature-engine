@@ -25,7 +25,7 @@ const anchorNames = (): Set<string> => {
 describe('the skill', () => {
   it('skill-reference-is-current', () => {
     const files = skillFiles()
-    expect(Object.keys(files).sort()).toEqual(['reference/presets.md', 'reference/symbols.md', 'reference/templates.md'])
+    expect(Object.keys(files).sort()).toEqual(['reference/lessons.md', 'reference/presets.md', 'reference/symbols.md', 'reference/templates.md'])
     for (const [name, text] of Object.entries(files)) {
       expect(readFileSync(join(SKILL_DIR, name), 'utf8') === text, `${name} differs from what gen-skill writes now: run npm run gen:skill`).toBe(true)
     }
