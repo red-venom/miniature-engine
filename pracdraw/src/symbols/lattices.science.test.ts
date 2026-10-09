@@ -217,8 +217,8 @@ describe('ionicLattice3D: the picture of the model', () => {
     return { m, k, s, drawn, circles }
   }
 
-  it('uses a spacing of 48.5 u and radii of 8 (Cl-) and 5 (Na+) at the size 150, and scales them with the box', () => {
-    expect([IONIC.size, IONIC.spacing, IONIC.radius['Cl-'], IONIC.radius['Na+']]).toEqual([150, 48.5, 8, 5])
+  it('uses a spacing of 48.8 u and radii of 7.5 (Cl-) and 4.8 (Na+) at the size 150, and scales them with the box', () => {
+    expect([IONIC.size, IONIC.spacing, IONIC.radius['Cl-'], IONIC.radius['Na+']]).toEqual([150, 48.8, 7.5, 4.8])
     for (const h of sizes('ionicLattice3D')) {
       const { k, circles, m } = drawnIons(h)
       m.ions.forEach((ion, i) => expect(circles[i].r).toBeCloseTo(IONIC.radius[ion.kind] * k, 2))
@@ -243,12 +243,12 @@ describe('ionicLattice3D: the picture of the model', () => {
         }
   })
 
-  it('keeps every circle clear of every other, the edges at least 4 u apart (the white between two outlines is as wide as an outline), at every size', () => {
+  it('keeps every circle clear of every other, the edges at least 5 u apart (the white between two outlines, 3 u, is wider than an outline), at every size', () => {
     for (const h of sizes('ionicLattice3D')) {
       const { k, drawn } = drawnIons(h)
       expect(drawn.circles).toHaveLength(27)
-      expect(smallestGap(drawn.circles), `the drawing at ${h}`).toBeGreaterThanOrEqual(4 * k - 1e-6)
-      expect(smallestGap(ionicPicture(ionicModel(), h).circles), `the picture at ${h}`).toBeGreaterThanOrEqual(4 * k - 1e-6)
+      expect(smallestGap(drawn.circles), `the drawing at ${h}`).toBeGreaterThanOrEqual(5 * k - 1e-6)
+      expect(smallestGap(ionicPicture(ionicModel(), h).circles), `the picture at ${h}`).toBeGreaterThanOrEqual(5 * k - 1e-6)
     }
   })
 
@@ -279,13 +279,13 @@ describe('ionicLattice3D: the picture of the model', () => {
     expect(smallestGap([{ c: P(0, 0), r: 5 }])).toBe(Infinity)
   })
 
-  it('draws no bond through a circle that is not at one of its ends: the line stays at least 4 u from every other circle', () => {
+  it('draws no bond through a circle that is not at one of its ends: the line stays at least 6 u from every other circle', () => {
     for (const h of sizes('ionicLattice3D')) {
       const { k, drawn, circles } = drawnIons(h)
       for (const line of drawn.lines) {
         const ends = circles.filter((d) => Math.abs(dist(line.p, d.c) - d.r) < 0.03 || Math.abs(dist(line.q, d.c) - d.r) < 0.03)
         expect(ends, 'a bond line has a circle at each end').toHaveLength(2)
-        for (const d of circles) if (!ends.includes(d)) expect(toSegment(d.c, line.p, line.q) - d.r, `at ${h}`).toBeGreaterThanOrEqual(4 * k - 1e-6)
+        for (const d of circles) if (!ends.includes(d)) expect(toSegment(d.c, line.p, line.q) - d.r, `at ${h}`).toBeGreaterThanOrEqual(6 * k - 1e-6)
       }
     }
   })
@@ -737,12 +737,12 @@ describe('diamondStructure: the picture of the model', () => {
     }
   })
 
-  it('keeps every circle clear of every other, the edges at least 4 u apart, at every size: no two circles overlap', () => {
+  it('keeps every circle clear of every other, the edges at least 5 u apart, at every size: no two circles overlap', () => {
     for (const h of sizes('diamondStructure'))
       for (const withStubs of [false, true]) {
         const x = drawn(h, withStubs)
-        expect(smallestGap(x.d.circles), `the drawing at ${h}`).toBeGreaterThanOrEqual(4 * x.k - 1e-6)
-        expect(smallestGap(diamondPicture(m, h, withStubs).circles), `the picture at ${h}`).toBeGreaterThanOrEqual(4 * x.k - 1e-6)
+        expect(smallestGap(x.d.circles), `the drawing at ${h}`).toBeGreaterThanOrEqual(5 * x.k - 1e-6)
+        expect(smallestGap(diamondPicture(m, h, withStubs).circles), `the picture at ${h}`).toBeGreaterThanOrEqual(5 * x.k - 1e-6)
       }
   })
 
