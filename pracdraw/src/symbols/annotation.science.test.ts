@@ -387,7 +387,7 @@ describe('formula triangle: the quantities', () => {
 
 describe('formula triangle: the drawing', () => {
   it('splits the triangle by a horizontal line and a vertical line into three parts', () => {
-    for (const h of [99, 110, 165]) {
+    for (const h of [88, 110, 165]) {
       const g = triangleGeometry({}, h),
         L = triangleLayout(h),
         polys = pathPolys(g.prims[0].d)
@@ -441,12 +441,13 @@ describe('formula triangle: the drawing', () => {
       expect(top.size, id).toBeGreaterThanOrEqual(12)
       expect(top.size, id).toBeLessThanOrEqual(16)
     }
-    for (const id of ['moles', 'concentration', 'gasVolume'] as const) expect(triangleGeometry({ preset: id }).texts![0].size, id).toBe(16)
+    // At the default size every preset is as big as the text may be made for a triangle of that size: 16 u.
+    for (const id of PRESET_IDS) expect(triangleGeometry({ preset: id }).texts![0].size, id).toBe(16)
   })
 
   it('keeps every text inside its own part, clear of the lines, at the smallest size, the default size and a larger one', () => {
     for (const id of PRESET_IDS) {
-      for (const h of [99, 110, 165]) {
+      for (const h of [88, 110, 165]) {
         const m = triangleModel({ preset: id }),
           L = triangleLayout(h),
           g = triangleGeometry({ preset: id }, h)
@@ -518,11 +519,11 @@ describe('formula triangle: hiding a part', () => {
   })
 
   it('sets the worksheet like the answer sheet: the size follows all three texts, whichever is hidden', () => {
-    // 'actual' is the widest text of the yield triangle: hiding it must not let the other two grow.
-    const full = triangleGeometry({ preset: 'yield' }).texts!,
-      noTop = triangleGeometry({ preset: 'yield', hide: 'top' }).texts!
+    // In a small triangle 'actual' is the text that does not fit at the size of the others: hiding it must not let the other two grow.
+    const full = triangleGeometry({ preset: 'yield' }, 88).texts!,
+      noTop = triangleGeometry({ preset: 'yield', hide: 'top' }, 88).texts!
     expect(new Set(full.map((t) => t.size)).size).toBe(1)
-    expect(full[0].size).toBeLessThan(16)
+    expect(full[0].size).toBeLessThan(triangleGeometry({ preset: 'moles' }, 88).texts![0].size)
     expect(noTop.map((t) => t.size)).toEqual([full[0].size, full[0].size])
   })
 })
@@ -755,7 +756,7 @@ describe('annotation symbols: the size of their text (rule S11 as relaxed: 12 to
       'formulaTriangle',
       [
         [120, 110],
-        [108, 99],
+        [96, 88],
         [180, 165],
       ],
       [

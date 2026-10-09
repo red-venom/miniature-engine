@@ -606,7 +606,7 @@ export function triangleLayout(h: number): TriangleLayout {
     apexY = 1,
     baseY = h - 1,
     half = 60 * k - 1,
-    y = apexY + 0.55 * (baseY - apexY),
+    y = apexY + 0.59 * (baseY - apexY),
     halfAt = (yy: number) => (half * (yy - apexY)) / (baseY - apexY),
     e = halfAt(y)
   return {
@@ -665,7 +665,7 @@ const formulaTriangle: SymbolDef = {
   pack: 'annotation',
   size: { w: 120, h: 110 },
   resize: 'uniform',
-  min: { w: 108, h: 99 },
+  min: { w: 96, h: 88 },
   params: [
     {
       key: 'preset',
