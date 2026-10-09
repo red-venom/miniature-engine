@@ -2,7 +2,7 @@
 
 # Symbols
 
-123 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
+130 symbols in 15 packs. A recipe names one in `"symbol"` by its id. `npm run render -- --find <words>` finds a symbol by the words of its name or its aliases; `npm run render -- --symbol <id>` shows one symbol in full, with the position and direction of each anchor.
 
 - size: the default width × height in world units (1 unit is 1 pixel at 100 %). resize: `free` (w and h), `uniform` (w or h: the shape stays), `width`, `height` or `none`.
 - parameters: set them in `"params"`. A choice is a string; `"capacity": 50` is read as "50".
@@ -186,8 +186,11 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 | `eye` | Eye | observer, eye level | 46 × 26 | uniform, min 23 × 13 |  |  |  | no automatic label |
 | `flame` | Flame |  | 26 × 44 | uniform, min 13 × 22 |  |  | base (base) | no automatic label |
 | `flameTestLoop` | Flame test wire | nichrome wire, wire loop | 180 × 12 | width, min 100 × 12 |  |  | loop (tip) |  |
+| `formulaTriangle` | Formula triangle | formula triangle, magic triangle, moles triangle | 120 × 110 | uniform, min 96 × 88 | preset: "moles" or "concentration" or "gasVolume" or "yield" or "custom", default "moles"; top: text, default "m"; left: text, default "n"; right: text, default "Mr"; hide: "none" or "top" or "left" or "right", default "none" |  |  |  |
+| `hazardSymbol` | Hazard symbol | hazard, warning symbol, GHS pictogram, hazard pictogram | 70 × 70 | uniform, min 56 × 56 | hazard: "explosive" or "flammable" or "oxidising" or "gasUnderPressure" or "corrosive" or "toxic" or "harmful" or "health" or "environment", default "flammable"; name: boolean, default false |  |  |  |
 | `indicatorPaper` | Indicator paper | litmus paper, pH paper, universal indicator paper | 14 × 60 | free, min 6 × 10 | colour: "red" or "blue" or "green" or "orange" or "yellow" or "purple", default "red" |  |  |  |
 | `magnesiumRibbon` | Metal ribbon | magnesium ribbon, magnesium strip | 60 × 12 | free, min 24 × 8 |  |  |  | label "magnesium ribbon" |
+| `phScale` | pH scale | pH colours, universal indicator colours, acid alkali scale | 420 × 70 | free, min 360 × 62 | orientation: "horizontal" or "vertical", default "horizontal"; numbers: boolean, default true; brackets: boolean, default true; examples: boolean, default false |  |  | label "pH scale" |
 
 ## Atoms and ions
 
@@ -208,6 +211,10 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 
 | id | name | aliases | size | resize | parameters | cavities | anchors | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `diamondStructure` | Diamond (giant covalent) | giant covalent, carbon structure, tetrahedral carbon, diamond lattice, diamond cluster | 160 × 160 | uniform, min 120 × 120 | stubs: boolean, default false |  |  | label "diamond" |
+| `fullereneC60` | Buckminsterfullerene (C60) | C60, fullerene, buckyball, football molecule, giant molecule | 150 × 150 | uniform, min 105 × 105 | pentagons: boolean, default false |  |  | label "buckminsterfullerene" |
+| `graphiteStructure` | Graphite (layers) | giant covalent, carbon layers, hexagonal layers, graphite lattice | 200 × 170 | uniform, min 170 × 144 | layers: number 2..4, default 3; forces: boolean, default true |  |  | label "graphite" |
+| `ionicLattice3D` | Ionic lattice (3D) | sodium chloride lattice, giant ionic lattice, NaCl structure, ionic crystal, ionic lattice | 150 × 150 | uniform, min 120 × 120 | bonds: boolean, default true |  |  | label "ionic lattice" |
 
 ## Not drawn yet
 

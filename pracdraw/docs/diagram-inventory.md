@@ -11,8 +11,8 @@ Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/dia
 **In short.**
 
 - The list has <!-- gen:n.total -->293<!-- /gen --> rows: <!-- gen:n.chem -->219<!-- /gen --> for chemistry (<!-- gen:n.chemKs4 -->131<!-- /gen --> at KS4 and <!-- gen:n.chemKs5 -->88<!-- /gen --> at KS5) and <!-- gen:n.outline -->74<!-- /gen --> outline rows for biology and physics.
-- <!-- gen:n.covered -->57<!-- /gen --> rows are already drawn by the symbols and templates of the catalogue. <!-- gen:n.charts -->40<!-- /gen --> rows are graphs, tables and spectra, which the specification puts outside PracDraw. The other <!-- gen:n.new -->196<!-- /gen --> rows need something new.
-- Steps 1 to <!-- gen:n.lastAStep -->8<!-- /gen --> of the build order hold all <!-- gen:n.aNew -->40<!-- /gen --> priority A rows that need new code.
+- <!-- gen:n.covered -->64<!-- /gen --> rows are already drawn by the symbols and templates of the catalogue. <!-- gen:n.charts -->40<!-- /gen --> rows are graphs, tables and spectra, which the specification puts outside PracDraw. The other <!-- gen:n.new -->189<!-- /gen --> rows need something new.
+- Steps 1 to <!-- gen:n.lastAStep -->8<!-- /gen --> of the build order hold all <!-- gen:n.aNew -->36<!-- /gen --> priority A rows that need new code.
 - Decisions 1 to 3 reverse things that the specification says PracDraw does not draw, and decisions 1 to 5 set how large the work is.
 - Confidence is weaker than it looks (see Confidence below). The first job for a person with the AQA PDF is "Rows to check against the AQA PDF".
 
@@ -23,12 +23,12 @@ Phase 13, rewritten after review on 9 October 2026. The list itself is `spec/dia
 <!-- gen:kinds -->
 | Kind | What it is | Chemistry | Outline | Rows |
 | --- | --- | --- | --- | --- |
-| symbol | a new parametric symbol: one drawing made from parameters | 50 | 19 | 69 |
+| symbol | a new parametric symbol: one drawing made from parameters | 43 | 19 | 62 |
 | compound | a diagram of several new symbols and connectors, built from a recipe | 55 | 24 | 79 |
 | template | an apparatus set-up that is a recipe from symbols that exist (a new template; the small additions are listed under Build order) | 16 | 0 | 16 |
 | process | a flow, cycle or tower diagram | 23 | 9 | 32 |
 | chart | a graph, table or spectrum (outside PracDraw unless James decides) | 33 | 7 | 40 |
-| covered | an existing symbol or template already draws it (the row names it) | 42 | 15 | 57 |
+| covered | an existing symbol or template already draws it (the row names it) | 49 | 15 | 64 |
 | all |  | 219 | 74 | 293 |
 <!-- /gen -->
 
@@ -75,13 +75,13 @@ Each decision gives the options and a recommendation, so that James can approve 
 <!-- gen:steps -->
 | Step | What | Packs | Rows | A | B | C |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Covered rows (no new code) | `apparatus` | 57 | 18 | 24 | 15 |
+| 0 | Covered rows (no new code) | `annotation`, `apparatus`, `structures` | 64 | 22 | 25 | 17 |
 | 1 | New templates (KS4) | `labTemplates`, `organicApparatus` | 14 | 4 | 8 | 2 |
-| 2 | Small symbols and the reaction profile (KS4) | `annotation`, `energy` | 5 | 2 | 1 | 2 |
+| 2 | Small symbols and the reaction profile (KS4) | `annotation`, `energy` | 2 | 1 | 1 | 0 |
 | 3 | Atoms, ions and dot-and-cross diagrams (KS4) | `atoms` | 9 | 8 | 1 | 0 |
 | 4 | The particle box | `matter` | 10 | 4 | 4 | 2 |
 | 5 | Molecules (KS4) | `molecules` | 15 | 7 | 7 | 1 |
-| 6 | Structures (KS4) | `structures` | 12 | 7 | 4 | 1 |
+| 6 | Structures (KS4) | `structures` | 8 | 4 | 3 | 1 |
 | 7 | Flow diagrams, plants and scenes (KS4) | `flow`, `plants`, `scenes` | 17 | 5 | 5 | 7 |
 | 8 | Electrochemical cells and the bond energy diagram (KS4) | `electrochemistry`, `energy` | 6 | 3 | 2 | 1 |
 | 9 | KS5 physical and inorganic chemistry | `atoms`, `electrochemistry`, `energy`, `flow`, `molecules`, `structures` | 27 | 0 | 18 | 9 |
@@ -120,7 +120,7 @@ What each step draws, and why it is where it is:
 An inventory row is a scope, not a recipe. For each pack, the lead does the following before an author starts.
 
 - **Catalogue rows.** Write the catalogue row of every symbol (size, resize mode, parameters with type, default and range, anchors, label, line roles), as for the apparatus. `src/spec.test.ts` compares the code with those rows.
-- **A geometry brief for each hard row.** The rows with the note "Needs a geometry brief before it is built." are <!-- gen:n.briefIds -->`covalentDotCross`, `diamondStructure`, `graphiteStructure`, `fullereneC60`<!-- /gen -->. A brief gives the construction or the coordinates, the oblique transform, the rule for hidden lines, and what is drawn at the edge of a patch. Two more of the hardest rows, `ionicDotCross` and `displayedFormulaHydrocarbon`, are close to ready.
+- **A geometry brief for each hard row.** The rows with the note "Needs a geometry brief before it is built." are <!-- gen:n.briefIds -->`covalentDotCross`<!-- /gen -->. A brief gives the construction or the coordinates, the oblique transform, the rule for hidden lines, and what is drawn at the edge of a patch. Two more of the hardest rows, `ionicDotCross` and `displayedFormulaHydrocarbon`, are close to ready.
 - **Text and fills.** Decisions 7 and 8: the kernel needs a tint role and a hatch role, and rule S11 needs relaxing for these packs.
 - **Library groups.** The library's packs are a closed list: `PackId` in `src/symbols/types.ts`, `PACKS` in `src/editor/search.ts` and `src/editor/search.test.ts` agree on <!-- gen:n.packIds -->15<!-- /gen --> ids. The inventory proposes <!-- gen:n.newPacks -->6<!-- /gen --> more pack names, which would make <!-- gen:n.libraryGroups -->21<!-- /gen --> groups. The library will group the packs under a few headings (the lead's work) and will not show that many.
 - **Science checks need a model.** The science checks of a row are written about atoms, bonds and electrons, but a symbol returns only paths. A symbol file exports its data (the element table, the molecule library) so that a test can check it. The author brief forbids authors to write tests; for these packs the lead changes that rule, and the author owns a `<pack>.science.test.ts`.
@@ -136,12 +136,12 @@ An inventory row is a scope, not a recipe. For each pack, the lead does the foll
 | subject | physics | 37 |
 | level | KS4 | 205 |
 | level | KS5 | 88 |
-| kind | symbol | 69 |
+| kind | symbol | 62 |
 | kind | compound | 79 |
 | kind | template | 16 |
 | kind | process | 32 |
 | kind | chart | 40 |
-| kind | covered | 57 |
+| kind | covered | 64 |
 | priority | A | 61 |
 | priority | B | 115 |
 | priority | C | 117 |
@@ -155,19 +155,19 @@ Kind by priority, all subjects:
 <!-- gen:kind-priority -->
 | Kind | A | B | C | Total |
 | --- | --- | --- | --- | --- |
-| symbol | 22 | 18 | 29 | 69 |
+| symbol | 18 | 17 | 27 | 62 |
 | compound | 9 | 37 | 33 | 79 |
 | template | 4 | 10 | 2 | 16 |
 | process | 5 | 7 | 20 | 32 |
 | chart | 3 | 19 | 18 | 40 |
-| covered | 18 | 24 | 15 | 57 |
+| covered | 22 | 25 | 17 | 64 |
 | all | 61 | 115 | 117 | 293 |
 <!-- /gen -->
 
 Reading the numbers:
 
-- <!-- gen:n.covered -->57<!-- /gen --> rows are already covered by a symbol or a template. They need no new code, only a recipe and a check that the picture shows what the lesson needs. <!-- gen:n.charts -->40<!-- /gen --> rows are charts, which the specification puts outside PracDraw. The other <!-- gen:n.new -->196<!-- /gen --> rows need something new: <!-- gen:n.symbol -->69<!-- /gen --> symbols, <!-- gen:n.compound -->79<!-- /gen --> compounds, <!-- gen:n.template -->16<!-- /gen --> templates and <!-- gen:n.process -->32<!-- /gen --> process diagrams.
-- Of the chemistry rows, <!-- gen:n.newChem -->144<!-- /gen --> need something new (symbols, compounds, templates and process diagrams). The templates need no new drawing code beyond the small additions listed under Build order, so <!-- gen:n.newDrawingsChem -->128<!-- /gen --> chemistry drawings (symbols, compounds and process diagrams) need new code. Several rows share one engine (the Bohr atom and the ion, or all the displayed formulae), so the number of separate pieces of code is smaller than the number of drawings. My estimate, not a measurement, is <!-- gen:n.estLow -->51<!-- /gen --> to <!-- gen:n.estHigh -->77<!-- /gen --> separate pieces of code.
+- <!-- gen:n.covered -->64<!-- /gen --> rows are already covered by a symbol or a template. They need no new code, only a recipe and a check that the picture shows what the lesson needs. <!-- gen:n.charts -->40<!-- /gen --> rows are charts, which the specification puts outside PracDraw. The other <!-- gen:n.new -->189<!-- /gen --> rows need something new: <!-- gen:n.symbol -->62<!-- /gen --> symbols, <!-- gen:n.compound -->79<!-- /gen --> compounds, <!-- gen:n.template -->16<!-- /gen --> templates and <!-- gen:n.process -->32<!-- /gen --> process diagrams.
+- Of the chemistry rows, <!-- gen:n.newChem -->137<!-- /gen --> need something new (symbols, compounds, templates and process diagrams). The templates need no new drawing code beyond the small additions listed under Build order, so <!-- gen:n.newDrawingsChem -->121<!-- /gen --> chemistry drawings (symbols, compounds and process diagrams) need new code. Several rows share one engine (the Bohr atom and the ion, or all the displayed formulae), so the number of separate pieces of code is smaller than the number of drawings. My estimate, not a measurement, is <!-- gen:n.estLow -->48<!-- /gen --> to <!-- gen:n.estHigh -->73<!-- /gen --> separate pieces of code.
 
 ### Tags
 
@@ -384,13 +384,13 @@ Every row once, under its topic, for looking things up. The last column is the s
 | `ballAndStickModel` | Ball-and-stick model of a small molecule | symbol | molecules | A | checked | 8464, 8462 | Spheres joined by sticks, drawn as plain circles (no shading, no gradient, no highlight: rule S1) and sticks as two parallel lines in an oblique view. |
 | `spaceFillingModel` | Space-filling model of a small molecule | symbol | molecules | C | secondary | 8464, 8462 | Overlapping circles at the atom positions with the nearer atoms drawn in front, and a key for the atoms. No sticks. |
 | `ionicLattice2D` | Giant ionic lattice in two dimensions | symbol | structures | A | checked | 8464, 8462 | A square grid of touching circles in alternating kinds: the positive ions small and marked +, the negative ions larger and marked -. |
-| `ionicLattice3D` | Sodium chloride lattice in three dimensions (ball and stick) | symbol | structures | B | secondary | 8464, 8462, 7405 | A 3 by 3 by 3 cube of alternating small (Na+) and large (Cl-) circles in an oblique projection: the front face drawn square and the back face shifted up and right at half size, joined by lines. |
+| `ionicLattice3D` | Sodium chloride lattice in three dimensions (ball and stick) | covered | structures | B | secondary | 8464, 8462, 7405 | Covered by `ionicLattice3D`. Use the ionicLattice3D symbol: a 3 by 3 by 3 block of 27 ions in the oblique view, 14 Cl- (large, grey with hatch) and 13 Na+ (small, white), with 54 bonds between unlike ions and the three hidden back bonds dashed. |
 | `metallicBonding` | Metallic bonding (positive ions in a sea of delocalised electrons) | symbol | structures | A | secondary | 8464, 8462 | Rows of equal circles marked + (the metal ions) in a regular lattice, with small dots or minus signs scattered in the gaps between them (the delocalised electrons, drawn irregularly, not in rows). |
 | `alloyStructure` | Alloy and pure metal layers (why alloys are harder) | symbol | structures | A | secondary | 8464, 8462 | Rows of equal circles for the pure metal, with a heavy arrow showing one layer sliding over the next. |
-| `diamondStructure` | Diamond (giant covalent, tetrahedral) | symbol | structures | A | secondary | 8464, 8462, 7405 | Carbon atoms (small circles) joined by single lines, each atom bonded to four neighbours in a tetrahedral pattern, in an oblique projection with the rear bonds lighter or dashed. |
-| `graphiteStructure` | Graphite (layers of hexagons) | symbol | structures | A | secondary | 8464, 8462, 7405 | Three stacked layers (the default; the parameter allows 2 to 4), each drawn as a flat parallelogram patch of the hexagon net in oblique view with an atom at every corner. |
+| `diamondStructure` | Diamond (giant covalent, tetrahedral) | covered | structures | A | secondary | 8464, 8462, 7405 | Covered by `diamondStructure`. Use the diamondStructure symbol: a cluster of 17 carbon atoms (one atom, its four neighbours and their twelve other neighbours) with 16 bonds, in the oblique view turned about the vertical axis so that no circles overlap. |
+| `graphiteStructure` | Graphite (layers of hexagons) | covered | structures | A | secondary | 8464, 8462, 7405 | Covered by `graphiteStructure`. Use the graphiteStructure symbol: 2 to 4 (default 3) identical sheets one above the other, each a patch of two rows of three hexagons (22 atoms) in the oblique view, with a short stub at every edge atom to show that the net goes ... |
 | `grapheneSheet` | Graphene (one layer of hexagons) | symbol | structures | A | secondary | 8464, 8462 | A flat honeycomb of carbon hexagons, about 4 rows by 5 columns, atoms at the vertices and bonds as lines, with short stubs or a wavy cut line at the edge. |
-| `fullereneC60` | Buckminsterfullerene C60 | symbol | structures | A | secondary | 8464, 8462 | A ball of 60 carbon atoms joined by lines: 12 pentagons and 20 hexagons, each pentagon surrounded by hexagons. |
+| `fullereneC60` | Buckminsterfullerene C60 | covered | structures | A | secondary | 8464, 8462 | Covered by `fullereneC60`. Use the fullereneC60 symbol: the truncated icosahedron of 60 carbon atoms and 90 bonds, seen from the direction of a pentagon and tilted a little, as an opaque ball: only the 30 atoms and 40 bonds on faces that face the viewer ... |
 | `carbonNanotube` | Carbon nanotube | symbol | structures | B | secondary | 8464, 8462 | A cylinder made by rolling the graphene honeycomb, in oblique view: an open or capped end ellipse, the hexagon network on the visible surface, atoms at the vertices. |
 | `silicaStructure` | Silicon dioxide (giant covalent) | symbol | structures | B | secondary | 8464, 8462 | The diamond network with an oxygen atom drawn in the middle of every bond between two silicon atoms. Silicon atoms larger, oxygen smaller, different fills, with a key. |
 | `polymerChains` | Polymer chains (linear, branched and cross-linked) | symbol | molecules | B | secondary | 8464, 8462 | Several long zig-zag chains of carbon atoms side by side, with hydrogen stubs. Linear chains (HDPE) lie close and parallel. |
@@ -413,7 +413,7 @@ Every row once, under its topic, for looking things up. The last column is the s
 | `readingScaleQuestion` | Reading a burette or measuring cylinder (enlarged scale) | covered | apparatus | B | secondary | 8464, 8462 | Covered by `scaleWindow`. Use the magnified scale: a section of a burette or measuring cylinder with divisions and the end values, a liquid with a meniscus, and the reading set with the Reading field. |
 | `titrationSetup` | Titration apparatus (burette, flask and white tile) | covered | apparatus | A | checked | 8462, 7405 | Covered by `titration`. Use the titration template: a burette clamped upright with its tip inside the neck of a conical flask, the flask on a white tile with alkali and an indicator (Pink preset for phenolphthalein), labels for each part. |
 | `titrationResultsTable` | Table of titration results (rough, trials, mean titre) | chart | charts | C | unverified | 8462, 7405 | A ruled table with columns for rough, trial 1, trial 2 and trial 3, and rows for final burette reading, initial reading and titre (cm3), with a line for the mean of the concordant titres. |
-| `formulaTriangle` | Formula triangle (moles, concentration and similar) | symbol | annotation | C | unverified | 8464, 8462 | A triangle split by a horizontal line and a vertical line into three parts: one quantity at the top and two at the bottom. |
+| `formulaTriangle` | Formula triangle (moles, concentration and similar) | covered | annotation | C | unverified | 8464, 8462 | Covered by `formulaTriangle`. Use the formulaTriangle symbol: a triangle split by a horizontal and a vertical line into three parts, one quantity at the top and two at the bottom. |
 
 #### Chemical changes (14)
 
@@ -425,7 +425,7 @@ Every row once, under its topic, for looking things up. The last column is the s
 | `metalOxideCarbonHeating` | Heating a metal oxide with carbon and testing the gas | covered | apparatus | B | secondary | 8464, 8462 | Covered by `thermalDecomposition`. Use the thermalDecomposition template with a black mixture of copper oxide and carbon (Black powder preset) in the boiling tube, the delivery tube into limewater in a test tube, and the Bunsen under the powder. |
 | `blastFurnace` | Blast furnace for the extraction of iron | process | plants | C | secondary | 8464, 8462 | A tall furnace outline, wide in the middle and narrower at top and bottom. Inlets: iron ore, coke and limestone at the top, hot air blown in near the bottom. |
 | `saltPreparation` | Preparing a pure dry soluble salt (react, filter, evaporate) | covered | apparatus | A | checked | 8464, 8462 | Covered by `crystallisation`. Three pictures in order, all existing templates. Step 1, heatingBeaker: warm dilute acid in a beaker on a gauze, with the insoluble oxide or carbonate added in excess and stirred (glass rod). |
-| `pHScale` | pH scale with universal indicator colours | symbol | annotation | A | secondary | 8464, 8462 | A horizontal strip divided into 15 cells numbered 0 to 14, coloured red, orange, yellow, green (7) then blue and purple, with a bracket for acidic below 7, neutral at 7 and alkaline above 7. |
+| `pHScale` | pH scale with universal indicator colours | covered | annotation | A | secondary | 8464, 8462 | Covered by `phScale`. Use the phScale symbol: a strip of 15 equal cells numbered 0 to 14 in the universal indicator colours (red, orange, yellow, green at 7, blue, purple), with brackets for acidic (below 7), neutral (7) and alkaline (above 7) and, if ... |
 | `strongWeakAcids` | Strong and weak acids as particle pictures | symbol | matter | B | secondary | 8464, 8462 | Two boxes of the same size and the same number of acid particles. Strong acid: every molecule split into H+ and a negative ion (fully ionised). |
 | `electrolysisIons` | Electrolysis cell with the movement of ions | compound | electrochemistry | A | secondary | 8464, 8462 | A cell holding the electrolyte (molten or a solution), two electrodes joined by wires to a power supply, the negative electrode (cathode) and positive electrode (anode) marked. |
 | `electrolysisMoltenApparatus` | Apparatus for electrolysis of a molten compound | template | labTemplates | B | secondary | 8464, 8462 | A crucible (or a deep basin) of the molten compound on a pipeclay triangle on a tripod, a Bunsen burner under it on a heatproof mat. |
@@ -535,7 +535,7 @@ Every row once, under its topic, for looking things up. The last column is the s
 
 | Row | Name | Kind | Pack | Pri | Confidence | Course | What it draws |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `hazardSymbols` | Hazard symbols (the nine GHS pictograms) | symbol | annotation | C | unverified | 8464, 8462 | A square set on its corner (a diamond) with a black outline and a black picture inside: exploding bomb, flame, flame over a circle, gas cylinder, corrosion (liquid on a hand and a metal), skull and crossbones, exclamation mark, ... |
+| `hazardSymbols` | Hazard symbols (the nine GHS pictograms) | covered | annotation | C | unverified | 8464, 8462 | Covered by `hazardSymbol`. Use the hazardSymbol symbol: a diamond with a black picture inside, one of the nine GHS pictograms chosen by `hazard` (explosive, flammable, oxidising, gasUnderPressure, corrosive, toxic, harmful, health, environment). |
 | `heatingLiquidBeaker` | Heating a liquid in a beaker (Bunsen burner, tripod, gauze, thermometer) | covered | apparatus | A | checked | 8464, 8462 | Covered by `heatingBeaker`. Use the heatingBeaker template: a Bunsen burner on a heatproof mat under a tripod and gauze, a beaker of water (60 percent) on the gauze and a thermometer in the water. |
 
 ### Chemistry, KS5
