@@ -16,7 +16,7 @@ import { SCRIPT } from '../kernel/nodes'
 import { parseMarkup } from '../kernel/text'
 import { CROSS_ARM, DOT_R, bracketD, electronPrims, ringPoints } from './electrons'
 import { element, ionShells, shellString, type Element } from './elements'
-import { bool, circle, num, str } from './kit'
+import { bool, circle, num, str, tinted } from './kit'
 import type { ParamValue, Prim, SymbolDef, SymbolText } from './types'
 
 // ---------------------------------------------------------------- shared helpers
@@ -119,17 +119,13 @@ function ringElectrons(cx: number, cy: number, r: number, count: number, mark: M
 const plusD = (x: number, y: number, arm: number): string => `M${f(x - arm)} ${f(y)}H${f(x + arm)}M${f(x)} ${f(y - arm)}V${f(y + arm)}`
 
 /**
- * A tint with the hatch that stands in for it on a photocopy (what `tinted` makes), with the hatch left out inside `holes` (closed shapes):
- * for a mark that is drawn on the tint and would be lost among the hatch lines.
+ * A tint with the hatch that stands in for it on a photocopy, as `tinted` makes them, but with the hatch left out inside `holes` (closed
+ * shapes): for a mark that is drawn on the tint and would be lost among the hatch lines.
  */
 function tintedClear(d: string, holes: string): Prim[] {
-  const hatch = hatchD(d + holes)
-  return hatch
-    ? [
-        { d, role: 'tint' },
-        { d: hatch, role: 'hatch' },
-      ]
-    : [{ d, role: 'tint' }]
+  const [fill, hatch] = tinted(d)
+  const clear = hatch ? hatchD(d + holes) : ''
+  return clear ? [fill, { d: clear, role: 'hatch' }] : [fill]
 }
 
 // ---------------------------------------------------------------- the Bohr atom
