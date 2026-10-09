@@ -7,8 +7,9 @@
 // drawing agrees with them.
 
 import { P, dist, f, type Pt } from '../kernel/geom'
-import { circle, str } from './kit'
-import { electronPrims, pairedPoints } from './electrons'
+import { bool, circle, str } from './kit'
+import { bracketD, electronPrims, pairedPoints } from './electrons'
+import { elementBySymbol, ionShells, ks4Group, type Element } from './elements'
 import { MOLECULES, molecule, type Molecule } from './molecules'
 import type { Prim, SymbolDef, SymbolText } from './types'
 
@@ -48,6 +49,19 @@ const unit = (a: Pt, b: Pt): Pt => {
   return P((b.x - a.x) / d, (b.y - a.y) / d)
 }
 
+/** Widths of the letters of Arial, in thousandths of the type size: A to Z, then a to z. The element symbols are set in Arial (rule S11). */
+const ARIAL = [
+  ...[667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611],
+  ...[556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500],
+]
+/** The width of a word of letters set in Arial at `size` u (a letter that it does not know counts as an M). */
+export const textWidth = (word: string, size: number): number =>
+  ([...word].reduce((n, c) => n + (ARIAL[c >= 'A' && c <= 'Z' ? c.charCodeAt(0) - 65 : c >= 'a' && c <= 'z' ? 26 + c.charCodeAt(0) - 97 : 12] ?? 833), 0) *
+    size) /
+  1000
+/** How far the corner of the box of an element symbol is from its centre, plus a little room: the smallest circle that holds the symbol. */
+const symbolRadius = (symbol: string, size: number): number => Math.hypot(textWidth(symbol, size) / 2, size * 0.358) + 1.8
+
 /** A circle drawn as arcs, leaving out the angular intervals of `cuts` (degrees, `[from, to]`, clockwise from +x). No cuts: the whole circle. */
 function circleWithGaps(cx: number, cy: number, r: number, cuts: [number, number][]): string {
   if (!cuts.length) return circle(cx, cy, r)
@@ -68,7 +82,7 @@ function circleWithGaps(cx: number, cy: number, r: number, cuts: [number, number
     const last = merged.pop()!
     merged[0] = [Math.min(merged[0][0], last[0] - 360), Math.max(merged[0][1], last[1] - 360)]
   }
-  if (merged.length === 1 && merged[0][1] - merged[0][0] >= 360) return ''
+  if (merged.length === 1 && merged[0][1] - merged[0][0] >= 360) return circle(cx, cy, r) // nothing left of the line to leave: keep the circle
   const at = (deg: number) => `${f(cx + r * Math.cos((deg * Math.PI) / 180))} ${f(cy + r * Math.sin((deg * Math.PI) / 180))}`
   let d = ''
   merged.forEach((cut, i) => {
@@ -130,10 +144,15 @@ export const METRICS: Record<CovalentLayout, Metrics> = {
 export const PAIR = 8
 /** Size of the element symbol in the centre of a circle, and the room that the drawing leaves round its edge. */
 export const SYMBOL_SIZE = 15
+/** In an ionic diagram with the inner shells drawn the symbol sits in the innermost circle, so it is set smaller. */
+export const INNER_SYMBOL_SIZE = 12
 export const MARGIN = 8
 /** The drawing is never made smaller than this against its natural size (the marks do not shrink), nor larger than the other limit. */
 export const K_MIN = 0.85
 export const K_MAX = 1.6
+/** The same limits for the ionic diagrams. */
+export const ION_K_MIN = 0.6
+export const ION_K_MAX = 1.5
 /** How far along a circle a gap in its line reaches beyond the centre of a lone-pair mark, in u. */
 export const GAP = 6
 
@@ -386,4 +405,421 @@ const covalentDotCross: SymbolDef = {
   },
 }
 
-export const dotcross: SymbolDef[] = [covalentDotCross]
+// ---------------------------------------------------------------- ionic: the model
+
+/** The metals and the non-metals that the parameters offer, in the order of the catalogue row. */
+export const METALS = ['Li', 'Na', 'K', 'Mg', 'Ca', 'Al']
+export const NON_METALS = ['N', 'O', 'F', 'S', 'Cl', 'Br']
+/** The ending that a non-metal gives to the name of its compound: sodium chloride, magnesium oxide. */
+const ENDING: Record<string, string> = { N: 'nitride', O: 'oxide', F: 'fluoride', S: 'sulfide', Cl: 'chloride', Br: 'bromide' }
+
+export interface IonicModel {
+  metal: Element
+  nonMetal: Element
+  /** The charge of one metal ion (+1, +2 or +3: the group number) and of one non-metal ion (-1, -2 or -3: the group number less 8). */
+  metalCharge: number
+  nonMetalCharge: number
+  /** How many of each ion make the compound: the smallest numbers that cancel the charges (MgCl2: 1 and 2; Na2O: 2 and 1; Al2O3: 2 and 3). */
+  nMetal: number
+  nNonMetal: number
+  /** The electrons on the shells of one metal ion and of one non-metal ion. */
+  metalShells: number[]
+  nonMetalShells: number[]
+}
+
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a)
+
+/** The ions of a compound. A metal or non-metal that is not in the lists above gives sodium or chlorine, so nothing here throws. */
+export function ionicModel(metal: string, nonMetal: string): IonicModel {
+  const m = elementBySymbol(METALS.includes(metal) ? metal : 'Na')!,
+    x = elementBySymbol(NON_METALS.includes(nonMetal) ? nonMetal : 'Cl')!
+  const cm = ks4Group(m) ?? 1,
+    cx = (ks4Group(x) ?? 7) - 8
+  const l = (cm * -cx) / gcd(cm, -cx)
+  return {
+    metal: m,
+    nonMetal: x,
+    metalCharge: cm,
+    nonMetalCharge: cx,
+    nMetal: l / cm,
+    nNonMetal: l / -cx,
+    metalShells: ionShells(m, cm) ?? [...m.shells],
+    nonMetalShells: ionShells(x, cx) ?? [...x.shells],
+  }
+}
+
+/** The name of the compound: the metal, then the non-metal with its ending (sodium chloride). */
+export const compoundName = (m: IonicModel): string => `${m.metal.name} ${ENDING[m.nonMetal.symbol] ?? `${m.nonMetal.name}ide`}`
+
+/** The marks of the metal's electrons and of the non-metal's: [dots, crosses] by default, [crosses, dots] swapped, [dots, rings] for rings. */
+function ionicKinds(choice: MarksChoice): [MarkKind, MarkKind] {
+  return choice === 'swapped' ? ['cross', 'dot'] : choice === 'ring' ? ['dot', 'ring'] : ['dot', 'cross']
+}
+
+export type IonicStage = 'transfer' | 'ions'
+
+export interface IonicIon {
+  kind: 'metal' | 'nonMetal'
+  symbol: string
+  x: number
+  y: number
+  /** The radius of the outermost circle drawn. */
+  r: number
+  /** The radii of the plain circles of the inner shells, outermost first: empty unless `inner` is on. */
+  inner: number[]
+  /** The charge written beside the bracket (ions stage); 0 for an atom. */
+  charge: number
+  /** The electrons on each shell of what is drawn: the atom's shells (transfer stage) or the ion's (ions stage). */
+  shells: number[]
+  /** The square brackets round an ion (ions stage). */
+  bracket: { x0: number; y0: number; x1: number; y1: number } | null
+}
+
+export interface IonicMark {
+  x: number
+  y: number
+  mark: MarkKind
+  /** The ion or atom whose circle the mark is on (an index into `ions`). */
+  ion: number
+  /** Whose electron it is: the metal's (its own, or one that has moved across) or the non-metal's. */
+  from: 'metal' | 'nonMetal'
+}
+
+/** A curved arrow from an electron of a metal to a place that is empty on a non-metal (transfer stage). */
+export interface IonicArrow {
+  /** The index (into `marks`) of the electron that the arrow leaves, and the ions that it joins. */
+  mark: number
+  fromIon: number
+  toIon: number
+  /** The empty place on the non-metal that the arrow points at. */
+  slot: Pt
+  /** The shaft: a quadratic curve from `start` by `via` to `end`, and the head, a triangle with its point at `tip`. */
+  start: Pt
+  via: Pt
+  end: Pt
+  tip: Pt
+}
+
+export interface IonicDiagram {
+  model: IonicModel
+  stage: IonicStage
+  inner: boolean
+  /** The size of the element symbols: smaller when the inner shells are drawn. */
+  symbolSize: number
+  k: number
+  ions: IonicIon[]
+  marks: IonicMark[]
+  arrows: IonicArrow[]
+}
+
+/** Sizes at natural scale, in u: the circle of the outer shell, the room between it and its bracket, and the gaps between neighbours. */
+export const ION = { r: 30, pad: 8, gap: 34, gapIons: 28, gapAround: 40, rowGap: 30, rowGapIons: 6 }
+/** The size of the charge (a superscript, so it is drawn 0.7 times as big) and how far its baseline lies below the top of the bracket. */
+const CHARGE_SIZE = 18
+const CHARGE_DY = 12.8
+const ARROW = { head: 7, wing: 6, clear: 4.5 }
+
+interface Cell {
+  kind: 'metal' | 'nonMetal'
+  col: number
+  row: number
+}
+
+/**
+ * Who stands where: the ions in one row, the two kinds alternating (X M X for MgCl2, M X M for Na2O, X M X M X for Al2O3: every metal beside the
+ * non-metals that take its electrons), the kind that there is more of at both ends. One ion beside three others (AlCl3, Li3N) stands in the middle with
+ * a partner on each side and one above.
+ */
+export function arrangement(nMetal: number, nNonMetal: number): Cell[] {
+  if (Math.abs(nMetal - nNonMetal) <= 1) {
+    const first: Cell['kind'] = nMetal >= nNonMetal ? 'metal' : 'nonMetal',
+      n = nMetal + nNonMetal
+    return Array.from({ length: n }, (_, i) => ({ kind: (i % 2 === 0) === (first === 'metal') ? 'metal' : 'nonMetal', col: i - (n - 1) / 2, row: 0 }))
+  }
+  const single: Cell['kind'] = nMetal === 1 ? 'metal' : 'nonMetal',
+    other: Cell['kind'] = single === 'metal' ? 'nonMetal' : 'metal'
+  const cells: Cell[] = [{ kind: single, col: 0, row: 0 }]
+  const places: [number, number][] = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+  ]
+  for (let i = 0; i < Math.max(nMetal, nNonMetal); i++) cells.push({ kind: other, col: (places[i] ?? [i, -1])[0], row: (places[i] ?? [i, -1])[1] })
+  return cells
+}
+
+/** The width of a charge written as a superscript, for the room that it needs on the right of its bracket. */
+const chargeWidth = (c: number): number => (Math.abs(c) > 1 ? 2 : 1) * 0.58 * CHARGE_SIZE * 0.7
+
+/** The text of a charge in label markup: `^{2+}`, `^{-}` (the hyphen becomes a minus sign). */
+export const chargeText = (c: number): string => `^{${Math.abs(c) > 1 ? Math.abs(c) : ''}${c > 0 ? '+' : '-'}}`
+
+/** Which of the four places on a ring of 8 (right, below, left, above) holds each incoming electron, and in which of the place's two slots: slot = 2 * place + side. */
+function assignSlots(directions: number[]): number[] {
+  const free = [2, 2, 2, 2],
+    taken = new Set<number>()
+  return directions.map((d) => {
+    const deg = ((d % 360) + 360) % 360
+    let best = 0,
+      bestAway = Infinity
+    for (let q = 0; q < 4; q++) {
+      if (!free[q]) continue
+      const away = Math.abs(((deg - 90 * q + 540) % 360) - 180)
+      if (away < bestAway - 1e-9) {
+        best = q
+        bestAway = away
+      }
+    }
+    free[best]--
+    // Of the two slots of the place, the one on the side that the electron comes from.
+    const side = ((deg - 90 * best + 540) % 360) - 180 < 0 ? 0 : 1
+    const slot = taken.has(2 * best + side) ? 2 * best + 1 - side : 2 * best + side
+    taken.add(slot)
+    return slot
+  })
+}
+
+/**
+ * The shaft and the head of an arrow from `a` (an electron) to `b` (an empty place), leaving a little room at both ends. The curve bulges to the side where
+ * it stays clearer of the circles (upwards when both sides are as clear).
+ */
+function arrowOf(a: Pt, b: Pt, circles: { x: number; y: number; r: number }[]): Pick<IonicArrow, 'start' | 'via' | 'end' | 'tip'> {
+  const u = unit(a, b)
+  const start = P(a.x + u.x * ARROW.clear, a.y + u.y * ARROW.clear),
+    tip = P(b.x - u.x * ARROW.clear, b.y - u.y * ARROW.clear)
+  const len = dist(start, tip)
+  let n = P(u.y, -u.x)
+  if (n.y > 1e-9 || (Math.abs(n.y) <= 1e-9 && n.x < 0)) n = P(-n.x, -n.y) // the upward side
+  const via = (side: number) => P((start.x + tip.x) / 2 + n.x * len * 0.5 * side, (start.y + tip.y) / 2 + n.y * len * 0.5 * side)
+  // How near the middle of the curve comes to a circle line, for a bulge to each side.
+  const clearance = (side: number): number => {
+    const c = via(side)
+    let least = Infinity
+    for (let i = 3; i <= 9; i++) {
+      const t = i / 12,
+        w = 1 - t
+      const p = P(w * w * start.x + 2 * w * t * c.x + t * t * tip.x, w * w * start.y + 2 * w * t * c.y + t * t * tip.y)
+      for (const k of circles) least = Math.min(least, Math.abs(dist(p, k) - k.r))
+    }
+    return least
+  }
+  const v = clearance(-1) > clearance(1) + 1 ? via(-1) : via(1)
+  const dir = unit(v, tip)
+  return { start, via: v, tip, end: P(tip.x - dir.x * (ARROW.head - 1.5), tip.y - dir.y * (ARROW.head - 1.5)) }
+}
+
+/**
+ * The model of an ionic dot-and-cross diagram in a box `w` by `h`. Stage 'transfer': each atom as a circle for its outer shell, the metal's outer electrons
+ * as the first mark and the non-metal's as the second, and a curved arrow from each metal electron to an empty place on a non-metal. Stage 'ions': each ion in
+ * square brackets with its charge; the metal ion has no outer electrons, the non-metal ion a full outer shell of both marks (its own and the metal's). The
+ * ratio of ions follows the charges. `inner` adds the inner shells as plain circles. Nothing here throws.
+ */
+export function ionicDiagram(metal: string, nonMetal: string, stage: string, inner: boolean, marks: string, w: number, h: number): IonicDiagram {
+  const model = ionicModel(metal, nonMetal)
+  const st: IonicStage = stage === 'transfer' ? 'transfer' : 'ions'
+  const [metalMark, nonMetalMark] = ionicKinds(marksChoice(marks))
+  const cells = arrangement(model.nMetal, model.nNonMetal)
+  const bracketed = st === 'ions',
+    pad = bracketed ? ION.pad : 0
+  const symbolSize = inner ? INNER_SYMBOL_SIZE : SYMBOL_SIZE
+  // One ion with three others round it (AlCl3, Li3N) has room to spare across and none to spare up, so its brackets are further apart across.
+  const gapAcross = bracketed ? (cells.some((c) => c.row === -1) ? ION.gapAround : ION.gapIons) : ION.gap
+
+  // 1. Natural positions: a cell is a circle (and its bracket), and the cells are a gap apart.
+  const pitchX = 2 * (ION.r + pad) + gapAcross,
+    pitchY = 2 * (ION.r + pad) + (bracketed ? ION.rowGapIons : ION.rowGap)
+  const at = cells.map((c) => P(c.col * pitchX, c.row * pitchY))
+  const charge = (c: Cell) => (bracketed ? (c.kind === 'metal' ? model.metalCharge : model.nonMetalCharge) : 0)
+  const box = cells.map((c, i) => ({
+    x0: at[i].x - ION.r - pad,
+    x1: at[i].x + ION.r + pad + (bracketed ? 3 + chargeWidth(charge(c)) : 0),
+    y0: at[i].y - ION.r - pad - (bracketed ? 3 : 0),
+    y1: at[i].y + ION.r + pad,
+  }))
+  const x0 = Math.min(...box.map((b) => b.x0)),
+    x1 = Math.max(...box.map((b) => b.x1)),
+    y0 = Math.min(...box.map((b) => b.y0)),
+    y1 = Math.max(...box.map((b) => b.y1))
+
+  // 2. The scale that fits the box, the cells centred in it.
+  const fit = Math.min((w - 2 * MARGIN) / (x1 - x0), (h - 2 * MARGIN) / (y1 - y0))
+  const k = Math.max(ION_K_MIN, Math.min(ION_K_MAX, Number.isFinite(fit) ? fit : 1))
+  const cx = (x0 + x1) / 2,
+    cy = (y0 + y1) / 2
+  const R = ION.r * k,
+    padK = bracketed ? Math.max(ION.pad * k, 6.5) : 0
+  const place = at.map((p) => P((p.x - cx) * k, h / 2 + (p.y - cy) * k))
+
+  // 3. The circles. Inner shells are plain circles, a shell apart; an ion drops the shell that it has lost.
+  const atomShells = (c: Cell) => (c.kind === 'metal' ? model.metal.shells : model.nonMetal.shells)
+  const nInnerMax = Math.max(1, ...cells.map((c) => atomShells(c).length - 1))
+  const innerMin = Math.max(symbolRadius(model.metal.symbol, symbolSize), symbolRadius(model.nonMetal.symbol, symbolSize))
+  const step = inner ? Math.max(4, Math.min(9 * k, (R - innerMin) / nInnerMax)) : 0
+  const ions: IonicIon[] = cells.map((c, i) => {
+    const atom = atomShells(c),
+      ionShellsOf = c.kind === 'metal' ? model.metalShells : model.nonMetalShells
+    // The metal ion has lost its outer shell: with the inner shells shown, its circles are the ones inside.
+    const lost = bracketed && c.kind === 'metal' && inner ? 1 : 0
+    const nCircles = inner ? atom.length - lost : 1
+    const radii = Array.from({ length: nCircles }, (_, j) => R - step * (j + lost))
+    return {
+      kind: c.kind,
+      symbol: (c.kind === 'metal' ? model.metal : model.nonMetal).symbol,
+      x: place[i].x,
+      y: place[i].y,
+      r: radii[0],
+      inner: radii.slice(1),
+      charge: charge(c),
+      shells: bracketed ? [...ionShellsOf] : [...atom],
+      bracket: bracketed ? { x0: place[i].x - R - padK, x1: place[i].x + R + padK, y0: place[i].y - R - padK, y1: place[i].y + R + padK } : null,
+    }
+  })
+
+  // 4. Which electron goes where. The electrons of the metals, left to right, against the empty places of the non-metals, left to right: so each metal
+  //    gives to the non-metals beside it. Round a single ion, each partner gives or takes one.
+  const metals = ions.map((_, i) => i).filter((i) => ions[i].kind === 'metal'),
+    nonMetals = ions.map((_, i) => i).filter((i) => ions[i].kind === 'nonMetal')
+  const byPlace = (a: number, b: number) => (cells[a].row === -1 ? 2 : cells[a].col > 0 ? 1 : 0) - (cells[b].row === -1 ? 2 : cells[b].col > 0 ? 1 : 0)
+  const byX = (a: number, b: number) => ions[a].x - ions[b].x
+  const give = model.metalCharge,
+    take = -model.nonMetalCharge
+  const around = cells.some((c) => c.row === -1)
+  const electrons = (around && metals.length > 1 ? [...metals].sort(byPlace) : [...metals].sort(byX)).flatMap((i) => Array<number>(give).fill(i))
+  const spaces = (around && nonMetals.length > 1 ? [...nonMetals].sort(byPlace) : [...nonMetals].sort(byX)).flatMap((j) => Array<number>(take).fill(j))
+  const flows = electrons.slice(0, spaces.length).map((i, e) => ({ metal: i, nonMetal: spaces[e] }))
+
+  // 5. Marks. A non-metal has eight places in four pairs: the empty ones face the metals that give to it, the rest hold its own electrons.
+  const out: IonicMark[] = []
+  const slotAt = (ion: IonicIon, slot: number): Pt => pairedPoints(ion.x, ion.y, ion.r, 2, PAIR, 90 * Math.floor(slot / 2))[slot % 2]
+  const target = new Map<number, Pt>() // flow -> the empty place that it fills
+  for (const n of nonMetals) {
+    const mine = flows.map((fl, e) => (fl.nonMetal === n ? e : -1)).filter((e) => e >= 0)
+    const slots = assignSlots(mine.map((e) => angleOf(ions[n], ions[flows[e].metal])))
+    mine.forEach((e, t) => target.set(e, slotAt(ions[n], slots[t])))
+    for (let s = 0; s < 8; s++) {
+      const p = slotAt(ions[n], s)
+      if (!slots.includes(s)) out.push({ x: p.x, y: p.y, mark: nonMetalMark, ion: n, from: 'nonMetal' })
+      else if (bracketed) out.push({ x: p.x, y: p.y, mark: metalMark, ion: n, from: 'metal' })
+    }
+  }
+  // The metal's electrons sit on its circle (transfer stage only), a pair or a single facing the non-metal that takes them.
+  const start = new Map<number, number>() // flow -> the mark that the electron is
+  if (!bracketed) {
+    for (const m of metals) {
+      const goes = [...new Set(flows.filter((fl) => fl.metal === m).map((fl) => fl.nonMetal))]
+      for (const n of goes) {
+        const group = flows.map((fl, e) => (fl.metal === m && fl.nonMetal === n ? e : -1)).filter((e) => e >= 0)
+        const theta = angleOf(ions[m], ions[n])
+        const ring = (count: number, deg: number) => pairedPoints(ions[m].x, ions[m].y, ions[m].r, count, PAIR, deg)
+        const pts =
+          group.length === 1 ? ring(1, theta) : group.length === 2 ? ring(2, theta) : [...ring(2, theta), ...ring(1, theta + 40)].slice(0, group.length)
+        // Match the electrons to the empty places in the same order across the line between the two circles, so that the arrows do not cross.
+        const axis = unit(ions[m], ions[n]),
+          across = (p: Pt) => (p.x - ions[m].x) * -axis.y + (p.y - ions[m].y) * axis.x
+        const ends = group.map((e) => ({ e, p: target.get(e)! })).sort((a, b) => across(a.p) - across(b.p))
+        pts.sort((a, b) => across(a) - across(b))
+        pts.forEach((p, t) => {
+          start.set(ends[t].e, out.length)
+          out.push({ x: p.x, y: p.y, mark: metalMark, ion: m, from: 'metal' })
+        })
+      }
+    }
+  }
+  const arrows: IonicArrow[] = []
+  if (!bracketed)
+    flows.forEach((fl, e) => {
+      const mark = start.get(e)!,
+        slot = target.get(e)!
+      arrows.push({ mark, fromIon: fl.metal, toIon: fl.nonMetal, slot, ...arrowOf(out[mark], slot, ions) })
+    })
+  return { model, stage: st, inner, symbolSize, k, ions, marks: out, arrows }
+}
+
+/** The geometry of an ionic diagram: inner circles, outer circles (a gap in the line at each electron), brackets, marks, arrows, symbols and charges. */
+function ionicGeometry(d: IonicDiagram) {
+  const prims: Prim[] = []
+  const inner = d.ions.flatMap((ion) => ion.inner.map((r) => circle(ion.x, ion.y, r))).join('')
+  if (inner) prims.push({ d: inner, role: 'detail' })
+  d.ions.forEach((ion, i) => {
+    const cuts: [number, number][] = d.marks
+      .filter((q) => q.ion === i)
+      .map((q) => {
+        const t = angleOf(ion, q),
+          half = (GAP / ion.r) * (180 / Math.PI)
+        return [t - half, t + half]
+      })
+    prims.push({ d: circleWithGaps(ion.x, ion.y, ion.r, cuts), role: 'outline' })
+  })
+  for (const ion of d.ions)
+    if (ion.bracket)
+      prims.push({
+        d: bracketD(ion.bracket.x0, ion.bracket.y0, ion.bracket.x1, ion.bracket.y1, Math.min(7, (ion.bracket.x1 - ion.bracket.x0) / 4)),
+        role: 'outline',
+      })
+  prims.push(...markPrims(d.marks))
+  if (d.arrows.length) {
+    prims.push({ d: d.arrows.map((a) => `M${f(a.start.x)} ${f(a.start.y)}Q${f(a.via.x)} ${f(a.via.y)} ${f(a.end.x)} ${f(a.end.y)}`).join(''), role: 'detail' })
+    prims.push({
+      d: d.arrows
+        .map((a) => {
+          const dir = unit(a.via, a.tip),
+            base = P(a.tip.x - dir.x * ARROW.head, a.tip.y - dir.y * ARROW.head)
+          return `M${f(a.tip.x)} ${f(a.tip.y)}L${f(base.x - dir.y * (ARROW.wing / 2))} ${f(base.y + dir.x * (ARROW.wing / 2))}L${f(base.x + dir.y * (ARROW.wing / 2))} ${f(base.y - dir.x * (ARROW.wing / 2))}Z`
+        })
+        .join(''),
+      role: 'ink',
+    })
+  }
+  const texts: SymbolText[] = d.ions.map((ion) => ({ x: ion.x, y: ion.y + d.symbolSize * 0.36, text: ion.symbol, size: d.symbolSize, anchor: 'middle' }))
+  for (const ion of d.ions)
+    if (ion.bracket) texts.push({ x: ion.bracket.x1 + 3, y: ion.bracket.y0 + CHARGE_DY, text: chargeText(ion.charge), size: CHARGE_SIZE, anchor: 'start' })
+  return { prims, texts }
+}
+
+/** "Sodium (Na)": the name of an element and its symbol, for the lists in the inspector. */
+const elementLabel = (symbol: string): string => {
+  const e = elementBySymbol(symbol)!
+  return `${e.name.charAt(0).toUpperCase()}${e.name.slice(1)} (${symbol})`
+}
+
+const ionicDotCross: SymbolDef = {
+  id: 'ionicDotCross',
+  name: 'Ionic dot-and-cross diagram',
+  aliases: ['dot and cross', 'ionic bonding diagram', 'dot-and-cross ionic', 'ionic compound'],
+  label: (p) => compoundName(ionicModel(str(p.metal, 'Na'), str(p.nonMetal, 'Cl'))),
+  pack: 'atoms',
+  size: { w: 420, h: 150 },
+  resize: 'free',
+  min: { w: 404, h: 140 },
+  params: [
+    { key: 'metal', label: 'Metal', type: 'choice', default: 'Na', options: METALS.map((s) => ({ value: s, label: elementLabel(s) })) },
+    { key: 'nonMetal', label: 'Non-metal', type: 'choice', default: 'Cl', options: NON_METALS.map((s) => ({ value: s, label: elementLabel(s) })) },
+    {
+      key: 'stage',
+      label: 'Stage',
+      type: 'choice',
+      default: 'ions',
+      options: [
+        { value: 'transfer', label: 'Electron transfer' },
+        { value: 'ions', label: 'Ions' },
+      ],
+    },
+    { key: 'inner', label: 'Inner shells', type: 'boolean', default: false },
+    {
+      key: 'marks',
+      label: 'Marks',
+      type: 'choice',
+      default: 'default',
+      options: [
+        { value: 'default', label: 'Metal dots, non-metal crosses' },
+        { value: 'swapped', label: 'Metal crosses, non-metal dots' },
+        { value: 'ring', label: 'Metal dots, non-metal rings' },
+      ],
+    },
+  ],
+  build({ w, h, p }) {
+    return ionicGeometry(ionicDiagram(str(p.metal, 'Na'), str(p.nonMetal, 'Cl'), str(p.stage, 'ions'), bool(p.inner, false), str(p.marks, 'default'), w, h))
+  },
+}
+
+export const dotcross: SymbolDef[] = [covalentDotCross, ionicDotCross]
