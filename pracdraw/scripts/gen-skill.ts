@@ -65,6 +65,8 @@ const SYMBOL_NOTES: Record<string, string> = {
   pipetteFiller: 'no hand holds it: it stands in the air above its pipette',
   testTubeHolder: 'no hand holds it: the handle ends in the air; draw it behind the tube it grips',
   formulaTriangle: 'custom text takes M_r markup; a longer word needs a bigger triangle: distance on top 118 x 108, volume at the bottom 129 x 118',
+  ionicDotCross: 'do not flip it: the charges would move to the left of the brackets',
+  periodicTable: 'do not flip it: the table would be mirrored',
   phScale: 'orientation vertical needs a tall box (at least w 360, h 210; for example 360 x 420): the symbol does not swap the box for you',
   bohrAtom:
     'size the box by the shells: 38 + 44 x shells (82, 126, 170, 214 u square); nucleus numbers need the larger nucleus; structure shrinks the atom by 14 u; a charge needs 18 u of room',
