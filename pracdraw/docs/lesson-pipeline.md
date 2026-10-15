@@ -127,7 +127,7 @@ The command also warns when the picture is more than 4000 u on a side, and when 
 
 ## What it cannot draw
 
-Graphs and tables, skeletal or structural formulae, imported pictures, animation, pouring liquids, 3D views, and people and hands: a pipette and its filler, or the handle of a test-tube holder, are drawn with nothing holding them (add a hand in the editor if you want one). Symbols that are not in the editor (`reference/symbols.md` lists the ones that are planned) cannot be used.
+Graphs and tables of data, displayed, skeletal or structural formulae and molecule models (dot-and-cross diagrams of 13 small molecules are drawn), imported pictures, animation, pouring liquids, 3D views other than the four structure symbols (the sodium chloride lattice, diamond, graphite and C60), and people and hands: a pipette and its filler, or the handle of a test-tube holder, are drawn with nothing holding them (add a hand in the editor if you want one). Symbols that are not in the editor (`reference/symbols.md` lists the ones that are planned) cannot be used.
 
 ## For Claude, and when the symbols change
 

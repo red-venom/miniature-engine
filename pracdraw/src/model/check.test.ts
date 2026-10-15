@@ -3,8 +3,10 @@ import { exportPicture } from '../export/picture'
 import { P } from '../kernel/geom'
 import { TEMPLATES } from '../templates'
 import { estimateWidth, type Measure } from './bounds'
+import { geometry } from '../symbols/registry'
 import { DocBuilder } from './build'
 import { MAX_LISTED, checkBlankCopy, checkDoc, checkLayout, describeDoc, listed, measuredTexts } from './check'
+import { toWorld } from './transform'
 import type { Doc, SymbolItem } from './types'
 
 /** The part of a message that says a label is wider than the line of blank mode. */
@@ -348,6 +350,32 @@ describe('checkDoc', () => {
     // 100 u from the wall's middle line, so 99 u from its edge.
     expect(problems[0].message).toBe('The leader of the label "beaker" ends in empty space, 99 u from the nearest drawing.')
     expect(problems[0].hint).toContain('"at"')
+  })
+
+  it('counts the text of a symbol as drawing: a leader may end on a notation, and one that ends beside it is in empty space', () => {
+    const b = new DocBuilder('Notation')
+    const n = b.symbol('nuclideNotation', { x: 0, y: 0 })
+    const t = geometry('nuclideNotation', n.w, n.h, n.params).texts?.[0]
+    expect(t, 'nuclideNotation has text').toBeTruthy()
+    if (!t) return
+    const w = estimateWidth(t.text, t.size)
+    const x = t.anchor === 'start' ? t.x + w / 2 : t.anchor === 'end' ? t.x - w / 2 : t.x // the middle of the text
+    b.label('nuclide', 150, 0, [n, x, t.y - 0.3 * t.size], { side: 'right' })
+    expect(messages(b.doc).filter((m) => m.includes('empty space'))).toEqual([])
+    const far = new DocBuilder('Notation, far')
+    const m = far.symbol('nuclideNotation', { x: 0, y: 0 })
+    far.label('nuclide', 250, 0, [m, x + 160, t.y], { side: 'right' })
+    expect(messages(far.doc).filter((q) => q.includes('empty space'))).toHaveLength(1)
+  })
+
+  it('finds a label that runs over the text of a symbol', () => {
+    const b = new DocBuilder('Text under a label')
+    const n = b.symbol('nuclideNotation', { x: 0, y: 0 })
+    const t = geometry('nuclideNotation', n.w, n.h, n.params).texts?.[0]
+    if (!t) throw new Error('nuclideNotation has no text')
+    const here = toWorld(n, P(t.x, t.y)) // a label whose text starts on the symbol's own text
+    b.label('on the notation', here.x - 4, here.y, undefined, { side: 'right' })
+    expect(messages(b.doc).filter((q) => q.includes('overlaps the part "' + n.id + '"'))).toHaveLength(1)
   })
 
   it('finds a clamp that is drawn in front of the vessel it grips', () => {

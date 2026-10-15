@@ -1,7 +1,11 @@
 {
   "title": "Titration",
   "parts": [
-    { "id": "tile", "symbol": "tile", "at": { "x": 0, "y": 0, "anchor": "under" } },
+    {
+      "id": "tile",
+      "symbol": "tile",
+      "at": { "x": 0, "y": 0, "anchor": "under" }
+    },
     {
       "id": "flask",
       "symbol": "conicalFlask",
@@ -12,7 +16,11 @@
       "id": "burette",
       "symbol": "burette",
       "on": { "part": "flask", "anchor": "mouth", "own": "tip", "dy": 15 },
-      "contents": { "main": [{ "preset": "Colourless solution", "reading": 0, "meniscus": true }] }
+      "contents": {
+        "main": [
+          { "preset": "Colourless solution", "reading": 0, "meniscus": true }
+        ]
+      }
     },
     {
       "id": "clamp",
@@ -24,7 +32,15 @@
     {
       "id": "stand",
       "symbol": "clampStand",
-      "size": { "w": 200, "h": { "between": [{ "part": "tile", "anchor": "under", "dy": 9 }, { "part": "clamp", "anchor": "sleeve", "dy": -70 }] } },
+      "size": {
+        "w": 200,
+        "h": {
+          "between": [
+            { "part": "tile", "anchor": "under", "dy": 9 },
+            { "part": "clamp", "anchor": "sleeve", "dy": -70 }
+          ]
+        }
+      },
       "alignX": { "part": "clamp", "anchor": "sleeve", "own": "rod" },
       "alignY": { "part": "tile", "anchor": "under", "own": "base", "dy": 9 },
       "back": true

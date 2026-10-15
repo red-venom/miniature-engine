@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Layer } from '../kernel/contents'
 import type { GroupNode } from '../kernel/nodes'
 import { DocBuilder } from '../model/build'
-import { connectorNode, symbolNode } from './render'
+import { INK, PAPER, TINT, connectorNode, primNode, primNodes, symbolNode } from './render'
 import { DEFAULT_SETTINGS } from '../model/types'
 import { pathPolys } from '../kernel/geom'
 
@@ -88,5 +88,49 @@ describe('photocopy-safe liquid', () => {
     expect(upright(paths(symbolNode(pipette, mono)))).toEqual([])
     const beaker = b.symbol('beaker', { contents: { main: water(0.5) } })
     expect(paths(symbolNode(beaker, mono)).some((d) => /h7/.test(d))).toBe(true)
+  })
+})
+
+describe('the tint, hatch and ink roles', () => {
+  const d = 'M0 0H10V10H0Z'
+
+  it('gives a tint a light-grey fill in colour, a white fill on a photocopy, and the outline of a main line in both', () => {
+    expect(primNode({ d, role: 'tint' }, false)).toMatchObject({ d, fill: TINT, stroke: INK, sw: 2 })
+    expect(primNode({ d, role: 'tint' }, true)).toMatchObject({ d, fill: PAPER, stroke: INK, sw: 2 })
+    expect(primNode({ d, role: 'tint', tint: '#dff0d8' }, false)).toMatchObject({ fill: '#dff0d8' })
+    expect(primNode({ d, role: 'tint', tint: '#dff0d8' }, true)).toMatchObject({ fill: PAPER })
+  })
+
+  it('draws a hatch as hairlines in photocopy-safe mode only, and never as a fill', () => {
+    const prims = [
+      { d, role: 'tint' as const },
+      { d: 'M0 4L4 0', role: 'hatch' as const },
+    ]
+    expect(primNodes(prims, false).over).toHaveLength(1)
+    const mono = primNodes(prims, true).over
+    expect(mono).toHaveLength(2)
+    expect(mono[1]).toMatchObject({ d: 'M0 4L4 0', stroke: INK, sw: 1, cap: 'butt' })
+    expect((mono[1] as { fill?: string }).fill).toBeUndefined()
+  })
+
+  it('draws ink as a solid dot with no line, the same in both modes', () => {
+    for (const mono of [false, true]) {
+      const n = primNode({ d, role: 'ink' }, mono) as { fill?: string; stroke?: string }
+      expect(n.fill).toBe(INK)
+      expect(n.stroke).toBeUndefined()
+    }
+  })
+
+  it('keeps paper behind the contents and every other prim in front', () => {
+    const { under, over } = primNodes(
+      [
+        { d, role: 'paper' },
+        { d, role: 'outline' },
+        { d, role: 'ink' },
+      ],
+      true,
+    )
+    expect(under).toHaveLength(1)
+    expect(over).toHaveLength(2)
   })
 })

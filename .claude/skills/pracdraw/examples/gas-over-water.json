@@ -5,10 +5,22 @@
       "id": "flask",
       "symbol": "conicalFlask",
       "at": { "x": 0, "y": 0, "anchor": "base" },
-      "contents": { "main": [{ "preset": "Colourless solution", "amount": 0.34, "bubbles": "few" }] }
+      "contents": {
+        "main": [
+          { "preset": "Colourless solution", "amount": 0.34, "bubbles": "few" }
+        ]
+      }
     },
-    { "id": "ribbon", "symbol": "magnesiumRibbon", "near": { "part": "flask", "anchor": "base", "dy": -9 } },
-    { "id": "bung", "symbol": "bung", "on": { "part": "flask", "anchor": "mouth", "own": "plug" } },
+    {
+      "id": "ribbon",
+      "symbol": "magnesiumRibbon",
+      "near": { "part": "flask", "anchor": "base", "dy": -9 }
+    },
+    {
+      "id": "bung",
+      "symbol": "bung",
+      "on": { "part": "flask", "anchor": "mouth", "own": "plug" }
+    },
     {
       "id": "trough",
       "symbol": "trough",
@@ -20,8 +32,19 @@
       "symbol": "measuringCylinder",
       "rot": 180,
       "size": { "h": 170 },
-      "on": { "part": "trough", "anchor": "base", "own": "mouth", "dx": 35, "dy": -22 },
-      "contents": { "main": [{ "preset": "Water", "reading": 34 }, { "preset": "Colourless gas" }] }
+      "on": {
+        "part": "trough",
+        "anchor": "base",
+        "own": "mouth",
+        "dx": 35,
+        "dy": -22
+      },
+      "contents": {
+        "main": [
+          { "preset": "Water", "reading": 34 },
+          { "preset": "Colourless gas" }
+        ]
+      }
     },
     {
       "id": "clamp",
@@ -35,12 +58,23 @@
     {
       "id": "stand",
       "symbol": "clampStand",
-      "size": { "h": { "between": [{ "part": "flask", "anchor": "base" }, { "part": "clamp", "anchor": "sleeve", "dy": -22 }] } },
+      "size": {
+        "h": {
+          "between": [
+            { "part": "flask", "anchor": "base" },
+            { "part": "clamp", "anchor": "sleeve", "dy": -22 }
+          ]
+        }
+      },
       "alignX": { "part": "clamp", "anchor": "sleeve", "own": "rod" },
       "alignY": { "part": "flask", "anchor": "base", "own": "base" },
       "back": true
     },
-    { "id": "stopwatch", "symbol": "stopwatch", "near": { "part": "flask", "anchor": "base", "dx": 112, "dy": -33 } }
+    {
+      "id": "stopwatch",
+      "symbol": "stopwatch",
+      "near": { "part": "flask", "anchor": "base", "dx": 112, "dy": -33 }
+    }
   ],
   "connectors": [
     {
@@ -64,8 +98,19 @@
       { "text": "dilute HCl(aq)", "part": "flask", "at": [-22, 112] },
       { "text": "34 cm3 of H2", "part": "cylinder", "at": [0, 150] },
       { "text": "delivery tube", "connector": "tube", "along": 0.3 },
-      { "text": "trough", "part": "trough", "at": [0, 90], "textAt": [-30, 52] },
-      { "text": "stopwatch", "part": "stopwatch", "at": [0, 66], "textAt": [-24, 34], "side": "right" }
+      {
+        "text": "trough",
+        "part": "trough",
+        "at": [0, 90],
+        "textAt": [-30, 52]
+      },
+      {
+        "text": "stopwatch",
+        "part": "stopwatch",
+        "at": [0, 66],
+        "textAt": [-24, 34],
+        "side": "right"
+      }
     ]
   }
 }
