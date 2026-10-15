@@ -71,8 +71,6 @@ export const textWidth = (word: string, size: number): number => {
               : 833
   return ([...word].reduce((n, c) => n + em(c), 0) * size) / 1000
 }
-/** How far the corner of the box of an element symbol is from its centre, plus a little room: the smallest circle that holds the symbol. */
-const symbolRadius = (symbol: string, size: number): number => Math.hypot(textWidth(symbol, size) / 2, size * 0.358) + 1.8
 
 /** A circle drawn as arcs, leaving out the angular intervals of `cuts` (degrees, `[from, to]`, clockwise from +x). No cuts: the whole circle. */
 function circleWithGaps(cx: number, cy: number, r: number, cuts: [number, number][]): string {
@@ -170,6 +168,10 @@ const K_MAX = 1.6
 /** The same limits for the ionic diagrams. */
 const ION_K_MIN = 0.6
 const ION_K_MAX = 1.5
+/** The least distance between two shells of an ion with its inner shells drawn, centre line to centre line, so that the circles read as separate shells. */
+export const SHELL_STEP_MIN = 6.5
+/** The least radius of the innermost circle round an element symbol: the corner of the text, 2 u of white, and half the line. */
+export const innerClear = (symbol: string, size: number): number => Math.hypot(textWidth(symbol, size) / 2, size * 0.358) + 2 + 1
 /** How far along a circle a gap in its line reaches beyond the centre of a mark on it, in u: the mark sits in a gap of the line, as in a ring of beads. */
 const GAP = 6
 
@@ -532,8 +534,9 @@ export interface IonicDiagram {
   arrows: IonicArrow[]
 }
 
-/** Sizes at natural scale, in u: the circle of the outer shell, the room between it and its bracket, and the gaps between neighbours. */
-const ION = { r: 30, pad: 8, gap: 34, gapIons: 28, gapAround: 40, rowGap: 30, rowGapIons: 6 }
+/** Sizes at natural scale, in u: the circle of the outer shell, the room between it and its bracket, and the gaps between neighbours
+ * (`gapInner`: atoms of the transfer stage with their inner shells, which need a larger scale, so their arrows have less far to go). */
+const ION = { r: 30, pad: 8, gap: 34, gapInner: 24, gapIons: 28, gapAround: 40, rowGap: 30, rowGapIons: 6 }
 /** The size of the charge (a superscript, so it is drawn 0.7 times as big) and how far its baseline lies below the top of the bracket. */
 const CHARGE_SIZE = 18
 const CHARGE_DY = 12.8
@@ -643,7 +646,7 @@ export function ionicDiagram(metal: string, nonMetal: string, stage: string, inn
     pad = bracketed ? ION.pad : 0
   const symbolSize = inner ? INNER_SYMBOL_SIZE : SYMBOL_SIZE
   // One ion with three others round it (AlCl3, Li3N) has room to spare across and none to spare up, so its brackets are further apart across.
-  const gapAcross = bracketed ? (cells.some((c) => c.row === -1) ? ION.gapAround : ION.gapIons) : ION.gap
+  const gapAcross = bracketed ? (cells.some((c) => c.row === -1) ? ION.gapAround : ION.gapIons) : inner ? ION.gapInner : ION.gap
 
   // 1. Natural positions: a cell is a circle (and its bracket), and the cells are a gap apart.
   const pitchX = 2 * (ION.r + pad) + gapAcross,
@@ -663,25 +666,26 @@ export function ionicDiagram(metal: string, nonMetal: string, stage: string, inn
 
   // 2. The scale that fits the box, the cells centred in it.
   const fit = Math.min((w - 2 * MARGIN) / (x1 - x0), (h - 2 * MARGIN) / (y1 - y0))
-  const k = Math.max(ION_K_MIN, Math.min(ION_K_MAX, Number.isFinite(fit) ? fit : 1))
+  // With the inner shells drawn, every ion needs room for its circles a clear step apart round its symbol: a crowded box (four or five ions) takes the scale
+  // that gives it, even where that is a little more than the box asks for.
+  const atomShells = (c: Cell) => (c.kind === 'metal' ? model.metal.shells : model.nonMetal.shells)
+  const circlesOf = (c: Cell) => (inner ? atomShells(c).length - (bracketed && c.kind === 'metal' ? 1 : 0) : 1)
+  const clearOf = (c: Cell) => innerClear((c.kind === 'metal' ? model.metal : model.nonMetal).symbol, symbolSize)
+  const kNeed = inner ? Math.max(...cells.map((c) => (clearOf(c) + SHELL_STEP_MIN * (circlesOf(c) - 1)) / ION.r)) : 0
+  const k = Math.max(ION_K_MIN, Math.min(ION_K_MAX, Math.max(Number.isFinite(fit) ? fit : 1, kNeed)))
   const cx = (x0 + x1) / 2,
     cy = (y0 + y1) / 2
   const R = ION.r * k,
     padK = bracketed ? Math.max(ION.pad * k, 6.5) : 0
   const place = at.map((p) => P((p.x - cx) * k, h / 2 + (p.y - cy) * k))
 
-  // 3. The circles. Inner shells are plain circles, a shell apart; an ion drops the shell that it has lost.
-  const atomShells = (c: Cell) => (c.kind === 'metal' ? model.metal.shells : model.nonMetal.shells)
-  const nInnerMax = Math.max(1, ...cells.map((c) => atomShells(c).length - 1))
-  const innerMin = Math.max(symbolRadius(model.metal.symbol, symbolSize), symbolRadius(model.nonMetal.symbol, symbolSize))
-  const step = inner ? Math.max(4, Math.min(9 * k, (R - innerMin) / nInnerMax)) : 0
+  // 3. The circles. Inner shells are plain circles, one step apart, the same step in every ion; the innermost circle stays clear of the symbol. An ion
+  //    drops the shell that it has lost: the metal ion's outer circle is then the shell below, drawn at the full size of the circle in its bracket.
+  const step = inner ? Math.min(9 * k, ...cells.filter((c) => circlesOf(c) > 1).map((c) => (R - clearOf(c)) / (circlesOf(c) - 1))) : 0
   const ions: IonicIon[] = cells.map((c, i) => {
     const atom = atomShells(c),
       ionShellsOf = c.kind === 'metal' ? model.metalShells : model.nonMetalShells
-    // The metal ion has lost its outer shell: with the inner shells shown, its circles are the ones inside.
-    const lost = bracketed && c.kind === 'metal' && inner ? 1 : 0
-    const nCircles = inner ? atom.length - lost : 1
-    const radii = Array.from({ length: nCircles }, (_, j) => R - step * (j + lost))
+    const radii = Array.from({ length: circlesOf(c) }, (_, j) => R - step * j)
     return {
       kind: c.kind,
       symbol: (c.kind === 'metal' ? model.metal : model.nonMetal).symbol,
@@ -850,13 +854,17 @@ export type TableShading = 'none' | 'metals' | 'blocks'
 export type TableGroups = 'ks4' | 'iupac' | 'none'
 export type Block = 's' | 'p' | 'd'
 
-/** The non-metals among the first 36 elements. Boron, silicon and germanium (the semi-metals) are drawn on the non-metal side of the stepped line. */
-export const TABLE_NON_METALS = ['H', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar', 'Ge', 'As', 'Se', 'Br', 'Kr']
+/**
+ * The non-metals among the first 36 elements, as the stepped line of a KS4 table divides them: boron and silicon on the non-metal side, germanium on the
+ * metal side.
+ */
+export const TABLE_NON_METALS = ['H', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar', 'As', 'Se', 'Br', 'Kr']
 
 /**
- * The pairs of cells that the stepped line runs between, as [column, row] of each (column = IUPAC group, row = period): boron above aluminium, aluminium
- * beside silicon, gallium beside germanium. Each pair is a metal and a non-metal that touch. Hydrogen is a non-metal that stands over lithium, but it is in
- * group 1 for its one outer electron and is not cut off from the metals below it, so no line runs under it.
+ * The pairs of cells that the stepped line runs between, as [column, row] of each (column = IUPAC group, row = period): the usual KS4 staircase, boron
+ * above aluminium, aluminium beside silicon, silicon above germanium, germanium beside arsenic. Each pair is a metal and a non-metal that touch.
+ * Hydrogen is a non-metal that stands over lithium, but it is in group 1 for its one outer electron and is not cut off from the metals below it, so no line
+ * runs under it.
  */
 export const DIVIDER: [[number, number], [number, number]][] = [
   [
@@ -868,8 +876,12 @@ export const DIVIDER: [[number, number], [number, number]][] = [
     [14, 3],
   ],
   [
-    [13, 4],
+    [14, 3],
     [14, 4],
+  ],
+  [
+    [14, 4],
+    [15, 4],
   ],
 ]
 
@@ -921,8 +933,10 @@ export const tableSizes = (k: number) => ({ symbol: clamp(14 * k, 12, 18), small
 const blockOf = (e: Element): Block => (e.z === 2 || e.group <= 2 ? 's' : e.group <= 12 ? 'd' : 'p')
 const choice = <T extends string>(v: string, options: readonly T[], fallback: T): T => (options.includes(v as T) ? (v as T) : fallback)
 const whole = (v: unknown, max: number): number => (typeof v === 'number' && Number.isFinite(v) ? clamp(Math.round(v), 0, max) : 0)
-/** The relative atomic mass as the table writes it: 35.5, 24.3, and 23 for 23.0. */
-export const massText = (ar: number): string => ar.toFixed(1).replace(/\.0$/, '')
+/** Elements whose relative atomic mass a KS4 data sheet gives to one decimal place; it rounds every other mass to a whole number. */
+const HALF_MASSES = ['Cl', 'Cu']
+/** The relative atomic mass as a KS4 data sheet (AQA) writes it: a whole number (24 for magnesium, 40 for argon), except chlorine 35.5 and copper 63.5. */
+export const massText = (symbol: string, ar: number): string => (HALF_MASSES.includes(symbol) ? ar.toFixed(1) : String(Math.round(ar)))
 
 /**
  * The model of a periodic table in a box `w` by `h`: the elements of elements.ts in the standard 18 columns, the period as the row, in square cells; what the
@@ -960,7 +974,7 @@ export function tableModel(p: Record<string, unknown>, w: number, h: number): Ta
   const corner = (col: number, row: number) => P(left + col * side, top + row * side) // the bottom right corner of a cell
   const line: Pt[] = []
   if (divider && edges.length) {
-    // The pairs are, in order: one cell above another (a horizontal edge), then side by side (vertical edges) running down.
+    // The pairs are in order down the staircase: one cell above another gives a horizontal edge, two side by side a vertical one.
     for (const [[c1, ar], [c2, br]] of edges) {
       const ac = Math.min(c1, c2),
         bc = Math.max(c1, c2)
@@ -981,7 +995,7 @@ export function cellTexts(c: TableCell, content: TableContent): { kind: CellText
   const out: { kind: CellTextKind; text: string }[] = []
   if (content === 'number' || content === 'both') out.push({ kind: 'number', text: String(c.z) })
   if (content === 'symbol' || content === 'both') out.push({ kind: 'symbol', text: c.symbol })
-  if (content === 'mass') out.push({ kind: 'mass', text: massText(e.ar) })
+  if (content === 'mass') out.push({ kind: 'mass', text: massText(e.symbol, e.ar) })
   return out
 }
 

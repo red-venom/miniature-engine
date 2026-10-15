@@ -731,6 +731,23 @@ describe('ionic dot-and-cross: the picture is clean', () => {
     }
   })
 
+  it('with the inner shells drawn, keeps the shells at least 6.5 u apart and 2 u of white between the symbol and the innermost circle, even with five ions', () => {
+    const problems: string[] = []
+    for (const { label, inner, d } of ionicCases()) {
+      if (!inner) continue
+      for (const ion of d.ions) {
+        const radii = [ion.r, ...ion.inner]
+        radii.forEach((r, i) => i && radii[i - 1] - r < 6.5 - 1e-9 && problems.push(`${label} ${ion.symbol}: shells ${(radii[i - 1] - r).toFixed(1)} u apart`))
+        const half = ([...ion.symbol].reduce((n, c) => n + advance[c], 0) * d.symbolSize) / 2
+        const corner = Math.hypot(half, 0.358 * d.symbolSize)
+        const line = ion.inner.length ? 1.25 / 2 : 2 / 2
+        const white = radii[radii.length - 1] - line - corner
+        if (white < 2 - 1e-9) problems.push(`${label} ${ion.symbol}: ${white.toFixed(1)} u between the symbol and the innermost circle`)
+      }
+    }
+    expect(problems).toEqual([])
+  })
+
   it('keeps each circle inside its bracket, each charge clear of the next bracket, and the brackets apart', () => {
     for (const { label, stage, d } of ionicCases()) {
       if (stage !== 'ions') continue
@@ -773,11 +790,12 @@ describe('ionic dot-and-cross: the picture is clean', () => {
     expect([...new Set(problems)]).toEqual([])
   })
 
-  it('keeps every ion inside the box at the default size and larger, and the whole drawing within 1.5 times the nominal box at the smallest', () => {
-    for (const { label, size, stage, d } of ionicCases()) {
+  it('keeps every ion inside the box; with the inner shells drawn, a crowded diagram may take a larger scale and stand out of the box by a few units', () => {
+    for (const { label, size, stage, inner, d } of ionicCases()) {
       for (const ion of d.ions) {
         const b = ion.bracket ?? { x0: ion.x - ion.r, x1: ion.x + ion.r, y0: ion.y - ion.r, y1: ion.y + ion.r }
-        const slack = size === ionicDef.min && size !== ionicDef.size ? 0 : 0
+        // AlBr3 has two rows of ions with four shells each, which a box 150 u high cannot hold with the shells a clear step apart.
+        const slack = !inner ? 0 : size === ionicDef.min ? 11 : 6
         expect(b.x0, `${label} ${stage}`).toBeGreaterThanOrEqual(-size.w / 2 - slack)
         expect(b.x1, `${label} ${stage}`).toBeLessThanOrEqual(size.w / 2 + slack)
         expect(b.y0, `${label} ${stage}`).toBeGreaterThanOrEqual(-slack)
@@ -831,8 +849,10 @@ const LAYOUT = [
 ]
 const PLACE = new Map<string, [number, number]>()
 LAYOUT.forEach((line, r) => line.split(' ').forEach((s, c) => s !== '.' && PLACE.set(s, [c + 1, r + 1])))
-/** The metals among the first 36 elements; the rest are non-metals (boron, silicon and germanium, the semi-metals, with the non-metals). */
-const METAL_SYMBOLS = ['Li', 'Be', 'Na', 'Mg', 'Al', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga']
+/** The metals among the first 36 elements, as the KS4 staircase divides them (germanium with the metals, boron and silicon with the non-metals). */
+const METAL_SYMBOLS = ['Li', 'Be', 'Na', 'Mg', 'Al', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge']
+/** The relative atomic masses of the first 36 elements as an AQA KS4 data sheet prints them. */
+const DATA_SHEET_MASSES = '1 4 7 9 11 12 14 16 19 20 23 24 27 28 31 32 35.5 40 39 40 45 48 51 52 55 56 59 59 63.5 65 70 73 75 79 80 84'.split(' ')
 const BLOCKS: Record<string, string[]> = {
   s: ['H', 'He', 'Li', 'Be', 'Na', 'Mg', 'K', 'Ca'],
   d: ['Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn'],
@@ -887,14 +907,14 @@ describe('periodic table: the model', () => {
     }
   })
 
-  it('takes the symbol and atomic number from elements.ts, and writes the relative atomic mass as 23, 24.3, 35.5', () => {
+  it('takes the symbol and atomic number from elements.ts, and writes the relative atomic mass as a KS4 data sheet does: 23, 24, 35.5, 63.5', () => {
     const t = model({ content: 'both' })
     t.cells.forEach((c, i) => {
       expect(c.symbol).toBe(ELEMENTS[i].symbol)
       expect(c.z).toBe(ELEMENTS[i].z)
     })
-    expect([1, 11, 12, 17, 29].map((z) => massText(ELEMENTS[z - 1].ar))).toEqual(['1', '23', '24.3', '35.5', '63.5'])
-    for (const c of ELEMENTS) expect(Number(massText(c.ar)), c.symbol).toBeCloseTo(c.ar, 9)
+    expect([1, 11, 12, 17, 29].map((z) => massText(ELEMENTS[z - 1].symbol, ELEMENTS[z - 1].ar))).toEqual(['1', '23', '24', '35.5', '63.5'])
+    expect(ELEMENTS.slice(0, 36).map((e) => massText(e.symbol, e.ar))).toEqual(DATA_SHEET_MASSES)
   })
 
   it('puts helium in group 0 at KS4 (group 18 in the IUPAC numbering), and leaves the transition metals without a group number', () => {
@@ -921,7 +941,7 @@ describe('periodic table: the model', () => {
     }
   })
 
-  it('runs the stepped line between the right pairs of cells: boron over aluminium, aluminium beside silicon, gallium beside germanium', () => {
+  it('runs the stepped line between the right pairs of cells: boron over aluminium, aluminium beside silicon, silicon over germanium, germanium beside arsenic', () => {
     // The pairs that a line between metals and non-metals must run between: every metal and non-metal that touch, found here from the typed layout.
     const touching = (limit: number) => {
       const out: string[] = []
@@ -941,11 +961,11 @@ describe('periodic table: the model', () => {
       )
         .map(([a, b]) => [`${a}`, `${b}`].sort().join('|'))
         .sort()
-    expect(DIVIDER.length).toBe(3)
+    expect(DIVIDER.length).toBe(4)
     expect(pairs(36)).toEqual(touching(36))
     expect(pairs(20)).toEqual(touching(20))
-    expect(pairs(36)).toEqual(['13,2|13,3', '13,3|14,3', '13,4|14,4'])
-    // The line itself passes along those shared edges and no others: under boron, then down the right of aluminium and gallium.
+    expect(pairs(36)).toEqual(['13,2|13,3', '13,3|14,3', '14,3|14,4', '14,4|15,4'])
+    // The line itself passes along those shared edges and no others: under boron, down the right of aluminium, under silicon, down the right of germanium.
     const t = model()
     const side = t.side,
       left = t.cells[0].x
@@ -955,7 +975,8 @@ describe('periodic table: the model', () => {
       [12, 2],
       [13, 2],
       [13, 3],
-      [13, 4],
+      [14, 3],
+      [14, 4],
     ])
     expect(model({ range: 'first20' }).line.length).toBe(3)
     expect(model({ divider: false }).line).toEqual([])
@@ -1002,7 +1023,7 @@ describe('periodic table: the drawing agrees with the model', () => {
     const of = (content: string, kind: string) => cellTexts(content).filter((l) => l.kind === kind)
     const symbols = ELEMENTS.map((e) => e.symbol),
       numbers = ELEMENTS.map((e) => String(e.z)),
-      masses = ELEMENTS.map((e) => massText(e.ar))
+      masses = DATA_SHEET_MASSES
     expect(of('symbol', 'symbol').map((l) => l.text)).toEqual(symbols)
     expect(cellTexts('symbol').length).toBe(36)
     expect(of('number', 'number').map((l) => l.text)).toEqual(numbers)
