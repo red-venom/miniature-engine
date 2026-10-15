@@ -22,6 +22,7 @@ import {
   isotopeModel,
   nuclide,
   nuclideLabel,
+  textWidth,
   type Mark,
 } from './atoms'
 import { CROSS_ARM, DOT_R } from './electrons'
@@ -394,13 +395,37 @@ describe('Bohr atom: the drawing agrees with the model', () => {
       const g = bohrDrawn(e.z, 0)
       expect((g.texts ?? []).map((t) => t.text)).toEqual([e.symbol])
       const t = g.texts![0]
-      expect([t.x, t.size, t.anchor]).toEqual([0, BOHR.symbolSize, 'middle'])
+      expect([t.x, t.anchor]).toEqual([0, 'middle'])
       // The capital letters are centred on the nucleus.
       expect(BOX / 2 - (t.y - (0.716 * t.size) / 2)).toBeCloseTo(0, 1)
       const numbers = bohrDrawn(e.z, 0, { nucleus: 'numbers' })
       expect((numbers.texts ?? []).map((n) => n.text)).toEqual([`${e.z} p`, `${e.a - e.z} n`])
       expect(bohrDrawn(e.z, 0, { nucleus: 'blank' }).texts ?? []).toEqual([])
     }
+  })
+
+  it('keeps every letter of the nucleus text inside the nucleus, 2.5 u clear of its line, at 12 to 16 u', () => {
+    for (const e of ELEMENTS) {
+      for (const side of [BOX, 82]) {
+        const g = geometry('bohrAtom', side, side, { z: e.z })
+        const nucleus = circlesOf(g, 'solid')
+        expect(nucleus, e.symbol).toHaveLength(1)
+        const t = g.texts![0]
+        expect(t.size, e.symbol).toBeGreaterThanOrEqual(12)
+        expect(t.size, e.symbol).toBeLessThanOrEqual(16)
+        // The box of the text: its width, its capitals, and the tail of a g or a y below the baseline.
+        const half = textWidth(t.text, t.size) / 2
+        const top = t.y - 0.716 * t.size,
+          bottom = t.y + (/[gjpqy]/.test(t.text) ? 0.21 * t.size : 0)
+        const c = nucleus[0].at
+        // The line of the circle is 2 u wide: its inner edge is at r - 1, and the text keeps 2.5 u inside that.
+        for (const x of [t.x - half, t.x + half])
+          for (const y of [top, bottom]) expect(dist(P(x, y), c), `${e.symbol} at ${side}: a corner of the text`).toBeLessThanOrEqual(nucleus[0].r - 3.5 + 1e-6)
+      }
+    }
+    // A narrow symbol keeps the full 16 u.
+    expect(geometry('bohrAtom', BOX, BOX, { z: 1 }).texts![0].size).toBe(BOHR.symbolSize)
+    expect(geometry('bohrAtom', BOX, BOX, { z: 12 }).texts![0].size).toBeLessThan(BOHR.symbolSize)
   })
 
   it('writes the electron structure under the atom, and makes the atom smaller to make room', () => {
@@ -413,7 +438,7 @@ describe('Bohr atom: the drawing agrees with the model', () => {
       const g = bohrDrawn(z, charge, { structure: true })
       const m = bohrModel(z, charge, { w: BOX, h: BOX, structure: true })
       const plain = bohrModel(z, charge, { w: BOX, h: BOX })
-      const t = (g.texts ?? []).find((x) => x.size === BOHR.structureSize)!
+      const t = (g.texts ?? []).find((x) => /^[0-9,]+$/.test(x.text))!
       expect(t.text).toBe(shellString(ionShells(element(z)!, charge)!))
       // Under every mark and under the brackets, inside the box.
       const lowest = Math.max(
@@ -1012,8 +1037,38 @@ describe('alpha-particle scattering', () => {
     expect(deflection(ALPHA.straight)).toBe(0)
     expect(deflection(10)).toBe(0)
     expect(deflection(ALPHA.reverseB)).toBeGreaterThan(90)
-    // The nucleus is 1.5 u across: the closest path passes outside it.
-    expect(ALPHA.reverseB).toBeGreaterThan(ALPHA.nucleusR + 0.625)
+    // A path that bends a little is bent by more than 10°, so that the bend can be seen.
+    expect(deflection(ALPHA.straight - 0.05)).toBeGreaterThan(10)
+  })
+
+  it('turns the path that turns back inside the atom of its nucleus: it comes 3 to 4 u from the nucleus, and no closer', () => {
+    for (const [w, h] of SIZES) {
+      for (let n = 5; n <= 12; n++) {
+        const r = read(geometry('alphaScattering', w, h, { paths: n }))
+        const back = r.paths.filter((p) => Math.abs(turnOf(p)) > 90)
+        expect(back, `${n} in ${w} × ${h}`).toHaveLength(1)
+        const path = back[0]
+        // The nucleus it turns at: the one that it comes closest to.
+        const near = Math.min(...r.atoms.map((a) => passes(path, a)))
+        expect(near, `${n} in ${w} × ${h}: the closest approach`).toBeGreaterThanOrEqual(3)
+        expect(near, `${n} in ${w} × ${h}: the closest approach`).toBeLessThanOrEqual(4)
+        // That is inside the atom circle, so the path is seen to turn there and not in the empty space in front of the foil.
+        expect(near).toBeLessThan(ALPHA.atomR)
+      }
+    }
+  })
+
+  it('keeps every atom of the foil inside the detector screen, 4 u clear of it', () => {
+    for (const [w, h] of [...SIZES, [300, 200] as [number, number], [400, 200] as [number, number]]) {
+      for (let n = 5; n <= 12; n++) {
+        const r = read(geometry('alphaScattering', w, h, { paths: n }))
+        const middle = P(r.atoms[0].x, h / 2)
+        for (const a of r.atoms) expect(dist(a, middle) + ALPHA.atomR, `${n} paths in ${w} × ${h}`).toBeLessThanOrEqual(0.45 * h - 4 + 1e-6)
+        // Every path still passes the nucleus of an atom that is drawn.
+        const m = alphaModel(n, true, w, h)
+        for (const p of m.paths) expect(m.nuclei[p.nucleus], `${n} paths in ${w} × ${h}`).toBeDefined()
+      }
+    }
   })
 
   it('keeps every path at least 9 u from the next at the foil, and puts the closest pass at the top of the beam', () => {
