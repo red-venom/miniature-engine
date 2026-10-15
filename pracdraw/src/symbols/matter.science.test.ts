@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import {
   ARROW_LENGTH,
   INSET,
+  MIN_SCALE,
   MOLECULE_GAP,
   RADIUS,
   particleBox,
@@ -23,15 +24,15 @@ const SUBSTANCES: Substance[] = ['element', 'molecules', 'compound', 'mixtureEle
 const STATES: State[] = ['gas', 'liquid', 'solid']
 const FORMULAS: Formula[] = ['AB', 'AB2', 'A2B']
 const SIZES: [number, number][] = [
-  [120, 90], // the smallest the symbol may be
-  [160, 120], // the default
-  [240, 180],
+  [240, 180], // the default, and the smallest the symbol may be
+  [300, 200],
+  [360, 270],
 ]
 const COUNTS = [6, 13, 16, 24, 40]
 const SLOW = 60_000
 
 const DEFAULTS: BoxParams = { substance: 'element', state: 'gas', count: 16, formula: 'AB', motion: false }
-const model = (p: Partial<BoxParams>, w = 160, h = 120): ParticleModel => particleModel(w, h, { ...DEFAULTS, ...p })
+const model = (p: Partial<BoxParams>, w = 240, h = 180): ParticleModel => particleModel(w, h, { ...DEFAULTS, ...p })
 
 /** What a unit of each kind of substance must hold, written out here from the catalogue and not taken from the code: the atoms of each kind. */
 const LETTERS: Record<Formula, { big: number; B: number }> = { AB: { big: 1, B: 1 }, AB2: { big: 1, B: 2 }, A2B: { big: 2, B: 1 } }
@@ -223,13 +224,33 @@ describe('particleBox: the box is never too full', () => {
   it('draws the particles smaller, and all by the same factor, only when the box is too small for them', () => {
     expect(model({}).scale, '16 atoms fit the default box').toBe(1)
     for (const { tag, params, w, m } of cases()) {
-      expect(m.scale, tag).toBeGreaterThan(0.3)
+      expect(m.scale, tag).toBeGreaterThanOrEqual(MIN_SCALE)
       expect(m.scale, tag).toBeLessThanOrEqual(1)
       for (const p of m.particles) expect(p.r, tag).toBeCloseTo(RADIUS[p.kind] * m.scale, 9)
-      if (params.substance === 'element' && params.count <= 13 && w >= 160) expect(m.scale, `${tag}: a few atoms fit the box at full size`).toBe(1)
+      if (params.substance === 'element' && params.count <= 13 && w >= 240) expect(m.scale, `${tag}: a few atoms fit the box at full size`).toBe(1)
     }
-    expect(model({ substance: 'molecules', count: 16 }).scale, '16 molecules do not fit the box at full size').toBeLessThan(1)
+    expect(model({ substance: 'molecules', count: 40 }).scale, '40 molecules do not fit the default box at full size').toBeLessThan(1)
   })
+
+  it(
+    'keeps the particles large enough to read at the smallest size: every count of every substance in every state, scale 0.69 or more',
+    () => {
+      // At 0.69 a B atom (radius 3.4 u) still shows its tint and hatch inside the 2 u outline, and molecules stay 2 u apart.
+      expect(MIN_SCALE).toBeGreaterThanOrEqual(0.68)
+      const { w, h } = particleBox.min!
+      for (const substance of SUBSTANCES)
+        for (const formula of substance.includes('ompound') ? FORMULAS : ['AB' as const])
+          for (let count = 6; count <= 40; count++) {
+            // The gas sets the scale of all three states; a liquid or a solid only takes a smaller one when it does not fit at that scale.
+            for (const state of count % 3 === 0 ? STATES : (['gas'] as State[])) {
+              const m = particleModel(w, h, { substance, state, count, formula, motion: false })
+              expect(m.units.length, `${substance} ${formula} ${state} n=${count}`).toBe(count)
+              expect(m.scale, `${substance} ${formula} ${state} n=${count}`).toBeGreaterThanOrEqual(MIN_SCALE)
+            }
+          }
+    },
+    SLOW,
+  )
 
   it('gives the three states of one substance, one count and one size particles of one size', () => {
     for (const substance of SUBSTANCES)
@@ -251,7 +272,7 @@ describe('particleBox: a gas, a liquid and a solid', () => {
     const m = model({ count: 16 })
     for (const right of [false, true])
       for (const low of [false, true]) {
-        const inQuarter = m.particles.filter((p) => p.x > 0 === right && p.y > 60 === low)
+        const inQuarter = m.particles.filter((p) => p.x > 0 === right && p.y > 90 === low)
         expect(inQuarter.length, `right ${right} low ${low}`).toBeGreaterThanOrEqual(2)
       }
   })
@@ -413,7 +434,7 @@ const circlesIn = (d: string): Circle[] =>
     r: Number(m[3]),
   }))
 
-function drawn(p: Partial<BoxParams>, w = 160, h = 120): Drawn {
+function drawn(p: Partial<BoxParams>, w = 240, h = 180): Drawn {
   const geometry = particleBox.build({ w, h, p: { ...defaultParams(particleBox), ...p } })
   const d = (role: string) => geometry.prims.filter((q) => q.role === role).map((q) => q.d)
   const inks = d('ink')
