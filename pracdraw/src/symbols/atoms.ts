@@ -146,14 +146,52 @@ export const BOHR = {
   minGap: 9,
   /** The first shell is at least this far outside a nucleus that is larger than 14 u (the nucleus of the numbers). */
   nucleusGap: 6,
-  /** Text sizes: the element symbol, the numbers of protons and neutrons, the charge (its superscript is drawn at 0.7 of this: 12.6 u), the electron structure. */
+  /**
+   * Text sizes: the element symbol (16 u for one letter; a wide symbol such as Na or Mn is smaller, down to `symbolMin`, so that no letter
+   * touches the nucleus, and for Mg the nucleus also grows to 14.5 u: see `nucleusSymbol`), the numbers of protons and neutrons, the charge (its superscript is drawn at 0.7 of this: 12.6 u),
+   * the electron structure.
+   */
   symbolSize: 16,
+  symbolMin: 12,
+  /**
+   * The box of the text in the nucleus keeps this far inside the inner edge of the circle (its line is 2 u wide). It is generous because a
+   * browser may draw the text a little wider than the Arial widths of `textWidth`.
+   */
+  textClear: 2.5,
   numbersSize: 12,
   chargeSize: 18,
   structureSize: 12,
   /** The electron structure is written under the atom, and the atom is this much smaller (in diameter) to make room. */
   structureRoom: 14,
 } as const
+
+/** How far a letter with a tail (g, j, p, q, y) reaches below the baseline, in em. */
+const DESCENT = 0.21
+
+/**
+ * The box that a line of text takes, centred on the middle of its capital letters: half its width, and how far it reaches above and
+ * below that middle (below it is further for a letter with a tail).
+ */
+export function textBox(text: string, size: number): { half: number; up: number; down: number } {
+  const cap = (CAP * size) / 2
+  return { half: textWidth(text, size) / 2, up: cap, down: cap + (/[gjpqy]/.test(text) ? DESCENT * size : 0) }
+}
+
+/** How far from the centre of the nucleus the farthest corner of the box of the symbol reaches, at size s. */
+const symbolReach = (symbol: string, s: number): number => {
+  const b = textBox(symbol, s)
+  return Math.hypot(b.half, Math.max(b.up, b.down))
+}
+
+/**
+ * The element symbol in a nucleus of radius r: the largest size, 16 u down to 12 u, at which every corner of its box is clear of the
+ * circle; and when even 12 u does not fit (Mg, whose g has a tail), the larger radius that the nucleus needs.
+ */
+export function nucleusSymbol(symbol: string, r: number): { size: number; r: number } {
+  const room = r - 1 - BOHR.textClear
+  for (let s: number = BOHR.symbolSize; s >= BOHR.symbolMin; s -= 0.5) if (symbolReach(symbol, s) <= room) return { size: s, r }
+  return { size: BOHR.symbolMin, r: Math.ceil((symbolReach(symbol, BOHR.symbolMin) + 1 + BOHR.textClear) * 2) / 2 }
+}
 
 export interface BohrOptions {
   /** The box. */
@@ -246,7 +284,9 @@ export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions>
   const charge = ion ? asked : 0
   const structure = ion ?? [...e.shells]
   const n = structure.length
-  const nuclearR = opt.nucleus === 'numbers' ? BOHR.numbersR : BOHR.nucleusR
+  // A wide symbol is written smaller (never below 12 u), and a nucleus that is still too small for it grows (the shells are spaced from it).
+  const sym = nucleusSymbol(e.symbol, BOHR.nucleusR)
+  const nuclearR = opt.nucleus === 'numbers' ? BOHR.numbersR : opt.nucleus === 'symbol' ? sym.r : BOHR.nucleusR
   const half = Math.min(opt.w, opt.h) / 2
   const shrink = opt.structure ? BOHR.structureRoom : 0
   // The outermost shell, and the centre. A box that is too small does not crowd the shells: the atom grows instead.
@@ -267,7 +307,7 @@ export function bohrModel(zIn: number, chargeIn: number, o: Partial<BohrOptions>
     shells.push({ radius, electrons })
   })
   const texts: PlacedText[] = []
-  if (opt.nucleus === 'symbol') texts.push({ text: e.symbol, x: cx, y: cy + (CAP / 2) * BOHR.symbolSize, size: BOHR.symbolSize })
+  if (opt.nucleus === 'symbol') texts.push({ text: e.symbol, x: cx, y: cy + (CAP / 2) * sym.size, size: sym.size })
   if (opt.nucleus === 'numbers') {
     // 'Z p' over 'N n': the protons are the atomic number, the neutrons make up the mass number of the commonest isotope.
     const s = BOHR.numbersSize,
@@ -889,11 +929,15 @@ export const ALPHA = {
   nucleusR: 1.5,
   /** A path that passes a nucleus no closer than this is not bent. */
   straight: 4,
-  /** The path that is turned back passes this close to its nucleus, and is turned through this many degrees. */
-  reverseB: 2.4,
+  /**
+   * The incident line of the path that is turned back is this far from its nucleus, and the path is turned through this many degrees. On
+   * its hyperbola it comes no closer to the nucleus than b (tan(θ/2) + 1 / cos(θ/2)), 5.03 b at 135°: 3.5 u, inside its atom (6 u) and
+   * outside the nucleus (1.5 u), so that it is seen to turn at the nucleus.
+   */
+  reverseB: 0.7,
   reverseAngle: 135,
-  /** A path that passes further out is bent less: the bend falls by a factor e in this distance. */
-  lambda: 0.5,
+  /** A path that passes further out is bent less: the bend falls by a factor e in this distance (to about 25° at 3.2 u). */
+  lambda: 1.48,
   /** The lead block: its width, the thickness of its back wall (the alpha source is behind it) and of the two arms that stand above and below the slit. */
   blockW: 46,
   back: 16,
@@ -907,7 +951,7 @@ export const ALPHA = {
 
 /**
  * How far an alpha particle that passes a nucleus at distance b (u) is turned (degrees), however it passes: 0 when it passes at 4 u or more,
- * and more and more the closer it comes, to 135° at 2.4 u. The nucleus is 1.5 u across, so no path is turned into it.
+ * and more and more the closer it comes, to 135° at 0.7 u. Even that path keeps 3.5 u from the nucleus (1.5 u) on its hyperbola.
  */
 export function deflection(b: number): number {
   if (b >= ALPHA.straight) return 0
@@ -1031,9 +1075,11 @@ export function alphaModel(pathsIn: number, showNuclei: boolean, w = 380, h = 23
   const cx = 0.1 * w,
     cy = h / 2,
     screen = 0.45 * h
-  // The column of atoms: tall enough for the beam, with one atom spare at each end, and at least a third of the height.
+  // The column of atoms: tall enough for the beam, with one atom spare at each end, and at least a third of the height; but every atom stays
+  // inside the screen, 4 u clear of it (a spare atom is dropped first; the atoms that the paths pass are always drawn).
   const used = Math.max(...slots.map((q) => Math.abs(q.k)), ...slots.map((q) => Math.abs(q.k + 1)))
-  const half = Math.max(used + 1, Math.floor((0.3 * h) / ALPHA.pitch), 3)
+  const fits = Math.floor((screen - ALPHA.atomR - 4) / ALPHA.pitch)
+  const half = Math.max(used, Math.min(Math.max(used + 1, Math.floor((0.3 * h) / ALPHA.pitch), 3), fits))
   const nuclei = Array.from({ length: 2 * half + 1 }, (_, i) => P(cx, cy + (i - half) * ALPHA.pitch))
   const x0 = -w / 2 + 6,
     xs = x0 + ALPHA.back + 3 // the paths start at the back wall of the block
