@@ -64,7 +64,8 @@ const SYMBOL_NOTES: Record<string, string> = {
   volumetricFlask: 'the mark is at 0.2 × height from the top, 15.6 u above neck: amount 0.806 puts the surface on it',
   pipetteFiller: 'no hand holds it: it stands in the air above its pipette',
   testTubeHolder: 'no hand holds it: the handle ends in the air; draw it behind the tube it grips',
-  phScale: 'orientation vertical needs a tall box (for example w 70, h 420): the symbol does not swap the box for you',
+  formulaTriangle: 'custom text takes M_r markup; a longer word needs a bigger triangle: distance on top 118 x 108, volume at the bottom 129 x 118',
+  phScale: 'orientation vertical needs a tall box (at least w 360, h 210; for example 360 x 420): the symbol does not swap the box for you',
   bohrAtom:
     'size the box by the shells: 38 + 44 x shells (82, 126, 170, 214 u square); nucleus numbers need the larger nucleus; structure shrinks the atom by 14 u; a charge needs 18 u of room',
   nuclideNotation: 'do not flip it: the numbers would move to the right of the symbol',

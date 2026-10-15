@@ -2078,14 +2078,14 @@
       "cavities": [],
       "anchors": [],
       "params": [
-        "preset:choice=moles[moles|concentration|gasVolume|yield|custom]",
+        "preset:choice=moles[moles|concentration|gasVolume|custom]",
         "top:text=m",
         "left:text=n",
         "right:text=Mr",
         "hide:choice=none[none|top|left|right]"
       ],
       "aliases": ["formula triangle", "magic triangle", "moles triangle"],
-      "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A triangle (outline) split by a horizontal line and a vertical line into three parts: one quantity at the top, two at the bottom (text 16 u). preset sets the three texts: moles (m over n and Mr), concentration (n over c and V), gasVolume (V over n and 24), yield (actual yield over percentage and theoretical yield); custom uses top, left and right. hide leaves one part empty (a worksheet). Science: the top quantity is the product of the two at the bottom. Label: 'formula triangle'.",
+      "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A triangle (outline) split by a horizontal line and a vertical line into three parts: one quantity at the top, two at the bottom (text 16 u). preset sets the three texts: moles (m over n and Mr), concentration (n over c and V), gasVolume (V over n and 24); custom uses top, left and right. hide leaves one part empty (a worksheet). Science: the top quantity is the product of the two at the bottom. Label: 'formula triangle'.",
       "done": false
     },
     {
