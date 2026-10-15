@@ -7,7 +7,7 @@ import {
   C60_DRAW,
   C60_RADIUS,
   C60_TURN,
-  DASH,
+  DOT,
   FORCE_SITES,
   GRAPHITE,
   GRAPHITE_BRIEF,
@@ -65,6 +65,25 @@ function distToSegment(p: Pt, [a, b]: [Pt, Pt]): number {
   const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2,
     t = l2 ? Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2)) : 0
   return dist(p, P(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y)))
+}
+
+/**
+ * The dots of the weak forces (role ink), in the order drawn, as one run for each force of the model: the dots on the vertical through the
+ * upper atom, between the upper and the lower atom. A dot that belongs to no force ends the reading, so the test sees it.
+ */
+function forceRuns(g: Geometry, model: ReturnType<typeof graphiteModel>, circles: { c: Pt; r: number }[]): { c: Pt; r: number }[][] {
+  const dots = circlesIn(prim(g, 'ink'))
+  const runs: { c: Pt; r: number }[][] = []
+  let k = 0
+  for (const { upper, lower } of model.forces) {
+    const run: { c: Pt; r: number }[] = []
+    const top = circles[upper].c,
+      bottom = circles[lower].c
+    while (k < dots.length && Math.abs(dots[k].c.x - top.x) < 0.02 && dots[k].c.y > top.y && dots[k].c.y < bottom.y) run.push(dots[k++])
+    if (!run.length) break
+    runs.push(run)
+  }
+  return runs
 }
 
 // ================================================================ graphite
@@ -298,26 +317,29 @@ describe('graphite: the drawing agrees with the model', () => {
               expect(Math.abs(dist(p, circles[atom].c) - r), `stub ${i}`).toBeLessThan(0.03)
               expect(near(P(q.x - p.x, q.y - p.y), v, 0.03), `stub ${i} vector`).toBe(true)
             })
-            // dotted lines (role dashed) only when forces is on, one for each force, vertical, between the circles, cut to whole dashes
-            const dotted = linesIn(prim(g, 'dashed'))
-            expect(g.prims.some((p) => p.role === 'dashed')).toBe(forces)
-            expect(dotted).toHaveLength(forces ? model.forces.length : 0)
-            if (forces)
-              model.forces.forEach(({ upper, lower }, i) => {
-                const [p, q] = dotted[i]
-                expect(Math.abs(p.x - circles[upper].c.x)).toBeLessThan(0.02)
-                expect(Math.abs(q.x - circles[upper].c.x)).toBeLessThan(0.02)
-                expect(Math.abs(circles[lower].c.x - circles[upper].c.x)).toBeLessThan(0.02)
-                expect(p.y).toBeGreaterThanOrEqual(circles[upper].c.y + r - 0.02)
-                expect(q.y).toBeLessThanOrEqual(circles[lower].c.y - r + 0.02)
-                const dashes = (q.y - p.y + DASH.off) / (DASH.on + DASH.off)
-                expect(dashes).toBeCloseTo(Math.round(dashes), 1) // the line ends on a dash
-                expect(Math.round(dashes)).toBeGreaterThanOrEqual(2)
-              })
+            // the weak forces: true dots (role ink, no dashes) only when forces is on, one vertical run of dots for each force, between the circles
+            expect(g.prims.some((p) => p.role === 'dashed')).toBe(false)
+            expect(g.prims.some((p) => p.role === 'ink')).toBe(forces)
+            const runs = forceRuns(g, model, circles)
+            expect(runs).toHaveLength(forces ? model.forces.length : 0)
+            expect(runs.flat()).toHaveLength(circlesIn(prim(g, 'ink')).length) // every dot belongs to a force
+            runs.forEach((dots, i) => {
+              const { upper, lower } = model.forces[i]
+              expect(Math.abs(circles[lower].c.x - circles[upper].c.x)).toBeLessThan(0.02)
+              // as many dots as fit, 3.5 u apart, each of radius 0.9 u (true dots, as the lead set them), the end dots at least DOT.clear from the atom outlines
+              const room = circles[lower].c.y - circles[upper].c.y - 2 * (r + 1 + DOT.clear + DOT.r)
+              expect(dots, `force ${i}`).toHaveLength(Math.floor(room / DOT.pitch + 0.01) + 1)
+              expect(dots.length).toBeGreaterThanOrEqual(5)
+              for (const d of dots) expect(d.r).toBeCloseTo(0.9, 2)
+              dots.forEach((d, j) => j && expect(d.c.y - dots[j - 1].c.y).toBeCloseTo(3.5, 1))
+              expect(dots[0].c.y - DOT.r - (circles[upper].c.y + r + 1)).toBeGreaterThanOrEqual(DOT.clear - 0.02)
+              expect(circles[lower].c.y - r - 1 - (dots.at(-1)!.c.y + DOT.r)).toBeGreaterThanOrEqual(DOT.clear - 0.02)
+              // centred in the gap
+              expect(dots[0].c.y - circles[upper].c.y).toBeCloseTo(circles[lower].c.y - dots.at(-1)!.c.y, 1)
+            })
             // nothing else: no text, no tint, no hatch, and every prim is one of these four
             expect(g.texts ?? []).toEqual([])
-            expect(g.prims.every((p) => ['dashed', 'outline', 'detail', 'solid'].includes(p.role))).toBe(true)
-            expect(g.prims.map((p) => p.role)).toEqual(['dashed', 'outline', 'detail', 'solid'].filter((role) => forces || role !== 'dashed'))
+            expect(g.prims.map((p) => p.role)).toEqual(['ink', 'outline', 'detail', 'solid'].filter((role) => forces || role !== 'ink'))
           })
 
   it('has the default size 250 x 212 and, there, the picture of 200 x 170 at 1.25 times: a bond of 30 u, atoms of radius 4.375 u, lines still 2 u and 1.25 u', () => {
@@ -342,7 +364,9 @@ describe('graphite: the drawing agrees with the model', () => {
         r: circles[0].r,
         width: Math.max(...xs) - Math.min(...xs),
         height: Math.max(...ys) - Math.min(...ys),
-        lines: g.prims.map((p) => primNode(p, false).sw), // the line width of each part: dotted lines, bonds, stubs, atoms
+        // each part with its line width: the dots of the forces (no line), the bonds, the stubs, the atoms; and the radius of a dot
+        lines: g.prims.map((p) => [p.role, primNode(p, false).sw ?? 0]),
+        dot: circlesIn(prim(g, 'ink'))[0].r,
       }
     }
     const now = measure(G_DEFAULT.w, G_DEFAULT.h),
@@ -354,9 +378,17 @@ describe('graphite: the drawing agrees with the model', () => {
     expect(before.r).toBeCloseTo(3.5, 2)
     expect(now.width / before.width).toBeCloseTo(1.25, 3)
     expect(now.height / before.height).toBeCloseTo(1.25, 3)
-    // the lines do not scale (rule S3): at either size the dotted lines and the stubs are 1.25 u, and the bonds and the atom outlines are 2 u
-    expect(now.lines).toEqual([1.25, 2, 1.25, 2])
+    // the lines and marks do not scale (rule S3): at either size the stubs are 1.25 u, the bonds and the atom outlines 2 u, and the dots
+    // of the weak forces solid ink (no line) of radius DOT.r
+    expect(now.lines).toEqual([
+      ['ink', 0],
+      ['outline', 2],
+      ['detail', 1.25],
+      ['solid', 2],
+    ])
     expect(before.lines).toEqual(now.lines)
+    expect(now.dot).toBeCloseTo(0.9, 2)
+    expect(before.dot).toBeCloseTo(0.9, 2)
   })
 
   it('is what the registry draws for the symbol, with `layers` and `forces` read from the parameters', () => {
@@ -367,22 +399,22 @@ describe('graphite: the drawing agrees with the model', () => {
         expect(circlesIn(prim(g, 'solid'))).toHaveLength(layers * graphiteModel(2).atomsPerSheet)
       }
     expect(circlesIn(prim(geometry('graphiteStructure', G_DEFAULT.w, G_DEFAULT.h), 'solid'))).toHaveLength(3 * 22) // the default: 3 layers
-    expect(prim(geometry('graphiteStructure', G_DEFAULT.w, G_DEFAULT.h), 'dashed')).not.toBe('') // and the forces are on
+    expect(prim(geometry('graphiteStructure', G_DEFAULT.w, G_DEFAULT.h), 'ink')).not.toBe('') // and the forces are on
   })
 
   // What each size keeps clear, in u, for 2, 3 and 4 layers (four sheets are drawn smaller, and so closer, to fit the box):
-  // between the outlines of two atoms, between neighbouring sheets, between a bond and an atom that is not at its end, and between a dotted line and an atom.
+  // between the outlines of two atoms, between neighbouring sheets, between a bond and an atom that is not at its end, and between a dot of a weak force and an atom.
   const clear = [
-    { name: 'the default size', size: G_DEFAULT, atoms: 3, sheets: 15, bond: 6, dotted: 3.5 },
-    { name: 'the minimum size', size: G_MINIMUM, atoms: 1.5, sheets: 9, bond: 3.5, dotted: 2 },
-    { name: '1.5 times the default size', size: G_BIG, atoms: 6, sheets: 24, bond: 10, dotted: 6 },
+    { name: 'the default size', size: G_DEFAULT, atoms: 3, sheets: 15, bond: 6, dotted: 2.5 },
+    { name: 'the minimum size', size: G_MINIMUM, atoms: 1.5, sheets: 9, bond: 3.5, dotted: 1.25 },
+    { name: '1.5 times the default size', size: G_BIG, atoms: 6, sheets: 24, bond: 10, dotted: 5 },
   ]
   /** The outlines of the atoms, the rows of the sheets and the lines of a picture, read from its geometry. */
   const read = (size: { w: number; h: number }, layers: number) => {
     const model = graphiteModel(layers)
     const g = graphiteGeometry(size.w, size.h, layers, true)
     const circles = circlesIn(prim(g, 'solid'))
-    return { model, circles, r: circles[0].r, bonds: linesIn(prim(g, 'outline')), dotted: linesIn(prim(g, 'dashed')) }
+    return { model, circles, r: circles[0].r, bonds: linesIn(prim(g, 'outline')), dotted: forceRuns(g, model, circles) }
   }
 
   for (const { name, size, atoms } of clear)
@@ -430,17 +462,20 @@ describe('graphite: the drawing agrees with the model', () => {
     })
 
   for (const { name, size, dotted } of clear)
-    it(`runs a dotted line over no atom, at least ${dotted} u clear of every atom outline, and over at most one bond of the sheets, at ${name}`, () => {
+    it(`runs a line of dots over no atom, every dot at least ${dotted} u clear of every atom outline, and over at most one bond, at ${name}`, () => {
       for (const layers of [2, 3, 4]) {
-        const { model, circles, r, bonds, dotted: lines } = read(size, layers)
-        expect(lines).toHaveLength(model.forces.length)
-        lines.forEach((line, i) => {
+        const { model, circles, r, bonds, dotted: runs } = read(size, layers)
+        expect(runs).toHaveLength(model.forces.length)
+        runs.forEach((dots, i) => {
           const { upper, lower } = model.forces[i]
-          circles.forEach((c, j) => {
-            if (j === upper || j === lower) return
-            expect(distToSegment(c.c, line) - r - 1, `${layers} layers: dotted line ${i} and atom ${j}`).toBeGreaterThanOrEqual(dotted)
-          })
-          expect(bonds.filter((b) => crosses(line, b)).length, `${layers} layers: dotted line ${i}`).toBeLessThanOrEqual(1)
+          for (const d of dots)
+            circles.forEach((c, j) => {
+              // the two atoms of the force: DOT.clear from their outlines; any other atom: `dotted`
+              const need = j === upper || j === lower ? DOT.clear : dotted
+              expect(dist(d.c, c.c) - r - 1 - d.r, `${layers} layers: force ${i} and atom ${j}`).toBeGreaterThanOrEqual(need - 0.02)
+            })
+          const line: [Pt, Pt] = [dots[0].c, dots.at(-1)!.c]
+          expect(bonds.filter((b) => crosses(line, b)).length, `${layers} layers: force ${i}`).toBeLessThanOrEqual(1)
         })
       }
     })
