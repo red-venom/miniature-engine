@@ -440,7 +440,7 @@ const gasCollection: TemplateDef = {
     const b = new DocBuilder('Collecting a gas by delivery')
     // The stand and clamp of the upward-delivery jar stand behind everything, so they are made first and placed once the jar is.
     const stand = b.symbol('clampStand', { w: 80, flip: true })
-    const clamp = b.symbol('bossClamp', { params: { grip: 26 } })
+    const clamp = b.symbol('bossClamp', { params: { grip: 14 } })
     const generator = { lumps: lumps(0.1, GRANULES), solution: liquid(0.3, COLOURLESS, { bubbles: 'few' }) }
     // Downward delivery: the tube reaches the bottom of an upright jar, and the gas, which is denser than air, fills it from there.
     const flask1 = b.at('conicalFlask', 'base', P(0, 0), { contents: { main: [generator.lumps, generator.solution] } })
@@ -460,8 +460,9 @@ const gasCollection: TemplateDef = {
     b.connector('glassTube', [v(hole2.x, hole2.y + 30), v(hole2.x, top2.y + 14)])
     // The clamp grips the wall of the jar half way up, from a stand on the left, between the two set-ups.
     const bench = anchorWorld(flask2, 'base').y
-    const middle = P(jar2.x, (anchorWorld(jar2, 'mouth').y + top2.y) / 2)
-    clamp.w = clampWidth(95, 26)
+    // The jar is wider than any clamp opens, so the jaws close on its left wall, where they can be seen.
+    const middle = P(jar2.x - jar2.w / 2, (anchorWorld(jar2, 'mouth').y + top2.y) / 2)
+    clamp.w = clampWidth(95 - jar2.w / 2, 14)
     moveAnchorTo(clamp, 'grip', middle)
     stand.h = Math.round(bench - (anchorWorld(clamp, 'sleeve').y - 36))
     standUnder(stand, clamp, bench)
