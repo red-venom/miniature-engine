@@ -530,7 +530,7 @@
     "proposedPack": "structures",
     "priority": "B",
     "detail": "full",
-    "draw": "Use the ionicLattice3D symbol: a 3 by 3 by 3 block of 27 ions in the oblique view, 14 Cl- (large, grey with hatch) and 13 Na+ (small, white), with 54 bonds between unlike ions and the three hidden back bonds dashed. Set `bonds` off to show the ions alone. Add the names or the charges of the ions with label items: the symbol has no text.",
+    "draw": "Use the ionicLattice3D symbol: a 3 by 3 by 3 block of 27 ions in the oblique view, 14 Cl- (large, grey with hatch) and 13 Na+ (small, white), with 54 bonds between unlike ions and the 6 bonds on the three hidden edges at the back corner dashed. Set `bonds` off to show the ions alone. Add the names or the charges of the ions with label items: the symbol has no text.",
     "params": "bonds (boolean, default on)",
     "scienceChecks": "No two like ions are nearest neighbours along an edge. In a 3 by 3 by 3 block there are 14 ions of one kind and 13 of the other. Each ion has as many neighbours as its place gives (corner 3, edge 4, face 5, centre 6).",
     "sources": [
