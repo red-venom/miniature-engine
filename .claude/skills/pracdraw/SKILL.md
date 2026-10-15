@@ -1,6 +1,6 @@
 ---
 name: pracdraw
-description: Draw a diagram of science apparatus for a lesson, worksheet or exam question, with no person at the editor. Use it when asked for a diagram of a lab set-up, a required practical, a circuit, labelled apparatus, or a worksheet or exam diagram. It writes an editable SVG, a PNG and the saved PracDraw document from a short JSON recipe, and checks the layout. It cannot draw graphs, tables, structural formulae, imported pictures, people or animation.
+description: Draw a diagram for a lesson, worksheet or exam question, with no person at the editor. Use it when asked for a diagram of a lab set-up, a required practical, a circuit, labelled apparatus, or (chemistry) atoms and ions, electron shells, dot-and-cross diagrams, the periodic table, particle diagrams of states and mixtures, a reaction profile, the pH scale, hazard symbols, or the sodium chloride lattice, diamond, graphite or C60. It writes an editable SVG, a PNG and the saved PracDraw document from a short JSON recipe, and checks the layout. It cannot draw graphs, tables of data, displayed or skeletal formulae, imported pictures, people or animation.
 ---
 
 # PracDraw: apparatus diagrams from a recipe
@@ -289,7 +289,7 @@ The checks at the end of the output find: leaders that cross each other; a leade
 
 ## What it cannot draw
 
-Graphs and tables; skeletal or structural formulae; pictures that are imported; animation; pouring liquids; 3D or perspective views; people and hands (there is no person or hand symbol: a pipette in use, a holder in a hand and a student at the bench are drawn as apparatus with nothing holding it); a symbol that is not in `reference/symbols.md` (it lists the ones planned and not drawn yet). For those, say so, and draw the part of the diagram that it can.
+Graphs and tables of data; displayed, skeletal or structural formulae and ball-and-stick molecules (the molecule pack is not built yet; dot-and-cross diagrams of 13 small molecules are); pictures that are imported; animation; pouring liquids; 3D views other than the four structure symbols (`ionicLattice3D`, `diamondStructure`, `graphiteStructure`, `fullereneC60`); metallic bonding and other giant structures (not built yet); people and hands (there is no person or hand symbol: a pipette in use, a holder in a hand and a student at the bench are drawn as apparatus with nothing holding it); a symbol that is not in `reference/symbols.md` (it lists the ones planned and not drawn yet). For those, say so, and draw the part of the diagram that it can.
 
 ## The files
 

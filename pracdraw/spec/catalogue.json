@@ -798,7 +798,7 @@
       "params": ["holes:number=6[3..8]", "tube:choice=test[test|boiling]"],
       "aliases": [],
       "draw": "Front view. Two end plates 8 wide and full height, role solid. Top bar at y = 0.25h and bottom bar at y = h - 8, each 8 high, role solid. Holes: `holes` of them, at a pitch of (w - 16) / holes. The top bar has a gap for each hole (pieces, as bung): 26 wide for test tubes and 38 wide for boiling tubes, but never more than the pitch - 6. One cup anchor on the bottom bar under each hole: `slot1` to `slot<holes>`.",
-      "done": false
+      "done": true
     },
     {
       "id": "testTubeHolder",
@@ -813,7 +813,7 @@
       "params": [],
       "aliases": [],
       "draw": "Wooden holder: two arms that meet at the left end and grip at the right. Spring: small rect at 0.6w, role solid.",
-      "done": false
+      "done": true
     },
     {
       "id": "benchLine",
@@ -828,7 +828,7 @@
       "params": [],
       "aliases": ["bench surface", "table", "floor"],
       "draw": "Heavy line at y = 0, full width. Under it: detail hatch lines at 45 degrees, 8 u apart, 10 u long.",
-      "done": false,
+      "done": true,
       "autoLabel": false
     },
     {
@@ -844,7 +844,7 @@
       "params": [],
       "aliases": [],
       "draw": "Cloud outline: 7 to 9 small arcs round an oval, role solid.",
-      "done": false
+      "done": true
     },
     {
       "id": "lid",
@@ -859,7 +859,7 @@
       "params": ["holes:number=0[0..2]"],
       "aliases": ["cover"],
       "draw": "Slab, corner radius 2, role solid. holes = 1: a centre gap 10 wide. holes = 2: two gaps 10 wide at x = 0.22w each side. Draw the slab in pieces, as bung, and give each gap a port anchor (`hole1`, `hole2`).",
-      "done": false
+      "done": true
     },
     {
       "id": "stirringRod",
@@ -874,7 +874,7 @@
       "params": [],
       "aliases": ["stirring rod", "stirrer"],
       "draw": "Rect with rounded ends (radius 3), role solid.",
-      "done": false
+      "done": true
     },
     {
       "id": "spatula",
@@ -889,7 +889,7 @@
       "params": [],
       "aliases": [],
       "draw": "Flat blade 14 wide and 40 long at the lower end with a rounded tip, narrowing to a handle 5 wide. Role solid.",
-      "done": false
+      "done": true
     },
     {
       "id": "splint",
@@ -904,7 +904,7 @@
       "params": ["state:choice=lit[unlit|lit|glowing]"],
       "aliases": ["wooden splint", "glowing splint", "burning splint", "lit splint"],
       "draw": "Thin rect 4 high, role solid. lit: a small flame 16 high at the right end, the shape of the bunsenBurner safety flame, role flame, tint #f7d26a. glowing: a dark-role dot of radius 3 at the right end with three short detail rays.",
-      "done": false
+      "done": true
     },
     {
       "id": "filterPaper",
@@ -919,7 +919,7 @@
       "params": ["residue:boolean=false"],
       "aliases": ["fluted filter paper"],
       "draw": "A V of two dashed lines from the rim points (w/2 each side, y = 0) to (0, h). residue: stipple dots in the lowest third.",
-      "done": false
+      "done": true
     },
     {
       "id": "chromatographyPaper",
@@ -934,7 +934,7 @@
       "params": ["spots:number=3[1..6]", "front:number=0.7[0..1]", "developed:boolean=true", "plate:boolean=false"],
       "aliases": ["TLC plate", "chromatogram"],
       "draw": "Rect, role solid. Baseline: detail line 18 u above the bottom edge. Samples: `spots` of them, evenly spaced along the baseline, each with its own tint. developed off: each sample is a dot of radius 3 on the baseline. developed on: each start position is a small pencil cross (two detail lines 4 u long), and each sample has 1 to 3 dots above its cross, in a fixed pattern by index, all below the solvent front. Solvent front: dashed line at `front` of the way from the baseline to the top. plate: a second line 3 u inside the left edge. The label text is `TLC plate` when `plate` is on.",
-      "done": false
+      "done": true
     },
     {
       "id": "capillaryTube",
@@ -949,7 +949,7 @@
       "params": [],
       "aliases": ["melting point tube"],
       "draw": "Tube 5 wide, closed and round at the lower end. Sample: dark-role fill in the lowest 8 u.",
-      "done": false
+      "done": true
     },
     {
       "id": "stirBar",
@@ -964,7 +964,7 @@
       "params": [],
       "aliases": ["flea", "follower"],
       "draw": "Capsule: rounded rect of radius 4, role solid.",
-      "done": false
+      "done": true
     },
     {
       "id": "tile",
@@ -979,7 +979,7 @@
       "params": [],
       "aliases": [],
       "draw": "Slab, corner radius 1.5, role solid.",
-      "done": false
+      "done": true
     },
     {
       "id": "spottingTile",
@@ -994,7 +994,7 @@
       "params": ["rows:number=3[2..4]", "cols:number=4[3..6]", "iodine:boolean=false", "blueBlack:number=0[0..24]"],
       "aliases": ["dimple tile", "spot plate"],
       "draw": "Rounded rect of radius 8, role solid. Wells: circles of radius 0.3 \u00d7 the cell size on a rows \u00d7 cols grid, role solid. iodine: every well gets the tint #b98556 (iodine solution), and the first `blueBlack` wells, counted row by row, get the role dark with the tint #3b4a6b (starch is present).",
-      "done": false
+      "done": true
     },
     {
       "id": "crossPaper",
@@ -1009,7 +1009,7 @@
       "params": [],
       "aliases": [],
       "draw": "Paper in oblique view: a parallelogram with its bottom edge from (-w/2, h) to (w/2 - 18, h) and its top edge from (-w/2 + 18, 0) to (w/2, 0), role solid. Cross: two heavy lines 10 u long that form an X centred at (0, 0.72h). The surface anchor is at (0, 0.45h): a flask that stands there hides the back of the paper and leaves the cross in view.",
-      "done": false
+      "done": true
     },
     {
       "id": "gClamp",
@@ -1024,7 +1024,7 @@
       "params": [],
       "aliases": ["clamp for the bench", "C-clamp"],
       "draw": "Frame, role solid: a bar 8 thick down the left side, with a jaw 8 thick at the top and at the bottom that reach 0.6w to the right. Screw: rod 5 wide up through the lower jaw, with a pad 12 wide at its top end and a T-bar handle 20 wide at its bottom end.",
-      "done": false,
+      "done": true,
       "label": "G-clamp"
     },
     {
@@ -1795,7 +1795,7 @@
       "params": [],
       "aliases": ["observer", "eye level"],
       "draw": "Side view of an eye that looks to the right. Lids: two lines from the back point (-w/2, h/2) to (0.3w, 0) and to (0.3w, h). Front: an arc between those two points that bulges to x = w/2. Iris: a detail arc 4 u inside the front arc. Pupil: a dark-role lens shape 4 wide at the middle of the front. Turn the item to make it look another way.",
-      "done": false,
+      "done": true,
       "autoLabel": false
     },
     {
@@ -1811,7 +1811,7 @@
       "params": [],
       "aliases": [],
       "draw": "The shape of the bunsenBurner safety flame, role flame, tint #f7d26a.",
-      "done": false,
+      "done": true,
       "autoLabel": false
     },
     {
@@ -1827,7 +1827,7 @@
       "params": ["count:number=2[1..4]"],
       "aliases": ["drip", "droplets"],
       "draw": "Teardrops 7 wide and 10 high in an upright line, role solid.",
-      "done": false,
+      "done": true,
       "autoLabel": false
     },
     {
@@ -1843,7 +1843,7 @@
       "params": ["colour:choice=red[red|blue|green|orange|yellow|purple]"],
       "aliases": ["litmus paper", "pH paper", "universal indicator paper"],
       "draw": "Rect, role solid, with a tint from `colour`: the liquid preset colours of the same names (section 9).",
-      "done": false
+      "done": true
     },
     {
       "id": "flameTestLoop",
@@ -1858,7 +1858,7 @@
       "params": [],
       "aliases": ["nichrome wire", "wire loop"],
       "draw": "Handle: rect 0.45w by 8 at the left, role solid. Wire: detail line from the handle to a loop (circle of radius 4) at the right end.",
-      "done": false
+      "done": true
     },
     {
       "id": "magnesiumRibbon",
@@ -1873,7 +1873,7 @@
       "params": [],
       "aliases": ["magnesium ribbon", "magnesium strip"],
       "draw": "A thin strip in side view: three shallow arcs in a wavy line across the box, drawn as two parallel outlines 3 u apart and closed at each end, role solid.",
-      "done": false,
+      "done": true,
       "label": "magnesium ribbon"
     },
     {
@@ -1897,7 +1897,7 @@
       ],
       "aliases": ["atom", "electron shells", "electronic structure", "shell diagram", "ion", "Bohr model", "electron configuration"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. Bohr (shell) diagram of element z, and of the ion when charge is not 0 (the same engine as the inventory row ionShell). Data: ELEMENTS and ionShells in elements.ts (for an impossible charge draw the neutral atom). The atom fills its box: the outermost shell is a circle of radius w/2 minus 8 u (a further 18 u smaller when charge is not 0, to leave room for the brackets); the n shells are evenly spaced between the nucleus (radius 14 u, role solid) and that circle, role detail. Electrons: evenly spaced on each shell, the first at the top, marks from electrons.ts (dot = role ink, cross = role detail). Nucleus text: the element symbol (nucleus symbol, 16 u), or the proton and neutron counts on two lines (numbers: 'Z p' over 'N n', neutrons = a - z from elements.ts, 11 u), or nothing. outerOnly draws only the outermost shell and its electrons round the nucleus. otherMarks gives the last k electrons of the outer shell the other mark (the electron that moves when an ion forms). structure writes the electron structure (shellString, 12 u) under the atom and shrinks the atom by 14 u to make room. An ion is drawn inside large square brackets (bracketD) with the charge as superscript text at the top right outside them (size 16, markup: 2^+). Label: element name + ' atom' or ' ion'. The science checks (electrons = Z - charge; shell counts equal ionShells; the shells fill 2, 8, 8, 2) are tested in atoms.science.test.ts, from a model that atoms.ts exports. AS BUILT (release 1.2; the model is bohrModel() in src/symbols/atoms.ts): the box is 38 + 44 x shells square (82, 126, 170 or 214 u); a box that is smaller keeps the shells at least 9 u apart and so the atom grows beyond it. The nucleus symbol is 16 u, smaller (down to 12 u) for a wide symbol so that it stays 2.5 u inside a circle of 14 u (14.5 u for Mg) or 19 u (numbers, two lines), and the charge text is 18 u so that its superscript is not below 12 u. The label of a negative ion names the ion (chloride ion, oxide ion). A charge that the atom cannot take is ignored.",
-      "done": false,
+      "done": true,
       "label": "sodium atom"
     },
     {
@@ -1913,7 +1913,7 @@
       "params": ["model:choice=plumPudding[plumPudding|nuclear|shell]", "electrons:number=4[1..10]", "mark:choice=minus[minus|dot|cross]"],
       "aliases": ["plum pudding", "nuclear model", "Rutherford model", "Thomson model", "atom model"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. Plum pudding: a large circle (role tint, with its hatch) and the electrons scattered inside it by a fixed pattern, each marked as `mark` says (minus = a short detail line; dot; cross); no nucleus. Nuclear: a very small nucleus (radius 4 u, role dark) in the middle with a plus sign beside it and the electrons on one wide ring (radius 0.42w). Shell: the nucleus with up to 2 shells as bohrAtom (2 electrons then the rest). No text except the plus and minus signs; labels are label items. Label: 'plum pudding model', 'nuclear model' or 'shell model'. Science: the plum pudding has no separate nucleus; in the nuclear and shell pictures every electron is outside a nucleus much smaller than the atom; the electron count equals the parameter. AS BUILT (release 1.2): the electron mark `minus` is a small white circle of radius 4.6 u with the minus line in it, because a bare line disappears on the ring and on the hatch. The nuclear and shell models use one tiny dark nucleus (4 u): the science check says that the nucleus is much smaller than the atom. Minimum size 110 by 110, so that ten electrons of the pudding stay apart.",
-      "done": false,
+      "done": true,
       "label": "plum pudding model"
     },
     {
@@ -1929,7 +1929,7 @@
       "params": ["z:number=11[1..36]", "a:number=0[0..80]", "charge:number=0[-3..3]", "counts:boolean=false"],
       "aliases": ["isotope notation", "mass number and atomic number", "nuclide symbol"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. Text only: the element symbol (24 u) with the mass number above the atomic number to its left (16 u, right-aligned with each other), and the charge as a superscript (markup) at the right when it is not 0. a = 0 means the mass number of the commonest isotope (elements.ts); an a smaller than z is raised to z. counts adds three short lines under it: 'Z protons', 'N neutrons', 'E electrons' (12 u; E = z - charge). The box is the nominal size; the counts may stick out below. Label: element name and mass number, for example 'sodium-23'. Science: neutrons = a - z and is never negative; the atomic number matches the symbol. AS BUILT (release 1.2): the symbol is text only; it draws an invisible paper rectangle behind the text so that it has a primitive, and it sets labelAt. The text is 24 u for the symbol and 16 u for the numbers. The notation function is shared with isotopeNuclei.",
-      "done": false,
+      "done": true,
       "label": "sodium-23"
     },
     {
@@ -1945,7 +1945,7 @@
       "params": ["z:number=17[1..18]", "a1:number=35[1..40]", "a2:number=37[0..40]", "a3:number=0[0..40]", "notation:boolean=true", "counts:boolean=false"],
       "aliases": ["isotopes", "nucleus", "protons and neutrons", "nuclei"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. One to three nuclei side by side (a2 or a3 of 0 means none), each a tight hexagonal cluster of a circles of radius 5 u: z protons (role tint, with a plus sign) and a - z neutrons (role solid, plain), laid out from the middle outwards so that every circle can be counted and the clusters never overlap. Under each cluster (when notation is on) the nuclide notation of nuclideNotation (the same code, not a copy of it); with counts, the proton and neutron counts. a1, a2 and a3 below z are raised to z. Label: element name + ' isotopes'. Science: the circles in a cluster number a; z of them are protons; isotopes of one element share z. AS BUILT (release 1.2): protons are mixed ring by ring through the cluster, so that neither kind is gathered on one side; the clusters never touch; minimum size 240 by 120.",
-      "done": false,
+      "done": true,
       "label": "chlorine isotopes"
     },
     {
@@ -1961,7 +1961,7 @@
       "params": ["paths:number=8[5..12]", "nuclei:boolean=true"],
       "aliases": ["Rutherford scattering", "gold foil experiment", "Geiger-Marsden"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. On the left a lead block with a slit (role solid) and an arrow for the beam; in the middle a thin gold foil as a vertical column of small circles (the atoms, radius 6 u) with a nucleus dot (radius 1.5 u, role ink) in each when nuclei is on; round the foil a curved detector screen (role dashed arc, radius 0.45h). `paths` alpha paths as lines with arrowheads (detail): most go straight through, some bend a little away from the nearest nucleus (like charges repel), one reverses; a fixed pattern, never random. Paths that bend are bent more the closer they pass; no path enters a nucleus. No text; labels are label items. Label: default. AS BUILT (release 1.2): the lead block is one C-shaped piece whose opening is the slit; every path has an arrowhead of 8 u (role ink); the foil stands 0.1 w to the right of the middle; the screen is one dashed arc open towards the beam; of N paths, floor((N + 1) / 4) bend, one turns back and the rest are straight. Minimum size 300 by 200.",
-      "done": false
+      "done": true
     },
     {
       "id": "periodicTable",
@@ -1985,7 +1985,7 @@
       ],
       "aliases": ["elements", "periodic chart", "groups and periods"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. The standard layout of 18 columns by 4 rows of square cells 28 u wide (the cells that no element of the range fills stay empty; hydrogen and helium are at the two ends of period 1). Each cell: its outline (detail) and, per `content`, the symbol (14 u), the atomic number (9 u above), both, the relative atomic mass (9 u below, from elements.ts `ar`), or nothing (a blank worksheet). Group numbers above the columns (KS4 numbering 1 to 7 and 0, from ks4Group, or IUPAC 1 to 18, or none) and period numbers 1 to 4 at the left (11 u). hlGroup (IUPAC 1 to 18), hlPeriod and hlElement (a ring round one cell): at most one highlight. A stepped divider line (heavy) between metals and non-metals, when on. shading: regions of metals or of blocks use tint plus hatch (never colour alone). The element data is elements.ts (the first 36 elements); the eight cells of the d-block are Sc to Zn. Label: default. Science: elements run in order of atomic number; helium is in group 0 (KS4); the transition metals are in IUPAC groups 3 to 12 of period 4; the divider runs between the right pairs of cells. AS BUILT (release 1.2): cells 28 u square at the default size; text scales with the box between 12 and 18 u (symbol), 8 and 12 u (numbers) and 9 and 14 u (group and period numbers). One heavy ring is the highlight. The divider is the usual KS4 staircase (boron over aluminium, aluminium beside silicon, silicon over germanium, germanium beside arsenic; germanium on the metal side; unverified against the AQA data sheet). Relative atomic masses are printed as an AQA data sheet prints them: whole numbers, except chlorine 35.5 and copper 63.5. The shading is a tint and a hatch of the same shape, with a hole in the hatch around each text; blocks use s and d with a different slant and grey, and the p block is unshaded. Minimum size 476 by 170.",
-      "done": false
+      "done": true
     },
     {
       "id": "ionicDotCross",
@@ -2006,7 +2006,7 @@
       ],
       "aliases": ["dot and cross", "ionic bonding diagram", "dot-and-cross ionic", "ionic compound"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. The ratio of ions follows the charges (Mg and Cl: one Mg2+ and two Cl-; Na and O: two Na+ and one O2-; Al and O: two Al3+ and three O2-). stage 'transfer': each atom as a circle for its outer shell (inner shells only when `inner` is on, as plain circles), the metal's outer electrons as the first mark and the non-metal's as the second, and a curved arrow from each metal electron to the non-metal. stage 'ions': each ion inside square brackets (bracketD) with its charge as superscript text; the metal ion shows no outer electrons (empty outer shell, or the inner shell when `inner` is on), the non-metal ion a full outer shell of both marks. Marks (S6, decision 4): default = metal dots and non-metal crosses, swapped = the other way, ring = dots and small open rings; always black, so one picture serves slides and photocopies. The diagram is laid out across the box and scales to fit. Data: elements.ts and ionShells. Label: the compound name, for example 'sodium chloride' (metal name + non-metal name with the ending -ide). Science: electrons lost = electrons gained; every ion has a noble gas structure; the numbers of ions give a neutral compound; the charge follows the group. AS BUILT (release 1.2): all 36 pairs of the six metals and six non-metals, with the ratio of ions from the charges; ion circle radius 30 u, bracket padding 8 u, charge text 18 u; the symbol is 15 u (12 u in the inner circles). The picture scales between 0.6 and 1.5 times its natural size. Minimum size 404 by 140. With inner shells on, the shells are at least 6.5 u apart and clear of the symbol; the most crowded cases (AlBr3) stand up to 6 u outside the box at the default size and 11 u at the minimum.",
-      "done": false,
+      "done": true,
       "label": "sodium chloride"
     },
     {
@@ -2026,7 +2026,7 @@
       ],
       "aliases": ["dot and cross", "covalent bonding diagram", "dot-and-cross covalent", "molecule"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. Outer shell only, never the inner shells. The 13 molecules form the small-molecule library: put its data (atoms with their element, the bonds with their order, the lone pairs) in src/symbols/molecules.ts, exported, for later symbols (displayed formula, ball-and-stick) to share. layout 'overlap': one circle for the outer shell of each atom, overlapping where atoms are bonded; each shared pair sits in the overlap as one mark of each kind; the other outer electrons stay on the atom's own circle, lone pairs as pairs; a double or triple bond has two or three pairs in the overlap; the central atom is in the middle for H2O, NH3, CH4 and CO2; C2H4 and C2H6 have two carbon atoms side by side. layout 'apart': the atoms apart with their shared pairs between them. Marks (decision 4): the first atom of the formula (or the central atom) uses crosses and the atoms bonded to it dots; in a molecule of two identical atoms one atom uses dots and the other crosses; swapped and ring as ionicDotCross. All in black. Label: the molecule name, for example 'water'. Science: every atom ends with a full outer shell (2 for hydrogen, 8 for the others); the pairs shared equal the valency; the total outer electrons equal the sum over the atoms; lone pairs are drawn. AS BUILT (release 1.2; the model is in src/symbols/dotcross.ts and the molecule library in src/symbols/molecules.ts): overlap layout: circle radius 33 u (hydrogen 23 u) and an overlap 14, 22 and 24 u wide for a single, double and triple bond; apart layout: radius 24 u (hydrogen 17 u) and a gap of 13, 20 and 22 u. The marks of a pair, and the rows of a multiple bond, are 8 u apart. Lone pairs are spread evenly over the widest free arc of the circle, in a gap of its line. The element symbol (15 u) is written in the middle of each circle. Marks never scale (S3), so the picture scales between 0.85 and 1.6 times its natural size. Minimum size 196 by 144. The `ring` marks are dots plus open rings. The molecule is replaced by water when the value is not in the library.",
-      "done": false,
+      "done": true,
       "label": "water"
     },
     {
@@ -2048,7 +2048,7 @@
       ],
       "aliases": ["particles", "states of matter", "particle model", "particle diagram", "element compound mixture"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A box (role outline) holding particles that never overlap (radius 7 u for the larger kind, 5 u for the smaller; fixed pattern from the seed of kernel/geom.ts rng, never Math.random). substance: element = one kind of single atom; molecules = joined pairs of one kind (H2, O2); compound = touching groups of two or three atoms of two kinds in the ratio of `formula` (AB, AB2, A2B); mixtureElements = two kinds of free atom; mixtureCompounds = two kinds of molecule that are not bonded to each other; mixtureElementCompound = free atoms and molecules. The kinds differ by size and fill: A white (role solid), B tint with hatch, C solid ink (S6, S12). state: solid = a regular lattice in contact, filling the lower rows; liquid = touching, irregular, filling the lower two thirds; gas = spaced widely through the whole box. motion adds a short arrow on some particles (longer for a gas); the arrows never cross a particle. `count` is the number of particles (a molecule counts as one). Label: 'particle diagram'. Science: every particle of an element is one kind; each compound unit holds the atoms of its formula in the right ratio; a mixture has at least two kinds and no bond between them; circles never overlap; a solid is a lattice in contact; a gas has gaps larger than a particle. AS BUILT (release 1.2; the model is particleModel() in src/symbols/matter.ts): radii 7 u (A, C) and 5 u (B) at full size; a box too small for the count draws all particles smaller by one common factor (steps of 0.94); the default and minimum size 240 by 180 keeps that factor at 0.69 or more for 40 units, so that the tint and hatch of B still show and units stay apart. A molecule in a solid or liquid keeps a hairline of 3 u (times that factor) from the next molecule, so that each can be counted. The liquid is a touching, irregular heap on the floor, at most two thirds of the box high. compound = AB (A-B), AB2 (B-A-B at 104.5 degrees) or A2B (A-B-A); mixtureCompounds = compound(A,B) + compound(C,B) of one formula; mixtureElementCompound = free C + compound(A,B). The count is shared evenly between the kinds. Motion arrows go only on units with a free direction: about a sixth of the units in a solid (some counts none), a quarter in a liquid, four fifths in a gas, 9 u long in a solid or liquid and 20 u in a gas, clear of every circle.",
-      "done": false,
+      "done": true,
       "label": "particle diagram"
     },
     {
@@ -2064,7 +2064,7 @@
       "params": ["orientation:choice=horizontal[horizontal|vertical]", "numbers:boolean=true", "brackets:boolean=true", "examples:boolean=false"],
       "aliases": ["pH colours", "universal indicator colours", "acid alkali scale"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A strip of 15 equal cells numbered 0 to 14 (role solid with the test tint of its pH: red, orange, yellow, green at 7, then blue and purple; photocopy-safe mode ignores the tint, so every cell carries its number when `numbers` is on and keeps its outline). brackets: acidic below 7, neutral at 7, alkaline above 7 (words as short fixed text, 12 u). examples: four substances at their positions (lemon juice 2, water 7, soap 10, bleach 13) as text under the strip. vertical turns the strip. Band edges are one table in the code (strong acid 0 to 2). Label: 'pH scale'. Science: values rise 0 to 14 in order; the colour order is red, orange, yellow, green, blue, purple.",
-      "done": false,
+      "done": true,
       "label": "pH scale"
     },
     {
@@ -2086,7 +2086,7 @@
       ],
       "aliases": ["formula triangle", "magic triangle", "moles triangle"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A triangle (outline) split by a horizontal line and a vertical line into three parts: one quantity at the top, two at the bottom (text 16 u). preset sets the three texts: moles (m over n and Mr), concentration (n over c and V), gasVolume (V over n and 24); custom uses top, left and right. hide leaves one part empty (a worksheet). Science: the top quantity is the product of the two at the bottom. Label: 'formula triangle'.",
-      "done": false
+      "done": true
     },
     {
       "id": "hazardSymbol",
@@ -2101,7 +2101,7 @@
       "params": ["hazard:choice=flammable[explosive|flammable|oxidising|gasUnderPressure|corrosive|toxic|harmful|health|environment]", "name:boolean=false"],
       "aliases": ["hazard", "warning symbol", "GHS pictogram", "hazard pictogram"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A square set on its corner (a diamond, role outline) with a plain black picture inside, in line (role outline and ink; the real red border is a plain black outline here, rule S6): explosive (an exploding bomb), flammable (a flame), oxidising (a flame over a circle), gas under pressure (a gas cylinder), corrosive (liquid dripping on a hand and a metal bar), toxic (a skull and crossbones), harmful (an exclamation mark), health (a figure with a star on the chest), environment (a dead tree and a fish). With `name` on, the hazard name under the diamond (12 u). Label: 'hazard symbol'. Replaces hazardSymbols of the Later table.",
-      "done": false,
+      "done": true,
       "label": "hazard symbol"
     },
     {
@@ -2123,7 +2123,7 @@
       ],
       "aliases": ["energy level diagram", "energy profile", "exothermic endothermic diagram"],
       "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. Two axes (outline, with arrowheads): energy up the side, progress of reaction along the bottom, with the words 'Energy' and 'Progress of reaction' as symbol text (rotated text is not possible: put 'Energy' above the vertical axis). A smooth curve from a flat reactants level to a rounded peak and down to a flat products level; exothermic = products below the reactants, endothermic = above; the peak is above both. levels: 'reactants' and 'products' (words), or the labels as lines to write on (blank). activation: a double-headed arrow from the reactants level to the peak. change: a vertical arrow between the two levels, down for exothermic and up for endothermic. catalyst: a second, lower, dashed peak (role dashed). Label: 'reaction profile'. Science: exothermic has products below reactants; the catalysed peak is lower, with the same start and end. AS BUILT (release 1.2; the model is profileModel() in src/symbols/energy.ts): `formulae` shows two worked examples, balanced: CH4 + 2O2 -> CO2 + 2H2O (exothermic) and CaCO3 -> CaO + CO2 (endothermic); `blank` draws two lines of 80 u to write on. The reactants level is carried across to the change arrow by a dashed line, and the activation arrow stands under the apex. Labels go below their plateau, except the products of an endothermic reaction (above). The curve is two cubic Beziers with level tangents, so it has no kink. Minimum size 230 by 160.",
-      "done": false,
+      "done": true,
       "label": "reaction profile"
     },
     {
@@ -2139,7 +2139,7 @@
       "params": [],
       "aliases": ["iron nail", "metal rod", "pin"],
       "draw": "A common iron nail for rusting and displacement experiments: a flat round head 12 wide and 3 high at the top, a shank 4 wide down to a point over the last 8 u. Role solid. Symmetric about x = 0 (S8). Release 1.2 (priority C).",
-      "done": false
+      "done": true
     },
     {
       "id": "ionicLattice3D",
