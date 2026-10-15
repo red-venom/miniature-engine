@@ -198,8 +198,12 @@ export function graphiteModel(layers: number = 3): GraphiteModel {
   return { layers: n, gap: GRAPHITE.gap, atomsPerSheet: per, atoms, bonds, stubs, forces, rings }
 }
 
-/** Role `dashed` draws 5 u on and 3 u off (render.ts). A dotted line is cut so that it starts and ends on a dash. */
-export const DASH = { on: 5, off: 3 }
+/**
+ * A weak force is a line of true dots (role `ink`), not a dashed line: rule S14 gives `dashed` to hidden lines, and a dash would read as a
+ * hidden bond. Dots of radius `r` every `pitch` u, the end dots `clear` u or more from the atom outlines; the run is centred in its gap.
+ * Like every mark, the dots do not scale with the symbol (rule S3).
+ */
+export const DOT = { r: 0.9, pitch: 3.5, clear: 1.5 }
 
 /** Where everything goes, in the frame of the symbol, before the picture is centred in its box. */
 export interface GraphiteDrawing {
@@ -208,7 +212,8 @@ export interface GraphiteDrawing {
   r: number
   bonds: [Pt, Pt][]
   stubs: [Pt, Pt][]
-  forces: [Pt, Pt][]
+  /** For each force, the centres of its dots, from the top down. */
+  forces: Pt[][]
 }
 
 /** The drawing at the scale `s` (1 is the default size): a bond is `style.l` s u long and an atom has the radius `style.atomR` s. */
@@ -230,14 +235,15 @@ export function drawGraphite(m: GraphiteModel, s: number, forcesOn: boolean, sty
     return [from, P(from.x + v.x, from.y + v.y)]
   })
   const forces = forcesOn
-    ? m.forces.map(({ upper, lower }): [Pt, Pt] => {
+    ? m.forces.map(({ upper, lower }): Pt[] => {
         const top = centres[upper],
           bottom = centres[lower]
-        const free = bottom.y - top.y - 2 * r,
-          dashes = Math.max(1, Math.floor((free + DASH.off) / (DASH.on + DASH.off))),
-          line = dashes * DASH.on + (dashes - 1) * DASH.off,
-          y0 = top.y + r + (free - line) / 2
-        return [P(top.x, y0), P(top.x, y0 + line)]
+        // the room for dot centres: below the outline of the upper atom and above that of the lower one, `clear` u away
+        const edge = r + 1 + DOT.clear + DOT.r,
+          room = bottom.y - top.y - 2 * edge,
+          n = Math.max(1, Math.floor(room / DOT.pitch) + 1),
+          y0 = top.y + edge + (room - (n - 1) * DOT.pitch) / 2
+        return Array.from({ length: n }, (_, i) => P(top.x, y0 + i * DOT.pitch))
       })
     : []
   return { centres, r, bonds, stubs, forces }
@@ -262,7 +268,7 @@ export function graphiteGeometry(w: number, h: number, layers: number, forces: b
   const move = (lines: [Pt, Pt][]) => lines.map(([p, q]): [Pt, Pt] => [P(p.x + by.x, p.y + by.y), P(q.x + by.x, q.y + by.y)])
   // Back to front: the dotted lines, the bonds, the stubs, then the atoms (white, so that they hide the ends of the lines).
   const prims: Prim[] = []
-  if (d.forces.length) prims.push({ d: move(d.forces).map(lineD).join(''), role: 'dashed' })
+  if (d.forces.length) prims.push({ d: d.forces.flatMap((dots) => dots.map((p) => circle(p.x + by.x, p.y + by.y, DOT.r))).join(''), role: 'ink' })
   prims.push({ d: move(d.bonds).map(lineD).join(''), role: 'outline' })
   if (d.stubs.length) prims.push({ d: move(d.stubs).map(lineD).join(''), role: 'detail' })
   prims.push({ d: d.centres.map((c) => circle(c.x + by.x, c.y + by.y, d.r)).join(''), role: 'solid' })
