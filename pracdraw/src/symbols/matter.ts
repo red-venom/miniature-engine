@@ -49,9 +49,15 @@ const SEED = 0x7a11
 const FALLS = 6
 /** How far a unit of a gas starts from the middle of its cell, in cells (the clamp then keeps it in the box): a gas that is not in rows. */
 const SCATTER = 2
-/** The scale of the particles falls by this factor at a time, and no further than `MIN_SCALE`, until the units fit the box. */
+/**
+ * The scale of the particles falls by this factor at a time until the units fit the box. The minimum size of the symbol is chosen so that
+ * 40 units of every substance fit in every state at a scale of at least `MIN_SCALE` (0.94^6 = 0.69): there the tint and the hatch of a B
+ * atom still show inside its 2 u outline and the gap between molecules (2 u) still parts them. Only a box smaller than the minimum (which
+ * the editor does not allow) takes a smaller scale, down to `LAST_SCALE`, rather than draw nothing.
+ */
 const SHRINK = 0.94
-const MIN_SCALE = 0.3
+export const MIN_SCALE = 0.689
+const LAST_SCALE = 0.3
 
 /** A kind of unit: its atoms in a fixed pose, relative to the middle of the unit (at full size), and which atoms are bonded. */
 export interface Template {
@@ -596,7 +602,7 @@ function gasScale(templates: Template[], counts: number[], w: number, h: number)
   let scale = gasScales.get(key)
   if (scale === undefined) {
     scale = 1
-    while (scale * SHRINK > MIN_SCALE && !place(templates, counts, 'gas', w, h, scale)) scale *= SHRINK
+    while (scale * SHRINK > LAST_SCALE && !place(templates, counts, 'gas', w, h, scale)) scale *= SHRINK
     if (gasScales.size > 500) gasScales.clear()
     gasScales.set(key, scale)
   }
@@ -610,7 +616,7 @@ export function particleModel(w: number, h: number, params: BoxParams): Particle
   // or a liquid that does not fit even at that scale takes a smaller one.
   let scale = gasScale(templates, counts, w, h)
   let bodies = place(templates, counts, params.state, w, h, scale)
-  while (!bodies && scale * SHRINK > MIN_SCALE) bodies = place(templates, counts, params.state, w, h, (scale *= SHRINK))
+  while (!bodies && scale * SHRINK > LAST_SCALE) bodies = place(templates, counts, params.state, w, h, (scale *= SHRINK))
   const placedBodies = bodies ?? []
   const particles: Particle[] = [],
     units: Unit[] = [],
@@ -664,9 +670,9 @@ export const particleBox: SymbolDef = {
   label: 'particle diagram',
   aliases: ['particles', 'states of matter', 'particle model', 'particle diagram', 'element compound mixture'],
   pack: 'matter',
-  size: { w: 160, h: 120 },
+  size: { w: 240, h: 180 },
   resize: 'free',
-  min: { w: 120, h: 90 },
+  min: { w: 240, h: 180 },
   params: [
     {
       key: 'substance',
