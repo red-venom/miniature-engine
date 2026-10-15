@@ -139,8 +139,10 @@ const carbonateTest: TemplateDef = {
       lb = anchorWorld(limewater, 'bottom')
     b.connector('glassTube', [v(out.x, out.y + 30), v(out.x, out.y - 30, 12), v(lw.x, out.y - 30, 12), v(lw.x, lb.y - 8)])
     b.label('acid', -190, -190, [dropper, 0, 48])
-    b.label('bung', -190, -150, [bung, -17, 12])
-    b.label('carbonate', -190, -110, [carbonate, -17, 70])
+    // The bung and the carbonate are named from the space under the arch of the delivery tube. The leader of the carbonate is
+    // steep, so that it enters the tube above the bar of the rack and ends in the powder at the foot.
+    b.label('bung', -40, -150, [bung, 17, 12], { side: 'right' })
+    b.label('carbonate', -45, -110, [carbonate, 3, 143], { side: 'right' })
     b.label('delivery tube', 10, -230, P(30, out.y - 30 - 3.5))
     b.label('limewater', 130, -150, [limewater, 9, 80])
     return b.doc
@@ -159,7 +161,7 @@ const rustingTubes: TemplateDef = {
     const rack = b.at('testTubeRack', 'base', P(0, 0), { w: 464, params: { holes: 4 } })
     // Tall test tubes (150 u): the liquid and the heads of the nails stand above the top bar of the rack, where a leader can reach them.
     // Rust is not drawn on a nail: a thin layer of orange-brown powder at the foot of the tubes where it forms stands for it.
-    const tap = b.on('testTube', 'bottom', rack, 'slot1', { h: 150, contents: { main: [powder(0.04, RUST), liquid(0.58, WATER)] } })
+    const tap = b.on('testTube', 'bottom', rack, 'slot1', { h: 150, contents: { main: [powder(0.08, RUST), liquid(0.54, WATER)] } })
     const boiled = b.on('testTube', 'bottom', rack, 'slot2', { h: 150, contents: { main: [liquid(0.58, WATER), liquid(0.1, OIL)] } })
     const dry = b.on('testTube', 'bottom', rack, 'slot3', { h: 150, contents: { main: [lumps(0.2, GRANULES)] } })
     const salt = b.on('testTube', 'bottom', rack, 'slot4', { h: 150, contents: { main: [powder(0.08, RUST), liquid(0.54, COLOURLESS)] } })
@@ -178,8 +180,10 @@ const rustingTubes: TemplateDef = {
     b.label('iron nail', -280, -125, [nail1, -6, 4])
     b.label('oil', -40, -215, [boiled, 6, 60])
     b.label('bung', 70, -215, [bung, 12, 3])
-    // A layer of powder is no nail, so a note says what it is. It is plain text: a worksheet keeps it.
-    b.label('the orange-brown layer is rust', centred('the orange-brown layer is rust', 0), 118)
+    // A layer of powder is no nail, so a note says what it is, by its place and not by its colour alone (S12: a photocopy loses
+    // the colour). It is plain text: a worksheet keeps it.
+    const rust = 'the layer at the foot of the first and last tubes is rust'
+    b.label(rust, centred(rust, 0), 118)
     return b.doc
   },
 }
@@ -323,15 +327,25 @@ const electrolysisMolten: TemplateDef = {
     // A clip on the top of each rod, its wire stub up.
     const clipL = b.on('crocodileClip', 'jaw', left, 'top', { rot: -90, dy: 8 })
     const clipR = b.on('crocodileClip', 'jaw', right, 'top', { rot: -90, dy: 8 })
-    // The power supply stands on the bench to the left. The right rod goes to the farther terminal, by the higher wire, so that
-    // the two wires do not cross.
+    // The power supply stands on the bench to the left. Its terminals are on its front panel, under their signs, so each wire
+    // comes down beside the box and enters it from the right, below the signs: the right rod's wire, the outer loop, to the
+    // nearer terminal (minus) at its own height; the left rod's wire, the inner loop, under that terminal to the farther one
+    // (plus), which it reaches from below. The two wires do not cross.
     const psu = b.on('powerSupply', 'base', mat, 'under', { dx: -330 })
     const tl = anchorWorld(clipL, 'tail'),
       tr = anchorWorld(clipR, 'tail'),
       plus = anchorWorld(psu, 'plus'),
       minus = anchorWorld(psu, 'minus')
-    b.connector('wire', [v(tl.x, tl.y), v(tl.x, tl.y - 18), v(minus.x, tl.y - 18), v(minus.x, minus.y)])
-    b.connector('wire', [v(tr.x, tr.y), v(tr.x, tr.y - 36), v(plus.x, tr.y - 36), v(plus.x, plus.y)])
+    const side = psu.x + psu.w / 2 // the right-hand side of the box
+    b.connector('wire', [v(tr.x, tr.y), v(tr.x, tr.y - 36, 10), v(side + 14, tr.y - 36, 10), v(side + 14, minus.y, 10), v(minus.x, minus.y)])
+    b.connector('wire', [
+      v(tl.x, tl.y),
+      v(tl.x, tl.y - 18, 10),
+      v(side + 28, tl.y - 18, 10),
+      v(side + 28, plus.y + 12, 10),
+      v(plus.x, plus.y + 12, 6),
+      v(plus.x, plus.y),
+    ])
     b.label('graphite\nelectrodes', -100, -236, [left, -4, 66])
     b.label('crucible', -100, -194, [crucible, -30, 12])
     b.label('molten\ncompound', -100, -166, [crucible, -23, 40])
@@ -339,7 +353,7 @@ const electrolysisMolten: TemplateDef = {
     b.label('tripod', -100, -82, [tripod, -58, 50])
     b.label('Bunsen burner', -100, -46, [burner, -7, 85])
     b.label('heatproof mat', -100, 2, [mat, -65, 4])
-    b.label('crocodile clip', 130, -285, [clipR, 7, 12])
+    b.label('crocodile clip', 130, -330, [clipR, 7, 12])
     b.label('clamp', 130, -190, [clampLow, -clampLow.w / 2 + 1, 20])
     b.label('clamp stand', 130, -120, [stand, -23, 150], { side: 'right' })
     b.label('power supply', -378, 40, [psu, -45, 78], { side: 'right' })
@@ -357,16 +371,18 @@ const groupOneWater: TemplateDef = {
   refs: 'GCSE 4.1.2.4',
   build() {
     const b = new DocBuilder('Group 1 metal in water')
-    // A narrow trough, so that the few bubbles of the layer stay near the piece of metal.
-    const trough = b.at('trough', 'base', P(0, 0), { w: 190, contents: { main: [liquid(0.6, WATER, { bubbles: 'few' })] } })
-    // The piece floats: its lower edge is just under the surface, which is 56 u above the floor of the trough.
-    const metal = b.near('irregularSolid', trough, 'base', { dx: -30, dy: -63, w: 26, h: 20 })
+    // The hydrogen forms at the floating metal, so the few bubbles are under and beside the piece and the rest of the water is
+    // clear. The contents kernel spreads the bubbles of a layer at seeded places over the whole layer: this size of trough
+    // (156 x 93) is one whose bubbles fall together, 13 to 32 u under the surface and around x = -18, and the piece floats there.
+    const trough = b.at('trough', 'base', P(0, 0), { w: 156, h: 93, contents: { main: [liquid(0.6, WATER, { bubbles: 'few' })] } })
+    // The piece floats: its lower edge is just under the surface, which is 55 u above the floor of the trough.
+    const metal = b.near('irregularSolid', trough, 'base', { dx: -18, dy: -60, w: 26, h: 20 })
     // A burning splint is held over the bubbles, its flame over the piece.
     const splint = b.at('splint', 'tip', P(metal.x - 6, metal.y - 62), { flip: true, w: 100 })
     b.label('lithium', -120, -125, [metal, -9, 8])
     b.label('water', -120, -40, [trough, -60, 80])
     b.label('burning splint', 120, -125, [splint, -40, 4])
-    b.label('hydrogen', 130, -60, [trough, -8, 63.6])
+    b.label('hydrogen', 130, -60, [trough, -10, 54.9])
     return b.doc
   },
 }
@@ -422,6 +438,9 @@ const gasCollection: TemplateDef = {
   refs: 'GCSE 4.8.2',
   build() {
     const b = new DocBuilder('Collecting a gas by delivery')
+    // The stand and clamp of the upward-delivery jar stand behind everything, so they are made first and placed once the jar is.
+    const stand = b.symbol('clampStand', { w: 80, flip: true })
+    const clamp = b.symbol('bossClamp', { params: { grip: 26 } })
     const generator = { lumps: lumps(0.1, GRANULES), solution: liquid(0.3, COLOURLESS, { bubbles: 'few' }) }
     // Downward delivery: the tube reaches the bottom of an upright jar, and the gas, which is denser than air, fills it from there.
     const flask1 = b.at('conicalFlask', 'base', P(0, 0), { contents: { main: [generator.lumps, generator.solution] } })
@@ -430,30 +449,36 @@ const gasCollection: TemplateDef = {
     const hole1 = anchorWorld(bung1, 'hole1'),
       floor1 = anchorWorld(jar1, 'base')
     b.connector('glassTube', [v(hole1.x, hole1.y + 30), v(hole1.x, hole1.y - 50, 12), v(floor1.x, hole1.y - 50, 12), v(floor1.x, floor1.y - 14)])
-    // Upward delivery: an upside-down jar stands on a lid on the bung, and the tube reaches the top of the jar. The gas, which is
-    // lighter than air, collects at the top and pushes the air out of the open mouth below.
-    const flask2 = b.on('conicalFlask', 'base', flask1, 'base', { dx: 430, contents: { main: [generator.lumps, generator.solution] } })
+    // Upward delivery: an upside-down jar is held by a clamp 14 u above the bung, and the tube reaches the top of the jar. The gas,
+    // which is lighter than air, collects at the top and pushes the air out of the open mouth below: the gap at the mouth is the
+    // one opening (S13).
+    const flask2 = b.on('conicalFlask', 'base', flask1, 'base', { dx: 460, contents: { main: [generator.lumps, generator.solution] } })
     const bung2 = b.on('bung', 'plug', flask2, 'mouth')
-    const lid = b.on('lid', 'under', bung2, 'hole1', { w: 100, params: { holes: 1 } })
-    const jar2 = b.on('gasJar', 'mouth', lid, 'hole1', { rot: 180 })
+    const jar2 = b.on('gasJar', 'mouth', bung2, 'hole1', { rot: 180, dy: -14 })
     const hole2 = anchorWorld(bung2, 'hole1'),
       top2 = anchorWorld(jar2, 'base')
     b.connector('glassTube', [v(hole2.x, hole2.y + 30), v(hole2.x, top2.y + 14)])
+    // The clamp grips the wall of the jar half way up, from a stand on the left, between the two set-ups.
+    const bench = anchorWorld(flask2, 'base').y
+    const middle = P(jar2.x, (anchorWorld(jar2, 'mouth').y + top2.y) / 2)
+    clamp.w = clampWidth(95, 26)
+    moveAnchorTo(clamp, 'grip', middle)
+    stand.h = Math.round(bench - (anchorWorld(clamp, 'sleeve').y - 36))
+    standUnder(stand, clamp, bench)
     // The gas that each method collects is named in the jar; the notes under the pictures say why.
     b.label('bung', -95, -165, [bung1, -17, 12])
     b.label('conical flask', -95, -70, [flask1, -35, 100])
     b.label('delivery tube', 40, -265, P(60, hole1.y - 50 - 3.5))
-    b.label('gas jar', 262, -140, [jar1, 36, 60])
-    b.label('carbon dioxide', 262, -90, [jar1, 28, 110])
+    b.label('gas jar', 255, -140, [jar1, 36, 60])
+    b.label('carbon\ndioxide', 255, -90, [jar1, 28, 110])
     // The second jar is turned over, so the right-hand wall is at x = -36 in its own frame, and the closed end is at y = 170.
-    b.label('hydrogen', 530, -265, [jar2, -28, 140])
-    b.label('inverted\ngas jar', 530, -215, [jar2, -36, 100])
-    b.label('lid', 530, -130, [lid, 48, 4])
-    b.label('bung', 530, -90, [bung2, 17, 12])
-    b.label('conical flask', 530, -40, [flask2, 30, 100])
+    b.label('hydrogen', 555, -265, [jar2, -28, 140])
+    b.label('inverted\ngas jar', 555, -215, [jar2, -36, 100])
+    b.label('bung', 555, -90, [bung2, 17, 12])
+    b.label('conical flask', 555, -40, [flask2, 30, 100])
     const note = (text: string, cx: number) => b.label(text, centred(text, cx), 50)
     note('downward delivery:\nfor a gas denser than air', 90)
-    note('upward delivery:\nfor a gas less dense than air', 430)
+    note('upward delivery:\nfor a gas less dense than air', 460)
     return b.doc
   },
 }
@@ -474,9 +499,14 @@ const crackingApparatus: TemplateDef = {
     const clampT = b.symbol('bossClamp', { flip: true, params: { grip: 26 } })
     const mat = b.at('heatproofMat', 'under', P(17, 0), { w: 100 })
     const burner = b.on('bunsenBurner', 'base', mat, 'top')
-    // The boiling tube lies level, 4 u over the tip of the flame, closed end to the left. The catalyst is a thin row of chips
-    // along its lower wall.
-    const tube = b.on('boilingTube', 'bottom', burner, 'flame', { rot: 90, dx: -92, dy: -21, contents: { main: [lumps(0.18, GRANULES)] } })
+    // The boiling tube lies level, 4 u over the tip of the flame, closed end to the left.
+    const tube = b.on('boilingTube', 'bottom', burner, 'flame', { rot: 90, dx: -92, dy: -21 })
+    // The catalyst: three small pieces on the lower wall in the middle of the tube, over the flame, clear of the wool and the bung.
+    // (A lumps layer of the kernel would run the whole length of a level tube.) Their lower edges rest on the inner wall.
+    const piece = (dx: number, flip: boolean) => b.near('irregularSolid', burner, 'flame', { dx, dy: -12.5, w: 20, h: 16, flip })
+    piece(-22, false)
+    const catalyst = piece(0, true)
+    piece(22, false)
     // The mineral wool, soaked in paraffin, plugs the closed end.
     const wool = b.near('cottonWool', tube, 'bottom', { rot: 90, w: 28, h: 28, dx: 22 })
     const bung = b.on('bung', 'plug', tube, 'mouth', { rot: 90 })
@@ -514,11 +544,11 @@ const crackingApparatus: TemplateDef = {
     // another leader or a text.
     b.label('clamp stand', -122, -150, [stand, -26, 40], { side: 'left' })
     b.label('mineral wool\nsoaked in\nparaffin', -20, -294, [wool, -13, 14], { side: 'right' })
-    b.label('catalyst', 30, -232, [tube, 14, 60], { side: 'right' })
+    b.label('catalyst', 30, -232, [catalyst, 0, 4], { side: 'right' })
     b.label('boiling tube', 70, -207, [tube, -17, 53], { side: 'right' })
     b.label('bung', 105, -182, [bung, -13, 2], { side: 'right' })
     b.label('delivery tube', 215, -170, P(185, out.y - 3.5), { side: 'right' })
-    b.label('Bunsen\nburner', 70, -62, [burner, 14, 50])
+    b.label('Bunsen\nburner', 70, -62, [burner, 7, 50])
     b.label('heatproof mat', -30, 42, [mat, -35, 6])
     b.label('trough of\nwater', 160, 42, [trough, -50, 95])
     b.label('test tube\nfull of\nwater', 340, -160, [gasTube, -12, 108])
@@ -656,16 +686,17 @@ const reversibleHeating: TemplateDef = {
     // The holders stand behind their tubes, so they are made first and placed once the tubes are.
     const holderHot = b.symbol('testTubeHolder', { w: 110, rot: 90 + tilt })
     const holderCold = b.symbol('testTubeHolder', { w: 110, rot: 180 })
-    // Left: heating. The tube is nearly level, its mouth to the right and lower; the crystals lie on the lower wall, which is
-    // lowest at the mouth, and the flame is under them.
+    // Left: heating. The tube is nearly level, its mouth to the right and lower; the crushed crystals lie along the lower wall,
+    // deepest at the mouth, and the flame is under the middle of them. They are a powder layer in the colour of the Blue crystals
+    // preset: the kernel's lumps stand on a level row and, in a tube turned a few degrees, sit astride the sloping wall.
     const mat = b.at('heatproofMat', 'under', P(31, 0), { w: 110 })
     const burner = b.on('bunsenBurner', 'base', mat, 'top')
-    const back = 106 // the flame is this far from the closed end, along the tube: under the middle of the crystals
+    const back = 106 // the flame is this far from the closed end, along the tube: under the middle of the layer
     const hot = b.on('boilingTube', 'bottom', burner, 'flame', {
       rot: 90 + tilt,
       dx: -back * Math.cos(rad),
       dy: -21 - back * Math.sin(rad),
-      contents: { main: [lumps(0.2, BLUE_CRYSTALS)] },
+      contents: { main: [powder(0.3, BLUE_CRYSTALS)] },
     })
     // The holder grips the tube near its closed end, well away from the flame, and stands up from it at a right angle.
     const bottom = anchorWorld(hot, 'bottom')
