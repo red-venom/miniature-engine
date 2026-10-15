@@ -218,13 +218,13 @@ Each entry gives the id, the title, the practicals it serves, the symbols it use
 
 - practicals: GCSE 4.6.2
 - symbols: `heatproofMat`, `bunsenBurner`, `boilingTube`, `testTubeHolder`, `dropper`, `drops`
-- set-up: Left: a boiling tube held by a test-tube holder, sloping with its mouth lower than the closed end, blue crystals (Blue crystals preset) and a Bunsen under them, droplets of water (the drops symbol) leaving the mouth. The crystals lie on the lower wall, which is lowest at the mouth: contents always lie at the lowest level, so they cannot sit at the closed end of a tube whose mouth is lower. Right: the tube with white powder (White powder), held by a second holder, and a dropper above it adding water (drops falling). Labels: hydrated copper sulfate, anhydrous copper sulfate, water, dropper.
+- set-up: Left: a boiling tube held by a test-tube holder, sloping with its mouth lower than the closed end, crushed blue crystals along its lower wall (a powder layer in the colour of the Blue crystals preset) and a Bunsen under the middle of them, droplets of water (the drops symbol) leaving the mouth. Contents lie at the lowest level, so the layer is deepest at the mouth, not at the closed end; lumps are not used because the kernel stands them on a level row, astride a sloping wall. Right: the tube with white powder (White powder), held by a second holder, and a dropper above it adding water (drops falling). Labels: hydrated copper sulfate, anhydrous copper sulfate, water, dropper.
 
 ### crackingApparatus: Cracking a hydrocarbon in the laboratory
 
 - practicals: GCSE 4.7.1.2
-- symbols: `heatproofMat`, `bunsenBurner`, `clampStand`, `bossClamp`, `boilingTube`, `cottonWool`, `bung`, `trough`, `testTube`
-- set-up: A boiling tube lying nearly level, held by a clamp, with mineral wool soaked in paraffin (the cottonWool symbol) at the closed end and pieces of catalyst (Chips or granules preset) in the middle, heated strongly by a Bunsen burner on a heatproof mat. A bung and a delivery tube lead to a trough of water; a test tube full of water stands upside down over the end of the tube to collect the gas. A label says to take the delivery tube out of the water before stopping the heating.
+- symbols: `heatproofMat`, `bunsenBurner`, `clampStand`, `bossClamp`, `boilingTube`, `cottonWool`, `bung`, `trough`, `testTube`, `irregularSolid`
+- set-up: A boiling tube lying nearly level, held by a clamp, with mineral wool soaked in paraffin (the cottonWool symbol) at the closed end and three small pieces of catalyst (the irregularSolid symbol made small) on the lower wall in the middle, over the flame, clear of the wool and the bung, heated strongly by a Bunsen burner on a heatproof mat. A bung and a delivery tube lead to a trough of water; a test tube full of water stands upside down over the end of the tube to collect the gas. A label says to take the delivery tube out of the water before stopping the heating.
 
 ### fermentationApparatus: Fermentation of a sugar solution
 
@@ -247,8 +247,8 @@ Each entry gives the id, the title, the practicals it serves, the symbols it use
 ### gasCollection: Collecting a gas by delivery
 
 - practicals: GCSE 4.8.2
-- symbols: `conicalFlask`, `bung`, `gasJar`, `lid`
-- set-up: Two small set-ups, each a conical flask with a bung and a delivery tube. Downward delivery: an upright gas jar with the tube reaching the bottom (for a gas denser than air, label: carbon dioxide). Upward delivery: an upside-down gas jar with the tube reaching the top (for a gas less dense than air, label: hydrogen), with a lid under it. Collection over water and with a gas syringe are the templates rateGasOverWater and rateGasSyringe.
+- symbols: `conicalFlask`, `bung`, `gasJar`, `clampStand`, `bossClamp`
+- set-up: Two small set-ups, each a conical flask with a bung and a delivery tube. Downward delivery: an upright gas jar with the tube reaching the bottom (for a gas denser than air, label: carbon dioxide). Upward delivery: an upside-down gas jar with the tube reaching the top (for a gas less dense than air, label: hydrogen), held by a clamp a little above the bung so that its open mouth is the one opening (S13). Collection over water and with a gas syringe are the templates rateGasOverWater and rateGasSyringe.
 
 ## Biology
 
