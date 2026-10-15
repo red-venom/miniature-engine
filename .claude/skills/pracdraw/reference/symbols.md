@@ -210,7 +210,7 @@ Anchors that fit each other: `base` stands on `surface`; `mouth` takes `plug` (a
 
 | id | name | aliases | size | resize | parameters | cavities | anchors | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `particleBox` | Particle box | particles, states of matter, particle model, particle diagram, element compound mixture | 160 × 120 | free, min 120 × 90 | substance: "element" or "molecules" or "compound" or "mixtureElements" or "mixtureCompounds" or "mixtureElementCompound", default "element"; state: "gas" or "liquid" or "solid", default "gas"; count: number 6..40, default 16; formula: "AB" or "AB2" or "A2B", default "AB"; motion: boolean, default false |  |  | label "particle diagram" |
+| `particleBox` | Particle box | particles, states of matter, particle model, particle diagram, element compound mixture | 240 × 180 | free, min 240 × 180 | substance: "element" or "molecules" or "compound" or "mixtureElements" or "mixtureCompounds" or "mixtureElementCompound", default "element"; state: "gas" or "liquid" or "solid", default "gas"; count: number 6..40, default 16; formula: "AB" or "AB2" or "A2B", default "AB"; motion: boolean, default false |  |  | label "particle diagram" |
 
 ## Energy
 

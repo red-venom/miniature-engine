@@ -137,7 +137,7 @@
     },
     {
       "id": "buchnerFlask",
-      "name": "Büchner flask",
+      "name": "B\u00fcchner flask",
       "pack": "containers",
       "priority": "A",
       "w": 120,
@@ -149,7 +149,7 @@
       "aliases": ["side-arm flask", "filter flask", "Buchner flask"],
       "draw": "As conicalFlask, with the standard 34 u neck. Side arm: tube 8 wide and 22 long on the right of the neck at y = 0.14h, pointing right, open end. The cavity stops at the neck wall.",
       "done": false,
-      "label": "Büchner flask"
+      "label": "B\u00fcchner flask"
     },
     {
       "id": "sideArmTube",
@@ -419,7 +419,7 @@
       "anchors": ["nozzle:port", "neck:neck"],
       "params": ["plunger:number=0.3[0..1]", "numbers:boolean=false"],
       "aliases": [],
-      "draw": "Drawn lying down, nozzle to the left. Nozzle: tube 7 wide and 16 long that starts at x = -w/2. Barrel: 0.45w long and 34 high, closed at the nozzle end and open at the other. Plunger: one rigid part. Its piston is a slab 5 u thick inside the barrel, plunger × the barrel length from the closed end. Its rod is 6 wide and as long as the barrel. Its flange, 30 high, is at the end of the rod. So at plunger = 0 the flange is just outside the barrel, and at plunger = 1 it is at the right edge of the box. Scale: 20 divisions along the barrel (5 cm³ each), a long tick every fourth; `numbers` adds 0 to 100 in steps of 20, size 8, under the barrel. The cavity is the gas space between the closed end and the piston. The Reading field (0 to 100 cm³) sets plunger = reading / 100.",
+      "draw": "Drawn lying down, nozzle to the left. Nozzle: tube 7 wide and 16 long that starts at x = -w/2. Barrel: 0.45w long and 34 high, closed at the nozzle end and open at the other. Plunger: one rigid part. Its piston is a slab 5 u thick inside the barrel, plunger \u00d7 the barrel length from the closed end. Its rod is 6 wide and as long as the barrel. Its flange, 30 high, is at the end of the rod. So at plunger = 0 the flange is just outside the barrel, and at plunger = 1 it is at the right edge of the box. Scale: 20 divisions along the barrel (5 cm\u00b3 each), a long tick every fourth; `numbers` adds 0 to 100 in steps of 20, size 8, under the barrel. The cavity is the gas space between the closed end and the piston. The Reading field (0 to 100 cm\u00b3) sets plunger = reading / 100.",
       "done": false
     },
     {
@@ -568,7 +568,7 @@
       "resize": "free",
       "cavities": ["main"],
       "anchors": [],
-      "params": ["top:number=20[0..1000]", "bottom:number=21[0..1000]", "divisions:choice=10[5|10|20]", "unit:text=cm³"],
+      "params": ["top:number=20[0..1000]", "bottom:number=21[0..1000]", "divisions:choice=10[5|10|20]", "unit:text=cm\u00b3"],
       "aliases": ["scale reading", "enlarged scale"],
       "draw": "A section of a scale, for reading questions. Tube: two upright wall lines 0.5w apart, centred, from y = 0 to h. Each end is a wavy break line, role detail. Scale: `divisions` equal divisions between the value `top` at y = 14 and the value `bottom` at y = h - 14; ticks on the left wall, long at each end and at the middle; the two end values as symbol text, size 10, left of the wall. If `top` equals `bottom`, draw as if `bottom` were `top` + 1. The cavity is the space between the walls; the scale is tied to it, so the Reading field sets the liquid level. For a burette `top` is the smaller value.",
       "done": false
@@ -993,7 +993,7 @@
       "anchors": [],
       "params": ["rows:number=3[2..4]", "cols:number=4[3..6]", "iodine:boolean=false", "blueBlack:number=0[0..24]"],
       "aliases": ["dimple tile", "spot plate"],
-      "draw": "Rounded rect of radius 8, role solid. Wells: circles of radius 0.3 × the cell size on a rows × cols grid, role solid. iodine: every well gets the tint #b98556 (iodine solution), and the first `blueBlack` wells, counted row by row, get the role dark with the tint #3b4a6b (starch is present).",
+      "draw": "Rounded rect of radius 8, role solid. Wells: circles of radius 0.3 \u00d7 the cell size on a rows \u00d7 cols grid, role solid. iodine: every well gets the tint #b98556 (iodine solution), and the first `blueBlack` wells, counted row by row, get the role dark with the tint #3b4a6b (starch is present).",
       "done": false
     },
     {
@@ -1044,7 +1044,7 @@
     },
     {
       "id": "buchnerFunnel",
-      "name": "Büchner funnel",
+      "name": "B\u00fcchner funnel",
       "pack": "filtering",
       "priority": "A",
       "w": 100,
@@ -1056,7 +1056,7 @@
       "aliases": ["Buchner funnel"],
       "draw": "Top: straight walls w wide and 0.38h high. Perforated plate: dashed line across at 0.38h. paper: a detail line 2 u above the plate, full width (the filter paper). Below the plate a cone narrows to a stem 9 wide at 0.66h. The stem runs to h and is cut at an angle. The cavity is the space above the plate only, from 1.5 u below the rim to 0.38h.",
       "done": false,
-      "label": "Büchner funnel"
+      "label": "B\u00fcchner funnel"
     },
     {
       "id": "separatingFunnel",
@@ -1508,7 +1508,7 @@
       "anchors": [],
       "params": ["grid:choice=5[1|2|5|10]"],
       "aliases": [],
-      "draw": "Square frame: two squares 5 u apart, role solid. Grid: detail lines that divide the inside into grid × grid cells.",
+      "draw": "Square frame: two squares 5 u apart, role solid. Grid: detail lines that divide the inside into grid \u00d7 grid cells.",
       "done": false
     },
     {
@@ -2034,8 +2034,8 @@
       "name": "Particle box",
       "pack": "matter",
       "priority": "C",
-      "w": 160,
-      "h": 120,
+      "w": 240,
+      "h": 180,
       "resize": "free",
       "cavities": [],
       "anchors": [],
@@ -2047,7 +2047,7 @@
         "motion:boolean=false"
       ],
       "aliases": ["particles", "states of matter", "particle model", "particle diagram", "element compound mixture"],
-      "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A box (role outline) holding particles that never overlap (radius 7 u for the larger kind, 5 u for the smaller; fixed pattern from the seed of kernel/geom.ts rng, never Math.random). substance: element = one kind of single atom; molecules = joined pairs of one kind (H2, O2); compound = touching groups of two or three atoms of two kinds in the ratio of `formula` (AB, AB2, A2B); mixtureElements = two kinds of free atom; mixtureCompounds = two kinds of molecule that are not bonded to each other; mixtureElementCompound = free atoms and molecules. The kinds differ by size and fill: A white (role solid), B tint with hatch, C solid ink (S6, S12). state: solid = a regular lattice in contact, filling the lower rows; liquid = touching, irregular, filling the lower two thirds; gas = spaced widely through the whole box. motion adds a short arrow on some particles (longer for a gas); the arrows never cross a particle. `count` is the number of particles (a molecule counts as one). Label: 'particle diagram'. Science: every particle of an element is one kind; each compound unit holds the atoms of its formula in the right ratio; a mixture has at least two kinds and no bond between them; circles never overlap; a solid is a lattice in contact; a gas has gaps larger than a particle. AS BUILT (release 1.2; the model is particleModel() in src/symbols/matter.ts): radii 7 u (A, C) and 5 u (B) at full size; a box too small for the count draws all particles smaller by one common factor (steps of 0.94, floor 0.3), so that circles never overlap and the three states keep one size. A molecule in a solid or liquid keeps a hairline of 3 u (times that factor) from the next molecule, so that each can be counted. The liquid is a touching, irregular heap on the floor, at most two thirds of the box high. compound = AB (A-B), AB2 (B-A-B at 104.5 degrees) or A2B (A-B-A); mixtureCompounds = compound(A,B) + compound(C,B) of one formula; mixtureElementCompound = free C + compound(A,B). The count is shared evenly between the kinds. Motion arrows are on about half of the units (three quarters in a gas), 9 u long in a solid or liquid and 20 u in a gas, clear of every circle. Minimum size 120 by 90.",
+      "draw": "The row of the same id in spec/diagrams.json holds the drawing, the parameters and the science checks that a test must make; this row fixes the contract. Release 1.2 (priority C). Rules S6, S11 (relaxed) and S14 of docs/SPEC.md apply; fills are the roles tint, hatch (photocopy-safe) and ink; shared code: src/symbols/elements.ts, electrons.ts, kit.ts, kernel/hatch.ts. A box (role outline) holding particles that never overlap (radius 7 u for the larger kind, 5 u for the smaller; fixed pattern from the seed of kernel/geom.ts rng, never Math.random). substance: element = one kind of single atom; molecules = joined pairs of one kind (H2, O2); compound = touching groups of two or three atoms of two kinds in the ratio of `formula` (AB, AB2, A2B); mixtureElements = two kinds of free atom; mixtureCompounds = two kinds of molecule that are not bonded to each other; mixtureElementCompound = free atoms and molecules. The kinds differ by size and fill: A white (role solid), B tint with hatch, C solid ink (S6, S12). state: solid = a regular lattice in contact, filling the lower rows; liquid = touching, irregular, filling the lower two thirds; gas = spaced widely through the whole box. motion adds a short arrow on some particles (longer for a gas); the arrows never cross a particle. `count` is the number of particles (a molecule counts as one). Label: 'particle diagram'. Science: every particle of an element is one kind; each compound unit holds the atoms of its formula in the right ratio; a mixture has at least two kinds and no bond between them; circles never overlap; a solid is a lattice in contact; a gas has gaps larger than a particle. AS BUILT (release 1.2; the model is particleModel() in src/symbols/matter.ts): radii 7 u (A, C) and 5 u (B) at full size; a box too small for the count draws all particles smaller by one common factor (steps of 0.94); the default and minimum size 240 by 180 keeps that factor at 0.69 or more for 40 units, so that the tint and hatch of B still show and units stay apart. A molecule in a solid or liquid keeps a hairline of 3 u (times that factor) from the next molecule, so that each can be counted. The liquid is a touching, irregular heap on the floor, at most two thirds of the box high. compound = AB (A-B), AB2 (B-A-B at 104.5 degrees) or A2B (A-B-A); mixtureCompounds = compound(A,B) + compound(C,B) of one formula; mixtureElementCompound = free C + compound(A,B). The count is shared evenly between the kinds. Motion arrows go only on units with a free direction: about a sixth of the units in a solid (some counts none), a quarter in a liquid, four fifths in a gas, 9 u long in a solid or liquid and 20 u in a gas, clear of every circle.",
       "done": false,
       "label": "particle diagram"
     },
