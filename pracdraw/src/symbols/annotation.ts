@@ -330,7 +330,7 @@ export interface PhExample {
 }
 export const PH_EXAMPLES: readonly PhExample[] = [
   { name: 'lemon juice', ph: 2 },
-  { name: 'water', ph: 7 },
+  { name: 'pure water', ph: 7 },
   { name: 'soap', ph: 10 },
   { name: 'bleach', ph: 13 },
 ]
@@ -367,8 +367,9 @@ const PH_ABOVE = 22,
  * The pH scale: a strip of 15 cells, each with its test colour and its number, and the brackets and example substances over and under it.
  * Horizontal, the strip is as long as the box is wide and as high as the box leaves room for (22 u above it for the brackets, 20 u below for the
  * examples), so the default box makes square cells of 28 u. Vertical, it runs down the height of the box with pH 0 at the top, on the centre line,
- * with the brackets on its left and the examples on its right; it needs a box that is tall (a cell needs 12 u for its number: 180 u at least) and
- * wide enough for the words (about 170 u). The text is upright either way.
+ * with the brackets on its left and the examples on its right; it needs a box at least 360 wide (the least width of the symbol) and 210 high,
+ * for example 360 x 420. Drawn at 360 wide, the numbers touch the cell lines at 180 high and nearly touch at 195; at 210 they are clear. The
+ * text is upright either way.
  */
 const phScale: SymbolDef = {
   id: 'phScale',
@@ -485,8 +486,6 @@ export interface TriangleQuantity {
   /** As the triangle shows it: label markup, so `M_r` is M with a subscript r. */
   text: string
   units: Units
-  /** A number out of 100: a product that has one is 100 times too big. */
-  percent: boolean
 }
 
 /** A formula triangle: `top` is the product of `left` and `right`. */
@@ -498,7 +497,7 @@ export interface TrianglePreset {
   example: Readonly<Record<TrianglePart, number>>
 }
 
-const quantity = (name: string, text: string, units: Units, percent = false): TriangleQuantity => ({ name, text, units, percent })
+const quantity = (name: string, text: string, units: Units): TriangleQuantity => ({ name, text, units })
 
 export const TRIANGLE_PRESETS = {
   // mass (g) = amount (mol) × relative formula mass (g/mol): 2 mol of water, Mr 18, is 36 g
@@ -522,22 +521,8 @@ export const TRIANGLE_PRESETS = {
     right: quantity('molar volume of a gas', '24', { dm3: 1, mol: -1 }),
     example: { top: 48, left: 2, right: 24 },
   },
-  // actual yield (g) = percentage yield (out of 100) × theoretical yield (g). The words do not fit a triangle of 120 u at 12 to 18 u, so it says
-  // "actual", "%" and "max" (the maximum, theoretical, yield).
-  yield: {
-    top: quantity('actual yield', 'actual', { g: 1 }),
-    left: quantity('percentage yield', '%', {}, true),
-    right: quantity('theoretical yield', 'max', { g: 1 }),
-    example: { top: 20, left: 80, right: 25 },
-  },
 } as const satisfies Record<string, TrianglePreset>
 export type TrianglePresetId = keyof typeof TRIANGLE_PRESETS
-
-/** How many times the product of the two bottom quantities is the top quantity: 100 when one of them is a percentage. */
-export function triangleFactor(preset: TrianglePreset): number {
-  const n = (q: TriangleQuantity) => (q.percent ? 1 : 0)
-  return 100 ** (n(preset.left) + n(preset.right) - n(preset.top))
-}
 
 /** What covering a part shows: the top is the product of the bottom two; a bottom part is the top divided by the other bottom part. */
 export interface CoverRule {
@@ -553,9 +538,8 @@ export function coverRule(covered: TrianglePart): CoverRule {
 
 /** The number that covering a part gives, from the other two (the worked example, unless given). */
 export function coverValue(preset: TrianglePreset, covered: TrianglePart, v: Readonly<Record<TrianglePart, number>> = preset.example): number {
-  const factor = triangleFactor(preset)
-  if (covered === 'top') return (v.left * v.right) / factor
-  return (v.top * factor) / (covered === 'left' ? v.right : v.left)
+  if (covered === 'top') return v.left * v.right
+  return v.top / (covered === 'left' ? v.right : v.left)
 }
 
 /** What a formula triangle shows for a set of parameters. The drawing is made from this, and nothing else. */
@@ -610,7 +594,7 @@ export function triangleLayout(h: number): TriangleLayout {
     apexY = 1,
     baseY = h - 1,
     half = 60 * k - 1,
-    // The horizontal line is 59 % of the way down: low enough that the top part holds the longest preset text ("actual") at 16 u.
+    // The horizontal line is 59 % of the way down: low enough that the top part holds a short word ("mass") at 16 u at the default size.
     y = apexY + 0.59 * (baseY - apexY),
     halfAt = (yy: number) => (half * (yy - apexY)) / (baseY - apexY),
     e = halfAt(y)
@@ -663,6 +647,26 @@ export function triangleTexts(texts: Readonly<Record<TrianglePart, string>>, L: 
   return place(12)
 }
 
+/**
+ * The formula triangle: the top quantity is the product of the two at the bottom. The presets are moles, concentration and gas volume; a
+ * percentage yield is not one, as it is not a plain product (it carries a factor of 100). A custom triangle takes its three texts from the
+ * parameters, in the label markup: `M_r` is M with a subscript r and `dm^3` has a superscript 3, drawn and measured by the same code as the
+ * `M_r` of the moles preset.
+ *
+ * The text keeps to 12 u at the least (rule S11), so a long custom text needs a larger triangle; at a smaller one it runs over the lines. The
+ * smallest box (keeping 120:110) at which each text fits its part, with 'x' in the other two (from `triangleTexts`, in whole u):
+ *
+ * | text       | top             | bottom left or right |
+ * | ---------- | --------------- | -------------------- |
+ * | distance   | 118 x 108       |                      |
+ * | density    | 107 x 98        |                      |
+ * | speed      | 98 x 89         | 114 x 104            |
+ * | time       |                 | 96 x 88 (the least)  |
+ * | mass       |                 | 104 x 95             |
+ * | volume     |                 | 129 x 118            |
+ * | 24 dm^3    |                 | 127 x 116            |
+ * | 24 dm3     |                 | 132 x 121            |
+ */
 const formulaTriangle: SymbolDef = {
   id: 'formulaTriangle',
   name: 'Formula triangle',
@@ -681,7 +685,6 @@ const formulaTriangle: SymbolDef = {
         { value: 'moles', label: 'Moles' },
         { value: 'concentration', label: 'Concentration' },
         { value: 'gasVolume', label: 'Gas volume' },
-        { value: 'yield', label: 'Yield' },
         { value: 'custom', label: 'Custom' },
       ],
     },
