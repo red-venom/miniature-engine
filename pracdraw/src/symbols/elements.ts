@@ -87,9 +87,22 @@ export const shellString = (shells: readonly number[]): string => shells.join(',
  * The shells of an ion: electrons are removed from, or added to, the outermost shell. A charge of +1 takes one electron from the outer
  * shell; an outer shell that is emptied disappears (sodium 2,8,1 gives Na+ 2,8). A charge of -2 adds two electrons to the outer shell
  * (oxygen 2,6 gives O2- 2,8). Returns undefined when the charge would take more electrons than the atom has, or would put more in
- * the outer shell than a full shell of the period holds (8, or 2 for the first shell).
+ * the outer shell than a full shell of the period holds (8, or 2 for the first shell), and when the ion would not have the structure of a
+ * noble gas (an outer shell of 8, or 2 for hydrogen, helium and lithium, or none for H+); a transition metal may lose 1 to 3 electrons.
  */
 export function ionShells(e: Element, charge: number): number[] | undefined {
+  const shells = rawIonShells(e, charge)
+  if (!shells || charge === 0) return shells
+  // A simple ion has the structure of a noble gas (KS4): an outer shell of 8, or of 2 when it is the only shell, or no electron at all (H+).
+  // A transition metal (groups 3 to 12) may also lose 1 to 3 electrons (Fe2+, Fe3+, Cu2+), and a full shell of 18 is kept (Zn2+, Ga3+).
+  const outer = shells[shells.length - 1]
+  if (!shells.length || outer === 8 || (shells.length === 1 && outer === 2)) return shells
+  if (charge > 0 && ((e.group >= 3 && e.group <= 12) || outer === 18)) return shells
+  return undefined
+}
+
+/** The shells after the electrons are taken or added, with no check that the ion is a real one. */
+function rawIonShells(e: Element, charge: number): number[] | undefined {
   const shells = [...e.shells]
   let last = shells.length - 1
   if (charge >= 0) {

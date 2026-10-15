@@ -81,6 +81,26 @@ describe('the first 36 elements', () => {
 })
 
 describe('ionShells', () => {
+  it('refuses an ion that has no noble-gas structure, and keeps the transition metal ions', () => {
+    const ion = (sym: string, charge: number) => ionShells(elementBySymbol(sym)!, charge)
+    for (const [sym, charge] of [
+      ['Na', -1],
+      ['Mg', -2],
+      ['Ne', 1],
+      ['K', 3],
+      ['C', 2],
+      ['Cl', 1],
+      ['O', -1],
+    ] as const)
+      expect(ion(sym, charge), `${sym} ${charge}`).toBeUndefined()
+    expect(ion('H', 1)).toEqual([])
+    expect(ion('Fe', 2)).toEqual([2, 8, 14])
+    expect(ion('Fe', 3)).toEqual([2, 8, 13])
+    expect(ion('Cu', 2)).toEqual([2, 8, 17])
+    expect(ion('Zn', 2)).toEqual([2, 8, 18])
+    expect(ion('Ga', 3)).toEqual([2, 8, 18])
+  })
+
   it('conserves electrons: the shells of an ion hold the atomic number minus the charge', () => {
     let tried = 0
     for (const e of ELEMENTS) {
@@ -91,7 +111,7 @@ describe('ionShells', () => {
         expect(sum(s), `${e.symbol} ${charge}`).toBe(e.z - charge)
       }
     }
-    expect(tried).toBeGreaterThan(150)
+    expect(tried).toBeGreaterThan(90)
   })
 
   it('gives the simple ions the electron structure of the nearest noble gas (He 2, Ne 2,8, Ar 2,8,8)', () => {

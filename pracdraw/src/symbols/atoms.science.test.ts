@@ -116,7 +116,7 @@ describe('Bohr atom: the model', () => {
         expect(sum(m.structure), `${e.symbol} ${charge}`).toBe(e.z - charge)
       }
     }
-    expect(accepted).toBeGreaterThan(200)
+    expect(accepted).toBeGreaterThan(80)
     expect(refused).toBeGreaterThan(0)
   })
 
