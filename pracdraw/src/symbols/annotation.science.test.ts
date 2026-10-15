@@ -27,7 +27,6 @@ import {
   phKind,
   phScaleModel,
   textWidth,
-  triangleFactor,
   triangleLayout,
   triangleModel,
   triangleTexts,
@@ -218,14 +217,14 @@ describe('pH scale: acidic, neutral and alkaline', () => {
     }
   })
 
-  it('writes the four example substances at their pH: lemon juice 2, water 7, soap 10, bleach 13', () => {
+  it('writes the four example substances at their pH: lemon juice 2, pure water 7, soap 10, bleach 13', () => {
     expect(PH_EXAMPLES.map((e) => [e.name, e.ph])).toEqual([
       ['lemon juice', 2],
-      ['water', 7],
+      ['pure water', 7],
       ['soap', 10],
       ['bleach', 13],
     ])
-    // Lemon juice is acidic, water neutral, soap and bleach alkaline.
+    // Lemon juice is acidic, pure water neutral (tap water need not be), soap and bleach alkaline.
     expect(PH_EXAMPLES.map((e) => phKind(e.ph))).toEqual(['acid', 'neutral', 'alkali', 'alkali'])
     for (const [orientation, w, h] of [
       ['horizontal', 420, 70],
@@ -250,6 +249,33 @@ describe('pH scale: acidic, neutral and alkaline', () => {
           expect((b.x0 + b.x1) / 2, e.name).toBeGreaterThan(c.x0)
           expect((b.x0 + b.x1) / 2, e.name).toBeLessThan(c.x1)
         }
+      }
+    }
+  })
+
+  it('keeps each example clear of the next one, and inside the box, horizontal and vertical, at the least, the default and 1.5 times the size', () => {
+    for (const [orientation, w, h] of [
+      ['horizontal', 360, 62],
+      ['horizontal', 420, 70],
+      ['horizontal', 630, 105],
+      ['vertical', 360, 210],
+      ['vertical', 360, 420],
+      ['vertical', 540, 630],
+    ] as const) {
+      const label = `${orientation} ${w}x${h}`,
+        g = phGeometry({ orientation, examples: true }, w, h),
+        boxes = PH_EXAMPLES.map((e) => textBox(g.texts!.find((t) => t.text === e.name)!))
+      for (let i = 1; i < boxes.length; i++) {
+        const a = boxes[i - 1],
+          b = boxes[i]
+        // Horizontal, the names are on one line, so the gap is across; vertical, they are on separate lines, so the gap is down.
+        const gap = orientation === 'horizontal' ? b.x0 - a.x1 : b.y0 - a.y1
+        expect(gap, `${label}: ${PH_EXAMPLES[i - 1].name} and ${PH_EXAMPLES[i].name}`).toBeGreaterThan(4)
+      }
+      for (const [i, b] of boxes.entries()) {
+        expect(b.x0, `${label} ${PH_EXAMPLES[i].name}`).toBeGreaterThanOrEqual(-w / 2)
+        expect(b.x1, `${label} ${PH_EXAMPLES[i].name}`).toBeLessThanOrEqual(w / 2)
+        expect(b.y1, `${label} ${PH_EXAMPLES[i].name}`).toBeLessThanOrEqual(h)
       }
     }
   })
@@ -325,25 +351,23 @@ describe('pH scale: the drawing agrees with the model', () => {
 // ================================================================ the formula triangle
 
 const triangleGeometry = (params: Record<string, ParamValue> = {}, h = 110): Geometry => geometry('formulaTriangle', (h * 120) / 110, h, params)
-const PRESET_IDS: TrianglePresetId[] = ['moles', 'concentration', 'gasVolume', 'yield']
+const PRESET_IDS: TrianglePresetId[] = ['moles', 'concentration', 'gasVolume']
 const presetOf = (id: TrianglePresetId): TrianglePreset => TRIANGLE_PRESETS[id]
 /** What each preset shows, as the specification gives it. */
 const SHOWN: Record<TrianglePresetId, Record<TrianglePart, string>> = {
   moles: { top: 'm', left: 'n', right: 'M_r' },
   concentration: { top: 'n', left: 'c', right: 'V' },
   gasVolume: { top: 'V', left: 'n', right: '24' },
-  yield: { top: 'actual', left: '%', right: 'max' },
 }
 const NAMES: Record<TrianglePresetId, Record<TrianglePart, string>> = {
   moles: { top: 'mass', left: 'amount of substance', right: 'relative formula mass' },
   concentration: { top: 'amount of substance', left: 'concentration', right: 'volume' },
   gasVolume: { top: 'volume of gas', left: 'amount of substance', right: 'molar volume of a gas' },
-  yield: { top: 'actual yield', left: 'percentage yield', right: 'theoretical yield' },
 }
 const without0 = (u: Record<string, number>) => Object.fromEntries(Object.entries(u).filter(([, e]) => e !== 0))
 
 describe('formula triangle: the quantities', () => {
-  it('has the presets moles, concentration, gas volume and yield', () => {
+  it('has the presets moles, concentration and gas volume, and no percentage yield (not a plain product)', () => {
     expect(Object.keys(TRIANGLE_PRESETS)).toEqual(PRESET_IDS)
     for (const id of PRESET_IDS) {
       expect(
@@ -360,16 +384,11 @@ describe('formula triangle: the quantities', () => {
   it('has the top quantity as the product of the two at the bottom, for every preset', () => {
     for (const id of PRESET_IDS) {
       const p = presetOf(id)
-      // The units multiply: grams = moles × grams per mole, moles = (moles per dm3) × dm3, dm3 = moles × (dm3 per mole), grams = per cent × grams.
+      // The units multiply: grams = moles × grams per mole, moles = (moles per dm3) × dm3, dm3 = moles × (dm3 per mole).
       expect(unitsOfProduct(p.left.units, p.right.units), id).toEqual(without0(p.top.units))
-      // The worked example multiplies out: 36 g = 2 mol × 18 g/mol, 0.1 mol = 0.5 mol/dm3 × 0.2 dm3, 48 dm3 = 2 mol × 24 dm3/mol, 20 g = 80 % × 25 g.
-      expect((p.example.left * p.example.right) / triangleFactor(p), id).toBeCloseTo(p.example.top, 9)
+      // The worked example multiplies out, with no factor: 36 g = 2 mol × 18 g/mol, 0.1 mol = 0.5 mol/dm3 × 0.2 dm3, 48 dm3 = 2 mol × 24 dm3/mol.
+      expect(p.example.left * p.example.right, id).toBeCloseTo(p.example.top, 9)
     }
-    // A percentage is a number out of 100, so only the yield triangle carries the 100.
-    expect(PRESET_IDS.map((id) => triangleFactor(presetOf(id)))).toEqual([1, 1, 1, 100])
-    expect(presetOf('yield').left.percent).toBe(true)
-    for (const id of PRESET_IDS)
-      for (const part of TRIANGLE_PARTS) if (!(id === 'yield' && part === 'left')) expect(presetOf(id)[part].percent, `${id} ${part}`).toBe(false)
   })
 
   it('has three different quantities in each triangle, drawn as three different texts', () => {
@@ -394,10 +413,6 @@ describe('formula triangle: the quantities', () => {
     expect(coverValue(moles, 'top', { top: 0, left: 3, right: 44 })).toBe(132)
     expect(coverValue(moles, 'left', { top: 66, left: 0, right: 44 })).toBe(1.5)
     expect(coverValue(moles, 'right', { top: 66, left: 1.5, right: 0 })).toBe(44)
-    // For a yield of 80 % of 25 g: 20 g; and 20 g out of 25 g is 80 %.
-    const yld = presetOf('yield')
-    expect(coverValue(yld, 'top', { top: 0, left: 80, right: 25 })).toBe(20)
-    expect(coverValue(yld, 'left', { top: 20, left: 0, right: 25 })).toBe(80)
   })
 })
 
@@ -505,6 +520,42 @@ describe('formula triangle: the drawing', () => {
     expect(triangleModel({}).texts).toEqual(SHOWN.moles)
     expect(triangleModel({}).preset).toBe('moles')
   })
+
+  it('reads the label markup of a custom text as the moles preset does: M_r is M with a subscript r', () => {
+    // The same three texts, typed, give the same drawing as the preset: the same words in the same places at the same size.
+    expect(triangleGeometry({ preset: 'custom', top: 'm', left: 'n', right: 'M_r' })).toEqual(triangleGeometry({ preset: 'moles' }))
+    // And the renderer draws the r as a subscript, with no underscore left.
+    const mr = rendered('formulaTriangle', { preset: 'custom', top: 'm', left: 'n', right: 'M_r' }, true).leaves.find(
+      (n): n is TextNode => n.t === 'text' && textOf(n) === 'Mr',
+    )
+    expect(mr?.runs.map((r) => [r.text, r.script])).toEqual([
+      ['M', 'normal'],
+      ['r', 'sub'],
+    ])
+  })
+
+  it('needs a larger triangle for a longer custom text: the least height (in whole u) at which each text fits its part at 12 u', () => {
+    // The table of the doc comment of formulaTriangle: [part, text, least height]. The width is 120/110 of it.
+    const TABLE: [TrianglePart, string, number][] = [
+      ['top', 'distance', 108],
+      ['top', 'density', 98],
+      ['top', 'speed', 89],
+      ['left', 'speed', 104],
+      ['left', 'time', 88],
+      ['left', 'mass', 95],
+      ['left', 'volume', 118],
+      ['left', '24 dm^3', 116],
+      ['left', '24 dm3', 121],
+      ['right', 'volume', 118],
+      ['right', '24 dm^3', 116],
+    ]
+    const fits = (part: TrianglePart, text: string, h: number) => triangleTexts({ top: 'x', left: 'x', right: 'x', [part]: text }, triangleLayout(h)).fits
+    for (const [part, text, h] of TABLE) {
+      expect(fits(part, text, h), `${part} ${text} at ${h}`).toBe(true)
+      // One u less does not fit, unless it is already the least size of the symbol.
+      if (h > 88) expect(fits(part, text, h - 1), `${part} ${text} at ${h - 1}`).toBe(false)
+    }
+  })
 })
 
 describe('formula triangle: hiding a part', () => {
@@ -535,9 +586,10 @@ describe('formula triangle: hiding a part', () => {
   })
 
   it('sets the worksheet like the answer sheet: the size follows all three texts, whichever is hidden', () => {
-    // In a small triangle 'actual' is the text that does not fit at the size of the others: hiding it must not let the other two grow.
-    const full = triangleGeometry({ preset: 'yield' }, 88).texts!,
-      noTop = triangleGeometry({ preset: 'yield', hide: 'top' }, 88).texts!
+    // In a small triangle 'distance' is the text that does not fit at the size of the others: hiding it must not let the other two grow.
+    const sheet = { preset: 'custom', top: 'distance', left: 's', right: 't' },
+      full = triangleGeometry(sheet, 88).texts!,
+      noTop = triangleGeometry({ ...sheet, hide: 'top' }, 88).texts!
     expect(new Set(full.map((t) => t.size)).size).toBe(1)
     expect(full[0].size).toBeLessThan(triangleGeometry({ preset: 'moles' }, 88).texts![0].size)
     expect(noTop.map((t) => t.size)).toEqual([full[0].size, full[0].size])
