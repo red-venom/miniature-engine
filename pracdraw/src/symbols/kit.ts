@@ -1,7 +1,8 @@
 // kit.ts — shared sizes and helpers for symbol authors. Use these so that parts fit each other.
 
 import { Path, f, roundPoly, type V } from '../kernel/geom'
-import type { ParamValue } from './types'
+import { hatchD, type HatchOpts } from '../kernel/hatch'
+import type { ParamValue, Prim } from './types'
 
 /** Standard neck / mouth width: flasks, boiling tubes and the default bung all use it. */
 export const NECK = 34
@@ -45,3 +46,18 @@ export function ticks(x: number, y0: number, y1: number, count: number, len: (i:
 export const rect = (x0: number, y0: number, x1: number, y1: number): string => `M${f(x0)} ${f(y0)}H${f(x1)}V${f(y1)}H${f(x0)}Z`
 export const circle = (cx: number, cy: number, r: number): string =>
   `M${f(cx - r)} ${f(cy)}a${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0a${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0Z`
+
+/**
+ * A shape that a key tells apart by tint (rule S6): the light-grey tint, and the hatch lines that stand in for it in photocopy-safe
+ * mode. Use it for every tinted particle, atom or region, so that the picture reads on a photocopy (rule S12). A shape too small
+ * to hold a hatch line gets only the tint.
+ */
+export function tinted(d: string, opts?: HatchOpts): Prim[] {
+  const hatch = hatchD(d, opts)
+  return hatch
+    ? [
+        { d, role: 'tint' },
+        { d: hatch, role: 'hatch' },
+      ]
+    : [{ d, role: 'tint' }]
+}

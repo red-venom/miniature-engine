@@ -30,7 +30,9 @@ A layer of `"contents"` is `{ "preset": "Water", "amount": 0.6 }` or `{ "preset"
 | Black powder | powder | `#5a5a5a` |
 | Green powder (copper carbonate) | powder | `#9fcfae` |
 | Blue precipitate (copper(II) hydroxide) | powder | `#8fbfe8` |
+| Pale green precipitate (iron(II) hydroxide) | powder | `#b9d6a3` |
 | Orange-brown precipitate (iron(III) hydroxide) | powder | `#c9824a` |
+| Pink-brown deposit (copper) | powder | `#c58a63` |
 | Cream precipitate (silver bromide) | powder | `#f3ecd0` |
 | Yellow precipitate (silver iodide) | powder | `#f2e26b` |
 | Brick-red precipitate (Benedict's test) | powder | `#c8553d` |

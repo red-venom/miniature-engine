@@ -9,8 +9,9 @@ import { docNodes, estimateBounds, resolveTarget } from './render/render'
 import { SYMBOLS, geometry, labelText } from './symbols/registry'
 import { TEMPLATES } from './templates'
 
-const release = process.env.RELEASE // undefined | 'A' | 'B'
-const wanted = (priority: string) => release === 'B' || (release === 'A' && priority === 'A')
+const release = process.env.RELEASE // undefined | 'A' | 'B' | 'C'
+// Release A needs priority A; B needs A and B; C needs A, B and C (the particle packs of release 1.2).
+const wanted = (priority: string) => release === 'C' || (release === 'B' && priority !== 'C') || (release === 'A' && priority === 'A')
 
 /** A catalogue row. `label` and `autoLabel` are present only when they differ from the defaults. */
 interface Row {

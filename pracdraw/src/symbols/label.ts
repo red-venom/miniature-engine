@@ -14,7 +14,7 @@ export function labelPoint(g: Geometry, w: number, h: number, side: 'left' | 'ri
   let best = from,
     bestDist = Infinity
   for (const prim of g.prims) {
-    if (prim.role === 'paper') continue // not visible
+    if (prim.role === 'paper' || prim.role === 'hatch') continue // not visible, or only inside a shape in photocopy-safe mode
     for (const poly of pathPolys(prim.d)) {
       for (let i = 0; i < poly.length; i++) {
         const q = i + 1 < poly.length ? nearestOnSegment(poly[i], poly[i + 1], from) : poly[i]

@@ -46,7 +46,7 @@ const item = (doc: Doc) => doc.items.s as SymbolItem
 const layers = (doc: Doc, cavity = 'main') => item(doc).contents[cavity]
 
 describe('presets', () => {
-  it('are the 29 rows of the preset table in section 9, in order', () => {
+  it('are the 31 rows of the preset table in section 9, in order', () => {
     const lines = readFileSync(resolve(__dirname, '../../docs/SPEC.md'), 'utf8').split('\n')
     const start = lines.findIndex((l) => l.startsWith('| Preset | Kind | Colour |'))
     expect(start).toBeGreaterThan(0)
@@ -58,7 +58,7 @@ describe('presets', () => {
         .map((c) => c.trim())
       rows.push({ name, kind: kind.split(',')[0].trim(), colour, cloudy: kind.includes('cloudy') ? true : undefined })
     }
-    expect(rows).toHaveLength(29)
+    expect(rows).toHaveLength(31)
     expect(PRESETS.map((p) => ({ name: p.name, kind: p.kind, colour: p.colour, cloudy: p.cloudy }))).toEqual(rows)
   })
   it('a layer matches its preset by kind, colour and cloudy flag', () => {

@@ -1,4 +1,4 @@
-# PracDraw build report: releases 1.0 and 1.1, and the lesson pipeline
+# PracDraw build report: releases 1.0, 1.1 and 1.2, and the lesson pipeline
 
 This report closes the release 1.0 build of PracDraw, as section 14 of `docs/SPEC.md` asks. The build started from the starter kit (phases 0 and 1) and ran phases 2 to 10 in two tracks: the editor (track E) and the drawings (track S). Every symbol, template and gate test was checked by a separate reviewer agent that did not write it. Release 1.1 (priority B) was built afterwards, on its own branch, when James asked for more development: section 8 covers it. After that James said that the aim is custom diagrams for lessons, drawn by Claude; section 9 covers the first two steps towards it (phase 12, the render command and the skill, and phase 13, the inventory of diagrams that a lesson may need). Sections 1 to 7 are the release 1.0 report and stay as they were.
 
@@ -6,22 +6,24 @@ The project is in the `pracdraw/` folder of the repository, because the reposito
 
 ## 1. Phases
 
-| Phase                   | Result             | Gate                                                                                                                  |
-| ----------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| 0. Scaffold             | In the kit         | `npm run check` green before any change: 320 unit tests, 5 browser tests                                              |
-| 1. Kernel and pilots    | In the kit         | as above                                                                                                              |
-| 2. Editor core          | Passed             | 6 gate tests and the 5 ported starter tests, reviewed                                                                 |
-| 3. Contents             | Passed             | 3 gate tests, reviewed                                                                                                |
-| 4. Connectors           | Passed             | 3 gate tests, reviewed                                                                                                |
-| 5. Snapping and arrange | Passed             | 3 gate tests and one unit test for each row of the snap table, reviewed                                               |
-| 6. Labels               | Passed             | 3 gate tests and the Label all unit tests, reviewed                                                                   |
-| 7. Export and files     | Passed             | 6 gate tests and the section 14 unit tests, reviewed                                                                  |
-| 8. Symbols A            | Passed             | `npm run release:a:symbols`; all 78 new symbols passed visual review                                                  |
-| 9. Templates A          | Passed             | `npm run release:a`; all 39 new templates reviewed (one accepted with a note); `gallery-inserts-template`             |
-| 10. Release 1.0         | Passed             | 8 gate tests and the four budgets, reviewed; `drag-budget` passed after a fix round                                   |
-| 11. Release 1.1         | Passed (section 8) | `npm run release:b`; all 27 new symbols and 3 new templates passed visual review                                      |
-| 12. Lesson pipeline     | Passed (section 9) | Gate review (10 of 11 gate tests, the 11th after a fix); acceptance run; two rounds of visual review; `npm run check` |
-| 13. Diagram inventory   | Done (section 9)   | `src/diagrams.test.ts` (43 tests); two reviewers and a fix round; James sets priorities before any pack is built      |
+| Phase                   | Result              | Gate                                                                                                                  |
+| ----------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 0. Scaffold             | In the kit          | `npm run check` green before any change: 320 unit tests, 5 browser tests                                              |
+| 1. Kernel and pilots    | In the kit          | as above                                                                                                              |
+| 2. Editor core          | Passed              | 6 gate tests and the 5 ported starter tests, reviewed                                                                 |
+| 3. Contents             | Passed              | 3 gate tests, reviewed                                                                                                |
+| 4. Connectors           | Passed              | 3 gate tests, reviewed                                                                                                |
+| 5. Snapping and arrange | Passed              | 3 gate tests and one unit test for each row of the snap table, reviewed                                               |
+| 6. Labels               | Passed              | 3 gate tests and the Label all unit tests, reviewed                                                                   |
+| 7. Export and files     | Passed              | 6 gate tests and the section 14 unit tests, reviewed                                                                  |
+| 8. Symbols A            | Passed              | `npm run release:a:symbols`; all 78 new symbols passed visual review                                                  |
+| 9. Templates A          | Passed              | `npm run release:a`; all 39 new templates reviewed (one accepted with a note); `gallery-inserts-template`             |
+| 10. Release 1.0         | Passed              | 8 gate tests and the four budgets, reviewed; `drag-budget` passed after a fix round                                   |
+| 11. Release 1.1         | Passed (section 8)  | `npm run release:b`; all 27 new symbols and 3 new templates passed visual review                                      |
+| 12. Lesson pipeline     | Passed (section 9)  | Gate review (10 of 11 gate tests, the 11th after a fix); acceptance run; two rounds of visual review; `npm run check` |
+| 13. Diagram inventory   | Done (section 9)    | `src/diagrams.test.ts` (43 tests); two reviewers and a fix round; James sets priorities before any pack is built      |
+| 14. Particle groundwork | Done (section 10)   | tint, hatch and ink roles; rules S11 and S14; `npm run check` with no existing picture changed                        |
+| 15. First packs, pilot  | Passed (section 10) | `npm run release:c`; 18 symbols and 14 templates passed by reviewers in two rounds; pilot sheet waits for James       |
 
 A gap that a reviewer found in a gate test was fixed in the next phase's commit (for phase 10, in a fix round) and checked again by the next reviewer. Section 4 lists each one.
 
@@ -767,3 +769,91 @@ These are open. The build could not do them.
 - [ ] **Merge the pull requests in order:** #7 (release 1.0), #8 (release 1.1), #9 (the pipeline and the inventory). Each is stacked on the one before.
 - [ ] **`chemistryfigures.com`** is blocked by the environment's network policy. If you want ideas from it, allow the domain (Allowed domains, in the environment's network access settings) or send screenshots.
 - The manual checks of section 7 are still open, and apply to the new work as well.
+
+## 10. The first particle packs and the structures pilot (phases 14 and 15)
+
+James answered the inventory with "Continue", so its ten decisions apply as it recommends them (graphs and tables out for now; skeletal formulae and curly arrows later; one oblique projection with a pilot sheet first; dots and crosses in black; rows that serve both courses first; lesson-only rows at priority C; a grey tint with a hatch; text inside symbols relaxed for the new packs; the periodic table as a symbol that stops after period 4; biology and physics after chemistry). The work is on branch `claude/pracdraw-particle-packs`, in draft pull request #10 (stacked on #9).
+
+### Phase 14: groundwork (the lead)
+
+| Part          | What changed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Specification | Section 4 brings 3D structures (one oblique projection) and displayed formulae into scope for the new packs. Rule S1 has an exception for S14; S6 adds the tint and hatch fills; S11 lets particle, molecule and structure symbols carry element symbols, charges and numbers at 12 to 18 u; the new S14 fixes the cabinet projection (front true shape, depth at 45° and half length, hidden lines dashed and nothing else dashed, a force that is not a bond drawn as dots, and an orthographic exception for a ball-shaped cage). |
+| Kernel        | Three roles: `tint` (a light-grey fill, white in photocopy-safe mode), `hatch` (hairlines that exist only in photocopy-safe mode; `hatchD` in `src/kernel/hatch.ts` makes them as plain geometry, because the SVG may hold no pattern) and `ink` (a solid dot). The layout check, the bounds and the leader end point know them. No existing picture changed.                                                                                                                                                                        |
+| Shared code   | `elements.ts` (the first 36 elements, the KS4 group, the ion rule), `electrons.ts` (rings, paired points, dots, crosses, brackets), `oblique.ts` (the S14 projection), `tinted()` in `kit.ts`.                                                                                                                                                                                                                                                                                                                                       |
+| Plumbing      | The packs `atoms`, `matter`, `energy` and `structures`; `release:c`; catalogue rows for 18 symbols and plan rows for 14 templates; two presets; the skill's generated `reference/lessons.md` (which template or symbol draws each lesson diagram).                                                                                                                                                                                                                                                                                   |
+| Process       | Particle-pack authors own a `<pack>.science.test.ts`, and every science test must be seen to fail when its code is broken; a template for geometry briefs.                                                                                                                                                                                                                                                                                                                                                                           |
+
+### Phase 15: what was built
+
+Seven authors worked in parallel, each in its own worktree and its own files; the lead merged one branch at a time.
+
+| Author                    | Built                                                                                                                                                                                                                                                                                                   | Science tests                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| A1 atoms                  | `bohrAtom` (atoms and ions, Z 1 to 36), `atomModels` (plum pudding, nuclear, shell), `nuclideNotation`, `isotopeNuclei`, `alphaScattering`                                                                                                                                                              | `atoms.science.test.ts`, 50 tests, 66 deliberate breaks                                 |
+| A2 dot-and-cross          | `covalentDotCross` (13 molecules, two layouts), `ionicDotCross` (36 metal and non-metal pairs), `periodicTable` (first 20 or 36 elements); `molecules.ts`, the small-molecule library for the molecule packs to come                                                                                    | `dotcross.science.test.ts` and `molecules.test.ts`, 72 tests, 88 breaks                 |
+| A3 matter and energy      | `particleBox` (6 substances × 3 states, 6 to 40 units), `reactionProfile`                                                                                                                                                                                                                               | `matter.science.test.ts` and `energy.science.test.ts`, 38 tests, 69 breaks              |
+| A4 small symbols          | `phScale`, `formulaTriangle`, `hazardSymbol` (the nine GHS pictograms)                                                                                                                                                                                                                                  | `annotation.science.test.ts`, 34 tests                                                  |
+| A5 templates              | the `nail` symbol and 14 Chemistry templates: gas tests, carbonate test, simple cell, rusting tubes, conductivity, molten electrolysis, Group 1 and water, magnesium in a crucible, reversible heating, cracking, fermentation, combustion products, laboratory fractional distillation, gas collection | layout checks and visual review                                                         |
+| A6a, A6b structures pilot | `ionicLattice3D`, `diamondStructure`, `graphiteStructure`, `fullereneC60`                                                                                                                                                                                                                               | `lattices.science.test.ts` and `cages.science.test.ts`, 128 tests, more than 120 breaks |
+
+The inventory follows the build: 34 rows are now covered rows that name the symbol or template that draws them, and steps 1 (new templates) and 3 (atoms, ions and dot-and-cross) of the build order are fully built (`Step.built` in `scripts/gen-inventory.ts`; the test fails if a built step still holds an unbuilt row).
+
+### Review
+
+Every symbol and template was opened by a reviewer who did not draw it. A container restart killed the first round of five reviewers, and plan mode stopped part of the second launch; each was run again, writing its verdict to a file as it went.
+
+| Review  | Items                                        | Result                                                                                                                                     |
+| ------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Round 1 | `phScale`, `formulaTriangle`, `hazardSymbol` | 1 pass, 2 defects (a vertical scale that no box allowed; a yield triangle wrong by a factor of 100)                                        |
+| Round 1 | the five atom symbols                        | 3 pass, 2 defects (impossible ions drawn; nucleus text touching; the reflected alpha path turning in empty space; foil outside the screen) |
+| Round 1 | dot-and-cross and periodic table             | 1 pass, 2 defects (inner shells crowding the symbol; the staircase; masses to one decimal place)                                           |
+| Round 1 | particle box and reaction profile            | 1 pass, 1 defect (unreadable at the old minimum size)                                                                                      |
+| Round 1 | the four structures                          | 1 pass, 3 defects (row text; S14 and C60; dashed weak forces) and a style verdict                                                          |
+| Round 1 | 14 templates and the nail                    | 8 pass, 7 defects (leaders, a colour-only note, wires through signs, bubbles, crystals outside the glass, catalyst, a closed gas jar)      |
+| Round 2 | the nine symbol fixes                        | 9 pass                                                                                                                                     |
+| Round 2 | the seven template fixes                     | 6 pass, 1 defect (clamp jaws hidden behind the jar), fixed by the lead and looked at                                                       |
+
+### Departures and lead decisions
+
+- **Pilot numbers that the briefs got wrong.** The sodium chloride block uses a spacing of 48.8 u and radii 7.5 and 4.8 u (the brief's 44, 11 and 7 overlapped). The diamond cluster is turned 20° about the vertical axis (the brief allowed 15°; 20° doubles the clearance). Diamond stubs are a fixed 5 u past the circle and on by default. Graphite is 250 × 212 by default with a bond of 30 u. The C60 brief had the mirror family of hexagon directions; the code uses the right one, and a face counts as facing the viewer only beyond a cosine of 0.3, so the rim has no doubled lines.
+- **Rule S14 after review.** Only hidden lines are dashed; the graphite weak forces are rows of dots; C60 is an orthographic view of an opaque ball.
+- **Ions.** `ionShells` accepts an ion only when it has a noble-gas structure (or is a transition-metal ion such as Fe2+ or Cu2+), so an impossible charge draws the neutral atom.
+- **Periodic table.** Relative atomic masses print as an AQA data sheet prints them (whole numbers except chlorine 35.5 and copper 63.5). The metal and non-metal staircase is the usual KS4 one, with germanium on the metal side. Both are from memory of the AQA sheet (unverified).
+- **Formula triangle.** No percentage-yield preset: a percentage yield is not the product of two quantities.
+- **Shorter names**, so that the library tiles fit: "Covalent dot and cross", "Ionic dot and cross", "Diamond structure", "Fullerene (C60)".
+- **The layout check counts the text of a symbol as drawing** (a leader may end on a notation; a label may not run over a table).
+
+### Known and not changed
+
+- A flipped symbol with text mirrors its layout: a nuclide notation puts its numbers on the right, an ionic diagram its charges on the left, the periodic table runs right to left. The skill says not to flip these. A no-flip flag would need an editor change.
+- The contents kernel lays a lumps layer on a level line, so lumps in a gently sloping tube cross its wall, and it scatters bubbles over a whole layer. The templates work round both (a powder layer for the crystals; separate pieces for the catalyst; a trough size that puts the bubbles near the lithium). A kernel fix would let them use the presets directly.
+- The compound rows of step 4 (changes of state, collision theory, equilibrium, concentration) are not built as templates; each is a recipe of several particle boxes with arrows.
+- The nine hazard pictograms were drawn from a description, not from the official artwork.
+- Captions that state a result (the gas tests, the rusting tubes) stay on a blank worksheet copy, because they are plain text.
+
+### Command output on the final tree
+
+`npm run check` on the final tree, abridged:
+
+```
+typecheck   tsc -b                      (no output)
+lint        oxlint                      (no output)
+format      All matched files use Prettier code style!
+vitest      Test Files  54 passed (54)
+            Tests  2771 passed (2771)
+build       dist/index.html  616.35 kB │ gzip: 199.80 kB
+playwright  79 passed
+```
+
+`npm run release:c` passes. Budgets: `dist/index.html` 616 kB (limit 900 kB); drag mean frame gap 16.7 ms (limit 20 ms); first paint 116 to 120 ms (limit 1 s). The unit tests went from 2,179 to 2,771.
+
+### The pilot sheet, and the decisions for James
+
+`docs/pilot-structures-colour.png` and `docs/pilot-structures-mono.png` show the four structure pictures at true size: the default of each, and one option of each. The molecule pack (step 5) and the rest of the structures pack (step 6) wait until James approves this style.
+
+- [ ] **The style of the 3D pictures.** Approve the cabinet oblique view for the cubic lattices. The reviewer's view (judgement): the ionic lattice and C60 can go in a lesson as they are; the diamond centre reads as a flat X, so a student could think the angles are 90°; graphite is the weakest, because a flat hexagon in this view is about three times as wide as it is high. The options are a steeper view for flat nets only (an exception to S14) and a single-atom tetrahedral picture for diamond.
+- [ ] **Check the nine hazard pictograms** against the official GHS artwork.
+- [ ] **Check the periodic table** (masses and the staircase) against the AQA data sheet.
+- [ ] Merge the pull requests in order: #7, #8, #9, #10.
+- The open items of section 9 (the AQA PDFs, the lesson-system route, `chemistryfigures.com`, the manual checks) are still open.

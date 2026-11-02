@@ -2,18 +2,26 @@
   "title": "Heating water in a boiling tube",
   "note": "A teacher demonstration. There is no hand symbol, so the handle of the holder just ends.",
   "parts": [
-    { "id": "mat", "symbol": "heatproofMat", "at": { "x": 0, "y": 0, "anchor": "under" } },
+    {
+      "id": "mat",
+      "symbol": "heatproofMat",
+      "at": { "x": 0, "y": 0, "anchor": "under" }
+    },
     {
       "id": "burner",
       "symbol": "spiritBurner",
       "on": { "part": "mat", "anchor": "top", "own": "base" },
-      "contents": { "main": [{ "preset": "Colourless solution", "amount": 0.6 }] }
+      "contents": {
+        "main": [{ "preset": "Colourless solution", "amount": 0.6 }]
+      }
     },
     {
       "id": "tube",
       "symbol": "boilingTube",
       "on": { "part": "burner", "anchor": "flame", "own": "bottom", "dy": 8 },
-      "contents": { "main": [{ "preset": "Water", "amount": 0.33, "bubbles": "few" }] }
+      "contents": {
+        "main": [{ "preset": "Water", "amount": 0.33, "bubbles": "few" }]
+      }
     },
     {
       "id": "holder",
@@ -25,7 +33,13 @@
       "id": "thermometer",
       "symbol": "thermometer",
       "size": { "h": 190 },
-      "on": { "part": "tube", "anchor": "bottom", "own": "bulb", "dx": 4, "dy": -14 },
+      "on": {
+        "part": "tube",
+        "anchor": "bottom",
+        "own": "bulb",
+        "dx": 4,
+        "dy": -14
+      },
       "contents": { "main": [{ "reading": 60 }] }
     }
   ],
