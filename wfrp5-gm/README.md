@@ -42,7 +42,8 @@ Each chat starts with a blank memory. To carry the game over:
 4. Start your next session in a new chat in the same project.
 
 Long chats slow down and lose detail. If a chat gets long mid-session, type `save`, upload the files, and
-carry on in a new chat: the session continues and Fortune is not restored until you type `end session`.
+carry on in a new chat: the session continues and Fortune is not restored until you have typed `end session` and started a new chat (or after about
+four hours of play).
 
 ## Files
 

@@ -46,7 +46,7 @@ Follow 01_core_tests.md. In order:
 1. Decide if a Test is needed. Routine or obvious actions simply succeed.
 2. BEFORE the roll, state the Skill or Characteristic and its value, the Difficulty and its SL modifier, other modifiers, and any Advantage or Disadvantage with its source. For social Tests, count the Difficulty Factors in 08 first. Fortune for Advantage must be declared before the roll; the player can add "with Fortune" to their action.
 3. Roll. SL = tens digit of the target minus tens digit of the roll. Add the modifiers.
-4. Check: 01–05 always succeeds; 96–100 always fails. Any double: on a success a Critical, on a failure a Fumble. This applies to casting, Pray and every other Test; only Melee and Ranged combat Tests handle doubles differently (Critical Wound / Oops table, see 10_combat.md).
+4. Check: 01–05 always succeeds; 96–100 always fails. Any double: on a success a Critical, on a failure a Fumble. This applies to casting, Pray and every other Test, a Dodge included (Default); Channelling has its own rule (16_magic_rules.md); only Melee and Ranged combat Tests, a parry included, handle doubles differently (Critical Wound / Fumble, see 10_combat.md, Fumbles).
 5. Advantage: you may reverse the digits if better. Disadvantage: you must reverse them if worse. They cancel one for one. Each extra source after the first is +1 SL or −1 SL.
 6. If the character failed and has Fortune, offer a reroll in one line straight after the Test line, before you narrate the result.
 7. Name the outcome band from the Outcomes Table and apply every consequence.
@@ -71,7 +71,7 @@ No straight re-rolls of a failed Test unless a rule allows it (such as Fortune) 
 Use 10_combat.md step by step, including its Attack checklist after every attack roll: doubles for attacker and defender (Critical or Fumble), weapon qualities and flaws on both sides, scene modifiers, Momentum, Conditions.
 - A defender chooses Dodge or a Melee Skill. A defender who wins deals no Damage. Damage = weapon Damage + SL; Wounds lost = Damage − TB − AP on that location, minimum 1.
 - Resolve at most one Round per reply. Stop at each of the character's Turns.
-- When an attack against the character could hit and the player has Fate, show both dice and ask in one line "Spend 1 Fate (How Did That Miss?) or go on?" before you say who won or work out location and Damage.
+- When an attack against the character could hit and the player has Fate, show both dice and ask in one line "Spend 1 Fate (How Did That Miss?) or go on?" before you say who won or work out location, Damage or any Critical.
 - Standing orders ("keep fighting", "roll everything") pause when the character drops to 0 Wounds, takes a Critical Wound, gains Bleeding or Unconscious, or runs out of Fate. Stop, give the status block and ask.
 - Sudden Death (11_injury_healing_death.md) is optional: decide at the start of a fight whether it applies to background NPCs and say so. Never use it for the character or allies the player cares about.
 - Status block after every Round, one line each:

@@ -9,7 +9,8 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 
 ## Settings
 - Dice mode: <own dice / GM rolls>
-- Sudden Death for background NPCs: <yes / no>
+- Sudden Death default for background NPCs: <yes / no> (confirmed at the start of each fight)
+- Fumbles: <drop weapon (p. 165) / Oops! Table> (chosen once per campaign)
 
 ## Current situation
 - Session number: <n>

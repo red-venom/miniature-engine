@@ -35,7 +35,7 @@ bought with XP only. Current = Initial + Advances, always.
 
 ## Fate and Fortune
 - Fate: <n>   Fortune: <current>/<max>  (max = species Fortune, +1 if the first species roll was accepted,
-  plus Talents such as Luck, plus or minus event effects)
+  +1 per Luck Talent (max +3), plus or minus temporary event effects)
 
 ## Movement
 - Movement <M> · Walk <M×2> · Run <M×4>
@@ -52,7 +52,7 @@ bought with XP only. Current = Initial + Advances, always.
   Characteristic or Skill Advance, career Talent, or next-level Trapping acquired)
 
 ## Skills (Characteristic · Advances · Total)
-- Basic: Art? Athletics (Ag) <adv> <total>; Bribery (Fel); Charm (Fel); Charm Animal (WP); Climb (S);
+- Basic: Art (Dex); Athletics (Ag) <adv> <total>; Bribery (Fel); Charm (Fel); Charm Animal (WP); Climb (S);
   Consume Alcohol (T); Cool (WP); Dodge (Ag); Drive (Ag); Endurance (T); Entertain (Fel); Gamble (Int);
   Gossip (Fel); Haggle (Fel); Intimidate (S); Intuition (I); Leadership (Fel); Melee (Basic) (WS);
   Melee (other) (WS); Navigation (Int); Outdoor Survival (Int); Perception (I); Ride (Ag); Row (S);
@@ -83,7 +83,8 @@ Ammunition: <type and count>
 
 ## Trappings
 - <item> (Enc <n>)
-- Encumbrance total <n> / Max <SB+TB> (worn armour, clothing and a strapped-on backpack count Enc −1 each;
+- Encumbrance total <n> / Max <SB+TB, adjusted by Talents such as Sturdy and Strong Back> (worn armour, clothing, a strapped-on
+  backpack and a slung sling bag count Enc −1 each;
   see `20_equipment_prices.md`) · Effect: <none / overburdened ...>
 
 ## Wealth
