@@ -6,7 +6,10 @@ on `sheet` or `save`. The player saves it as `character_<name>.md` in the projec
 Hit locations (reverse the digits of the successful attack roll, p. 164; see `10_combat.md`): 01–09 Head · 10–24 Left (secondary) arm ·
 25–44 Right (primary) arm · 45–79 Body · 80–89 Left leg · 90–00 Right leg.
 
-Money: 1 Gold Crown (GC) = 20 Silver Shillings (SS) = 240 Brass Pennies (d).
+Money: 1 Gold Crown (GC) = 20 Silver Shillings (SS) = 240 Brass Pennies (d). Normalise money on every save
+(12 d = 1 SS, 20 SS = 1 GC).
+
+Output every section, writing "none" if empty.
 
 ```
 # <Name>
@@ -26,9 +29,13 @@ Money: 1 Gold Crown (GC) = 20 Silver Shillings (SS) = 240 Brass Pennies (d).
 | Current | | | | | | | | | | |
 | Bonus | | | | | | | | | | |
 Career characteristics this level: <list>
+Initial = rolled 2d10 + species modifier + creation points + any Talent +5 (Savvy, Suave, Nimble-fingered,
+Very Strong and so on; the p. 24 sample puts these in Initial). Advances = +5 per Characteristic Advance
+bought with XP only. Current = Initial + Advances, always.
 
 ## Fate and Fortune
-- Fate: <n>   Fortune: <current>/<max>
+- Fate: <n>   Fortune: <current>/<max>  (max = species Fortune, +1 if the first species roll was accepted,
+  plus Talents such as Luck, plus or minus event effects)
 
 ## Movement
 - Movement <M> · Walk <M×2> · Run <M×4>
@@ -41,7 +48,8 @@ Career characteristics this level: <list>
 
 ## Experience
 - Current XP: <n>   Spent: <n>   Total: <n>
-- Career Advancement Tracker (level <n>): <how many boxes ticked / required>
+- Career Advancement Tracker (level <n>): <boxes ticked> / <10, 12 or 14 needed> (one box per career
+  Characteristic or Skill Advance, career Talent, or next-level Trapping acquired)
 
 ## Skills (Characteristic · Advances · Total)
 - Basic: Art? Athletics (Ag) <adv> <total>; Bribery (Fel); Charm (Fel); Charm Animal (WP); Climb (S);
@@ -53,6 +61,7 @@ Career characteristics this level: <list>
 - Advanced (only if trained): <skill (spec) · char · adv · total>
 
 ## Talents
+Doom (from the Doomed Talent): <text>
 | Talent | Times taken | Effect summary |
 |---|---|---|
 
@@ -66,13 +75,16 @@ Career characteristics this level: <list>
 Armour worn: <name, locations, AP, qualities, Enc>
 
 ## Weapons
-| Name | Group | Enc | Range/Reach | Damage | Qualities |
+Use each weapon's exact name from `20_equipment_prices.md` (Sword, Hand Weapon, Dagger, Halberd ...), never
+"Hand Weapon (sword)", because qualities and flaws differ.
+| Name | Group | Enc | Range/Reach | Damage | Qualities and Flaws |
 |---|---|---|---|---|---|
 Ammunition: <type and count>
 
 ## Trappings
 - <item> (Enc <n>)
-- Encumbrance total <n> / Max <SB+TB> · Effect: <none / overburdened ...>
+- Encumbrance total <n> / Max <SB+TB> (worn armour, clothing and a strapped-on backpack count Enc −1 each;
+  see `20_equipment_prices.md`) · Effect: <none / overburdened ...>
 
 ## Wealth
 - <n> GC · <n> SS · <n> d
