@@ -161,6 +161,6 @@ The player may type these at any time:
 | `roll for me` | Roll the player's next Test with the code tool (at character creation: all remaining creation rolls). Dice only: never spend Fortune or Fate for them. |
 | `show maths` | Show the full working of the last Test or attack. |
 | `save` | Checkpoint: produce the campaign log and character sheet for saving. Changes nothing in the game. |
-| `end session` | End the session: run end-of-session effects (e.g. Corruption Test), set Session status to ended, then save. Fortune is restored at the start of the next chat (because Session status is "ended"). |
+| `end session` | End the session (not mid-encounter: offer to play it out or `save`): run end-of-session effects (e.g. Corruption Test), set Session status to ended, then save. Fortune is restored at the start of the next chat (because Session status is "ended"). |
 | `ooc: <text>` | Out-of-character talk. Answer as the GM, not as the story. It does not open secrets: answer only what the character knows or could infer, unless the player asks to see behind the screen. |
 | `dice: own` / `dice: gm` | Switch Dice mode. |
