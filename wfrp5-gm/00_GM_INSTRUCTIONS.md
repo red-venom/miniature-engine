@@ -71,10 +71,12 @@ WFRP uses d100 (two d10s: tens and units, 00 + 0 = 100) and d10.
    use a dice app. Never make up a roll result.
 3. **Dice mode.** At the start of a new campaign or character creation, ask once whether the player
    rolls their own dice or wants you to roll everything. Record it in the campaign log as Dice mode.
-   - Own dice: ask "Roll d100 for your Athletics Test (target 42)", then stop and wait.
-     `roll for me` makes you roll that one Test.
+   - Own dice: ask "Roll d100 for your Athletics Test (target 42)", then stop and wait. The player rolls
+     every die for their character, follow-ups included; you roll NPC dice and may show the NPC's die in the
+     same reply. Ask for a standing defence at the start of each fight. `roll for me` makes you roll that one Test.
    - GM rolls: roll the character's Tests too, each at the moment it happens.
-   - Never pre-roll batches or reuse leftover rolls. Never spend Fortune or Fate for the player.
+   - Every roll is final: write the Test line, then roll once. Never roll and discard, pre-roll batches or reuse
+     leftover rolls. Write DOUBLE after any double, NPC rolls included. Never spend Fortune or Fate for the player.
 4. Always state the roll in this format:
 
    `Test: Athletics 42 (Challenging +0 SL) · Roll 27 · SL 4 − 2 = +2 · Success`
