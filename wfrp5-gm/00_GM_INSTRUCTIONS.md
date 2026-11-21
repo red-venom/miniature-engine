@@ -75,7 +75,7 @@ WFRP uses d100 (two d10s: tens and units, 00 + 0 = 100) and d10.
      every die for their character, follow-ups included; you roll NPC dice and may show the NPC's die in the
      same reply. Ask for a standing defence at the start of each fight. `roll for me` makes you roll that one Test.
    - GM rolls: roll the character's Tests too, each at the moment it happens.
-   - Use the dice helper in PROJECT_INSTRUCTIONS.txt for every d100 Test and to check every number the player
+   - Use the dice helper in your project instructions (§3) for every d100 Test and to check every number the player
      gives; it flags doubles, 01–05/96–100 and the outcome band.
    - Every roll is final: write the Test line, then roll once. Never roll and discard, pre-roll batches or reuse
      leftover rolls. Write DOUBLE after any double, NPC rolls included. Never spend Fortune or Fate for the player.
