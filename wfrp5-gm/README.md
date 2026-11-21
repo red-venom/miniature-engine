@@ -27,19 +27,22 @@ You need to do this once. It is easiest on a computer or at claude.ai in a brows
    - `sheet` to see your character
    - `status` for a quick status check
    - `show maths` to see how a roll was worked out
-   - `save` to get an updated campaign log and character sheet
+   - `save` to get an updated campaign log and character sheet (a checkpoint; nothing changes in the game)
+   - `end session` when you stop for the day (end-of-session rules apply; Fortune comes back next session)
+   - `dice: own` or `dice: gm` to choose who rolls your dice
 
 ## Keep your progress
 
 Each chat starts with a blank memory. To carry the game over:
 
-1. Type `save` at the end of a session.
+1. Type `end session` when you stop playing (or `save` for a checkpoint mid-session).
 2. Copy the campaign log into a file called `campaign_log.md` and the character sheet into
    `character_<name>.md`.
 3. Upload them to the project's knowledge, replacing the old versions.
 4. Start your next session in a new chat in the same project.
 
-Long chats slow down and lose detail, so start a new chat after each session or big scene.
+Long chats slow down and lose detail. If a chat gets long mid-session, type `save`, upload the files, and
+carry on in a new chat: the session continues and Fortune is not restored until you type `end session`.
 
 ## Files
 

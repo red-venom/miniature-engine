@@ -13,8 +13,9 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 
 ## Current situation
 - Session number: <n>
+- Session status: <in progress / ended>   (only "ended" restores Fortune at the next chat)
 - End-of-session effects done: <e.g. Corruption Test for greatest exposure: Minor, passed>
-- Fortune at end of session: <n> of <max> (restore to max at the start of the next session)
+- Fortune now: <n> of <max>
 - In-game date and time: <e.g. Backertag, 12 Sigmarzeit 2512, evening>
 - Location: <place, region>
 - Immediate situation: <one or two sentences: where the character is and what is happening>
