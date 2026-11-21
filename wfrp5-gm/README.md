@@ -15,13 +15,16 @@ You need to do this once. It is easiest on a computer or at claude.ai in a brows
 2. Open the project's **Instructions** (custom instructions) and paste in the text from
    `PROJECT_INSTRUCTIONS.txt`.
 3. Add every `.md` file in this folder to the project's **Knowledge**, except this `README.md`.
-4. Turn on the code or analysis tool in Claude's settings if you have it, so the GM can roll dice.
-   If you don't, the GM will ask you to roll.
+4. Turn on the code or analysis tool in Claude's settings. The instructions include a small dice
+   script that works out every roll, so the GM catches Criticals and Fumbles reliably. Without it, the
+   GM will ask you to roll and must check the maths by hand, which is less reliable.
 
 ## Play
 
 1. Start a new chat inside the project.
 2. Type something like: "Let's create a character" or "Start a new campaign in Ubersreik."
+   The GM first asks two settings: who rolls your dice (you or the GM), and how often to offer
+   Fortune rerolls (every time, only when it matters, or never). You can change them later.
 3. Play. Use these commands at any time:
    - `rules: <topic>` for a rule explanation
    - `sheet` to see your character
