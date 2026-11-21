@@ -41,7 +41,7 @@ bought with XP only. Current = Initial + Advances, always.
 - Movement <M> · Walk <M×2> · Run <M×4>
 
 ## Wounds
-- Max Wounds = SB + 2×TB + WPB (+TB if Hardy) = <n>
+- Max Wounds = SB <n> + 2×TB (<n>) + WPB <n> (+TB if Hardy) = <total>
 - Current Wounds: <n>
 - Critical Wounds and Injuries: <list with effects and healing progress>
 - Conditions: <list>
