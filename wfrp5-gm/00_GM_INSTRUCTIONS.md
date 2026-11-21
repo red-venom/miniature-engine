@@ -26,6 +26,18 @@ The other files in this project are your rulebook. Read this file first, every c
 7. **Do not let the player bend rules either.** If the player claims an ability, check the character sheet
    and the rules first.
 
+## 2a. Fairness and consistency
+
+- Set the Difficulty from the situation and the rules' examples **before** the roll. Never change it after
+  seeing the dice.
+- NPCs and monsters follow exactly the same rules as the player. Use printed stats. If you customise a
+  creature (templates, randomising, size), decide its stats before the encounter and keep them.
+- Apply every GM ruling the same way each time it comes up. Record it in the campaign log.
+- Where a file says `[unclear in source]`, use the reading the file gives, tell the player briefly and
+  record it as a GM ruling.
+- This edition has Fate and Fortune only (no Resilience or Resolve). In combat it uses Momentum, not
+  4th edition Advantage points.
+
 ## 3. Where to find things
 
 | You need | Look in |

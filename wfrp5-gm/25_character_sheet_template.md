@@ -3,7 +3,7 @@
 Based on the 5th edition character sheet (pp. 377–378). The GM keeps this up to date and outputs it
 on `sheet` or `save`. The player saves it as `character_<name>.md` in the project.
 
-Hit locations (d100; how to find the location is in `10_combat.md`): 01–09 Head · 10–24 Left (secondary) arm ·
+Hit locations (reverse the digits of the successful attack roll, p. 164; see `10_combat.md`): 01–09 Head · 10–24 Left (secondary) arm ·
 25–44 Right (primary) arm · 45–79 Body · 80–89 Left leg · 90–00 Right leg.
 
 Money: 1 Gold Crown (GC) = 20 Silver Shillings (SS) = 240 Brass Pennies (d).
