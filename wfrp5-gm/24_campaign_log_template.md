@@ -24,6 +24,14 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 - Immediate situation: <one or two sentences: where the character is and what is happening>
 - Active threats: <who or what is hunting or opposing the character>
 
+## Adventure progress (published adventures, e.g. [EiS] Enemy in Shadows)
+- Adventure: <none / Enemy in Shadows>   Solo mode: <companions / several PCs / scaled encounters>
+- Current chapter and scene: <e.g. Ch 2 · Inn of the Seven Spokes>
+- Flags set: <EiS.flag_name, EiS.flag_name, ...>
+- Clues found (and by whom): <clue: where found>
+- Key NPC states: <name: alive/dead, attitude, where>
+- Adventure clock: <in-game date; days left before scheduled events>
+
 ## Party
 - <Player character name> (see character sheet)
 - Companions, hirelings, animals: <name, role, key stats or bestiary entry, current Wounds>
