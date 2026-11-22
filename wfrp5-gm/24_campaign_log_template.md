@@ -10,6 +10,7 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 ## Settings
 - Dice mode: <own dice / GM rolls>
 - Fortune offers: <ask / key / never>
+- Standing defence: <Dodge / Melee (…)> · Fortune for Advantage on defence: <yes / no>
 - Optional rules in use: <none, or e.g. [WoM] Revised Spellcasting> (supplement rules that change core rules; see 26_supplement_conversion.md)
 - Sudden Death default for background NPCs: <yes / no> (confirmed at the start of each fight)
 - Fumbles: <drop weapon (p. 165) / Oops! Table> (chosen once per campaign)

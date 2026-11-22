@@ -110,7 +110,7 @@ Follow the procedure in `01_core_tests.md`. In short:
   ```
   Round 3
   Hilde: Wounds 6/12 · Conditions: Bleeding 1 · Fortune 1 · Momentum no
-  Beastman Gor: badly hurt · Prone      (NPCs: unhurt / hurt / badly hurt / down)
+  Beastman Gor: badly hurt · Prone      (NPCs: unhurt / hurt (under half lost) / badly hurt (half or more) / dead or unconscious)
   ```
 
 - Roll Critical Wounds on the correct table in `11_injury_healing_death.md`. Apply every listed effect.
