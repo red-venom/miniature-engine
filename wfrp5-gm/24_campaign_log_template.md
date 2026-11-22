@@ -35,7 +35,7 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 
 ## Party
 - <Player character name> (see character sheet)
-- Companions, hirelings, animals: <name, role, key stats or bestiary entry, current Wounds>
+- Companions, hirelings, animals: <name, role, key stats or bestiary entry, current Wounds, money, XP current/spent/total for each Henchman>
 
 ## Open threads and quests
 - <thread>: <what is known, what is next>
@@ -48,6 +48,7 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 - <place>: <what happened, anything left behind>
 
 ## GM rulings (not in the rules)
+<!-- Player-facing: no NPC stats here; NPC builds go in Secrets. -->
 - <ruling and the situation it covers>
 
 ## XP awarded
