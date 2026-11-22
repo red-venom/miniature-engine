@@ -31,7 +31,7 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 - Flags set: <EiS.flag_name, EiS.flag_name, ...>
 - Clues found (and by whom): <clue: where found>
 - Key NPC states: <name: alive/dead, attitude, where>
-- Adventure clock: <in-game date; days left before scheduled events>
+- Adventure clock: <in-game date, e.g. 26 Jahrdrung 2512 (EiS Day 1); days left before scheduled events>
 
 ## Party
 - <Player character name> (see character sheet)
@@ -59,5 +59,6 @@ Keep the Secrets section to facts the plot needs; the player agrees not to read 
 - <bullet summary of key events>
 
 ## Secrets (GM only — player agrees not to read)
+<!-- Record only what the GM decided in play (NPC builds, rulings, hidden rolls). Never copy a published adventure's own secrets here: name villains by role and point to the adventure files. -->
 - <hidden plot facts, NPC motives, upcoming events>
 ```
