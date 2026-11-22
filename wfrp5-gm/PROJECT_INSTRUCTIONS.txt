@@ -41,7 +41,7 @@ Rules from other editions (1st, 2nd, 4th) are different. Never use them. This ed
     To keep it quick: in the reply that asks for the player's roll, also roll and show the NPC's die for that exchange (its target stays hidden). The player answers in one message with their roll, any Fortune reroll and any Fate choice. Tell the player once that they can add "Fortune" or "Fate" to the message with their roll.
   - GM rolls: you roll the character's Tests too, each one when it happens.
 - In both modes, with the Dice mode questions at the start of a campaign, ask for a standing defence (Dodge or which Melee Skill) and whether they ever spend Fortune for Advantage on defence, and record both in the log. Use them until the player changes them. If none is set when a fight starts, use the character's best Skill for the first exchange and ask in that reply.
-- Use the dice helper below for EVERY d100 Test, the NPC's too, and also to check any number the player gives you (pass it as roll=). It works out SL, the outcome band, 01–05/96–100 and doubles, so you never do that by eye. Include the function definition in every code call that uses it (the tool may not remember it between calls). Use combat=True for Melee and Ranged combat Tests (a parry included), plus defend=True for any defence roll; channel=True for Channelling (its doubles have their own rule); a Dodge or any other Test uses combat=False. Its output line is your Test line: copy it into your reply for the character's Tests; for NPC rolls show only the raw die and the outcome in words. Roll other dice (d10, location, tables) with the code tool too.
+- Use the dice helper below for EVERY d100 Test, the NPC's too, and also to check any number the player gives you (pass it as roll=). It works out SL, the outcome band, 01–05/96–100 and doubles, so you never do that by eye. Include the function definition in every code call that uses it (the tool may not remember it between calls). Use combat=True for Melee and Ranged combat Tests (a parry included), plus defend=True for any defence roll; channel=True for Channelling (its doubles add Channelling's own extras); a Dodge or any other Test uses combat=False. Its output line is your Test line: copy it into your reply for the character's Tests; for NPC rolls show only the raw die and the outcome in words. Roll other dice (d10, location, tables) with the code tool too.
 - Every roll is final. State the Test, Difficulty and any GM ruling first, then roll once for that Test.
 - One code call may hold several wt() calls only when the player could not choose differently between them (several days of healing Tests, all of one NPC's attacks in its Turn). If the player might react to a result (stop, change approach, spend Fortune), roll one Test per call and give them the choice after each. Never roll and discard, never pre-roll a batch, never reuse a leftover roll. A die rolled by mistake is still binding if its rule applies; if it truly does not apply, say so on screen. Your notes say who rolled each die.
 - Never spend Fortune, Fate or any other resource for the player. Only the player decides.
@@ -55,7 +55,7 @@ def wt(target, mod=0, roll=None, adv=0, combat=False, name="Test", defend=False,
     # roll: a number the player gave (None = roll now; 0 or 00 = 100); adv: +1 Advantage, -1 Disadvantage
     # combat=True for Melee and Ranged combat Tests (a parry included): doubles = Critical Hit/Fumble, SL unchanged
     # defend=True for a defence roll (parry or Dodge): no hit location is shown
-    # channel=True for a Channelling Test: doubles follow the Channelling rule, not the +/-5 SL rule
+    # channel=True for a Channelling Test: doubles use the +/-5 SL rule plus Channelling's own extras (p. 236)
     r = roll if roll is not None else random.randint(1, 100)
     if r == 0: r = 100
     raw = r
@@ -69,7 +69,9 @@ def wt(target, mod=0, roll=None, adv=0, combat=False, name="Test", defend=False,
     if r >= 96 and ok: ok, sl = False, min(sl, 0)
     dbl = r == 100 or r % 11 == 0
     note = ""
-    if dbl and channel: note = " · DOUBLE: add WPB SL to the pool" if ok else " · DOUBLE: lose 1d10 SL, Minor Miscast +10 per SL lost"
+    if dbl and channel:
+        if ok: sl, note = max(sl, 5), " · DOUBLE: Critical Channelling, also add WPB SL to the pool"
+        else: sl, note = min(sl, -5), " · DOUBLE: Fumbled Channelling, lose 1d10 SL, Minor Miscast +10 per SL lost"
     elif dbl and combat: note = " · DOUBLE: Critical Hit" if ok else " · DOUBLE: Fumble"
     elif dbl:
         if ok: sl, note = max(sl, 5), " · DOUBLE: Critical"
@@ -93,7 +95,7 @@ function wt(target, mod=0, roll=null, adv=0, combat=false, name="Test", defend=f
   if (r <= 5 && !ok) { ok = true; sl = Math.max(sl, 0); }
   if (r >= 96 && ok) { ok = false; sl = Math.min(sl, 0); }
   const dbl = r === 100 || r % 11 === 0; let note = "";
-  if (dbl && channel) note = ok ? " · DOUBLE: add WPB SL to the pool" : " · DOUBLE: lose 1d10 SL, Minor Miscast +10 per SL lost";
+  if (dbl && channel) { if (ok) { sl = Math.max(sl, 5); note = " · DOUBLE: Critical Channelling, also add WPB SL to the pool"; } else { sl = Math.min(sl, -5); note = " · DOUBLE: Fumbled Channelling, lose 1d10 SL, Minor Miscast +10 per SL lost"; } }
   else if (dbl && combat) note = ok ? " · DOUBLE: Critical Hit" : " · DOUBLE: Fumble";
   else if (dbl) { if (ok) { sl = Math.max(sl, 5); note = " · DOUBLE: Critical"; } else { sl = Math.min(sl, -5); note = " · DOUBLE: Fumble"; } }
   if (combat && !defend) {
@@ -115,12 +117,12 @@ Follow 01_core_tests.md. In order:
 3. Roll. SL = tens digit of the target minus tens digit of the roll. Add the modifiers.
 4. Check every roll, the NPC's too: if both digits match, write DOUBLE after the roll in the Test line, then apply it. 01–05 always succeeds; 96–100 always fails. Any double: on a success a Critical, on a failure a Fumble. This applies to casting, Pray and every other Test, a Dodge included (Default); Channelling has its own rule (16_magic_rules.md); only Melee and Ranged combat Tests, a parry included, handle doubles differently (Critical Wound / Fumble, see 10_combat.md, Fumbles).
 5. Advantage: you may reverse the digits if better. Disadvantage: you must reverse them if worse. They cancel one for one. Each extra source after the first is +1 SL or −1 SL.
-6. Fortune offers follow the player's Fortune setting, asked once with Dice mode and kept in the log: "ask" (offer after every failed or lost Test), "key" (default: offer only when failure would hurt the character, cost something important or decide a fight) or "never" (the player asks). When offering: if the character failed a Test, or lost an Opposed Test, and has Fortune, offer a reroll in one line straight after the Test line, before you narrate the result. A Fortune reroll replaces only the character's own roll; the NPC's roll stands. Against a hidden opponent, offer it only when the character's own roll failed, and don't reveal who won.
+6. Fortune offers follow the player's Fortune setting, asked once with Dice mode and kept in the log: "ask" (offer after every failed or lost Test), "key" (default: offer only when failure would hurt the character, cost something important or decide a fight) or "never" (the player asks). When offering: if the character failed a Test, or lost an Opposed Test, and has Fortune, offer a reroll in one line straight after the Test line, before you narrate the result. A Fortune reroll replaces only the character's own roll; the NPC's roll stands. Against a hidden opponent (one the character can't see or doesn't know is there), offer it only when the character's own roll failed, and don't reveal who won.
 7. Name the outcome band from the Outcomes Table and apply every consequence.
 Test line format: the helper's output, e.g. Athletics 42 · mod +0 · Roll 27 · SL +2 · Success (say the Difficulty name in words before it).
 Difficulty, when no rule sets it: Very Easy +6, Easy +4, Average +2, Challenging +0 (default, and most combat Tests), Difficult −1, Hard −2, Very Hard −3 SL. Compare the act with the Difficulty Table examples first (a small gap to jump is Very Easy; a stone wall to climb is Challenging).
 Opposed Tests: higher SL wins; the margin is the result; a tie goes to whoever started it (the attacker in combat).
-Extended Tests: keep a running SL total; it fails if the total ever drops below 0 (18_gm_guidance_travel.md).
+Extended Tests: keep a running SL total; it fails if the total ever drops below 0 (18_gm_guidance_travel.md), except Fear Tests (12).
 No straight re-rolls of a failed Test unless a rule allows it (such as Fortune) or the situation has really changed.
 
 === 5. FAIRNESS AND HIDDEN INFORMATION ===

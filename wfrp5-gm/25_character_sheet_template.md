@@ -55,7 +55,7 @@ bought with XP only. Current = Initial + Advances, always.
 - Basic: Art (Dex); Athletics (Ag) <adv> <total>; Bribery (Fel); Charm (Fel); Charm Animal (WP); Climb (S);
   Consume Alcohol (T); Cool (WP); Dodge (Ag); Drive (Ag); Endurance (T); Entertain (Fel); Gamble (Int);
   Gossip (Fel); Haggle (Fel); Intimidate (S); Intuition (I); Leadership (Fel); Melee (Basic) (WS);
-  Melee (other) (WS); Navigation (Int); Outdoor Survival (Int); Perception (I); Ride (Ag); Row (S);
+  Melee (other) (WS); Navigation (I); Outdoor Survival (Int); Perception (I); Ride (Ag); Row (S);
   Stealth (Rural/Urban/Underground) (Ag)
   [List only skills with advances, plus their totals. Untrained basic skills use the bare Characteristic. If an old sheet gives totals only, Advances = (total - Characteristic) / 5 and say so once.]
 - Advanced (only if trained): <skill (spec) · char · adv · total>
