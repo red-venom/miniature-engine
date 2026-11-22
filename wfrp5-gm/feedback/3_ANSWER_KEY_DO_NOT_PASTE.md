@@ -7,7 +7,7 @@ self-test becomes worthless.
 
 | ID | Expected |
 |---|---|
-| A1 | 26 knowledge files: `00`–`25` `.md` (README is optional; PROJECT_INSTRUCTIONS is in the Instructions box, not a file) |
+| A1 | 26 knowledge files: `00`–`25` `.md`, plus any saves (e.g. `claude/campaign_log.md`). `README.md` or `PROJECT_INSTRUCTIONS.txt` in Knowledge = a setup error: they pollute rule searches |
 | A3 | `### No Profile for X? Bandits, Archers, Guards, Sergeants, Cult Leaders (pp. 318–319, 321, 353–356)` |
 | A4a | `10_combat.md` · `## Attack Checklist (run after every attack roll)` |
 | A4b | `14_between_adventures.md` · `## Downtime Procedure (p. 190)` |
@@ -22,11 +22,12 @@ self-test becomes worthless.
 ## Part B: expected helper output
 
 ```
-Roll 44 · target 62 · mod +0 · SL +5 · Astounding Success · DOUBLE: Critical
-Roll 100 · target 48 · mod +0 · SL -6 · Astounding Failure · DOUBLE: Fumble
-Roll 72→27 · target 46 · mod +0 · SL +2 · Success
-Roll 77 · target 52 · mod +0 · SL -2 · Failure · DOUBLE: Fumble
+Test 62 · mod +0 · Roll 44 · SL +5 · Astounding Success · DOUBLE: Critical
+Test 48 · mod +0 · Roll 100 · SL -6 · Astounding Failure · DOUBLE: Fumble
+Test 46 · mod +0 · Roll 72→27 · SL +2 · Success
+Test 52 · mod +0 · Roll 77 · SL -2 · Failure · DOUBLE: Fumble
 ```
+(Helper v2 format. Older v1 output started "Roll 44 · target 62"; same numbers.)
 
 - B3: if the second call fails with "undefined", state does not persist; the instructions already say
   to include the definition every time. If it works, state persists (either way is fine; note which).

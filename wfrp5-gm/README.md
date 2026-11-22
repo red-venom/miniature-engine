@@ -14,7 +14,9 @@ You need to do this once. It is easiest on a computer or at claude.ai in a brows
 1. Open Claude and create a new Project. Call it something like "WFRP Campaign".
 2. Open the project's **Instructions** (custom instructions) and paste in the text from
    `PROJECT_INSTRUCTIONS.txt`.
-3. Add every `.md` file in this folder to the project's **Knowledge**, except this `README.md`.
+3. Add the numbered files `00_…` to `25_…` to the project's **Knowledge**. Do not add `README.md` or
+   `PROJECT_INSTRUCTIONS.txt` as knowledge: they confuse the GM's rule searches. If you already added them,
+   delete them from Knowledge.
 4. Turn on the code or analysis tool in Claude's settings. The instructions include a small dice
    script that works out every roll, so the GM catches Criticals and Fumbles reliably. Without it, the
    GM will ask you to roll and must check the maths by hand, which is less reliable.
@@ -41,7 +43,8 @@ Each chat starts with a blank memory. To carry the game over:
 1. Type `end session` when you stop playing (or `save` for a checkpoint mid-session).
 2. Copy the campaign log into a file called `campaign_log.md` and the character sheet into
    `character_<name>.md`.
-3. Upload them to the project's knowledge, replacing the old versions.
+3. Upload them to the project's knowledge, replacing the old versions. If the GM saved them into the
+   project itself (for example in a `claude/` folder), that's fine: it looks there too.
 4. Start your next session in a new chat in the same project.
 
 Long chats slow down and lose detail. If a chat gets long mid-session, type `save`, upload the files, and

@@ -128,6 +128,8 @@ Each chat in this app starts with no memory of the last one. The player keeps th
   an updated campaign log and character sheet using the templates in `24_campaign_log_template.md`
   and `25_character_sheet_template.md`. Put each in one fenced code block so the player can copy it.
   Tell the player to replace the old file in the project with the new one.
+- When a day passes in the story, run Each New Day in `18_gm_guidance_travel.md` (healing, Open Wounds,
+  disease, sleep, costs). Paid work during an adventure: `14_between_adventures.md`, Earning Money During an Adventure.
 - At the start of each chat, restore Fortune to maximum only if the log's Session status is "ended" (then set it
   to "in progress"), and apply anything else that happens "at the start of a session". If a session runs past about
   four hours of play, restore Fortune at a natural break (p. 265; `13_corruption_mutation.md`, When the Session Ends).
