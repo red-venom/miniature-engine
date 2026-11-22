@@ -7,7 +7,7 @@ self-test becomes worthless.
 
 | ID | Expected |
 |---|---|
-| A1 | 26 knowledge files: `00`–`25` `.md`, plus any saves (e.g. `claude/campaign_log.md`). `README.md` or `PROJECT_INSTRUCTIONS.txt` in Knowledge = a setup error: they pollute rule searches |
+| A1 | 48 knowledge files: `00`–`46` `.md` plus `37b`, plus any saves (e.g. `claude/campaign_log.md`). `README.md` or `PROJECT_INSTRUCTIONS.txt` in Knowledge = a setup error: they pollute rule searches |
 | A3 | `### No Profile for X? Bandits, Archers, Guards, Sergeants, Cult Leaders (pp. 318–319, 321, 353–356)` |
 | A4a | `10_combat.md` · `## Attack Checklist (run after every attack roll)` |
 | A4b | `14_between_adventures.md` · `## Downtime Procedure (p. 190)` |
@@ -15,7 +15,7 @@ self-test becomes worthless.
 | A4d | `07_talents.md` · `### Doomed (p. 118)` |
 | A4e | `06_skills.md` · `### Swim (S) – Advanced (p. 114)` |
 | A5 | "knocked out" → `11_injury_healing_death.md` At 0 Wounds / Unconscious, or `12` Unconscious (Condition). "jump to the roof" → `09_wilderness_crafts_travel.md` Leaping (small gap Very Easy) |
-| A6 | 8 sections: 1 Find the rule, 2 Never invent, 3 Dice, 4 Every Test, 5 Fairness, 6 Combat, 7 Keeping track, 8 Style |
+| A6 | 9 sections: 1 Find the rule, 2 Never invent, 3 Dice, 4 Every Test, 5 Fairness, 6 Combat, 7 Keeping track, 8 Supplements and adventures, 9 Style |
 | A7 | Last line starts `- Player commands: "rules: <topic>", "sheet", "status", "roll for me", ...` and ends `See 00_GM_INSTRUCTIONS.md.` A different last line means the instructions were cut off |
 | A8 | `DICE HELPER (Python; the JavaScript version follows it):` |
 
@@ -55,7 +55,7 @@ Test 52 · mod +0 · Roll 77 · SL -2 · Failure · DOUBLE: Fumble
 
 - **Retrieval failure** = NOT FOUND, or the wrong file or heading for A3–A5 or Part C. Fix by adding
   keywords or aliases to the heading.
-- **Truncation** = A6 shows fewer than 8 sections, or A7 doesn't match. Fix by making a shorter
+- **Truncation** = A6 shows fewer than 9 sections, or A7 doesn't match. Fix by making a shorter
   instructions version.
 - **Tool failure** = B2 output doesn't match, or B1 has no tool. Fix the helper wording, or the
   no-tool fallback.

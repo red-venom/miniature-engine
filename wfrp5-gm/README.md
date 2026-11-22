@@ -14,7 +14,7 @@ You need to do this once. It is easiest on a computer or at claude.ai in a brows
 1. Open Claude and create a new Project. Call it something like "WFRP Campaign".
 2. Open the project's **Instructions** (custom instructions) and paste in the text from
    `PROJECT_INSTRUCTIONS.txt`.
-3. Add the numbered files `00_…` to `25_…` to the project's **Knowledge**. Do not add `README.md` or
+3. Add the numbered files `00_…` to `46_…` (including `37b_…`) to the project's **Knowledge**. Do not add `README.md` or
    `PROJECT_INSTRUCTIONS.txt` as knowledge: they confuse the GM's rule searches. If you already added them,
    delete them from Knowledge.
 4. Turn on the code or analysis tool in Claude's settings. The instructions include a small dice
@@ -47,6 +47,8 @@ Each chat starts with a blank memory. To carry the game over:
    project itself (for example in a `claude/` folder), that's fine: it looks there too.
 4. Start your next session in a new chat in the same project.
 
+Optional rules from the supplements are off until you ask the GM to switch one on (it records them in your campaign log). The full list is in `26_supplement_conversion.md`.
+
 Long chats slow down and lose detail. If a chat gets long mid-session, type `save`, upload the files, and
 carry on in a new chat: the session continues and Fortune is not restored until you have typed `end session` and started a new chat (or after about
 four hours of play).
@@ -75,3 +77,7 @@ four hours of play).
 | `20_equipment_prices.md` | Equipment and prices |
 | `21_bestiary.md`, `22_creature_traits_templates.md` | Creatures |
 | `24_campaign_log_template.md`, `25_character_sheet_template.md` | Save templates |
+| `26_supplement_conversion.md` | How the 4th-edition supplements are converted; optional rules list |
+| `27_…` to `32_…` | *Winds of Magic*: spellcasting options, rituals, arcane careers, the eight Colleges and their spells, artefacts, familiars, magic in the world |
+| `33_…` to `37b_…` | *Lustria*: the land, Skeggi, the Vampire Coast, the Citadel of Dusk, temple-cities, Lizardmen and Skinks, jungle bestiary and diseases, expeditions |
+| `38_…` to `46_…` | *Enemy in Shadows* campaign. **GM only: don't read these yourself.** |
