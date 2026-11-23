@@ -25,9 +25,9 @@ self-test becomes worthless.
 Test 62 · mod +0 · Roll 44 · SL +5 · Astounding Success · DOUBLE: Critical
 Test 48 · mod +0 · Roll 100 · SL -6 · Astounding Failure · DOUBLE: Fumble
 Test 46 · mod +0 · Roll 72→27 · SL +2 · Success
-Test 52 · mod +0 · Roll 77 · SL -2 · Failure · DOUBLE: Fumble
+Test 52 · mod +0 · Roll 77 · SL -2 · Failure · DOUBLE: Fumble · Location if it hits: Body (77)
 ```
-(Helper v2 format. Older v1 output started "Roll 44 · target 62"; same numbers.)
+(Current helper format. Older versions lacked the "Location if it hits" part; same numbers.)
 
 - B3: if the second call fails with "undefined", state does not persist; the instructions already say
   to include the definition every time. If it works, state persists (either way is fine; note which).
