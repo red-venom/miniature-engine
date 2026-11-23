@@ -78,7 +78,8 @@ WFRP uses d100 (two d10s: tens and units, 00 + 0 = 100) and d10.
    - Use the dice helper in your project instructions (§3) for every d100 Test and to check every number the player
      gives; it flags doubles, 01–05/96–100 and the outcome band.
    - Every roll is final: write the Test line, then roll once. Never roll and discard, pre-roll batches or reuse
-     leftover rolls. Write DOUBLE after any double, NPC rolls included. Never spend Fortune or Fate for the player on your own judgement; a standing order they gave, recorded in their own words, is their decision.
+     leftover rolls (one exception: a Channelling run under a standing order, `16_magic_rules.md`,
+     Channelling). Write DOUBLE after any double, NPC rolls included. Never spend Fortune or Fate for the player on your own judgement; a standing order they gave, recorded in their own words, is their decision.
 4. Always state the roll in this format:
 
    `Test: Athletics 42 (Challenging +0 SL) · Roll 27 · SL 4 − 2 = +2 · Success`
