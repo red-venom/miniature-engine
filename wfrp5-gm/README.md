@@ -1,0 +1,83 @@
+# WFRP 5th Edition: AI Game Master files
+
+These Markdown files turn the Warhammer Fantasy Roleplay 5th edition core rulebook into a reference
+that Claude can use to run the game for you. They are written for a Claude Project, so you can play
+on your phone in the Claude app.
+
+The files summarise the rules in condensed form, with page references to the book. They are for
+personal use alongside your own copy of the rulebook.
+
+## Set up the project
+
+You need to do this once. It is easiest on a computer or at claude.ai in a browser, but the app works too.
+
+1. Open Claude and create a new Project. Call it something like "WFRP Campaign".
+2. Open the project's **Instructions** (custom instructions) and paste in the text from
+   `PROJECT_INSTRUCTIONS.txt`.
+3. Add the numbered files `00_…` to `46_…` (including `37b_…`) to the project's **Knowledge**. Do not add `README.md` or
+   `PROJECT_INSTRUCTIONS.txt` as knowledge: they confuse the GM's rule searches. If you already added them,
+   delete them from Knowledge.
+4. Turn on the code or analysis tool in Claude's settings. The instructions include a small dice
+   script that works out every roll, so the GM catches Criticals and Fumbles reliably. Without it, the
+   GM will ask you to roll and must check the maths by hand, which is less reliable.
+
+## Play
+
+1. Start a new chat inside the project.
+2. Type something like: "Let's create a character" or "Start a new campaign in Ubersreik."
+   The GM first asks two settings: who rolls your dice (you or the GM), and how often to offer
+   Fortune rerolls (every time, only when it matters, or never). You can change them later.
+3. Play. Use these commands at any time:
+   - `rules: <topic>` for a rule explanation
+   - `sheet` to see your character
+   - `status` for a quick status check
+   - `show maths` to see how a roll was worked out
+   - `save` to get an updated campaign log and character sheet (a checkpoint; nothing changes in the game)
+   - `end session` when you stop for the day (end-of-session rules apply; Fortune comes back next session)
+   - `dice: own` or `dice: gm` to choose who rolls your dice
+
+## Keep your progress
+
+Each chat starts with a blank memory. To carry the game over:
+
+1. Type `end session` when you stop playing (or `save` for a checkpoint mid-session).
+2. Copy the campaign log into a file called `campaign_log.md` and the character sheet into
+   `character_<name>.md`.
+3. Upload them to the project's knowledge, replacing the old versions. If the GM saved them into the
+   project itself (for example in a `claude/` folder), that's fine: it looks there too.
+4. Start your next session in a new chat in the same project.
+
+Optional rules from the supplements are off until you ask the GM to switch one on (it records them in your campaign log). The full list is in `26_supplement_conversion.md`.
+
+Long chats slow down and lose detail. If a chat gets long mid-session, type `save`, upload the files, and
+carry on in a new chat: the session continues and Fortune is not restored until you have typed `end session` and started a new chat (or after about
+four hours of play).
+
+## Files
+
+| File | Contents |
+|---|---|
+| `00_GM_INSTRUCTIONS.md` | How the AI runs the game. Read first. |
+| `01_core_tests.md` | Tests, Success Levels, Fate and Fortune |
+| `02_character_creation.md` | Making a character |
+| `03_species.md` | Species |
+| `04_careers_A-M.md`, `05_careers_N-Z.md` | All careers |
+| `06_skills.md`, `07_talents.md` | Skills and Talents |
+| `08_social_stealth_investigation.md` | Theft, stealth, social, status, investigation |
+| `09_wilderness_crafts_travel.md` | Wilderness, crafts, movement, chases |
+| `10_combat.md` | Combat |
+| `11_injury_healing_death.md` | Wounds, Critical Wounds, healing, death |
+| `12_conditions_disease_poison_psychology.md` | Conditions, disease, poison, psychology |
+| `13_corruption_mutation.md` | Corruption and mutation |
+| `14_between_adventures.md` | XP, advancement, endeavours |
+| `15_religion_blessings_miracles.md` | Gods, blessings, miracles |
+| `16_magic_rules.md`, `17_magic_lores.md` | Magic |
+| `18_gm_guidance_travel.md` | GM advice, XP awards, travel |
+| `19_reikland_setting.md`, `23_empire_overview.md` | Setting |
+| `20_equipment_prices.md` | Equipment and prices |
+| `21_bestiary.md`, `22_creature_traits_templates.md` | Creatures |
+| `24_campaign_log_template.md`, `25_character_sheet_template.md` | Save templates |
+| `26_supplement_conversion.md` | How the 4th-edition supplements are converted; optional rules list |
+| `27_…` to `32_…` | *Winds of Magic*: spellcasting options, rituals, arcane careers, the eight Colleges and their spells, artefacts, familiars, magic in the world |
+| `33_…` to `37b_…` | *Lustria*: the land, Skeggi, the Vampire Coast, the Citadel of Dusk, temple-cities, Lizardmen and Skinks, jungle bestiary and diseases, expeditions |
+| `38_…` to `46_…` | *Enemy in Shadows* campaign. **GM only: don't read these yourself.** |
